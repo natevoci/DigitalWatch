@@ -24,8 +24,6 @@
 
 #include "BDACard.h"
 #include "StdAfx.h"
-#include "FilterGraphTools.h"
-#include "LogMessage.h"
 #include "GlobalFunctions.h"
 
 //#include <dshow.h>
@@ -48,6 +46,16 @@ BDACard::~BDACard()
 	m_piGraphBuilder.Release();
 }
 
+void BDACard::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	tunerDevice.SetLogCallback(callback);
+	demodDevice.SetLogCallback(callback);
+	captureDevice.SetLogCallback(callback);
+	graphTools.SetLogCallback(callback);
+}
+
 HRESULT BDACard::LoadFromXML(XMLElement *pElement)
 {
 	XMLAttribute *attr;
@@ -66,7 +74,10 @@ HRESULT BDACard::LoadFromXML(XMLElement *pElement)
 	attr = device->Attributes.Item(L"name");
 	strCopy(tunerDevice.strFriendlyName, (attr ? attr->value : L""));
 	tunerDevice.bValid = TRUE;
-	(log << "  " << tunerDevice.strFriendlyName << " [" << (bActive ? "Active" : "Not Active") << "] - " << tunerDevice.strDevicePath << "\n").Write();
+	(log << "Card - " << (bActive ? "Active" : "Not Active") << "\n").Write();
+	LogMessageIndent indent(&log);
+	(log << tunerDevice.strFriendlyName << "\n").Write();
+	(log << "  " << tunerDevice.strDevicePath << "\n").Write();
 
 	device = pElement->Elements.Item(L"Demod");
 	if (device != NULL)
@@ -76,7 +87,8 @@ HRESULT BDACard::LoadFromXML(XMLElement *pElement)
 		attr = device->Attributes.Item(L"name");
 		strCopy(demodDevice.strFriendlyName, (attr ? attr->value : L""));
 		demodDevice.bValid = TRUE;
-		(log << "  " << demodDevice.strFriendlyName << " - " << demodDevice.strDevicePath << "\n").Write();
+		(log << demodDevice.strFriendlyName << "\n").Write();
+		(log << "  " << demodDevice.strDevicePath << "\n").Write();
 	}
 
 	device = pElement->Elements.Item(L"Capture");
@@ -87,7 +99,8 @@ HRESULT BDACard::LoadFromXML(XMLElement *pElement)
 		attr = device->Attributes.Item(L"name");
 		strCopy(captureDevice.strFriendlyName, (attr ? attr->value : L""));
 		captureDevice.bValid = TRUE;
-		(log << "  " << captureDevice.strFriendlyName << " - " << captureDevice.strDevicePath << "\n").Write();
+		(log << captureDevice.strFriendlyName << "\n").Write();
+		(log << "  " << captureDevice.strDevicePath << "\n").Write();
 	}
 
 	return S_OK;
@@ -130,30 +143,26 @@ HRESULT BDACard::AddFilters(IGraphBuilder* piGraphBuilder)
 {
 	HRESULT hr;
 
-	m_piGraphBuilder.Release();
-	if FAILED(hr = piGraphBuilder->QueryInterface(IID_IGraphBuilder, reinterpret_cast<void**>(&m_piGraphBuilder)))
-	{
-		return (log << "BDACard::AddFilters - Cannot query IGraphBuilder\n").Write(hr);
-	}
+	m_piGraphBuilder = piGraphBuilder;
 
-	if FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, &m_pBDATuner, tunerDevice.strDevicePath, tunerDevice.strFriendlyName))
+	if FAILED(hr = graphTools.AddFilterByDevicePath(m_piGraphBuilder, &m_pBDATuner, tunerDevice.strDevicePath, tunerDevice.strFriendlyName))
 	{
-		return (log << "Cannot load Tuner Device\n").Show(hr);
+		return (log << "Cannot load Tuner Device: " << hr << "\n").Show(hr);
 	}
 
 	if (demodDevice.bValid)
 	{
-		if FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, &m_pBDADemod, demodDevice.strDevicePath, demodDevice.strFriendlyName))
+		if FAILED(hr = graphTools.AddFilterByDevicePath(m_piGraphBuilder, &m_pBDADemod, demodDevice.strDevicePath, demodDevice.strFriendlyName))
 		{
-			return (log << "Cannot load Demod Device\n").Show(hr);
+			return (log << "Cannot load Demod Device: " << hr << "\n").Show(hr);
 		}
 	}
 
 	if (captureDevice.bValid)
 	{
-		if FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, &m_pBDACapture, captureDevice.strDevicePath, captureDevice.strFriendlyName))
+		if FAILED(hr = graphTools.AddFilterByDevicePath(m_piGraphBuilder, &m_pBDACapture, captureDevice.strDevicePath, captureDevice.strFriendlyName))
 		{
-			return (log << "Cannot load Capture Device\n").Show(hr);
+			return (log << "Cannot load Capture Device: " << hr << "\n").Show(hr);
 		}
 	}
 	return S_OK;
@@ -189,9 +198,9 @@ HRESULT BDACard::Connect(IBaseFilter* pSource)
 	if (!m_piGraphBuilder)
 		return E_FAIL;
 
-    if FAILED(hr = ConnectFilters(m_piGraphBuilder, pSource, m_pBDATuner))
+    if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, pSource, m_pBDATuner))
 	{
-		return (log << "Failed to connect Network Provider to Tuner Filter\n").Show(hr);
+		return (log << "Failed to connect Network Provider to Tuner Filter: " << hr << "\n").Show(hr);
 	}
 
 	IBaseFilter *piLastFilter = NULL;
@@ -200,22 +209,22 @@ HRESULT BDACard::Connect(IBaseFilter* pSource)
 	{
 		if (demodDevice.bValid)
 		{
-			if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod))
+			if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod))
 			{
-				return (log << "Failed to connect Tuner Filter to Demod Filter\n").Show(hr);
+				return (log << "Failed to connect Tuner Filter to Demod Filter: " << hr << "\n").Show(hr);
 			}
 
-			if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDADemod, m_pBDACapture))
+			if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pBDADemod, m_pBDACapture))
 			{
-				return (log << "Failed to connect Demod Filter to Capture Filter\n").Show(hr);
+				return (log << "Failed to connect Demod Filter to Capture Filter: " << hr << "\n").Show(hr);
 			}
 
 		}
 		else
 		{
-			if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDACapture))
+			if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDACapture))
 			{
-				return (log << "Failed to connect Tuner Filter to Capture Filter\n").Show(hr);
+				return (log << "Failed to connect Tuner Filter to Capture Filter: " << hr << "\n").Show(hr);
 			}
 		}
 
@@ -223,9 +232,9 @@ HRESULT BDACard::Connect(IBaseFilter* pSource)
 	}
 	else if (demodDevice.bValid)
 	{
-		if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod))
+		if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod))
 		{
-			return (log << "Failed to connect Tuner Filter to Demod Filter\n").Show(hr);
+			return (log << "Failed to connect Tuner Filter to Demod Filter: " << hr << "\n").Show(hr);
 		}
 
 		piLastFilter = m_pBDADemod;
@@ -237,12 +246,12 @@ HRESULT BDACard::Connect(IBaseFilter* pSource)
 
 	m_pCapturePin.Release();
 
-	if FAILED(hr = FindPinByMediaType(piLastFilter, MEDIATYPE_Stream, KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT, &m_pCapturePin, REQUESTED_PINDIR_OUTPUT))
+	if FAILED(hr = graphTools.FindPinByMediaType(piLastFilter, MEDIATYPE_Stream, KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT, &m_pCapturePin, REQUESTED_PINDIR_OUTPUT))
 	{
 		//If that failed then try the other mpeg2 type, but this shouldn't happen.
-		if FAILED(hr = FindPinByMediaType(piLastFilter, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin, REQUESTED_PINDIR_OUTPUT))
+		if FAILED(hr = graphTools.FindPinByMediaType(piLastFilter, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin, REQUESTED_PINDIR_OUTPUT))
 		{
-			return (log << "Failed to find Tranport Stream pin on last filter\n").Show(hr);
+			return (log << "Failed to find Tranport Stream pin on last filter: " << hr << "\n").Show(hr);
 		}
 	}
 
@@ -251,6 +260,10 @@ HRESULT BDACard::Connect(IBaseFilter* pSource)
 
 HRESULT BDACard::GetCapturePin(IPin** pCapturePin)
 {
-	return m_pCapturePin->QueryInterface(IID_IPin, reinterpret_cast<void**>(pCapturePin));
+	if (!m_pCapturePin)
+		return E_POINTER;
+	*pCapturePin = m_pCapturePin;
+	(*pCapturePin)->AddRef();
+	return S_OK;
 }
 

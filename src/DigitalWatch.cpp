@@ -64,6 +64,9 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	g_pTv = new TVControl();
 	g_pDWWindow = new DigitalWatchWindow();
 
+	g_pTv->SetLogCallback(&g_DWLogWriter);
+	g_pDWWindow->SetLogCallback(&g_DWLogWriter);
+
 	switch (g_pData->settings.application.priority)
 	{
 	case 2:

@@ -29,6 +29,7 @@
 #include "BDACardCollection.h"
 #include <vector>
 #include "LogMessage.h"
+#include "FilterGraphTools.h"
 
 class BDADVBTSource : public DWSource
 {
@@ -36,7 +37,9 @@ public:
 	BDADVBTSource();
 	virtual ~BDADVBTSource();
 
-	virtual void GetSourceType(LPWSTR &type);
+	virtual void SetLogCallback(LogMessageCallback *callback);
+
+	virtual LPWSTR GetSourceType();
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph);
 	virtual HRESULT Destroy();
@@ -54,6 +57,8 @@ protected:
 	HRESULT AddDemuxPins(DVBTChannels_Program* program);
 
 private:
+	const LPWSTR m_strSourceType;
+
 	BDADVBTSourceTuner *m_pCurrentTuner;
 	std::vector<BDADVBTSourceTuner *> m_Tuners;
 	//Recorder
@@ -61,12 +66,11 @@ private:
 	BDACardCollection cardList;
 	//NaN
 
-
 	DWGraph *m_pDWGraph;
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 
-	LogMessage log;
+	FilterGraphTools graphTools;
 };
 
 #endif

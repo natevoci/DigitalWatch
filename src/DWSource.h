@@ -26,11 +26,11 @@
 #include "StdAfx.h"
 #include "DWGraph.h"
 
-interface DWSource
+interface DWSource : public LogMessageCaller
 {
 public:
 	/* General */
-	virtual void GetSourceType(LPWSTR &type) = 0;
+	virtual LPWSTR GetSourceType() = 0;
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph) = 0;
 	virtual HRESULT Destroy() = 0;

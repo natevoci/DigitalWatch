@@ -194,15 +194,17 @@ XMLDocument::~XMLDocument()
 
 HRESULT XMLDocument::Load(LPWSTR filename)
 {
+	(log << "Loading XML file: " << filename << "\n").Write();
+	LogMessageIndent indent(&log);
+
 	strCopy(m_filename, filename);
 
 	HRESULT hr;
 	if FAILED(hr = m_reader.Open(m_filename))
 	{
-		return (log << "Could not open file: " << m_filename << "\n").Write(hr);
+		return (log << "Could not open file: " << m_filename << " : " << hr << "\n").Write(hr);
 	}
 
-	(log << "Loading XML file: " << m_filename << "\n").Write();
 
 	try
 	{
@@ -215,6 +217,10 @@ HRESULT XMLDocument::Load(LPWSTR filename)
 		return E_FAIL;
 	}
 	m_reader.Close();
+
+	indent.Release();
+	(log << "Finished Loading XML file: " << filename << "\n").Write();
+
 	return hr;
 }
 
@@ -765,18 +771,14 @@ HRESULT XMLDocument::Save(LPWSTR filename)
 {
 	HRESULT hr;
 
-	if (filename)
-	{
-		if FAILED(hr = m_writer.Open(filename))
-			return (log << "Could not open file: " << filename << "\n").Write(hr);
-		(log << "Saving XML file: " << filename << "\n").Write();
-	}
-	else
-	{
-		if FAILED(hr = m_writer.Open(m_filename))
-			return (log << "Could not open file: " << m_filename << "\n").Write(hr);
-		(log << "Saving XML file: " << m_filename << "\n").Write();
-	}
+	if (filename == NULL)
+		filename = m_filename;
+
+	(log << "Saving XML file: " << filename << "\n").Write();
+	LogMessageIndent indent(&log);
+
+	if FAILED(hr = m_writer.Open(filename))
+		return (log << "Could not open file: " << filename << " : " << hr << "\n").Write(hr);
 
 	try
 	{

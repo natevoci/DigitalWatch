@@ -35,7 +35,6 @@ DWMediaType::DWMediaType()
 	memset((void*)&majortype, 0, sizeof(GUID));
 	memset((void*)&subtype, 0, sizeof(GUID));
 	memset((void*)&formattype, 0, sizeof(GUID));
-
 	m_pDecoder = NULL;
 }
 
@@ -73,6 +72,18 @@ DWMediaTypes::~DWMediaTypes()
 	m_mediaTypes.clear();
 }
 
+void DWMediaTypes::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
+	for ( ; it != m_mediaTypes.end() ; it++ )
+	{
+		DWMediaType *mediaType = *it;
+		mediaType->SetLogCallback(callback);
+	}
+}
+
 void DWMediaTypes::SetDecoders(DWDecoders *pDecoders)
 {
 	m_pDecoders = pDecoders;
@@ -97,6 +108,9 @@ DWMediaType *DWMediaTypes::FindMediaType(AM_MEDIA_TYPE *mt)
 
 HRESULT DWMediaTypes::Load(LPWSTR filename)
 {
+	(log << "Loading Media Types file: " << filename << "\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 
 	if (m_pDecoders == NULL)
@@ -105,12 +119,11 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 	strCopy(m_filename, filename);
 
 	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
 	if (file.Load(m_filename) != S_OK)
 	{
 		return (log << "Could not load media types file: " << m_filename << "\n").Show(E_FAIL);
 	}
-
-	(log << "Loading Media Types file: " << m_filename << "\n").Write();
 
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
@@ -127,6 +140,8 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 				continue;
 
 			DWMediaType *mt = new DWMediaType();
+			mt->SetLogCallback(m_pLogCallback);
+
 			strCopy(mt->name, attr->value);
 
 			subelement = element->Elements.Item(L"MajorType");
@@ -137,7 +152,7 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 				{
 					CComBSTR bstrCLSID(attr->value);
 					if FAILED(hr = CLSIDFromString(bstrCLSID, &mt->majortype))
-						(log << "Could not convert Network Type to CLSID\n").Write(hr);
+						(log << "Could not convert Network Type to CLSID: " << hr << "\n").Write(hr);
 				}
 			}
 
@@ -149,7 +164,7 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 				{
 					CComBSTR bstrCLSID(attr->value);
 					if FAILED(hr = CLSIDFromString(bstrCLSID, &mt->subtype))
-						(log << "Could not convert Network Type to CLSID\n").Write(hr);
+						(log << "Could not convert Network Type to CLSID: " << hr << "\n").Write(hr);
 				}
 			}
 
@@ -161,7 +176,7 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 				{
 					CComBSTR bstrCLSID(attr->value);
 					if FAILED(hr = CLSIDFromString(bstrCLSID, &mt->formattype))
-						(log << "Could not convert Network Type to CLSID\n").Write(hr);
+						(log << "Could not convert Network Type to CLSID: " << hr << "\n").Write(hr);
 				}
 			}
 

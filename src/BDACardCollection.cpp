@@ -27,7 +27,6 @@
 #include "ParseLine.h"
 
 #include "GlobalFunctions.h"
-#include "FilterGraphTools.h"
 #include <dshow.h>
 #include <ks.h> // Must be included before ksmedia.h
 #include <ksmedia.h> // Must be included before bdamedia.h
@@ -50,6 +49,20 @@ BDACardCollection::~BDACardCollection()
 	cards.clear();
 }
 
+void BDACardCollection::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	graphTools.SetLogCallback(callback);
+
+	std::vector<BDACard *>::iterator it = cards.begin();
+	for ( ; it != cards.end() ; it++ )
+	{
+		BDACard *card = *it;
+		card->SetLogCallback(callback);
+	}
+}
+
 LogMessage BDACardCollection::get_Logger()
 {
 	return log;
@@ -66,22 +79,23 @@ BOOL BDACardCollection::LoadCards()
 
 BOOL BDACardCollection::LoadCards(LPWSTR filename)
 {
-	strCopy(m_filename, filename);
-
-	LoadCardsFromFile();
-
+	LoadCardsFromFile(filename);
 	return LoadCardsFromHardware();
 }
 
-BOOL BDACardCollection::LoadCardsFromFile()
+BOOL BDACardCollection::LoadCardsFromFile(LPWSTR filename)
 {
+	(log << "Loading BDA DVB-T Cards file: " << filename << "\n").Write();
+	LogMessageIndent indent(&log);
+
+	strCopy(m_filename, filename);
+
 	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
 	if (file.Load(m_filename) != S_OK)
 	{
 		return (log << "Could not load cards file: " << m_filename << "\n").Write(false);
 	}
-
-	(log << "Loading BDA DVB-T Cards file: " << m_filename << "\n").Write();
 
 	BDACard* currCard = NULL;
 
@@ -93,11 +107,16 @@ BOOL BDACardCollection::LoadCardsFromFile()
 			continue;
 
 		currCard = new BDACard();
+		currCard->SetLogCallback(m_pLogCallback);
+
 		if (currCard->LoadFromXML(element) == S_OK)
 			AddCardToList(currCard);
 		else
 			delete currCard;
 	}
+
+	indent.Release();
+	(log << "Finished Loading BDA DVB-T Cards file\n").Write();
 
 	return (cards.size() > 0);
 }
@@ -120,6 +139,7 @@ void BDACardCollection::AddCardToList(BDACard* currCard)
 BOOL BDACardCollection::SaveCards(LPWSTR filename)
 {
 	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
 
 	std::vector<BDACard *>::iterator it = cards.begin();
 	for ( ; it < cards.end() ; it++ )
@@ -143,12 +163,19 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 	HRESULT hr = S_OK;
 
 	(log << "Checking for new BDA DVB-T Cards\n").Write();
+	LogMessageIndent indent(&log);
 
 	DirectShowSystemDevice* pTunerDevice;
 	DirectShowSystemDeviceEnumerator enumerator(KSCATEGORY_BDA_NETWORK_TUNER);
+	enumerator.SetLogCallback(m_pLogCallback);
 
 	while (enumerator.Next(&pTunerDevice) == S_OK)
 	{
+		(log << "Tuner - " << pTunerDevice->strFriendlyName << "\n").Write();
+		LogMessageIndent indentB(&log);
+		(log << pTunerDevice->strDevicePath << "\n").Write();
+		LogMessageIndent indentC(&log);
+
 		BDACard *bdaCard = NULL;
 
 		std::vector<BDACard *>::iterator it = cards.begin();
@@ -162,6 +189,7 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 
 		if (bdaCard)
 		{
+			(log << "This tuner was loaded from file\n").Write();
 			bdaCard->bDetected = TRUE;
 			//TODO: maybe?? verify tuner can connect to the capture filter.
 		}
@@ -173,15 +201,27 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 			if (FindCaptureDevice(pTunerDevice, &pDemodDevice, &pCaptureDevice))
 			{
 				bdaCard = new BDACard();
+				bdaCard->SetLogCallback(m_pLogCallback);
+
 				bdaCard->bActive = TRUE;
 				bdaCard->bNew = TRUE;
 				bdaCard->bDetected = TRUE;
 
 				bdaCard->tunerDevice = *pTunerDevice;
 				if (pDemodDevice)
+				{
+					(log << "Demod - " << pDemodDevice->strFriendlyName << "\n").Write();
+					LogMessageIndent indentD(&log);
+					(log << pDemodDevice->strDevicePath << "\n").Write();
 					bdaCard->demodDevice = *pDemodDevice;
+				}
 				if (pCaptureDevice)
+				{
+					(log << "Capture - " << pCaptureDevice->strFriendlyName << "\n").Write();
+					LogMessageIndent indentD(&log);
+					(log << pCaptureDevice->strDevicePath << "\n").Write();
 					bdaCard->captureDevice = *pCaptureDevice;
+				}
 
 				cards.push_back(bdaCard);
 			}
@@ -192,8 +232,10 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 	}
 
 	if (cards.size() == 0)
-		//return (log << "No cards found\n").Show();
-		return FALSE;
+		return (log << "No cards found\n").Show(FALSE);
+
+	indent.Release();
+	(log << "Finished Checking for new BDA DVB-T Cards\n").Write();
 
 	return TRUE;
 }
@@ -214,6 +256,8 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 	BOOL bFoundDemod = FALSE;
 	BOOL bFoundCapture = FALSE;
 
+	(log << "Finding Demod and Capture filters\n").Write();
+
 	do
 	{
 		//--- Create Graph ---
@@ -224,7 +268,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		}
 
 		//--- Initialise Tune Request ---
-		if FAILED(hr = InitDVBTTuningSpace(piTuningSpace))
+		if FAILED(hr = graphTools.InitDVBTTuningSpace(piTuningSpace))
 		{
 			//(log << "Failed to initialise the Tune Request\n").Write();
 			break;
@@ -246,7 +290,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		}
 
 		//--- Create Network Provider ---
-		if FAILED(hr = AddFilter(piGraphBuilder, CLSIDNetworkType, &piBDANetworkProvider, L"Network Provider"))
+		if FAILED(hr = graphTools.AddFilter(piGraphBuilder, CLSIDNetworkType, &piBDANetworkProvider, L"Network Provider"))
 		{
 			//(log << "Failed to add Network Provider to the graph\n").Write();
 			break;
@@ -254,7 +298,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		bRemoveNP = TRUE;
 
 		//--- Create TuneRequest ---
-		if FAILED(hr = CreateDVBTTuneRequest(piTuningSpace, pTuneRequest, -1, -1))
+		if FAILED(hr = graphTools.CreateDVBTTuneRequest(piTuningSpace, pTuneRequest, -1, -1))
 		{
 			//(log << "Failed to create the Tune Request.\n").Write();
 			break;
@@ -276,30 +320,38 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 
 		//--- We can now add and connect the tuner filter ---
 		
-		if FAILED(hr = AddFilterByDevicePath(piGraphBuilder, &piBDATuner, pTunerDevice->strDevicePath, pTunerDevice->strFriendlyName))
+		if FAILED(hr = graphTools.AddFilterByDevicePath(piGraphBuilder, &piBDATuner, pTunerDevice->strDevicePath, pTunerDevice->strFriendlyName))
 		{
 			//(log << "Cannot load Tuner Device\n").Write();
 			break;
 		}
 		bRemoveTuner = TRUE;
     
-		if FAILED(hr = ConnectFilters(piGraphBuilder, piBDANetworkProvider, piBDATuner))
+		if FAILED(hr = graphTools.ConnectFilters(piGraphBuilder, piBDANetworkProvider, piBDATuner))
 		{
 			//(log << "Failed to connect Network Provider to Tuner Filter\n").Write();
 			break;
 		}
 
+		LogMessageIndent indent(&log);
+
 		DirectShowSystemDeviceEnumerator enumerator(KSCATEGORY_BDA_RECEIVER_COMPONENT);
 		*ppDemodDevice = NULL;
 		while (hr = enumerator.Next(ppDemodDevice) == S_OK)
 		{
-			if FAILED(hr = AddFilterByDevicePath(piGraphBuilder, &piBDADemod, (*ppDemodDevice)->strDevicePath, (*ppDemodDevice)->strFriendlyName))
+			(log << "Trying - " << (*ppDemodDevice)->strFriendlyName << "\n").Write();
+			LogMessageIndent indentB(&log);
+			(log << (*ppDemodDevice)->strDevicePath << "\n").Write();
+			LogMessageIndent indentC(&log);
+
+			if FAILED(hr = graphTools.AddFilterByDevicePath(piGraphBuilder, &piBDADemod, (*ppDemodDevice)->strDevicePath, (*ppDemodDevice)->strFriendlyName))
 			{
 				break;
 			}
 
-			if SUCCEEDED(hr = ConnectFilters(piGraphBuilder, piBDATuner, piBDADemod))
+			if SUCCEEDED(hr = graphTools.ConnectFilters(piGraphBuilder, piBDATuner, piBDADemod))
 			{
+				(log << "SUCCESS\n").Write();
 				bFoundDemod = TRUE;
 				break;
 			}
@@ -312,16 +364,33 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 
 		if (bFoundDemod)
 		{
+			(log << "Checking for Capture filter\n").Write();
+			LogMessageIndent indentB(&log);
 			*ppCaptureDevice = NULL;
+			enumerator.Reset();
 			while (hr = enumerator.Next(ppCaptureDevice) == S_OK)
 			{
-				if FAILED(hr = AddFilterByDevicePath(piGraphBuilder, &piBDACapture, (*ppCaptureDevice)->strDevicePath, (*ppCaptureDevice)->strFriendlyName))
+				//Don't try to connect the one we already found
+				if (_wcsicmp((*ppDemodDevice)->strDevicePath, (*ppCaptureDevice)->strDevicePath) == 0)
+				{
+					delete *ppCaptureDevice;
+					*ppCaptureDevice = NULL;
+					continue;
+				}
+
+				(log << "Trying - " << (*ppCaptureDevice)->strFriendlyName << "\n").Write();
+				LogMessageIndent indentC(&log);
+				(log << (*ppCaptureDevice)->strDevicePath << "\n").Write();
+				LogMessageIndent indentD(&log);
+
+				if FAILED(hr = graphTools.AddFilterByDevicePath(piGraphBuilder, &piBDACapture, (*ppCaptureDevice)->strDevicePath, (*ppCaptureDevice)->strFriendlyName))
 				{
 					break;
 				}
 
-				if SUCCEEDED(hr = ConnectFilters(piGraphBuilder, piBDADemod, piBDACapture))
+				if SUCCEEDED(hr = graphTools.ConnectFilters(piGraphBuilder, piBDADemod, piBDACapture))
 				{
+					(log << "SUCCESS\n").Write();
 					bFoundCapture = TRUE;
 					break;
 				}
@@ -337,7 +406,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 			//(log << "No Cards Left\n").Write();
 	} while (FALSE);
 
-	DisconnectAllPins(piGraphBuilder);
+	graphTools.DisconnectAllPins(piGraphBuilder);
 	if (bFoundCapture)
 		piGraphBuilder->RemoveFilter(piBDACapture);
 	if (bFoundDemod)
@@ -361,6 +430,8 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		*ppCaptureDevice = *ppDemodDevice;
 		*ppDemodDevice = NULL;
 	}
+
+	(log << "Finished Finding Demod and Capture filters\n").Write();
 
 	return (bFoundDemod);
 }

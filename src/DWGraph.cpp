@@ -22,7 +22,6 @@
 
 #include "DWGraph.h"
 #include "Globals.h"
-#include "FilterGraphTools.h"
 
 #include <mpconfig.h>
 #include <ks.h> // Must be included before ksmedia.h
@@ -39,7 +38,6 @@ DWGraph::DWGraph()
 	m_piMediaControl = NULL;
 	m_bInitialised = FALSE;
 	m_rotEntry = 0;
-	log.AddCallback(&g_DWLogWriter);
 }
 
 DWGraph::~DWGraph()
@@ -47,8 +45,20 @@ DWGraph::~DWGraph()
 	Destroy();
 }
 
+void DWGraph::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	m_mediaTypes.SetLogCallback(callback);
+	m_decoders.SetLogCallback(callback);
+	graphTools.SetLogCallback(callback);
+}
+
 BOOL DWGraph::Initialise()
 {
+	(log << "Initialising DWGraph\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 	if (m_bInitialised)
 		return (log << "DigitalWatch graph tried to initialise a second time\n").Write();
@@ -57,36 +67,39 @@ BOOL DWGraph::Initialise()
 
 	swprintf((LPWSTR)&file, L"%sDecoders.xml", g_pData->application.appPath);
 	if FAILED(hr = m_decoders.Load((LPWSTR)&file))
-		return hr;
+		return (log << "Failed to load decoders: " << hr << "\n").Write(hr);
 
 	m_mediaTypes.SetDecoders(&m_decoders);
 	swprintf((LPWSTR)&file, L"%sMediaTypes.xml", g_pData->application.appPath);
 	if FAILED(hr = m_mediaTypes.Load((LPWSTR)&file))
-		return hr;
+		return (log << "Failed to load mediatypes: " << hr << "\n").Write(hr);
 
 
 	//--- COM should already be initialized ---
 
 	//--- Create Graph ---
 	if FAILED(hr = m_piGraphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER))
-		return (log << "Failed Creating Graph Builder\n").Write();
+		return (log << "Failed Creating Graph Builder: " << hr << "\n").Write();
 
 	//--- Add To Running Object Table --- (for graphmgr.exe)
 	if (g_pData->settings.application.addToROT)
 	{
-		if FAILED(hr = AddToRot(m_piGraphBuilder, &m_rotEntry))
+		if FAILED(hr = graphTools.AddToRot(m_piGraphBuilder, &m_rotEntry))
 		{
 			//TODO: release graphbuilder
-			return (log << "Failed adding graph to ROT\n").Write();
+			return (log << "Failed adding graph to ROT: " << hr << "\n").Write();
 		}
 	}
 
 	//--- Get InterfacesInFilters ---
 	if FAILED(hr = m_piGraphBuilder->QueryInterface(IID_IMediaControl, reinterpret_cast<void**>(&m_piMediaControl)))
-		return (log << "Failed to get Media Control interface\n").Write();
+		return (log << "Failed to get Media Control interface: " << hr << "\n").Write();
 
 //	m_pOverlayCallback = new OverlayCallback(g_pData->hWnd, &hr);
 	m_bInitialised = TRUE;
+
+	indent.Release();
+	(log << "Finished Initialising DWGraph\n").Write();
 
 	return TRUE;
 }
@@ -98,7 +111,7 @@ BOOL DWGraph::Destroy()
 
 	if (m_rotEntry)
 	{
-		RemoveFromRot(m_rotEntry);
+		graphTools.RemoveFromRot(m_rotEntry);
 		m_rotEntry = 0;
 	}
 
@@ -113,44 +126,51 @@ BOOL DWGraph::Destroy()
 HRESULT DWGraph::QueryGraphBuilder(IGraphBuilder** piGraphBuilder)
 {
 	if (!m_piGraphBuilder)
-		return S_FALSE;
-	return m_piGraphBuilder->QueryInterface(IID_IGraphBuilder, reinterpret_cast<void**>(piGraphBuilder));
+		return E_POINTER;
+	*piGraphBuilder = m_piGraphBuilder;
+	(*piGraphBuilder)->AddRef();
+	return S_OK;
 }
 	
 HRESULT DWGraph::QueryMediaControl(IMediaControl** piMediaControl)
 {
 	if (!m_piMediaControl)
-		return S_FALSE;
-	return m_piMediaControl->QueryInterface(IID_IMediaControl, reinterpret_cast<void**>(piMediaControl));
+		return E_POINTER;
+	*piMediaControl = m_piMediaControl;
+	(*piMediaControl)->AddRef();
+	return S_OK;
 }
 	
 HRESULT DWGraph::Start()
 {
+	(log << "Stopping DW Graph\n").Write();
+	LogMessageIndent indent(&log);
+
 	if (m_piMediaControl == NULL)
-		return E_POINTER;
+		return (log << "Media Control interface is NULL\n").Write(E_POINTER);
 
 	HRESULT hr;
 
 	//Set the video renderer to use our window.
-	IVideoWindow *piVideoWindow;
-	if SUCCEEDED(hr = m_piGraphBuilder->QueryInterface(IID_IVideoWindow, reinterpret_cast<void**>(&piVideoWindow)))
+	CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
+	if (piVideoWindow)
 	{
 		if FAILED(hr = piVideoWindow->put_Owner((OAHWND)g_pData->hWnd))
-			return (log << "could not set IVideoWindow Window Handle\n").Write(hr);
+			return (log << "could not set IVideoWindow Window Handle: " << hr << "\n").Write(hr);
 
 		if FAILED(hr = piVideoWindow->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS))
-			return (log << "could not set IVideoWindow Window Style\n").Write(hr);
+			return (log << "could not set IVideoWindow Window Style: " << hr << "\n").Write(hr);
 
 		if FAILED(hr = piVideoWindow->put_MessageDrain((OAHWND)g_pData->hWnd))
-			return (log << "could not set IVideoWindow Message Drain\n").Write(hr);
+			return (log << "could not set IVideoWindow Message Drain: " << hr << "\n").Write(hr);
 
 		//if FAILED(hr = piVideoWindow->put_AutoShow(OAFALSE))
-		//	return (log << "could not set IVideoWindow AutoShow\n").Write(hr);
-
-		piVideoWindow->Release();
+		//	return (log << "could not set IVideoWindow AutoShow: " << hr << "\n").Write(hr);
 	}
 
-	RefreshVideoPosition();
+	hr = RefreshVideoPosition();
+	if FAILED(hr)
+		return (log << "Failed to refresh video posistion: " << hr << "\n").Write(hr);
 
 /*	IBaseFilter *pfOverlayMixer = NULL;
 	hr = GetOverlayMixer(m_piGraphBuilder, &pfOverlayMixer);
@@ -166,16 +186,36 @@ HRESULT DWGraph::Start()
 		HelperRelease(pfOverlayMixer);
 	}
 */
-	return m_piMediaControl->Run();
+	hr = m_piMediaControl->Run();
+	if FAILED(hr)
+		return (log << "Failed to start graph: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Stopping DW Graph\n").Write();
+
+	return hr;
 }
 
 HRESULT DWGraph::Stop()
 {
-	return m_piMediaControl->Stop();
+	(log << "Stopping DW Graph\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr = m_piMediaControl->Stop();
+	if FAILED(hr)
+		return (log << "Failed to stop graph: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Finished Stopping DW Graph\n").Write();
+
+	return hr;
 }
 
 HRESULT DWGraph::Cleanup()
 {
+	(log << "Cleaning up DW Graph\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 /*	CComQIPtr<IFilterChain> piFilterChain(m_piGraphBuilder);
 	if (piFilterChain == NULL)
@@ -183,8 +223,16 @@ HRESULT DWGraph::Cleanup()
 
 	piFilterChain->RemoveChain(filter, NULL);*/
 
-	hr = DisconnectAllPins(m_piGraphBuilder);
-	hr = RemoveAllFilters(m_piGraphBuilder);
+	hr = graphTools.DisconnectAllPins(m_piGraphBuilder);
+	if FAILED(hr)
+		(log << "Failed to disconnect pins: " << hr << "\n").Write(hr);
+
+	hr = graphTools.RemoveAllFilters(m_piGraphBuilder);
+	if FAILED(hr)
+		(log << "Failed to remove filters: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Finished Cleaning up DW Graph\n").Write();
 
 	return S_OK;
 }
@@ -199,7 +247,7 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 	CComPtr <IEnumMediaTypes> piMediaTypes;
 	if FAILED(hr = piPin->EnumMediaTypes(&piMediaTypes))
 	{
-		return (log << "Failed to enum media types\n").Write(hr);
+		return (log << "Failed to enum media types: " << hr << "\n").Write(hr);
 	}
 
 	hr = S_FALSE;
@@ -232,16 +280,13 @@ HRESULT DWGraph::RefreshVideoPosition()
 //		return TRUE;
 	HRESULT hr = S_OK;
 
-	CComPtr <IVideoWindow> piVideoWindow;
-	if FAILED(hr = m_piGraphBuilder->QueryInterface(IID_IVideoWindow, reinterpret_cast<void**>(&piVideoWindow)))
+	CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
+	if (!piVideoWindow)
 		return (log << "Could not query graph builder for IVideoWindow\n").Write(S_FALSE);
 
-	CComPtr <IBasicVideo> piBasicVideo;
-	if FAILED(hr = m_piGraphBuilder->QueryInterface(IID_IBasicVideo, reinterpret_cast<void**>(&piBasicVideo)))
-	{
-		piVideoWindow.Release();
+	CComQIPtr <IBasicVideo> piBasicVideo(m_piGraphBuilder);
+	if (!piBasicVideo)
 		return (log << "could not query graph builder for IBasicVideo\n").Write(S_FALSE);
-	}
 
 	RECT mainRect, zoomRect;
 	GetVideoRect(&zoomRect);
@@ -254,14 +299,14 @@ HRESULT DWGraph::RefreshVideoPosition()
 
 	//SetWindowPos(g_pData->hWnd, NULL, mainRect.left, mainRect.top, mainRect.right-mainRect.left, mainRect.bottom-mainRect.top, /*SWP_NOMOVE | */SWP_NOZORDER);
 	if FAILED(hr = piVideoWindow->SetWindowPosition(0, 0, mainRect.right-mainRect.left, mainRect.bottom-mainRect.top))
-		return (log << "could not set IVideoWindow position\n").Write(hr);
+		return (log << "could not set IVideoWindow position: " << hr << "\n").Write(hr);
 
 	if (hr == S_OK)
 		hr = piBasicVideo->SetDestinationPosition(zoomRect.left, zoomRect.top, zoomRect.right-zoomRect.left, zoomRect.bottom-zoomRect.top);
 
 	//Set overlay to streched AR mode
 	CComPtr <IPin> piPin;
-	hr = GetOverlayMixerInputPin(m_piGraphBuilder, L"Input0", &piPin);
+	hr = graphTools.GetOverlayMixerInputPin(m_piGraphBuilder, L"Input0", &piPin);
 	if (hr == S_OK)
 	{
 		CComPtr <IMixerPinConfig> piMixerPinConfig;
@@ -273,11 +318,11 @@ HRESULT DWGraph::RefreshVideoPosition()
 	}
 
 	if FAILED(hr = piVideoWindow->put_Visible(OATRUE))
-		return (log << "could not set IVideoWindow visible\n").Write(hr);
+		return (log << "could not set IVideoWindow visible: " << hr << "\n").Write(hr);
 
 	Sleep(10);
 
-	return TRUE;
+	return S_OK;
 }
 
 void DWGraph::GetVideoRect(RECT *rect)

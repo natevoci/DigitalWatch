@@ -22,14 +22,12 @@
 
 #include "KeyMap.h"
 #include "ParseLine.h"
-#include "Globals.h"
 #include "GlobalFunctions.h"
 #include <stdio.h>
 #include "XMLDocument.h"
 
 KeyMap::KeyMap(void) : m_filename(0)
 {
-	log.AddCallback(&g_DWLogWriter);
 }
 
 KeyMap::~KeyMap(void)
@@ -38,7 +36,7 @@ KeyMap::~KeyMap(void)
 		delete[] m_filename;
 }
 
-BOOL KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR &function)
+BOOL KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
 {
 	std::vector<KeyMapEntry>::iterator it = keyMaps.begin();
 	for ( ; it != keyMaps.end() ; it++ )
@@ -49,7 +47,7 @@ BOOL KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR &f
 			(keyMap.Ctrl == ctrl) &&
 			(keyMap.Alt == alt))
 		{
-			wcscpy(function, keyMap.Function);
+			strCopy(*function, keyMap.Function);
 			return TRUE;
 		}
 	}
@@ -58,15 +56,17 @@ BOOL KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR &f
 
 BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 {
+	(log << "Loading Keys file: " << filename << "\n").Write();
+	LogMessageIndent indent(&log);
+
 	strCopy(m_filename, filename);
 
 	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
 	if (file.Load(m_filename) != S_OK)
 	{
 		return (log << "Could not load keys file: " << m_filename << "\n").Show(FALSE);
 	}
-
-	(log << "Loading Keys file: " << m_filename << "\n").Write();
 
 	XMLElement *element;
 	XMLAttribute *attr;
@@ -109,6 +109,9 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 			continue;
 		}
 	}
+
+	indent.Release();
+	(log << "Finished Loading Keys File\n").Write();
 
 	return TRUE;
 }

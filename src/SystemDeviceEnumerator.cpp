@@ -23,6 +23,10 @@
 #include "SystemDeviceEnumerator.h"
 #include "GlobalFunctions.h"
 
+//////////////////////////////////////////////////////////////////////
+// DirectShowSystemDevice
+//////////////////////////////////////////////////////////////////////
+
 DirectShowSystemDevice::DirectShowSystemDevice()
 {
 	strFriendlyName = NULL;
@@ -78,6 +82,10 @@ HRESULT DirectShowSystemDevice::CreateInstance(CComPtr <IBaseFilter> &pFilter)
 	return S_OK;
 }
 
+//////////////////////////////////////////////////////////////////////
+// DirectShowSystemDeviceEnumerator
+//////////////////////////////////////////////////////////////////////
+
 DirectShowSystemDeviceEnumerator::DirectShowSystemDeviceEnumerator(REFCLSID deviceClass)
 {
 	if FAILED(m_pSysDevEnum.CoCreateInstance(CLSID_SystemDeviceEnum))
@@ -132,6 +140,7 @@ HRESULT DirectShowSystemDeviceEnumerator::Next(DirectShowSystemDevice** ppDevice
 
 
 	*ppDevice = new DirectShowSystemDevice();
+	(*ppDevice)->SetLogCallback(m_pLogCallback);
 
 	VARIANT varName;
 	VariantInit(&varName);

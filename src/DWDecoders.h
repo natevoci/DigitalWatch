@@ -26,10 +26,11 @@
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "XMLDocument.h"
+#include "FilterGraphTools.h"
 #include <vector>
 
 class DWDecoders;
-class DWDecoder
+class DWDecoder : public LogMessageCaller
 {
 	friend DWDecoders;
 public:
@@ -43,14 +44,16 @@ public:
 private:
 	XMLElement *m_pElement;
 
-	LogMessage log;
+	FilterGraphTools graphTools;
 };
 
-class DWDecoders
+class DWDecoders : public LogMessageCaller
 {
 public:
 	DWDecoders();
 	virtual ~DWDecoders();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	HRESULT Load(LPWSTR filename);
 
@@ -60,8 +63,6 @@ private:
 	std::vector<DWDecoder *> m_decoders;
 
 	LPWSTR m_filename;
-
-	LogMessage log;
 };
 
 #endif

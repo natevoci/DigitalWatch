@@ -2,10 +2,13 @@
 DigitalWatch TODO
 -----------------
 
-- osd
+- separate demux pin adding from rendering and fix the order of renderer.
+  ie. video, then audio, then teletext, then other.
 
 - channel scanning
   - Store all programs and notify when they change
+
+- osd
 
 - Separate tuner graph from main playback graph.
 - timeshifting

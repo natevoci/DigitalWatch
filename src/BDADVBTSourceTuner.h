@@ -28,12 +28,15 @@
 #include "BDACardCollection.h"
 #include "DWGraph.h"
 #include "LogMessage.h"
+#include "FilterGraphTools.h"
 
-class BDADVBTSourceTuner
+class BDADVBTSourceTuner : public LogMessageCaller
 {
 public:
 	BDADVBTSourceTuner(BDACard *pBDACard);
 	virtual ~BDADVBTSourceTuner();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	HRESULT Initialise(DWGraph *pDWGraph);
 	HRESULT DestroyAll();
@@ -102,7 +105,7 @@ private:
 
 	DWORD m_rotEntry;
 
-	LogMessage log;
+	FilterGraphTools graphTools;
 };
 
 #endif

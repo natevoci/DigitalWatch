@@ -20,7 +20,6 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #ifndef XMLDOCUMENT_H
 #define XMLDOCUMENT_H
 
@@ -99,9 +98,9 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////
-// Document
+// XMLDocument
 //////////////////////////////////////////////////////////////////////
-class XMLDocument  
+class XMLDocument : public LogMessageCaller
 {
 public:
 	XMLDocument();
@@ -132,8 +131,6 @@ private:
 	LPWSTR m_pBuff;
 	LPWSTR m_pLine;
 	LPWSTR m_pCurr;
-
-	LogMessage log;
 
 	enum XMLTokens
 	{

@@ -29,25 +29,17 @@
 
 #define MAX_LOADSTRING 100
 
-class DigitalWatchWindow
+class DigitalWatchWindow : public LogMessageCaller
 {
 public:
 	DigitalWatchWindow();
 	~DigitalWatchWindow();
+
 	int Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
 
 	LRESULT WndProc(HWND, UINT, WPARAM, LPARAM);
 
-	//HWND getHWND() { return m_hWnd; }
-
 private:
-	//HWND m_hWnd;
-
-	//AppData* m_pAppData;
-	//TVControl* m_pTv;
-	//AppSettings* m_pAppSettings;
-
-	LogMessage log;
 };
 
 #endif

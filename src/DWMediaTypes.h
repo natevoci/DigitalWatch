@@ -29,7 +29,7 @@
 #include <vector>
 
 class DWMediaTypes;
-class DWMediaType
+class DWMediaType : public LogMessageCaller
 {
 	friend DWMediaTypes;
 public:
@@ -47,11 +47,13 @@ private:
 	DWDecoder *m_pDecoder;
 };
 
-class DWMediaTypes
+class DWMediaTypes : public LogMessageCaller
 {
 public:
 	DWMediaTypes();
 	virtual ~DWMediaTypes();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	void SetDecoders(DWDecoders *pDecoders);
 
@@ -64,8 +66,6 @@ private:
 	DWDecoders *m_pDecoders;
 
 	LPWSTR m_filename;
-
-	LogMessage log;
 };
 
 #endif

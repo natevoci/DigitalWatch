@@ -218,6 +218,18 @@ DVBTChannels_Network::~DVBTChannels_Network()
 	programs.clear();
 }
 
+void DVBTChannels_Network::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	std::vector<DVBTChannels_Program *>::iterator it = programs.begin();
+	for ( ; it != programs.end() ; it++ )
+	{
+		DVBTChannels_Program *program = *it;
+		program->SetLogCallback(callback);
+	}
+}
+
 HRESULT DVBTChannels_Network::LoadFromXML(XMLElement *pElement)
 {
 	XMLAttribute *attr;
@@ -318,6 +330,18 @@ DVBTChannels::~DVBTChannels()
 	networks.clear();
 }
 
+void DVBTChannels::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	std::vector<DVBTChannels_Network *>::iterator it = networks.begin();
+	for ( ; it != networks.end() ; it++ )
+	{
+		DVBTChannels_Network *network = *it;
+		network->SetLogCallback(callback);
+	}
+}
+
 DVBTChannels_Network* DVBTChannels::Network(int networkNumber)
 {
 	if (!IsValidNetwork(networkNumber))
@@ -336,15 +360,17 @@ BOOL DVBTChannels::IsValidNetwork(int networkNumber)
 
 BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 {
+	(log << "Loading DVBT Channels file: " << filename << "\n").Write();
+	LogMessageIndent indent(&log);
+
 	strCopy(m_filename, filename);
 
 	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
 	if (file.Load(m_filename) != S_OK)
 	{
 		return (log << "Could not load channels file: " << m_filename << "\n").Show(FALSE);
 	}
-
-	(log << "Loading DVBT Channels file: " << m_filename << "\n").Write();
 
 	int elementCount = file.Elements.Count();
 	for ( int item=0 ; item<elementCount ; item++ )
@@ -370,12 +396,17 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 
 	if (networks.size() == 0)
 		return (log << "You need to specify at least one network in your channels file\n").Show(FALSE);
+
+	indent.Release();
+	(log << "Finished Loading DVBT Channels file: " << filename << "\n").Write();
+
 	return TRUE;
 }
 
 BOOL DVBTChannels::SaveChannels(LPWSTR filename)
 {
 	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
 
 	XMLElement *pElement = new XMLElement(L"Bandwidth");
 	strCopy(pElement->value, m_bandwidth);

@@ -28,6 +28,7 @@
 
 #include <dshow.h>
 #include <bdatif.h>
+#include "LogMessage.h"
 
 typedef enum _RequestedPinDirection
 {
@@ -36,37 +37,41 @@ typedef enum _RequestedPinDirection
 	REQUESTED_PINDIR_ANY      = PINDIR_OUTPUT + 1
 } REQUESTED_PIN_DIRECTION;
 
-HRESULT AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rclsid, IBaseFilter **ppiFilter, LPCWSTR pName, BOOL bSilent = FALSE);
-HRESULT AddFilterByName(IGraphBuilder* piGraphBuilder, IBaseFilter **ppiFilter, CLSID clsidDeviceClass, LPCWSTR friendlyName);
-HRESULT AddFilterByDevicePath(IGraphBuilder* piGraphBuilder, IBaseFilter **piFilter, LPCWSTR pDevicePath, LPCWSTR pName);
+class FilterGraphTools : public LogMessageCaller
+{
+public:
+	HRESULT AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rclsid, IBaseFilter **ppiFilter, LPCWSTR pName, BOOL bSilent = FALSE);
+	HRESULT AddFilterByName(IGraphBuilder* piGraphBuilder, IBaseFilter **ppiFilter, CLSID clsidDeviceClass, LPCWSTR friendlyName);
+	HRESULT AddFilterByDevicePath(IGraphBuilder* piGraphBuilder, IBaseFilter **piFilter, LPCWSTR pDevicePath, LPCWSTR pName);
 
-HRESULT EnumPins(IBaseFilter* piSource);
+	HRESULT EnumPins(IBaseFilter* piSource);
 
-HRESULT FindPin(IBaseFilter* piSource, LPCWSTR Id, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir = REQUESTED_PINDIR_ANY);
-HRESULT FindPinByMediaType(IBaseFilter* piSource, GUID majortype, GUID subtype, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir = REQUESTED_PINDIR_ANY);
-HRESULT FindFirstFreePin(IBaseFilter* piSource, IPin **ppiPin, PIN_DIRECTION pinDirection);
+	HRESULT FindPin(IBaseFilter* piSource, LPCWSTR Id, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir = REQUESTED_PINDIR_ANY);
+	HRESULT FindPinByMediaType(IBaseFilter* piSource, GUID majortype, GUID subtype, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir = REQUESTED_PINDIR_ANY);
+	HRESULT FindFirstFreePin(IBaseFilter* piSource, IPin **ppiPin, PIN_DIRECTION pinDirection);
 
-HRESULT FindFilter(IGraphBuilder* piGraphBuilder, LPCWSTR Id, IBaseFilter **ppiFilter);
-HRESULT FindFilter(IGraphBuilder* piGraphBuilder, CLSID rclsid, IBaseFilter **ppiFilter);
+	HRESULT FindFilter(IGraphBuilder* piGraphBuilder, LPCWSTR Id, IBaseFilter **ppiFilter);
+	HRESULT FindFilter(IGraphBuilder* piGraphBuilder, CLSID rclsid, IBaseFilter **ppiFilter);
 
-HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IBaseFilter* piFilterUpstream, LPCWSTR sourcePinName, IBaseFilter* piFilterDownstream, LPCWSTR destPinName);
-HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IBaseFilter* piFilterUpstream, IBaseFilter* piFilterDownstream);
-HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IBaseFilter* piFilterUpstream, IPin* piPinDownstream);
-HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IPin* piPinUpstream, IBaseFilter* piFilterDownstream);
-HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IPin* piPinUpstream, IPin* piPinDownstream);
-HRESULT RenderPin     (IGraphBuilder* piGraphBuilder, IBaseFilter* piSource, LPCWSTR pinName);
+	HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IBaseFilter* piFilterUpstream, LPCWSTR sourcePinName, IBaseFilter* piFilterDownstream, LPCWSTR destPinName);
+	HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IBaseFilter* piFilterUpstream, IBaseFilter* piFilterDownstream);
+	HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IBaseFilter* piFilterUpstream, IPin* piPinDownstream);
+	HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IPin* piPinUpstream, IBaseFilter* piFilterDownstream);
+	HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IPin* piPinUpstream, IPin* piPinDownstream);
+	HRESULT RenderPin     (IGraphBuilder* piGraphBuilder, IBaseFilter* piSource, LPCWSTR pinName);
 
-HRESULT DisconnectAllPins(IGraphBuilder* piGraphBuilder);
-HRESULT RemoveAllFilters(IGraphBuilder* piGraphBuilder);
+	HRESULT DisconnectAllPins(IGraphBuilder* piGraphBuilder);
+	HRESULT RemoveAllFilters(IGraphBuilder* piGraphBuilder);
 
-HRESULT GetOverlayMixer(IGraphBuilder* piGraphBuilder, IBaseFilter **ppiFilter);
-HRESULT GetOverlayMixerInputPin(IGraphBuilder* piGraphBuilder, LPCWSTR pinName, IPin **ppiPin);
+	HRESULT GetOverlayMixer(IGraphBuilder* piGraphBuilder, IBaseFilter **ppiFilter);
+	HRESULT GetOverlayMixerInputPin(IGraphBuilder* piGraphBuilder, LPCWSTR pinName, IPin **ppiPin);
 
-HRESULT AddToRot(IUnknown *pUnkGraph, DWORD *pdwRegister);
-void RemoveFromRot(DWORD pdwRegister);
+	HRESULT AddToRot(IUnknown *pUnkGraph, DWORD *pdwRegister);
+	void RemoveFromRot(DWORD pdwRegister);
 
-//BDA functions
-HRESULT InitDVBTTuningSpace(CComPtr <ITuningSpace> &piTuningSpace);
-HRESULT CreateDVBTTuneRequest(CComPtr <ITuningSpace> piTuningSpace, CComPtr <ITuneRequest> &pExTuneRequest, long frequency, long bandwidth);
+	//BDA functions
+	HRESULT InitDVBTTuningSpace(CComPtr <ITuningSpace> &piTuningSpace);
+	HRESULT CreateDVBTTuneRequest(CComPtr <ITuningSpace> piTuningSpace, CComPtr <ITuneRequest> &pExTuneRequest, long frequency, long bandwidth);
+};
 
 #endif

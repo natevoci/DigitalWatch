@@ -46,21 +46,19 @@ struct KeyMapEntry
 	LPWSTR Function;
 };
 
-class KeyMap
+class KeyMap : public LogMessageCaller
 {
 public:
 	KeyMap();
 	~KeyMap();
 
-	BOOL GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR &function);
+	BOOL GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
 
 	BOOL LoadKeyMap(LPWSTR filename);
 
 	std::vector<KeyMapEntry> keyMaps;
 private:
 	LPWSTR m_filename;
-
-	LogMessage log;
 };
 
 #endif

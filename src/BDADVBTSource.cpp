@@ -24,7 +24,6 @@
 #include "Globals.h"
 #include "GlobalFunctions.h"
 #include "LogMessage.h"
-#include "FilterGraphTools.h"
 #include "ParseLine.h"
 
 #include "StreamFormats.h"
@@ -37,7 +36,7 @@
 //////////////////////////////////////////////////////////////////////
 
 
-BDADVBTSource::BDADVBTSource()
+BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 {
 	m_pDWGraph = NULL;
 }
@@ -47,13 +46,32 @@ BDADVBTSource::~BDADVBTSource()
 	Destroy();
 }
 
-void BDADVBTSource::GetSourceType(LPWSTR &type)
+void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 {
-	strCopy(type, L"TV");
+	DWSource::SetLogCallback(callback);
+
+	graphTools.SetLogCallback(callback);
+	channels.SetLogCallback(callback);
+	cardList.SetLogCallback(callback);
+
+	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
+	for ( ; it != m_Tuners.end() ; it++ )
+	{
+		BDADVBTSourceTuner *tuner = *it;
+		tuner->SetLogCallback(callback);
+	}
+}
+
+LPWSTR BDADVBTSource::GetSourceType()
+{
+	return m_strSourceType;
 }
 
 HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 {
+	(log << "Initialising BDA Source\n").Write();
+	LogMessageIndent indent(&log);
+
 	m_pDWGraph = pFilterGraph;
 	
 	wchar_t file[MAX_PATH];
@@ -75,6 +93,7 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		if (tmpCard->bActive)
 		{
 			m_pCurrentTuner = new BDADVBTSourceTuner(tmpCard);
+			m_pCurrentTuner->SetLogCallback(m_pLogCallback);
 			if SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph))
 			{
 				m_Tuners.push_back(m_pCurrentTuner);
@@ -89,11 +108,17 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 
 	m_pCurrentTuner = NULL;
 
+	indent.Release();
+	(log << "Finished Initialising BDA Source\n").Write();
+
 	return S_OK;
 }
 
 HRESULT BDADVBTSource::ExecuteCommand(LPWSTR command)
 {
+	(log << "BDADVBTSource::ExecuteCommand - " << command << "\n").Write();
+	LogMessageIndent indent(&log);
+
 	int n1, n2, n3, n4;
 	LPWSTR pBuff = (LPWSTR)command;
 	LPWSTR pCurr;
@@ -101,8 +126,6 @@ HRESULT BDADVBTSource::ExecuteCommand(LPWSTR command)
 	ParseLine parseLine;
 	if (parseLine.Parse(pBuff) == FALSE)
 		return (log << "Parse error in function: " << command << "\n").Show(E_FAIL);
-
-	(log << "BDADVBTSource::ExecuteCommand - " << command << "\n").Write();
 
 	if (parseLine.HasRHS())
 		return (log << "Cannot have RHS for function.\n").Show(E_FAIL);
@@ -134,30 +157,39 @@ HRESULT BDADVBTSource::ExecuteCommand(LPWSTR command)
 
 HRESULT BDADVBTSource::Play()
 {
+	(log << "Playing BDA Source\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 
 	if (!m_pDWGraph)
 		return (log << "Filter graph not set in BDADVBTSource::Play\n").Write(E_FAIL);
 
 	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
-		return (log << "Failed to get graph\n").Write(hr);
+		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
 
 	if (channels.IsValidNetwork(1) && channels.Network(1)->IsValidProgram(1))
 		return SetChannel(1, 1);
+
+	indent.Release();
+	(log << "Finished Playing BDA Source\n").Write();
 
 	return E_FAIL;
 }
 
 HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 {
+	(log << "Setting Channel (" << nNetwork << ", " << nProgram << ")\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 	//Check if recording
 
 	if (!channels.IsValidNetwork(nNetwork))
-		return (log << "BDADVBTSource::SetChannel - Network number is not valid\n").Write(E_INVALIDARG);
+		return (log << "Network number is not valid\n").Write(E_INVALIDARG);
 
 	if (!channels.Network(nNetwork)->IsValidProgram(nProgram))
-		return (log << "BDADVBTSource::SetChannel - Program number is not valid\n").Write(E_INVALIDARG);
+		return (log << "Program number is not valid\n").Write(E_INVALIDARG);
 
 	//Check if already on this network
 	/*if (nNetwork == m_nCurrentNetwork)
@@ -209,42 +241,54 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 		m_Tuners.erase(it);
 		m_Tuners.push_back(m_pCurrentTuner);
 		
+		indent.Release();
+		(log << "Finished Setting Channel\n").Write();
+
 		return S_OK;
 	}
 
-	return (log << "Failed to start the graph\n").Write(hr);
+	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
 
 HRESULT BDADVBTSource::LoadTuner()
 {
+	(log << "Loading Tuner\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 
 	if FAILED(hr = m_pCurrentTuner->AddSourceFilters())
-		return (log << "Failed to add source filters\n").Write(hr);
+		return (log << "Failed to add source filters: " << hr << "\n").Write(hr);
 
 	CComPtr <IPin> piTSPin;
 	if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
-		return (log << "Could not get TSPin\n").Write(hr);
+		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
 
 	//MPEG-2 Demultiplexer (DW's)
-	if FAILED(hr = AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
-		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph\n").Write(hr);
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
 	CComPtr <IPin> piDemuxPin;
-	if FAILED(hr = FindFirstFreePin(m_piBDAMpeg2Demux, &piDemuxPin, PINDIR_INPUT))
-		return (log << "Failed to get input pin on DW Demux\n").Write(hr);
+	if FAILED(hr = graphTools.FindFirstFreePin(m_piBDAMpeg2Demux, &piDemuxPin, PINDIR_INPUT))
+		return (log << "Failed to get input pin on DW Demux: " << hr << "\n").Write(hr);
 
 	if FAILED(hr = m_piGraphBuilder->ConnectDirect(piTSPin, piDemuxPin, NULL))
-		return (log << "Failed to connect TS Pin to DW Demux\n").Write(hr);
+		return (log << "Failed to connect TS Pin to DW Demux: " << hr << "\n").Write(hr);
 
 	piDemuxPin.Release();
 	piTSPin.Release();
+
+	indent.Release();
+	(log << "Finished Loading Tuner\n").Write();
 
 	return S_OK;
 }
 
 HRESULT BDADVBTSource::UnloadTuner()
 {
+	(log << "Unloading Tuner\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 
 	if (m_piBDAMpeg2Demux)
@@ -256,15 +300,21 @@ HRESULT BDADVBTSource::UnloadTuner()
 	if (m_pCurrentTuner)
 	{
 		if FAILED(hr = m_pCurrentTuner->RemoveSourceFilters())
-			return (log << "Failed to remove source filters\n").Write(hr);
+			return (log << "Failed to remove source filters: " << hr << "\n").Write(hr);
 		m_pCurrentTuner = NULL;
 	}
+
+	indent.Release();
+	(log << "Finished Unloading Tuner\n").Write();
 
 	return S_OK;
 }
 
 HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 {
+	(log << "Adding Demux Pins\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 
 	CComQIPtr <IMpeg2Demultiplexer> piMpeg2Demux(m_piBDAMpeg2Demux);
@@ -492,11 +542,18 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 			break;
 		}
 	}
+
+	indent.Release();
+	(log << "Finished Adding Demux Pins\n").Write();
+
 	return S_OK;
 }
 
 HRESULT BDADVBTSource::Destroy()
 {
+	(log << "Destroying BDA Source\n").Write();
+	LogMessageIndent indent(&log);
+
 	HRESULT hr;
 
 	if (m_pDWGraph)
@@ -520,6 +577,9 @@ HRESULT BDADVBTSource::Destroy()
 	}
 
 	m_pDWGraph = NULL;
+
+	indent.Release();
+	(log << "Finished Destroying BDA Source\n").Write();
 
 	return S_OK;
 }

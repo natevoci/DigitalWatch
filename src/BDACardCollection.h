@@ -27,12 +27,15 @@
 #include "BDACard.h"
 #include <vector>
 #include "LogMessage.h"
+#include "FilterGraphTools.h"
 
-class BDACardCollection  
+class BDACardCollection : public LogMessageCaller
 {
 public:
 	BDACardCollection();
 	virtual ~BDACardCollection();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	BOOL LoadCards();
 	BOOL LoadCards(LPWSTR filename);
@@ -44,13 +47,13 @@ public:
 
 private:
 	BOOL LoadCardsFromHardware();
-	BOOL LoadCardsFromFile();
+	BOOL LoadCardsFromFile(LPWSTR filename);
 	void AddCardToList(BDACard* currCard);
 	BOOL FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, DirectShowSystemDevice** ppDemodDevice, DirectShowSystemDevice** ppCaptureDevice);
 
 	LPWSTR m_filename;
 
-	LogMessage log;
+	FilterGraphTools graphTools;
 };
 
 #endif

@@ -1,6 +1,6 @@
 <!-- DigitalWatch - Keys.ini -->
 
-  <Key code='T' shift>			SetSource(TV)</>
+  <Key code='T' shift>			SetSource(BDA)</>
   <Key code='F' shift>			SetSource(FILE)</>
 
   <!-- keyboard numbers -->

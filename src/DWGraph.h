@@ -27,12 +27,15 @@
 #include "LogMessage.h"
 #include "DWMediaTypes.h"
 #include "DWDecoders.h"
+#include "FilterGraphTools.h"
 
-class DWGraph  
+class DWGraph : public LogMessageCaller
 {
 public:
 	DWGraph();
 	virtual ~DWGraph();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	BOOL Initialise();
 	BOOL Destroy();
@@ -63,7 +66,7 @@ private:
 	DWMediaTypes m_mediaTypes;
 	DWDecoders m_decoders;
 
-	LogMessage log;
+	FilterGraphTools graphTools;
 };
 
 #endif

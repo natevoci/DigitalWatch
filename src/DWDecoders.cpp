@@ -22,7 +22,6 @@
 
 #include "DWDecoders.h"
 #include "GlobalFunctions.h"
-#include "FilterGraphTools.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWDecoder
@@ -74,9 +73,9 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				continue;
 
 			CComPtr <IBaseFilter> piNewFilter;
-			hr = AddFilter(piGraphBuilder, clsid, &piNewFilter, attr->value);
+			hr = graphTools.AddFilter(piGraphBuilder, clsid, &piNewFilter, attr->value);
 			if (hr != S_OK)
-				return (log << "Error: Can't Add " << attr->value << "\n").Show(hr);
+				return (log << "Error: Can't Add " << attr->value << " : " << hr << "\n").Show(hr);
 		}
 		else if (_wcsicmp(element->name, L"VideoRenderer") == 0)
 		{
@@ -88,36 +87,36 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 			if (_wcsicmp(pName, L"Overlay Mixer") == 0)
 			{
 				CComPtr <IBaseFilter> piOMFilter;
-				hr = AddFilter(piGraphBuilder, CLSID_OverlayMixer, &piOMFilter, L"Overlay Mixer");
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_OverlayMixer, &piOMFilter, L"Overlay Mixer");
 				if (hr != S_OK)
-					return (log << "Error: Can't Add Overlay Mixer\n").Show(hr);
+					return (log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Show(hr);
 
 				CComPtr <IBaseFilter> piVRFilter;
-				hr = AddFilter(piGraphBuilder, CLSID_VideoRenderer, &piVRFilter, L"Video Renderer");
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoRenderer, &piVRFilter, L"Video Renderer");
 				if (hr != S_OK)
-					return (log << "Error: Can't Add Video Renderer\n").Show(hr);
+					return (log << "Error: Can't Add Video Renderer: " << hr << "\n").Show(hr);
 
-				hr = ConnectFilters(piGraphBuilder, piOMFilter, piVRFilter);
+				hr = graphTools.ConnectFilters(piGraphBuilder, piOMFilter, piVRFilter);
 				if (hr != S_OK)
-					return (log << "Error: Can't connect overlay mixer to video renderer\n").Show(hr);
+					return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
 			}
 			else if (_wcsicmp(pName, L"VMR7") == 0)
 			{
 				CComPtr <IBaseFilter> piVMR7Filter;
-				hr = AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer, &piVMR7Filter, L"VMR7");
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer, &piVMR7Filter, L"VMR7");
 				if (hr != S_OK)
-					return (log << "Error: Can't Add VMR7\n").Show(hr);
+					return (log << "Error: Can't Add VMR7: " << hr << "\n").Show(hr);
 			}
 			else if (_wcsicmp(pName, L"VMR9") == 0)
 			{
 				CComPtr <IBaseFilter> piVMR9Filter;
-				hr = AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, L"VMR9");
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, L"VMR9");
 				if (hr != S_OK)
-					return (log << "Error: Can't Add VMR9\n").Show(hr);
+					return (log << "Error: Can't Add VMR9: " << hr << "\n").Show(hr);
 			}
 			else
 			{
-				return (log << "Unrecognised VideoRenderer: " << pName << "\n").Show(hr);
+				return (log << "Unrecognised VideoRenderer: " << pName << " : " << hr << "\n").Show(hr);
 			}
 		}
 		else if (_wcsicmp(element->name, L"AudioRenderer") == 0)
@@ -128,9 +127,9 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 			LPWSTR pName = attr->value;
 
 			CComPtr <IBaseFilter> piDSFilter;
-			hr = AddFilterByName(piGraphBuilder, &piDSFilter, CLSID_AudioRendererCategory, pName);
+			hr = graphTools.AddFilterByName(piGraphBuilder, &piDSFilter, CLSID_AudioRendererCategory, pName);
 			if (hr != S_OK)
-				return (log << "Error: Can't Add Audio Renderer: " << pName << "\n").Show(hr);
+				return (log << "Error: Can't Add Audio Renderer: " << pName << " : " << hr << "\n").Show(hr);
 		}
 		else if (_wcsicmp(element->name, L"InputFilter") == 0)
 		{
@@ -140,28 +139,28 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 			LPWSTR pFilterName = attr->value;
 
 			CComPtr <IBaseFilter> piTarget;
-			hr = FindFilter(piGraphBuilder, pFilterName, &piTarget);
+			hr = graphTools.FindFilter(piGraphBuilder, pFilterName, &piTarget);
 			if (hr != S_OK)
-				return (log << "Error: Can't Find " << pFilterName << " filter\n").Show(hr);
+				return (log << "Error: Can't Find " << pFilterName << " filter: " << hr << "\n").Show(hr);
 
 			attr = element->Attributes.Item(L"pin");
 			if ((attr == NULL) || (attr->value[0] == '\0'))
 			{
-				hr = ConnectFilters(piGraphBuilder, piSourcePin, piTarget);
+				hr = graphTools.ConnectFilters(piGraphBuilder, piSourcePin, piTarget);
 				if (hr != S_OK)
-					return (log << "Error: Can't Connect Source Pin to input filter " << pFilterName << "\n").Show(hr);
+					return (log << "Error: Can't Connect Source Pin to input filter " << pFilterName << " : " << hr << "\n").Show(hr);
 			}
 			else
 			{
 				LPWSTR pPinName = attr->value;
 				CComPtr <IPin> piTargetPin;
-				hr = FindPin(piTarget, pPinName, &piTargetPin);
+				hr = graphTools.FindPin(piTarget, pPinName, &piTargetPin);
 				if (hr != S_OK)
-					return (log << "Error: Can't Find " << pPinName << " pin on " << pFilterName << " filter\n").Show(hr);
+					return (log << "Error: Can't Find " << pPinName << " pin on " << pFilterName << " filter: " << hr << "\n").Show(hr);
 
-				hr = ConnectFilters(piGraphBuilder, piSourcePin, piTargetPin);
+				hr = graphTools.ConnectFilters(piGraphBuilder, piSourcePin, piTargetPin);
 				if (hr != S_OK)
-					return (log << "Error: Can't Connect Source Pin to input pin " << pPinName << " on " << pFilterName << " filter\n").Show(hr);
+					return (log << "Error: Can't Connect Source Pin to input pin " << pPinName << " on " << pFilterName << " filter: " << hr << "\n").Show(hr);
 			}
 		}
 		else if (_wcsicmp(element->name, L"Connect") == 0)
@@ -201,50 +200,50 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 
 			//Find source filter
 			CComPtr <IBaseFilter> piSource;
-			hr = FindFilter(piGraphBuilder, pSourceFilterName, &piSource);
+			hr = graphTools.FindFilter(piGraphBuilder, pSourceFilterName, &piSource);
 			if (hr != S_OK)
-				return (log << "Error: Can't Find Source Filter: " << pSourceFilterName << "\n").Show(hr);
+				return (log << "Error: Can't Find Source Filter: " << pSourceFilterName << " : " << hr << "\n").Show(hr);
 			
 			//Find target filter
 			CComPtr <IBaseFilter> piTarget;
-			hr = FindFilter(piGraphBuilder, pTargetFilterName, &piTarget);
+			hr = graphTools.FindFilter(piGraphBuilder, pTargetFilterName, &piTarget);
 			if (hr != S_OK)
-				return (log << "Error: Can't Find Target Filter" << pTargetFilterName << "\n").Show(hr);
+				return (log << "Error: Can't Find Target Filter" << pTargetFilterName << " : " << hr << "\n").Show(hr);
 			
 			CComPtr <IPin> piSourcePin;
 			if (pSourceFilterPin)
 			{
-				hr = FindPin(piSource, pSourceFilterPin, &piSourcePin);
+				hr = graphTools.FindPin(piSource, pSourceFilterPin, &piSourcePin);
 				if (hr != S_OK)
-					return (log << "Error: Can't Find find " << pSourceFilterPin << " pin on " << pSourceFilterName << " filter\n").Show(hr);
+					return (log << "Error: Can't Find find " << pSourceFilterPin << " pin on " << pSourceFilterName << " filter: " << hr << "\n").Show(hr);
 			}
 
 			CComPtr <IPin> piTargetPin;
 			if (pTargetFilterPin)
 			{
-				hr = FindPin(piTarget, pTargetFilterPin, &piTargetPin);
+				hr = graphTools.FindPin(piTarget, pTargetFilterPin, &piTargetPin);
 				if (hr != S_OK)
-					return (log << "Error: Can't Find find " << pTargetFilterPin << " pin on " << pTargetFilterName << " filter\n").Show(hr);
+					return (log << "Error: Can't Find find " << pTargetFilterPin << " pin on " << pTargetFilterName << " filter: " << hr << "\n").Show(hr);
 			}
 
 			if (piSourcePin && piTargetPin)
 			{
-				hr = ConnectFilters(piGraphBuilder, piSourcePin, piTargetPin);
+				hr = graphTools.ConnectFilters(piGraphBuilder, piSourcePin, piTargetPin);
 			}
 			else if (piSourcePin)
 			{
-				hr = ConnectFilters(piGraphBuilder, piSourcePin, piTarget);
+				hr = graphTools.ConnectFilters(piGraphBuilder, piSourcePin, piTarget);
 			}
 			else if (piTargetPin)
 			{
-				hr = ConnectFilters(piGraphBuilder, piSource, piTargetPin);
+				hr = graphTools.ConnectFilters(piGraphBuilder, piSource, piTargetPin);
 			}
 			else
 			{
-				hr = ConnectFilters(piGraphBuilder, piSource, piTarget);
+				hr = graphTools.ConnectFilters(piGraphBuilder, piSource, piTarget);
 			}
 			if (hr != S_OK)
-				return (log << "Error: Failed to connect " << pSourceFilterName << " to " << pTargetFilterName << "\n").Show(hr);
+				return (log << "Error: Failed to connect " << pSourceFilterName << " to " << pTargetFilterName << " : " << hr << "\n").Show(hr);
 		}
 	}
 	return S_OK;
@@ -256,7 +255,6 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 
 DWDecoders::DWDecoders() : m_filename(0)
 {
-
 }
 
 DWDecoders::~DWDecoders()
@@ -272,17 +270,31 @@ DWDecoders::~DWDecoders()
 	m_decoders.clear();
 }
 
+void DWDecoders::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
+	for ( ; it != m_decoders.end() ; it++ )
+	{
+		DWDecoder *decoder = *it;
+		decoder->SetLogCallback(callback);
+	}
+}
+
 HRESULT DWDecoders::Load(LPWSTR filename)
 {
+	(log << "Loading Decoders file: " << filename << "\n").Write();
+	LogMessageIndent indent(&log);
+
 	strCopy(m_filename, filename);
 
 	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
 	if (file.Load(m_filename) != S_OK)
 	{
 		return (log << "Could not load decoders file: " << m_filename << "\n").Show(FALSE);
 	}
-
-	(log << "Loading decoders file: " << m_filename << "\n").Write();
 
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
@@ -294,6 +306,7 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 		if (_wcsicmp(element->name, L"Decoder") == 0)
 		{
 			DWDecoder *dec = new DWDecoder();
+			dec->SetLogCallback(m_pLogCallback);
 			dec->m_pElement = element;
 			dec->m_pElement->AddRef();
 			m_decoders.push_back(dec);

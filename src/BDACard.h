@@ -27,12 +27,15 @@
 #include "SystemDeviceEnumerator.h"
 #include "LogMessage.h"
 #include "XMLDocument.h"
+#include "FilterGraphTools.h"
 
-class BDACard
+class BDACard : public LogMessageCaller
 {
 public:
 	BDACard();
 	virtual ~BDACard();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	HRESULT LoadFromXML(XMLElement *pElement);
 	HRESULT SaveToXML(XMLElement *pElement);
@@ -60,7 +63,7 @@ private:
 
 	CComPtr <IPin> m_pCapturePin;
 
-	LogMessage log;
+	FilterGraphTools graphTools;
 };
 
 #endif

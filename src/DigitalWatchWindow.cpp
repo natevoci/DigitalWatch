@@ -30,7 +30,6 @@
 
 DigitalWatchWindow::DigitalWatchWindow()
 {
-	log.AddCallback(&g_DWLogWriter);
 }
 
 DigitalWatchWindow::~DigitalWatchWindow()

@@ -41,6 +41,7 @@ enum DVBTChannels_Program_PID_Types
 	teletext
 };
 
+//Stream
 struct DVBTChannels_Program_Stream
 {
 	long PID;
@@ -48,7 +49,8 @@ struct DVBTChannels_Program_Stream
 	BOOL bActive;
 };
 
-class DVBTChannels_Program
+//Program
+class DVBTChannels_Program : public LogMessageCaller
 {
 	friend DVBTChannels;
 public:
@@ -73,16 +75,17 @@ protected:
 	std::vector<DVBTChannels_Program_Stream> streams;
 	long favoriteID;
 	BOOL bManualUpdate;
-
-	LogMessage log;
 };
 
-class DVBTChannels_Network
+//Network
+class DVBTChannels_Network : public LogMessageCaller
 {
 	friend DVBTChannels;
 public:
 	DVBTChannels_Network();
 	virtual ~DVBTChannels_Network();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	HRESULT LoadFromXML(XMLElement *pElement);
 	HRESULT SaveToXML(XMLElement *pElement);
@@ -96,15 +99,16 @@ public:
 
 private:
 	std::vector<DVBTChannels_Program *> programs;
-
-	LogMessage log;
 };
 
-class DVBTChannels
+//Channels
+class DVBTChannels : public LogMessageCaller
 {
 public:
 	DVBTChannels();
 	virtual ~DVBTChannels();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	BOOL LoadChannels(LPWSTR filename);
 	BOOL SaveChannels(LPWSTR filename = NULL);
@@ -117,8 +121,6 @@ private:
 
 	long m_bandwidth;
 	LPWSTR m_filename;
-
-	LogMessage log;
 };
 
 #endif

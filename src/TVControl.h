@@ -42,13 +42,16 @@
 #define FT_AFTER_START         3
 #define FT_ANY                 4
 
-class TVControl
+class TVControl : public LogMessageCaller
 {
 public:
 	TVControl();
 	~TVControl();
 
-	BOOL Initialise();
+	virtual void SetLogCallback(LogMessageCallback *callback);
+
+	HRESULT Initialise();
+	HRESULT Destroy();
 
 	HRESULT ExecuteCommand(LPCWSTR command);
 
@@ -73,8 +76,6 @@ private:
 	DWGraph *m_pFilterGraph;
 	DWSource *m_pActiveSource;
 	std::vector<DWSource *> m_sources;
-
-	LogMessage log;
 };
 
 /*

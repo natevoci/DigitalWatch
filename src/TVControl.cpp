@@ -25,28 +25,69 @@
 #include <time.h>
 #include "TVControl.h"
 #include "Globals.h"
-//#include "DWSource.h"
+#include "DWSource.h"
 #include "BDADVBTSource.h"
 #include "ParseLine.h"
-
- /*#include "DVBInput.h"
-#include "DVBSourceTSSplitter.h"
-#include "DVBSourceMSDemux.h"
-#include "DVBSourceMSDemuxTimeShift.h"
-#include "DVBSourceBDA.h"
-#include "StateInformation.h"
-*/
 
 TVControl::TVControl()
 {
 	m_pFilterGraph = NULL;
-/*	m_pFilterGraph = new FilterGraphManager(m_pAppData);
-	m_pControlBar = new ControlBar(m_pAppData, m_pFilterGraph);
-	m_pOSD = new OSD(pAppData, m_pFilterGraph, m_pControlBar);
-	m_pDVBInput = 0;*/
-	log.AddCallback(&g_DWLogWriter);
 }
 TVControl::~TVControl(void)
+{
+	Destroy();
+}
+
+void TVControl::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	std::vector<DWSource *>::iterator it = m_sources.begin();
+	for ( ; it != m_sources.end() ; it++ )
+	{
+		DWSource *source = *it;
+		source->SetLogCallback(callback);
+	}
+	globalKeyMap.SetLogCallback(callback);
+	if (m_pFilterGraph)
+		m_pFilterGraph->SetLogCallback(callback);
+
+}
+
+HRESULT TVControl::Initialise()
+{
+	(log << "Initialising TVControl\n").Write();
+	LogMessageIndent indent(&log);
+
+	wchar_t file[MAX_PATH];
+	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"Keys.xml");
+	if (globalKeyMap.LoadKeyMap((LPWSTR)&file) == FALSE)
+		return E_FAIL;
+
+	m_pFilterGraph = new DWGraph();
+	m_pFilterGraph->SetLogCallback(m_pLogCallback);
+	m_pFilterGraph->Initialise();
+	m_pActiveSource = NULL;
+
+	DWSource *source;
+
+	source = new BDADVBTSource();
+	source->SetLogCallback(m_pLogCallback);
+	m_sources.push_back(source);
+	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
+
+//	source = new TSFileSource();
+//	source->SetLogCallback(m_pLogCallback);
+//	m_sources.push_back(source);
+//	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
+
+	indent.Release();
+	(log << "Finished Initialising TVControl\n").Write();
+
+	return S_OK;
+}
+
+HRESULT TVControl::Destroy()
 {
 	std::vector<DWSource *>::iterator it = m_sources.begin();
 	for ( ; it != m_sources.end() ; it++ )
@@ -61,37 +102,11 @@ TVControl::~TVControl(void)
 	{
 		m_pFilterGraph->Destroy();
 		delete m_pFilterGraph;
+		m_pFilterGraph = NULL;
 	}
-
-/*	if (m_pDVBInput)
-	{
-		m_pDVBInput->DestroyAll();
-		delete m_pDVBInput;
-	}
-	m_pFilterGraph->DestroyAll();
-	delete m_pFilterGraph;
-	delete m_pOSD;
-	delete m_pControlBar;*/
+	return S_OK;
 }
 
-BOOL TVControl::Initialise()
-{
-	(log << "Initialising TVControl\n").Write();
-
-	wchar_t file[MAX_PATH];
-	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"Keys.xml");
-	if (globalKeyMap.LoadKeyMap((LPWSTR)&file) == FALSE)
-		return FALSE;
-
-	m_pFilterGraph = new DWGraph();
-	m_pFilterGraph->Initialise();
-	m_pActiveSource = NULL;
-
-	m_sources.push_back(new BDADVBTSource());
-//	m_sources.push_back(new TSFileSource());
-
-	return TRUE;
-}
 /*
 void TVControl::StartTimer()
 {
@@ -99,16 +114,16 @@ void TVControl::StartTimer()
 	SetTimer(m_pAppData->hWnd, 997, 1000, NULL);
 }
 */
+
 HRESULT TVControl::Exit()
 {
-/*	if (m_pFilterGraph->IsRecording())
+/*
+	if (m_pFilterGraph->IsRecording())
 	{
 		return_FALSE_SHOWMSG("Cannot exit while recording");
-	}*/
-//	m_pFilterGraph->Stop();
-//	m_pFilterGraph->Cleanup();
+	}
+*/
 //	KillTimer(m_pAppData->hWnd, 996);
-//	m_pOSD->HideAll();
 	return (DestroyWindow(g_pData->hWnd) ? S_OK : E_FAIL);
 }
 
@@ -145,11 +160,47 @@ BOOL TVControl::Fullscreen(int nFullScreen)
 	return SetWindowPlacement(g_pData->hWnd, &wPlace);
 }
 
+HRESULT TVControl::SetSource(LPWSTR szSourceName)
+{
+	std::vector<DWSource *>::iterator it = m_sources.begin();
+	for ( ; it < m_sources.end() ; it++ )
+	{
+		DWSource *source = *it;
+		LPWSTR pType = source->GetSourceType();
+
+		if (_wcsicmp(szSourceName, pType) == 0)
+		{
+			if (m_pActiveSource)
+			{
+				//TODO: create a m_pActiveSource->DisconnectFromGraph() method
+				m_pActiveSource->Destroy();
+				m_pActiveSource = NULL;
+			}
+
+			if SUCCEEDED(source->Initialise(m_pFilterGraph))
+			{
+				m_pActiveSource = source;
+				return m_pActiveSource->Play();
+			}
+			return E_FAIL;
+		}
+	}
+
+	return S_FALSE;
+}
+
 HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 {
-	wchar_t wcfunction[256];
-	LPWSTR command = (LPWSTR)&wcfunction;
-	if (globalKeyMap.GetFunction(nKeycode, bShift, bCtrl, bAlt, command))
+	(log << "TVControl::Key - "
+		 << (bShift ? L"shift " : L"")
+		 << (bCtrl ? L"ctrl " : L"")
+		 << (bAlt ? L"alt " : L"")
+		 << (char)nKeycode << " (" << nKeycode << ")" << "\n"
+	).Write();
+	LogMessageIndent indent(&log);
+
+	LPWSTR command = NULL;
+	if (globalKeyMap.GetFunction(nKeycode, bShift, bCtrl, bAlt, &command))
 	{
 		HRESULT hr = ExecuteCommand(command);
 		if (hr == S_FALSE)	//S_FALSE if the ExecuteFunction didn't handle the function
@@ -161,6 +212,7 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 		}
 		if (hr == S_FALSE)
 			(log << "Function '" << command << "' called but has no implementation.\n").Write();
+		delete command;
 		return hr;
 	}
 /*
@@ -208,6 +260,9 @@ BOOL TVControl::HideCursor()
 
 HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 {
+	(log << "TVControl::ExecuteCommand - " << command << "\n").Write();
+	LogMessageIndent indent(&log);
+
 	int n1, n2, n3, n4;//, n5, n6;
 	//wchar_t buff[256];
 	LPWSTR pBuff = (LPWSTR)command;
@@ -221,27 +276,25 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 
 	ParseLine parseLine;
 	if (parseLine.Parse(pBuff) == FALSE)
-		return (log << "Parse error in function: " << command << "\n").Show(E_FAIL);
-
-	(log << "TVControl::ExecuteCommand - " << command << "\n").Write();
+		return (log << "TVControl::ExecuteCommand - Parse error in function: " << command << "\n").Show(E_FAIL);
 
 	if (parseLine.HasRHS())
-		return (log << "Cannot have RHS for function.\n").Show(E_FAIL);
+		return (log << "TVControl::ExecuteCommand - Cannot have RHS for function.\n").Show(E_FAIL);
 
 	pCurr = parseLine.LHS.FunctionName;
 
 	if (_wcsicmp(pCurr, L"Exit") == 0)
 	{
 		if (parseLine.LHS.ParameterCount > 0)
-			return (log << "Too many parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteCommand - Too many parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 		return Exit();
 	}
 	else if (_wcsicmp(pCurr, L"Key") == 0)
 	{
 		if (parseLine.LHS.ParameterCount < 1)
-			return (log << "Keycode parameter expected: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteCommand - Keycode parameter expected: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 		if (parseLine.LHS.ParameterCount > 4)
-			return (log << "Too many parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteCommand - Too many parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		if ((parseLine.LHS.Parameter[0][0] == '\'') && (parseLine.LHS.Parameter[0][2] == '\''))
 			n1 = parseLine.LHS.Parameter[0][1];
@@ -265,7 +318,7 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 	if (_wcsicmp(pCurr, L"AlwaysOnTop") == 0)
 	{
 		if (parseLine.LHS.ParameterCount != 1)
-			return (log << "Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(parseLine.LHS.Parameter[0]);
 		return AlwaysOnTop(n1);
@@ -273,7 +326,7 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 	else if (_wcsicmp(pCurr, L"Fullscreen") == 0)
 	{
 		if (parseLine.LHS.ParameterCount != 1)
-			return (log << "Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(parseLine.LHS.Parameter[0]);
 		return Fullscreen(n1);
@@ -281,7 +334,7 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 	else if (_wcsicmp(pCurr, L"SetSource") == 0)
 	{
 		if (parseLine.LHS.ParameterCount != 1)
-			return (log << "Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		return SetSource(parseLine.LHS.Parameter[0]);
 	}
@@ -663,39 +716,6 @@ int TVControl::GetFunctionType(char* strFunction)
 	return nResult;
 }
 */
-HRESULT TVControl::SetSource(LPWSTR szSourceName)
-{
-	LPWSTR pType = NULL;
-
-	std::vector<DWSource *>::iterator it = m_sources.begin();
-	for ( ; it < m_sources.end() ; it++ )
-	{
-		DWSource *source = *it;
-		source->GetSourceType(pType);
-
-		if (_wcsicmp(szSourceName, pType) == 0)
-		{
-			delete pType;
-
-			if (m_pActiveSource)
-			{
-				//TODO: create a m_pActiveSource->DisconnectFromGraph() method
-				m_pActiveSource->Destroy();
-				m_pActiveSource = NULL;
-			}
-
-			if SUCCEEDED(source->Initialise(m_pFilterGraph))
-			{
-				m_pActiveSource = source;
-				return m_pActiveSource->Play();
-			}
-			return E_FAIL;
-		}
-	}
-	delete pType;
-
-	return S_FALSE;
-}
 /*
 BOOL TVControl::SetChannel(int nNetwork, int nProgram)
 {
