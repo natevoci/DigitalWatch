@@ -21,14 +21,26 @@
  */
 
 #include "LogMessage.h"
-#include "Globals.h"
+#include "GlobalFunctions.h"
 
-#if (_MSC_VER == 1200)
-	#include <fstream.h>
-#else
-	#include <fstream>
-	using namespace std;
-#endif
+#include <fstream>
+using namespace std;
+
+LogMessageCallback::LogMessageCallback()
+{
+	static int handle = 1;
+	m_handle = handle++;
+}
+
+LogMessageCallback::~LogMessageCallback()
+{
+}
+
+int LogMessageCallback::GetHandle()
+{
+	return m_handle;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -36,32 +48,55 @@
 
 LogMessage::LogMessage()
 {
-	str[0] = 0;
+	m_str[0] = 0;
 }
 
 LogMessage::~LogMessage()
 {
-	if (str[0] != 0)
+	if (m_str[0] != 0)
 		WriteLogMessage();
+
+	vector<LogMessageCallback *>::iterator it;
+	for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
+	{
+		delete *it;
+		callbacks.erase(it);
+	}
+}
+
+int LogMessage::AddCallback(LogMessageCallback *callback)
+{
+	callbacks.push_back(callback);
+	return callback->GetHandle();
+}
+
+void LogMessage::RemoveCallback(int handle)
+{
+	vector<LogMessageCallback *>::iterator it = callbacks.begin();
+	while ( it != callbacks.end() )
+	{
+		if ((*it)->GetHandle() == handle)
+		{
+			callbacks.erase(it);
+			continue;
+		}
+		it++;
+	}
 }
 
 void LogMessage::WriteLogMessage()
 {
 	USES_CONVERSION;
 
-	if (g_pData->settings.application.logFilename)
+	if (m_str[0] != 0)
 	{
-		ofstream file;
-		file.open(W2A(g_pData->settings.application.logFilename), ios::app);
-
-		if (file.is_open() == 1)
+		vector<LogMessageCallback *>::iterator it;
+		for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
 		{
-			file << str << endl;
-			file.close();
+			(*it)->Write((LPSTR)&m_str);
 		}
+		m_str[0] = 0;
 	}
-	
-	str[0] = 0;
 }
 
 int LogMessage::Write()
@@ -71,7 +106,7 @@ int LogMessage::Write()
 
 int LogMessage::Write(int returnValue)
 {
-	if (str[0] != 0)
+	if (m_str[0] != 0)
 		WriteLogMessage();
 
 	return returnValue;
@@ -86,79 +121,159 @@ int LogMessage::Show(int returnValue)
 {
 	USES_CONVERSION;
 
-	//TODO: check for OSD to display message. if no OSD then show messagebox
-	MessageBox(g_pData->hWnd, A2T(str), "DigitalWatch", MB_OK);
-
-	if (str[0] != 0)
-		WriteLogMessage();
+	if (m_str[0] != 0)
+	{
+		vector<LogMessageCallback *>::iterator it;
+		for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
+		{
+			(*it)->Show((LPSTR)&m_str);
+			(*it)->Write((LPSTR)&m_str);
+		}
+		//WriteLogMessage();
+		m_str[0] = 0;
+	}
 
 	return returnValue;
 }
 
 void LogMessage::ClearFile()
 {
-	USES_CONVERSION;
-
-	if (g_pData->settings.application.logFilename)
+	vector<LogMessageCallback *>::iterator it;
+	for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
 	{
-		ofstream file;
-		file.open(W2A(g_pData->settings.application.logFilename));
-
-		if (file.is_open() == 1)
-		{
-			//file << str << endl;
-			file.close();
-		}
+		(*it)->Clear();
 	}
+}
+
+void LogMessage::LogVersionNumber()
+{
+	USES_CONVERSION;
+	wchar_t filename[MAX_PATH];
+	GetCommandExe((LPWSTR)&filename);
+
+	DWORD zeroHandle, size = 0;
+	while (TRUE)
+	{
+		size = GetFileVersionInfoSize(W2T((LPWSTR)&filename), &zeroHandle);
+		if (size == 0)
+			break;
+
+		LPVOID pBlock = (LPVOID) new char[size];
+		if (!GetFileVersionInfo(W2T((LPWSTR)&filename), zeroHandle, size, pBlock))
+		{
+			delete[] pBlock;
+			break;
+		}
+
+		struct LANGANDCODEPAGE
+		{
+			WORD wLanguage;
+			WORD wCodePage;
+		} *lpTranslate;
+		UINT uLen = 0;
+
+		if (!VerQueryValue(pBlock, TEXT("\\VarFileInfo\\Translation"), (LPVOID*)&lpTranslate, &uLen) || (uLen == 0))
+		{
+			delete[] pBlock;
+			break;
+		}
+
+		LPWSTR SubBlock = new wchar_t[256];
+		swprintf(SubBlock, L"\\StringFileInfo\\%04x%04x\\FileVersion", lpTranslate[0].wLanguage, lpTranslate[0].wCodePage);
+
+		LPSTR lpBuffer;
+		UINT dwBytes = 0;
+		if (!VerQueryValue(pBlock, W2T(SubBlock), (LPVOID*)&lpBuffer, &dwBytes))
+		{
+			delete[] pBlock;
+			delete[] SubBlock;
+			break;
+		}
+		((*this) << "Build - v" << lpBuffer << "\n").Write();
+
+		delete[] SubBlock;
+		delete[] pBlock;
+		break;
+	}
+	if (size == 0)
+		((*this) << "Error reading version number\n").Write();
+}
+
+void LogMessage::writef(char *sz,...)
+{
+    char buf[8192];
+
+    va_list va;
+    va_start(va, sz);
+    vsprintf((char *)&buf, sz, va);
+    va_end(va);
+
+	sprintf((char*)m_str, "%s%s", m_str, buf);
+
+	Write(FALSE);
+}
+
+void LogMessage::showf(char *sz,...)
+{
+    char buf[8192];
+
+    va_list va;
+    va_start(va, sz);
+    vsprintf((char *)&buf, sz, va);
+    va_end(va);
+
+	sprintf((char*)m_str, "%s%s", m_str, buf);
+
+	Show(FALSE);
 }
 
 //Numbers
 LogMessage& LogMessage::operator<< (const int& val)
 {
-	sprintf((char*)str, "%s%i", str, val);
+	sprintf((char*)m_str, "%s%i", m_str, val);
 	return *this;
 }
 LogMessage& LogMessage::operator<< (const double& val)
 {
-	sprintf((char*)str, "%s%f", str, val);
+	sprintf((char*)m_str, "%s%f", m_str, val);
 	return *this;
 }
 LogMessage& LogMessage::operator<< (const __int64& val)
 {
-	sprintf((char*)str, "%s%i", str, val);
+	sprintf((char*)m_str, "%s%i", m_str, val);
 	return *this;
 }
 
 //Characters
 LogMessage& LogMessage::operator<< (const char& val)
 {
-	sprintf((char*)str, "%s%c", str, val);
+	sprintf((char*)m_str, "%s%c", m_str, val);
 	return *this;
 }
 LogMessage& LogMessage::operator<< (const wchar_t& val)
 {
-	sprintf((char*)str, "%s%C", str, val);
+	sprintf((char*)m_str, "%s%C", m_str, val);
 	return *this;
 }
 
 //Strings
 LogMessage& LogMessage::operator<< (const LPSTR& val)
 {
-	sprintf((char*)str, "%s%s", str, val);
+	sprintf((char*)m_str, "%s%s", m_str, val);
 	return *this;
 }
 LogMessage& LogMessage::operator<< (const LPWSTR& val)
 {
-	sprintf((char*)str, "%s%S", str, val);
+	sprintf((char*)m_str, "%s%S", m_str, val);
 	return *this;
 }
 LogMessage& LogMessage::operator<< (const LPCSTR& val)
 {
-	sprintf((char*)str, "%s%s", str, val);
+	sprintf((char*)m_str, "%s%s", m_str, val);
 	return *this;
 }
 LogMessage& LogMessage::operator<< (const LPCWSTR& val)
 {
-	sprintf((char*)str, "%s%S", str, val);
+	sprintf((char*)m_str, "%s%S", m_str, val);
 	return *this;
 }

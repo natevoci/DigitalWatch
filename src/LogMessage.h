@@ -26,13 +26,31 @@
 #define LOGMESSAGE_H
 
 #include "StdAfx.h"
+#include <vector>
+
+using namespace std;
+
+class LogMessageCallback
+{
+public:
+	LogMessageCallback();
+	virtual ~LogMessageCallback();
+	int GetHandle();
+	virtual void Write(LPSTR pStr) {};
+	virtual void Show(LPSTR pStr) {};
+	virtual void Clear() {};
+private:
+	int m_handle;
+};
 
 class LogMessage
 {
 public:
-
 	LogMessage();
 	virtual ~LogMessage();
+
+	int AddCallback(LogMessageCallback *callback);
+	void RemoveCallback(int handle);
 
 	int Show();
 	int Show(int returnValue);
@@ -41,6 +59,11 @@ public:
 	int Write(int returnValue);
 
 	void ClearFile();
+
+	void LogVersionNumber();
+
+	void writef(char *sz,...);
+	void showf(char *sz,...);
 
 	LogMessage& operator<< (const int& val);
 	LogMessage& operator<< (const double& val);
@@ -54,64 +77,17 @@ public:
 
 	LogMessage& operator<< (const LPCSTR& val);
 	LogMessage& operator<< (const LPCWSTR& val);
-	
+
 private:
 	void WriteLogMessage();
 
-	char str[8192];
+	char m_str[8192];
+
+	int callbackHandleID;
+	vector<LogMessageCallback *> callbacks;
 };
+
 
 extern LogMessage g_log;
 
-
-/*#define LOGMSG(a)		\
-{						\
-	LogMessage em;		\
-	em << ##a;			\
-}
-#define SHOWMSG(a)		\
-{						\
-	LogMessage em;		\
-	em << ##a;			\
-	em.ShowMessage();	\
-}
-#define return_FALSE_LOGMSG(a)	\
-{								\
-	{							\
-		LogMessage em;			\
-		em << ##a;				\
-	}							\
-	return FALSE;				\
-}
-#define return_FALSE_SHOWMSG(a)	\
-{								\
-	{							\
-		LogMessage em;			\
-		em << ##a;				\
-		em.ShowMessage();		\
-	}							\
-	return FALSE;				\
-}
-#define LOGERR(a)											\
-{															\
-	LogMessage em;											\
-	char *file = strrchr(__FILE__, '\\');					\
-	if (file)												\
-		em << file+1 << "(" << __LINE__ << ") : " << ##a;	\
-	else													\
-		em << ##a;											\
-}
-#define return_FALSE_LOGERR(a)									\
-{																\
-	{															\
-		LogMessage em;											\
-		char *file = strrchr(__FILE__, '\\');					\
-		if (file)												\
-			em << file+1 << "(" << __LINE__ << ") : " << ##a;	\
-		else													\
-			em << ##a;											\
-	}															\
-	return FALSE;												\
-}
-*/
 #endif
