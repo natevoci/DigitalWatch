@@ -23,7 +23,7 @@ BDADVBTSourceTunerFilter::BDADVBTSourceTunerFilter(TCHAR *tszName, LPUNKNOWN pun
     m_pOutput = new BDADVBTSourceTunerOutputPin(NAME("CNetOutputPin"), this, & m_crtFilterLock, phr, L"MPEG-2 Transport");
     if (m_pOutput == NULL || FAILED (* phr))
 	{
-        (* phr) = (FAILED (* phr) ? * phr : E_OUTOFMEMORY) ;
+        (* phr) = ( FAILED(*phr) ? * phr : E_OUTOFMEMORY) ;
         return;
     }
 
@@ -31,7 +31,7 @@ BDADVBTSourceTunerFilter::BDADVBTSourceTunerFilter(TCHAR *tszName, LPUNKNOWN pun
     m_pBufferPool = new CBufferPool (POOL_SIZE, MAX_IOBUFFER_LENGTH, phr) ;
     if (m_pBufferPool == NULL || FAILED (*phr))
 	{
-        (* phr) = (FAILED (* phr) ? * phr : E_OUTOFMEMORY) ;
+        (* phr) = ( FAILED(*phr) ? * phr : E_OUTOFMEMORY) ;
         return;
     }
 
@@ -39,7 +39,7 @@ BDADVBTSourceTunerFilter::BDADVBTSourceTunerFilter(TCHAR *tszName, LPUNKNOWN pun
     m_pMSPool = new CTSMediaSamplePool (MEDIA_SAMPLE_POOL_SIZE, this, phr) ;
     if (m_pMSPool == NULL || FAILED (*phr))
 	{
-        (* phr) = (FAILED (* phr) ? * phr : E_OUTOFMEMORY) ;
+        (* phr) = ( FAILED(*phr) ? * phr : E_OUTOFMEMORY) ;
         return;
     }
 
@@ -90,7 +90,7 @@ STDMETHODIMP BDADVBTSourceTunerFilter::Pause()
         //hr = m_pNetReceiver -> Activate (m_ulIP, m_usPort, m_ulNIC) ;
 		hr = m_pTuner->m_pfDWTSRedirect->StartCapturing(this);
 
-        if (SUCCEEDED (hr))
+        if SUCCEEDED(hr)
 		{
             m_State = State_Paused;
 

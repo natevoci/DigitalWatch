@@ -29,6 +29,7 @@
 #include "FileReader.h"
 #include "FileWriter.h"
 #include "LogMessage.h"
+#include "ReferenceCountingClass.h"
 
 //////////////////////////////////////////////////////////////////////
 // Attributes
@@ -51,7 +52,7 @@ private:
 	std::vector<XMLAttribute *> m_attributes;
 };
 
-class XMLAttribute
+class XMLAttribute : public ReferenceCountingClass
 {
 public:
 	XMLAttribute();
@@ -60,6 +61,7 @@ public:
 
 	LPWSTR name;
 	LPWSTR value;
+
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -83,7 +85,7 @@ private:
 	std::vector<XMLElement *> m_elements;
 };
 
-class XMLElement
+class XMLElement : public ReferenceCountingClass
 {
 public:
 	XMLElement();

@@ -3,24 +3,28 @@
 	<MajorType  clsid="{73646976-0000-0010-8000-00AA00389B71}" /> <!--KSDATAFORMAT_TYPE_VIDEO-->
 	<SubType    clsid="{E06D8026-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--MEDIASUBTYPE_MPEG2_VIDEO-->
 	<FormatType clsid="{E06D80E3-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--FORMAT_MPEG2Video-->
+	<Decoder name="GPL MPEG-1/2 Decoder - VMR9" />
 </MediaType>
 
 <MediaType name="MPEG Audio">
 	<MajorType  clsid="{73647561-0000-0010-8000-00AA00389B71}" /> <!--MEDIATYPE_Audio-->
 	<SubType    clsid="{00000050-0000-0010-8000-00AA00389B71}" /> <!--MEDIASUBTYPE_MPEG1AudioPayload-->
 	<FormatType clsid="{05589F81-C356-11CE-BF01-00AA0055595A}" /> <!--FORMAT_WaveFormatEx-->
+	<Decoder name="DNTV Live! Audio" />
 </MediaType>
 
 <MediaType name="MPEG2 Audio">
 	<MajorType  clsid="{73647561-0000-0010-8000-00AA00389B71}" /> <!--KSDATAFORMAT_TYPE_AUDIO-->
 	<SubType    clsid="{E06D802B-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--MEDIASUBTYPE_MPEG2_AUDIO-->
 	<FormatType clsid="{05589F81-C356-11CE-BF01-00AA0055595A}" /> <!--FORMAT_WaveFormatEx-->
+	<Decoder name="DNTV Live! Audio" />
 </MediaType>
 
 <MediaType name="AC3 Audio">
 	<MajorType  clsid="{73647561-0000-0010-8000-00AA00389B71}" /> <!--MEDIATYPE_Audio-->
 	<SubType    clsid="{E06D802C-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--MEDIATYPE_DOLBY_AC3-->
 	<FormatType clsid="{05589F81-C356-11CE-BF01-00AA0055595A}" /> <!--FORMAT_WaveFormatEx-->
+	<Decoder name="DNTV Live! Audio" />
 </MediaType>
 
 <MediaType name="Teletext">

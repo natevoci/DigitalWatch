@@ -55,7 +55,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	log.LogVersionNumber();
 
 	//--- Initialize COM ---
-	if (FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED)))
+	if FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED))
 	{
 		(log << "Failed to initialize COM\n").Write();
 		return -1;

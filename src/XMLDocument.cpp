@@ -20,7 +20,6 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #include "XMLDocument.h"
 #include "GlobalFunctions.h"
 
@@ -58,6 +57,12 @@ XMLAttributeList::XMLAttributeList()
 
 XMLAttributeList::~XMLAttributeList()
 {
+	std::vector<XMLAttribute *>::iterator it = m_attributes.begin();
+	for ( ; it < m_attributes.end() ; it++ )
+	{
+		XMLAttribute *item = *it;
+		item->Release();
+	}
 	m_attributes.clear();
 }
 
@@ -126,6 +131,12 @@ XMLElementList::XMLElementList()
 
 XMLElementList::~XMLElementList()
 {
+	std::vector<XMLElement *>::iterator it = m_elements.begin();
+	for ( ; it < m_elements.end() ; it++ )
+	{
+		XMLElement *item = *it;
+		item->Release();
+	}
 	m_elements.clear();
 }
 
@@ -186,7 +197,7 @@ HRESULT XMLDocument::Load(LPWSTR filename)
 	strCopy(m_filename, filename);
 
 	HRESULT hr;
-	if (FAILED(hr = m_reader.Open(m_filename)))
+	if FAILED(hr = m_reader.Open(m_filename))
 	{
 		return (log << "Could not open file: " << m_filename << "\n").Write(hr);
 	}
@@ -284,8 +295,7 @@ HRESULT XMLDocument::Parse()
 			break;
 
 		case tokenEndOfLine:
-			hr = ReadLine();
-			if (FAILED(hr))
+			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
 			{
@@ -341,8 +351,7 @@ HRESULT XMLDocument::ParseElement(XMLElement *pElement)
 
 		case tokenEndOfLine:
 			//TODO: copy existing line data to element name
-			hr = ReadLine();
-			if (FAILED(hr))
+			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
 				return hr;
@@ -371,8 +380,7 @@ HRESULT XMLDocument::ParseElement(XMLElement *pElement)
 			break;
 
 		case tokenEndOfLine:
-			hr = ReadLine();
-			if (FAILED(hr))
+			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
 				break;
@@ -396,8 +404,7 @@ HRESULT XMLDocument::ParseElement(XMLElement *pElement)
 			{
 				XMLAttribute *pAttribute = new XMLAttribute();
 				m_pCurr = pToken;
-				hr = ParseAttribute(pAttribute);
-				if (FAILED(hr))
+				if FAILED(hr = ParseAttribute(pAttribute))
 					return hr;
 				if (hr == S_OK)
 				{
@@ -442,8 +449,7 @@ HRESULT XMLDocument::ParseAttribute(XMLAttribute *pAttribute)
 
 		case tokenEndOfLine:
 			//TODO: copy existing line data to attribute name
-			hr = ReadLine();
-			if (FAILED(hr))
+			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
 				return hr;
@@ -472,8 +478,7 @@ HRESULT XMLDocument::ParseAttribute(XMLAttribute *pAttribute)
 			break;
 
 		case tokenEndOfLine:
-			hr = ReadLine();
-			if (FAILED(hr))
+			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
 				break;
@@ -538,9 +543,7 @@ HRESULT XMLDocument::ParseAttributeValue(XMLAttribute *pAttribute)
 			break;
 
 		case tokenEndOfLine:
-			//TODO: copy existing line data to attribute name
-			hr = ReadLine();
-			if (FAILED(hr))
+			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
 				return hr;
@@ -616,8 +619,7 @@ HRESULT XMLDocument::ParseElementData(XMLElement *pElement)
 			break;
 
 		case tokenEndOfLine:
-			hr = ReadLine();
-			if (FAILED(hr))
+			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
 				break;
@@ -667,8 +669,7 @@ HRESULT XMLDocument::ParseElementEnd()
 			break;
 
 		case tokenEndOfLine:
-			hr = ReadLine();
-			if (FAILED(hr))
+			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
 				break;
@@ -766,13 +767,13 @@ HRESULT XMLDocument::Save(LPWSTR filename)
 
 	if (filename)
 	{
-		if (FAILED(hr = m_writer.Open(filename)))
+		if FAILED(hr = m_writer.Open(filename))
 			return (log << "Could not open file: " << filename << "\n").Write(hr);
 		(log << "Saving XML file: " << filename << "\n").Write();
 	}
 	else
 	{
-		if (FAILED(hr = m_writer.Open(m_filename)))
+		if FAILED(hr = m_writer.Open(m_filename))
 			return (log << "Could not open file: " << m_filename << "\n").Write(hr);
 		(log << "Saving XML file: " << m_filename << "\n").Write();
 	}

@@ -56,22 +56,20 @@ HRESULT DirectShowSystemDevice::CreateInstance(CComPtr <IBaseFilter> &pFilter)
 	CComPtr <IMoniker> pMoniker;
 	DWORD dwEaten;
 
-	if (FAILED(hr = CreateBindCtx(0, &pBindCtx.p)))
+	if FAILED(hr = CreateBindCtx(0, &pBindCtx))
 	{
 		(log << "AddFilterByDevicePath: Could not create bind context\n").Write();
 		return hr;
 	}
 
-	if (FAILED(hr = MkParseDisplayName(pBindCtx, strDevicePath, &dwEaten, &pMoniker)) || (pMoniker.p == NULL))
+	if (FAILED(hr = MkParseDisplayName(pBindCtx, strDevicePath, &dwEaten, &pMoniker)) || (pMoniker == NULL))
 	{
 		(log << "AddFilterByDevicePath: Could not create moniker from device path " << strDevicePath << "  (" << strFriendlyName << ")\n").Write();
 		pBindCtx.Release();
 		return hr;
 	}
 
-	hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void**)&pFilter);
-	pMoniker.Release();
-	if (FAILED(hr))
+	if FAILED(hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, reinterpret_cast<void**>(&pFilter)))
 	{
 		(log << "Could Not Create Filter: " << strFriendlyName << "\n").Write();
 		return hr;
@@ -82,13 +80,13 @@ HRESULT DirectShowSystemDevice::CreateInstance(CComPtr <IBaseFilter> &pFilter)
 
 DirectShowSystemDeviceEnumerator::DirectShowSystemDeviceEnumerator(REFCLSID deviceClass)
 {
-	if (FAILED(m_pSysDevEnum.CoCreateInstance(CLSID_SystemDeviceEnum)))
+	if FAILED(m_pSysDevEnum.CoCreateInstance(CLSID_SystemDeviceEnum))
 	{
 		(log << "Could not create system device enumerator\n").Write();
 	}
 	else
 	{
-		if (FAILED(m_pSysDevEnum->CreateClassEnumerator(deviceClass, &m_pEnum, 0)))
+		if FAILED(m_pSysDevEnum->CreateClassEnumerator(deviceClass, &m_pEnum, 0))
 		{
 			(log << "Could not create device class enumerator\n").Write();
 			m_pSysDevEnum.Release();
@@ -119,19 +117,15 @@ HRESULT DirectShowSystemDeviceEnumerator::Next(DirectShowSystemDevice** ppDevice
 		return E_FAIL;
 
 	CComPtr <IBindCtx> pBindCtx;
-	if (FAILED(hr = CreateBindCtx(0, &pBindCtx)))
+	if FAILED(hr = CreateBindCtx(0, &pBindCtx))
 	{
-		pMoniker.Release();
 		(log << "Could not create bind context\n").Write();
 		return hr;
 	}
 
 	CComPtr <IPropertyBag> pPropBag;
-	hr = pMoniker->BindToStorage(pBindCtx, 0, IID_IPropertyBag, (void**)&pPropBag);
-	if (FAILED(hr))
+	if FAILED(hr = pMoniker->BindToStorage(pBindCtx, 0, IID_IPropertyBag, reinterpret_cast<void**>(&pPropBag)))
 	{
-		pMoniker.Release();
-		pBindCtx.Release();
 		(log << "Could not get property bag\n").Write();
 		return hr;
 	}
@@ -141,7 +135,7 @@ HRESULT DirectShowSystemDeviceEnumerator::Next(DirectShowSystemDevice** ppDevice
 
 	VARIANT varName;
 	VariantInit(&varName);
-	if (SUCCEEDED(hr = pPropBag->Read(L"FriendlyName", &varName, 0)))
+	if SUCCEEDED(hr = pPropBag->Read(L"FriendlyName", &varName, 0))
 	{
 		if (varName.vt == VT_BSTR)
 		{
@@ -162,22 +156,18 @@ HRESULT DirectShowSystemDeviceEnumerator::Next(DirectShowSystemDevice** ppDevice
 	pPropBag.Release();
 
 	LPWSTR pDisplayName;
-	hr = pMoniker->GetDisplayName(pBindCtx, NULL, &pDisplayName);
-	strCopy((*ppDevice)->strDevicePath, pDisplayName);
-
-	IMalloc* memAlloc = NULL;
-	CoGetMalloc(1, &memAlloc);
-	memAlloc->Free(pDisplayName);
-
-	pBindCtx.Release();
-	pMoniker.Release();
-	if (FAILED(hr))
+	if FAILED(hr = pMoniker->GetDisplayName(pBindCtx, NULL, &pDisplayName))
 	{
 		delete *ppDevice;
 		*ppDevice = NULL;
 		(log << "Could not get device path\n").Write();
 		return hr;
 	}
+	strCopy((*ppDevice)->strDevicePath, pDisplayName);
+
+	IMalloc* memAlloc = NULL;
+	CoGetMalloc(1, &memAlloc);
+	memAlloc->Free(pDisplayName);
 
 	(*ppDevice)->bValid = TRUE;
 

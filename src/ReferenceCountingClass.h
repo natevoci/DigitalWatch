@@ -1,6 +1,6 @@
 /**
- *	DWGraph.h
- *	Copyright (C) 2004 Nate
+ *	ReferenceCountingClass.h
+ *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,50 +20,22 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWGRAPH_H
-#define DWGRAPH_H
+#ifndef REFERENCECOUNTINGCLASS_H
+#define REFERENCECOUNTINGCLASS_H
 
 #include "StdAfx.h"
-#include "LogMessage.h"
-#include "DWMediaTypes.h"
-#include "DWDecoders.h"
 
-class DWGraph  
+class ReferenceCountingClass
 {
 public:
-	DWGraph();
-	virtual ~DWGraph();
+	ReferenceCountingClass();
+	virtual ~ReferenceCountingClass();
 
-	BOOL Initialise();
-	BOOL Destroy();
-
-	HRESULT QueryGraphBuilder(IGraphBuilder** piGraphBuilder);
-	HRESULT QueryMediaControl(IMediaControl** piMediaControl);
-	
-	HRESULT Start();
-	HRESULT Stop();
-
-	HRESULT Cleanup();
-
-	HRESULT RenderPin(IPin *piPin);
-
-	HRESULT RefreshVideoPosition();
-
-protected:
-	void GetVideoRect(RECT *rect);
+    virtual ULONG AddRef();
+    virtual ULONG Release();
 
 private:
-	CComPtr <IGraphBuilder> m_piGraphBuilder;
-	CComPtr <IMediaControl> m_piMediaControl;
-
-	BOOL m_bInitialised;
-
-	DWORD m_rotEntry;
-
-	DWMediaTypes m_mediaTypes;
-	DWDecoders m_decoders;
-
-	LogMessage log;
+	unsigned long m_refcount;
 };
 
 #endif

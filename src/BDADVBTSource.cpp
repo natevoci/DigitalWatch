@@ -75,7 +75,7 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		if (tmpCard->bActive)
 		{
 			m_pCurrentTuner = new BDADVBTSourceTuner(tmpCard);
-			if (SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph)))
+			if SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph))
 			{
 				m_Tuners.push_back(m_pCurrentTuner);
 				continue;
@@ -139,11 +139,8 @@ HRESULT BDADVBTSource::Play()
 	if (!m_pDWGraph)
 		return (log << "Filter graph not set in BDADVBTSource::Play\n").Write(E_FAIL);
 
-	if (FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder.p)))
+	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
 		return (log << "Failed to get graph\n").Write(hr);
-
-//	if (FAILED(hr = m_pDWGraph->QueryMediaControl(&m_piMediaControl.p)))
-//		return (log << "Failed to get media control\n").Write(hr);
 
 	if (channels.IsValidNetwork(1) && channels.Network(1)->IsValidProgram(1))
 		return SetChannel(1, 1);
@@ -168,7 +165,7 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 		if ((nProgram == channels.Network(nNetwork)
 	}*/
 
-	if (FAILED(hr = m_pDWGraph->Stop()))
+	if FAILED(hr = m_pDWGraph->Stop())
 		(log << "Failed to stop DWGraph\n").Write();
 
 	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
@@ -176,7 +173,7 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 	{
 		hr = UnloadTuner();
 
-		if (FAILED(hr = m_pDWGraph->Cleanup()))
+		if FAILED(hr = m_pDWGraph->Cleanup())
 			(log << "Failed to cleanup DWGraph\n").Write();
 
 		if (it == m_Tuners.end())
@@ -184,25 +181,25 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 
 		m_pCurrentTuner = *it;
 
-		if (FAILED(hr = LoadTuner()))
+		if FAILED(hr = LoadTuner())
 		{
 			(log << "Failed to load Source Tuner\n").Write();
 			continue;
 		}
 
-		if (FAILED(hr = m_pCurrentTuner->LockChannel(channels.Network(nNetwork)->frequency, channels.Network(nNetwork)->bandwidth)))
+		if FAILED(hr = m_pCurrentTuner->LockChannel(channels.Network(nNetwork)->frequency, channels.Network(nNetwork)->bandwidth))
 		{
 			(log << "Failed to Lock Channel\n").Write();
 			continue;
 		}
 
-		if (FAILED(hr = AddDemuxPins(channels.Network(nNetwork)->Program(nProgram))))
+		if FAILED(hr = AddDemuxPins(channels.Network(nNetwork)->Program(nProgram)))
 		{
 			(log << "Failed to Add Demux Pins\n").Write();
 			continue;
 		}
 
-		if (FAILED(hr = m_pDWGraph->Start()))
+		if FAILED(hr = m_pDWGraph->Start())
 		{
 			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
 			continue;
@@ -222,22 +219,22 @@ HRESULT BDADVBTSource::LoadTuner()
 {
 	HRESULT hr;
 
-	if (FAILED(hr = m_pCurrentTuner->AddSourceFilters()))
+	if FAILED(hr = m_pCurrentTuner->AddSourceFilters())
 		return (log << "Failed to add source filters\n").Write(hr);
 
 	CComPtr <IPin> piTSPin;
-	if (FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin.p)))
+	if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
 		return (log << "Could not get TSPin\n").Write(hr);
 
 	//MPEG-2 Demultiplexer (DW's)
-	if (FAILED(hr = AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, m_piBDAMpeg2Demux.p, L"DW MPEG-2 Demultiplexer")))
+	if FAILED(hr = AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph\n").Write(hr);
 
 	CComPtr <IPin> piDemuxPin;
-	if (FAILED(hr = FindFirstFreePin(m_piBDAMpeg2Demux, &piDemuxPin.p, PINDIR_INPUT)))
+	if FAILED(hr = FindFirstFreePin(m_piBDAMpeg2Demux, &piDemuxPin, PINDIR_INPUT))
 		return (log << "Failed to get input pin on DW Demux\n").Write(hr);
 
-	if (FAILED(hr = m_piGraphBuilder->ConnectDirect(piTSPin, piDemuxPin, NULL)))
+	if FAILED(hr = m_piGraphBuilder->ConnectDirect(piTSPin, piDemuxPin, NULL))
 		return (log << "Failed to connect TS Pin to DW Demux\n").Write(hr);
 
 	piDemuxPin.Release();
@@ -253,17 +250,12 @@ HRESULT BDADVBTSource::UnloadTuner()
 	if (m_piBDAMpeg2Demux)
 	{
 		m_piGraphBuilder->RemoveFilter(m_piBDAMpeg2Demux);
-
-		//For some weird reason releasing the demux causes an exception
-		//m_piBDAMpeg2Demux.Release();
-
-		//Set the pointer to NULL to stop it getting released.
-		m_piBDAMpeg2Demux.p = NULL;
+		m_piBDAMpeg2Demux.Release();
 	}
 
 	if (m_pCurrentTuner)
 	{
-		if (FAILED(hr = m_pCurrentTuner->RemoveSourceFilters()))
+		if FAILED(hr = m_pCurrentTuner->RemoveSourceFilters())
 			return (log << "Failed to remove source filters\n").Write(hr);
 		m_pCurrentTuner = NULL;
 	}
@@ -335,9 +327,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 				if (hr != S_OK) return FALSE;
 
 				// Map the PID.
-				hr = piPin.QueryInterface(&piPidMap);
-				//hr = pPinVideo->QueryInterface(IID_IMPEG2PIDMap, (void**)&pPidMap);
-				if (SUCCEEDED(hr))
+				if SUCCEEDED(hr = piPin.QueryInterface(&piPidMap))
 				{
 					hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM);
 					piPidMap.Release();
@@ -345,7 +335,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 
 				if (vidCount == 1)
 				{
-					if (FAILED(hr = m_pDWGraph->RenderPin(piPin)))
+					if FAILED(hr = m_pDWGraph->RenderPin(piPin))
 						(log << "Failed to render video stream\n").Write();
 				}
 
@@ -384,9 +374,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 				if (hr != S_OK) return FALSE;
 
 				// Map the PID.
-				hr = piPin.QueryInterface(&piPidMap);
-				//hr = pPinAudio->QueryInterface(IID_IMPEG2PIDMap, (void**)&pPidMap);
-				if (SUCCEEDED(hr))
+				if SUCCEEDED(hr = piPin.QueryInterface(&piPidMap))
 				{
 					hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM);
 					piPidMap.Release();
@@ -394,13 +382,13 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 
 				if (!bAudioRendered)
 				{
-					if (SUCCEEDED(hr = m_pDWGraph->RenderPin(piPin)))
+					if SUCCEEDED(hr = m_pDWGraph->RenderPin(piPin))
 					{
 						bAudioRendered = TRUE;
 					}
 					else
 					{
-						(log << "Failed to render video stream\n").Write();
+						(log << "Failed to render audio stream\n").Write();
 					}
 				}
 
@@ -438,9 +426,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 				if (hr != S_OK) return FALSE;
 
 				// Map the PID.
-				hr = piPin.QueryInterface(&piPidMap);
-				//hr = pPinAudio->QueryInterface(IID_IMPEG2PIDMap, (void**)&pPidMap);
-				if (SUCCEEDED(hr))
+				if SUCCEEDED(hr = piPin.QueryInterface(&piPidMap))
 				{
 					hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM);
 					piPidMap.Release();
@@ -448,13 +434,13 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 
 				if (!bAudioRendered)
 				{
-					if (SUCCEEDED(hr = m_pDWGraph->RenderPin(piPin)))
+					if SUCCEEDED(hr = m_pDWGraph->RenderPin(piPin))
 					{
 						bAudioRendered = TRUE;
 					}
 					else
 					{
-						(log << "Failed to render video stream\n").Write();
+						(log << "Failed to render AC3 stream\n").Write();
 					}
 				}
 
@@ -485,9 +471,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 				if (hr != S_OK) return FALSE;
 
 				// Map the PID.
-				hr = piPin.QueryInterface(&piPidMap);
-				//hr = pPinAudio->QueryInterface(IID_IMPEG2PIDMap, (void**)&pPidMap);
-				if (SUCCEEDED(hr))
+				if SUCCEEDED(hr = piPin.QueryInterface(&piPidMap))
 				{
 					hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM);
 					piPidMap.Release();
@@ -495,8 +479,8 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 
 				if (txtCount == 1)
 				{
-					if (FAILED(hr = m_pDWGraph->RenderPin(piPin)))
-						(log << "Failed to render video stream\n").Write();
+					if FAILED(hr = m_pDWGraph->RenderPin(piPin))
+						(log << "Failed to render teletext stream\n").Write();
 				}
 
 				piPin.Release();
@@ -517,13 +501,13 @@ HRESULT BDADVBTSource::Destroy()
 
 	if (m_pDWGraph)
 	{
-		if (FAILED(hr = m_pDWGraph->Stop()))
+		if FAILED(hr = m_pDWGraph->Stop())
 			(log << "Failed to stop DWGraph\n").Write();
 
-		if (FAILED(hr = UnloadTuner()))
+		if FAILED(hr = UnloadTuner())
 			(log << "Failed to unload tuner\n").Write();
 
-		if (FAILED(hr = m_pDWGraph->Cleanup()))
+		if FAILED(hr = m_pDWGraph->Cleanup())
 			(log << "Failed to cleanup DWGraph\n").Write();
 
 		std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();

@@ -82,14 +82,14 @@ HRESULT BDADVBTSourceTuner::Initialise(DWGraph *pDWGraph)
 
 	//--- COM should already be initialized ---
 
-	if (FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder.p)))
+	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
 		return (log << "Failed to get graph\n").Write(hr);
 
-	if (FAILED(hr = m_pDWGraph->QueryMediaControl(&m_piMediaControl.p)))
+	if FAILED(hr = m_pDWGraph->QueryMediaControl(&m_piMediaControl))
 		return (log << "Failed to get media control\n").Write(hr);
 
 	//--- Initialise Tune Request ---
-	if (FAILED(hr = InitDVBTTuningSpace(m_piTuningSpace)))
+	if FAILED(hr = InitDVBTTuningSpace(m_piTuningSpace))
 		return (log << "Failed to initialise the Tune Request\n").Write(hr);
 
 	m_bInitialised = TRUE;
@@ -116,12 +116,12 @@ HRESULT BDADVBTSourceTuner::DestroyAll()
 		return (log << "Unknown Error enumerating graph: " << hr << "\n").Write(hr);
 	}
 
-    if (FAILED(hr = pFilterEnum->Reset()))
+    if FAILED(hr = pFilterEnum->Reset())
 		return (log << "Failed to reset graph enumerator\n").Write(hr);
 
 	while (pFilterEnum->Next(1, &pFilter, 0) == S_OK) // addrefs filter
 	{
-		if (FAILED(hr = m_piGraphBuilder->RemoveFilter(pFilter)))
+		if FAILED(hr = m_piGraphBuilder->RemoveFilter(pFilter))
 		{
 			FILTER_INFO info;
 			pFilter->QueryFilterInfo(&info);
@@ -150,23 +150,22 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 	//--- Get NetworkType CLSID ---
 	CComBSTR bstrNetworkType;
 	CLSID CLSIDNetworkType;
-	if (FAILED(hr = m_piTuningSpace->get_NetworkType(&bstrNetworkType)))
+	if FAILED(hr = m_piTuningSpace->get_NetworkType(&bstrNetworkType))
 		return (log << "Failed to get TuningSpace Network Type\n").Write(hr);
 
-	if (FAILED(hr = CLSIDFromString(bstrNetworkType, &CLSIDNetworkType)))
+	if FAILED(hr = CLSIDFromString(bstrNetworkType, &CLSIDNetworkType))
 		return (log << "Could not convert Network Type to CLSID\n").Write(hr);
 
 
     //--- Create Network Provider ---
-	if (FAILED(hr = AddFilter(m_piGraphBuilder.p, CLSIDNetworkType, m_piBDANetworkProvider.p, L"Network Provider")))
+	if FAILED(hr = AddFilter(m_piGraphBuilder, CLSIDNetworkType, &m_piBDANetworkProvider, L"Network Provider"))
 		return (log << "Failed to add Network Provider to the graph\n").Write(hr);
 
 	//--- Create TuneRequest ---
 	CComPtr <ITuneRequest> pTuneRequest;
 	m_lFrequency = -1;
 	m_lBandwidth = -1;
-//	if (FAILED(hr = this->submitTuneRequest(pTuneRequest.p)))
-	if (FAILED(hr = CreateDVBTTuneRequest(m_piTuningSpace, pTuneRequest, m_lFrequency, m_lBandwidth)))
+	if FAILED(hr = CreateDVBTTuneRequest(m_piTuningSpace, pTuneRequest, m_lFrequency, m_lBandwidth))
 		return (log << "Failed to create the Tune Request.\n").Write(hr);
 
 	//--- Apply TuneRequest ---
@@ -174,46 +173,46 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 	if (!pTuner)
 		return (log << "Failed while interfacing Tuner with Network Provider\n").Write(E_FAIL);
 
-	if (FAILED(hr = pTuner->put_TuneRequest(pTuneRequest)))
+	if FAILED(hr = pTuner->put_TuneRequest(pTuneRequest))
 		return (log << "Failed to submit the Tune Tequest to the Network Provider\n").Write(hr);
 	pTuner.Release();
 
 	//--- We can now add the rest of the source filters ---
-	if (FAILED(hr = m_pBDACard->AddFilters(m_piGraphBuilder)))
+	if FAILED(hr = m_pBDACard->AddFilters(m_piGraphBuilder))
 	{
 		DestroyAll();
 		return (log << "Failed to add card filters\n").Write(hr);
 	}
 
 	//Infinite Pin Tee
-	if (FAILED(hr = AddFilter(m_piGraphBuilder, CLSID_InfTee, m_piInfinitePinTee.p, L"Infinite Pin Tee")))
+	if FAILED(hr = AddFilter(m_piGraphBuilder, CLSID_InfTee, &m_piInfinitePinTee, L"Infinite Pin Tee"))
 	{
 		DestroyAll();
 		return (log << "Failed to add Infinite Pin Tee to the graph\n").Write(hr);
 	}
 
 	//MPEG-2 Demultiplexer (BDA's)
-	if (FAILED(hr = AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, m_piBDAMpeg2Demux.p, L"BDA MPEG-2 Demultiplexer")))
+	if FAILED(hr = AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_piBDAMpeg2Demux, L"BDA MPEG-2 Demultiplexer"))
 	{
 		DestroyAll();
 		return (log << "Failed to add BDA MPEG-2 Demultiplexer to the graph\n").Write(hr);
 	}
 
 	// BDA MPEG2 Transport Information Filter
-	if (FAILED(hr = AddFilterByName(m_piGraphBuilder, m_piBDATIF.p, KSCATEGORY_BDA_TRANSPORT_INFORMATION, L"BDA MPEG2 Transport Information Filter")))
+	if FAILED(hr = AddFilterByName(m_piGraphBuilder, &m_piBDATIF, KSCATEGORY_BDA_TRANSPORT_INFORMATION, L"BDA MPEG2 Transport Information Filter"))
 	{
 		DestroyAll();
 		return (log << "Cannot load TIF\n").Write(hr);
 	}
 
 	// MPEG2 Sections and Tables
-	if (FAILED(hr = AddFilterByName(m_piGraphBuilder, m_piBDASecTab.p, KSCATEGORY_BDA_TRANSPORT_INFORMATION, L"MPEG-2 Sections and Tables")))
+	if FAILED(hr = AddFilterByName(m_piGraphBuilder, &m_piBDASecTab, KSCATEGORY_BDA_TRANSPORT_INFORMATION, L"MPEG-2 Sections and Tables"))
 	{
 		DestroyAll();
 		return (log << "Cannot load MPEG-2 Sections and Tables\n").Write(hr);
 	}
 
-/*	if (FAILED(hr = AddFilterByName(m_piGraphBuilder, m_piDSNetworkSink.p, CLSID_LegacyAmFilterCategory, L"MPEG-2 Multicast Sender (DigitalWatch)")))
+/*	if FAILED(hr = AddFilterByName(m_piGraphBuilder, &m_piDSNetworkSink, CLSID_LegacyAmFilterCategory, L"MPEG-2 Multicast Sender (DigitalWatch)"))
 	{
 		DestroyAll();
 		return (log << "Cannot load MPEG-2 Multicast Sender\n").Write(hr);
@@ -222,41 +221,41 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 	//--- Now connect up all the filters ---
 	
 
-    if (FAILED(hr = m_pBDACard->Connect(m_piBDANetworkProvider)))
+    if FAILED(hr = m_pBDACard->Connect(m_piBDANetworkProvider))
 		return (log << "Failed to connect Card Filters\n").Write(hr);
 
 	CComPtr <IPin> pCapturePin;
-	m_pBDACard->GetCapturePin(&pCapturePin.p);
+	m_pBDACard->GetCapturePin(&pCapturePin);
 
 	CComPtr <IPin> pInfPinTeePin;
-	if (FAILED(hr = FindPin(m_piInfinitePinTee, L"Input", &pInfPinTeePin.p, REQUESTED_PINDIR_INPUT)))
+	if FAILED(hr = FindPin(m_piInfinitePinTee, L"Input", &pInfPinTeePin, REQUESTED_PINDIR_INPUT))
 		return (log << "Failed to get input pin on Infinite Pin Tee\n").Write(hr);
 
-	if (FAILED(hr = m_piGraphBuilder->ConnectDirect(pCapturePin, pInfPinTeePin, NULL)))
+	if FAILED(hr = m_piGraphBuilder->ConnectDirect(pCapturePin, pInfPinTeePin, NULL))
 		return (log << "Failed to connect Capture filter to Infinite Pin Tee\n").Write(hr);
 
-	if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piBDAMpeg2Demux)))
+	if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piBDAMpeg2Demux))
 		return (log << "Failed to connect Infinite Pin Tee Filter to BDA Demux\n").Write(hr);
 
-	if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piBDAMpeg2Demux, m_piBDATIF)))
+	if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piBDAMpeg2Demux, m_piBDATIF))
 		return (log << "Failed to connect to BDA Demux to TIF\n").Write(hr);
 
-	if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piBDAMpeg2Demux, m_piBDASecTab)))
+	if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piBDAMpeg2Demux, m_piBDASecTab))
 		return (log << "Failed to connect BDA Demux to MPEG-2 Sections and Tables\n").Write(hr);
 
 /*	
-	if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piDSNetworkSink)))
+	if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piDSNetworkSink)))
 		return (log << "Failed to connect Infinite Pin Tee Filter to DSNetwork Sender filter\n").Write(hr);
 
   //Setup dsnet sender
 	IMulticastConfig *piMulticastConfig = NULL;
-	if (FAILED(hr = m_piDSNetworkSink->QueryInterface(IID_IMulticastConfig, (void**)&piMulticastConfig)))
+	if FAILED(hr = m_piDSNetworkSink->QueryInterface(IID_IMulticastConfig, reinterpret_cast<void**>(&piMulticastConfig)))
 		return (log << "Failed to query Sink filter for IMulticastConfig\n").Write(hr);
-	if (FAILED(hr = piMulticastConfig->SetNetworkInterface(0))) //0 == INADDR_ANY
+	if FAILED(hr = piMulticastConfig->SetNetworkInterface(0)) //0 == INADDR_ANY
 		return (log << "Failed to set network interface for Sink filter\n").Write(hr);
 
     ULONG ulIP = toIPAddress(224,0,0,1);
-	if (FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons(1234))))
+	if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons(1234)))
 		return (log << "Failed to set multicast group for Sink filter\n").Write(hr);
 	piMulticastConfig->Release();
 */
@@ -304,7 +303,7 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 HRESULT BDADVBTSourceTuner::QueryTransportStreamPin(IPin** piPin)
 {
 	HRESULT hr;
-	if (FAILED(hr = FindFirstFreePin(m_piInfinitePinTee, piPin, PINDIR_OUTPUT)))
+	if FAILED(hr = FindFirstFreePin(m_piInfinitePinTee, piPin, PINDIR_OUTPUT))
 		return (log << "Failed to get output pin on Infinite Pin Tee\n").Write(hr);
 	return S_OK;
 }
@@ -325,9 +324,9 @@ HRESULT BDADVBTSourceTuner::LockChannel(long frequency, long bandwidth)
 	for(m_lFrequency = -1; m_lFrequency >= -3; m_lFrequency--)
 	{
 		CComPtr <ITuneRequest> pTuneRequest;
-		if (SUCCEEDED(hr = CreateDVBTTuneRequest(m_piTuningSpace, pTuneRequest, frequency, bandwidth)))
+		if SUCCEEDED(hr = CreateDVBTTuneRequest(m_piTuningSpace, pTuneRequest, frequency, bandwidth))
 		{
-			if (FAILED(hr = pTuner->put_TuneRequest(pTuneRequest)))
+			if FAILED(hr = pTuner->put_TuneRequest(pTuneRequest))
 			{
 				return (log << "Failed to submit the Tune Tequest to the Network Provider\n").Write(hr);
 			}

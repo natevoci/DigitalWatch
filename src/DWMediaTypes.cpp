@@ -23,13 +23,41 @@
 #include "DWMediaTypes.h"
 #include "ParseLine.h"
 #include "GlobalFunctions.h"
-//#include "FileWriter.h"
-//#include "FileReader.h"
 #include "XMLDocument.h"
 
-DWMediaTypes::DWMediaTypes() : m_filename(0)
-{
+//////////////////////////////////////////////////////////////////////
+// DWMediaType
+//////////////////////////////////////////////////////////////////////
 
+DWMediaType::DWMediaType()
+{
+	name = NULL;
+	memset((void*)&majortype, 0, sizeof(GUID));
+	memset((void*)&subtype, 0, sizeof(GUID));
+	memset((void*)&formattype, 0, sizeof(GUID));
+
+	m_pDecoder = NULL;
+}
+
+DWMediaType::~DWMediaType()
+{
+	if (name)
+		delete name;
+}
+
+DWDecoder *DWMediaType::get_Decoder()
+{
+	return m_pDecoder;
+}
+
+//////////////////////////////////////////////////////////////////////
+// DWMediaTypes
+//////////////////////////////////////////////////////////////////////
+
+DWMediaTypes::DWMediaTypes()
+{
+	m_filename = NULL;
+	m_pDecoders = NULL;
 }
 
 DWMediaTypes::~DWMediaTypes()
@@ -45,72 +73,112 @@ DWMediaTypes::~DWMediaTypes()
 	m_mediaTypes.clear();
 }
 
+void DWMediaTypes::SetDecoders(DWDecoders *pDecoders)
+{
+	m_pDecoders = pDecoders;
+}
+
+DWMediaType *DWMediaTypes::FindMediaType(AM_MEDIA_TYPE *mt)
+{
+	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
+	for ( ; it < m_mediaTypes.end() ; it++ )
+	{
+		DWMediaType *item = *it;
+		if ((item->majortype  != GUID_NULL) && (item->majortype  != mt->majortype ))
+			continue;
+		if ((item->subtype    != GUID_NULL) && (item->subtype    != mt->subtype   ))
+			continue;
+		if ((item->formattype != GUID_NULL) && (item->formattype != mt->formattype))
+			continue;
+		return item;
+	}
+	return NULL;
+}
+
 HRESULT DWMediaTypes::Load(LPWSTR filename)
 {
 	HRESULT hr;
 
+	if (m_pDecoders == NULL)
+		return (log << "m_pDecoders must be set before calling DWMediaTypes::Load\n").Write(E_FAIL);
+
 	strCopy(m_filename, filename);
 
-	//FileReader file;
 	XMLDocument file;
-	if (FAILED(hr = file.Load(m_filename)))
+	if (file.Load(m_filename) != S_OK)
 	{
-		return (log << "Could not open media types file: " << m_filename << "\n").Show(hr);
+		return (log << "Could not load media types file: " << m_filename << "\n").Show(E_FAIL);
 	}
 
-	(log << "Loading media types file: " << m_filename << "\n").Write();
+	(log << "Loading Media Types file: " << m_filename << "\n").Write();
 
-	try
+	XMLElement *element = NULL;
+	XMLElement *subelement = NULL;
+	XMLAttribute *attr;
+
+	int elementCount = file.Elements.Count();
+	for ( int item=0 ; item<elementCount ; item++ )
 	{
-/*
-		DWMediaType *currMediaType = NULL;
-
-		while (file.ReadLine(pBuff) == S_OK)
+		element = file.Elements.Item(item);
+		if (_wcsicmp(element->name, L"MediaType") == 0)
 		{
-			line++;
-
-			pCurr = pBuff;
-			skipWhitespaces(pCurr);
-
-			if ((pCurr[0] == '\0') || (pCurr[0] == '#'))
+			attr = element->Attributes.Item(L"name");
+			if (!attr)
 				continue;
 
-			ParseLine parseLine;
-			if (parseLine.Parse(pBuff) == FALSE)
-				return (log << "Parse Error in " << m_filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage() << "\n").Show(E_FAIL);
+			DWMediaType *mt = new DWMediaType();
+			strCopy(mt->name, attr->value);
 
-			if (parseLine.HasRHS())
-				return (log << "Parse Error in " << m_filename << ": Line " << line << "\nEquals not valid for this command\n").Show(E_FAIL);
-
-			pCurr = parseLine.LHS.FunctionName;
-
-			if (_wcsicmp(pCurr, L"MediaType") == 0)
+			subelement = element->Elements.Item(L"MajorType");
+			if (subelement)
 			{
-				std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
-				currMediaType = NULL;
-				for ( ; it != m_mediaTypes.end() ; it++ )
+				attr = subelement->Attributes.Item(L"clsid");
+				if (attr)
 				{
-					if (_wcsicmp((*it)->name, pCurr) == 0)
-					{
-						currMediaType = *it;
-					}
+					CComBSTR bstrCLSID(attr->value);
+					if FAILED(hr = CLSIDFromString(bstrCLSID, &mt->majortype))
+						(log << "Could not convert Network Type to CLSID\n").Write(hr);
 				}
 			}
-		}
-*/
-	}
-	catch (LPWSTR str)
-	{
-		(log << "Error caught reading media types file: " << str << "\n").Show();
-		//file.Close();
-		return E_FAIL;
-	}
-	//file.Close();
-	return S_OK;
-}
 
-HRESULT DWMediaTypes::Save(LPWSTR filename)
-{
+			subelement = element->Elements.Item(L"SubType");
+			if (subelement)
+			{
+				attr = subelement->Attributes.Item(L"clsid");
+				if (attr)
+				{
+					CComBSTR bstrCLSID(attr->value);
+					if FAILED(hr = CLSIDFromString(bstrCLSID, &mt->subtype))
+						(log << "Could not convert Network Type to CLSID\n").Write(hr);
+				}
+			}
+
+			subelement = element->Elements.Item(L"FormatType");
+			if (subelement)
+			{
+				attr = subelement->Attributes.Item(L"clsid");
+				if (attr)
+				{
+					CComBSTR bstrCLSID(attr->value);
+					if FAILED(hr = CLSIDFromString(bstrCLSID, &mt->formattype))
+						(log << "Could not convert Network Type to CLSID\n").Write(hr);
+				}
+			}
+
+			subelement = element->Elements.Item(L"Decoder");
+			if (subelement)
+			{
+				attr = subelement->Attributes.Item(L"name");
+				if (attr)
+				{
+					mt->m_pDecoder = m_pDecoders->Item(attr->value);
+				}
+			}
+
+			m_mediaTypes.push_back(mt);
+		}
+	}
+
 	return S_OK;
 }
 

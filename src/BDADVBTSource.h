@@ -63,8 +63,7 @@ private:
 
 
 	DWGraph *m_pDWGraph;
-	CComPtr<IGraphBuilder> m_piGraphBuilder;
-	//CComPtr<IMediaControl> m_piMediaControl;
+	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 
 	LogMessage log;

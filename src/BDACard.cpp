@@ -95,11 +95,8 @@ HRESULT BDACard::LoadFromXML(XMLElement *pElement)
 
 HRESULT BDACard::SaveToXML(XMLElement *pElement)
 {
-	if (bActive)
-	{
-		XMLAttribute *attr = new XMLAttribute(L"active", L"1");
-		pElement->Attributes.Add(attr);
-	}
+	pElement->Attributes.Add(new XMLAttribute(L"active", (bActive ? L"1" : L"0")));
+	pElement->Attributes.Add(new XMLAttribute(L"detected", (bDetected ? L"1" : L"0")));
 
 	if (tunerDevice.bValid)
 	{
@@ -134,19 +131,19 @@ HRESULT BDACard::AddFilters(IGraphBuilder* piGraphBuilder)
 	HRESULT hr;
 
 	m_piGraphBuilder.Release();
-	if (FAILED(hr = piGraphBuilder->QueryInterface(IID_IGraphBuilder, (void**)&m_piGraphBuilder)))
+	if FAILED(hr = piGraphBuilder->QueryInterface(IID_IGraphBuilder, reinterpret_cast<void**>(&m_piGraphBuilder)))
 	{
 		return (log << "BDACard::AddFilters - Cannot query IGraphBuilder\n").Write(hr);
 	}
 
-	if (FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, m_pBDATuner.p, tunerDevice.strDevicePath, tunerDevice.strFriendlyName)))
+	if FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, &m_pBDATuner, tunerDevice.strDevicePath, tunerDevice.strFriendlyName))
 	{
 		return (log << "Cannot load Tuner Device\n").Show(hr);
 	}
 
 	if (demodDevice.bValid)
 	{
-		if (FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, m_pBDADemod.p, demodDevice.strDevicePath, demodDevice.strFriendlyName)))
+		if FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, &m_pBDADemod, demodDevice.strDevicePath, demodDevice.strFriendlyName))
 		{
 			return (log << "Cannot load Demod Device\n").Show(hr);
 		}
@@ -154,7 +151,7 @@ HRESULT BDACard::AddFilters(IGraphBuilder* piGraphBuilder)
 
 	if (captureDevice.bValid)
 	{
-		if (FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, m_pBDACapture.p, captureDevice.strDevicePath, captureDevice.strFriendlyName)))
+		if FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, &m_pBDACapture, captureDevice.strDevicePath, captureDevice.strFriendlyName))
 		{
 			return (log << "Cannot load Capture Device\n").Show(hr);
 		}
@@ -164,6 +161,8 @@ HRESULT BDACard::AddFilters(IGraphBuilder* piGraphBuilder)
 
 HRESULT BDACard::RemoveFilters()
 {
+	m_pCapturePin.Release();
+
 	if (m_pBDACapture)
 	{
 		m_piGraphBuilder->RemoveFilter(m_pBDACapture);
@@ -179,6 +178,7 @@ HRESULT BDACard::RemoveFilters()
 		m_piGraphBuilder->RemoveFilter(m_pBDATuner);
 		m_pBDATuner.Release();
 	}
+
 	return S_OK;
 }
 
@@ -189,21 +189,23 @@ HRESULT BDACard::Connect(IBaseFilter* pSource)
 	if (!m_piGraphBuilder)
 		return E_FAIL;
 
-    if (FAILED(hr = ConnectFilters(m_piGraphBuilder, pSource, m_pBDATuner)))
+    if FAILED(hr = ConnectFilters(m_piGraphBuilder, pSource, m_pBDATuner))
 	{
 		return (log << "Failed to connect Network Provider to Tuner Filter\n").Show(hr);
 	}
+
+	IBaseFilter *piLastFilter = NULL;
 
 	if (captureDevice.bValid)
 	{
 		if (demodDevice.bValid)
 		{
-			if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod)))
+			if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod))
 			{
 				return (log << "Failed to connect Tuner Filter to Demod Filter\n").Show(hr);
 			}
 
-			if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDADemod, m_pBDACapture)))
+			if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDADemod, m_pBDACapture))
 			{
 				return (log << "Failed to connect Demod Filter to Capture Filter\n").Show(hr);
 			}
@@ -211,53 +213,44 @@ HRESULT BDACard::Connect(IBaseFilter* pSource)
 		}
 		else
 		{
-			if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDACapture)))
+			if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDACapture))
 			{
 				return (log << "Failed to connect Tuner Filter to Capture Filter\n").Show(hr);
 			}
 		}
-		
-		if (FAILED(hr = FindPinByMediaType(m_pBDACapture, MEDIATYPE_Stream, KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
-		{
-			//If that failed then try the other mpeg2 type, but this shouldn't happen.
-			if (FAILED(hr = FindPinByMediaType(m_pBDACapture, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
-			{
-				return (log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
-			}
-		}
+
+		piLastFilter = m_pBDACapture;	
 	}
 	else if (demodDevice.bValid)
 	{
-		if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod)))
+		if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod))
 		{
 			return (log << "Failed to connect Tuner Filter to Demod Filter\n").Show(hr);
 		}
 
-		if (FAILED(hr = FindPinByMediaType(m_pBDADemod, MEDIATYPE_Stream, KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
-		{
-			//If that failed then try the other mpeg2 type, but this shouldn't happen.
-			if (FAILED(hr = FindPinByMediaType(m_pBDADemod, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
-			{
-				return (log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
-			}
-		}
+		piLastFilter = m_pBDADemod;
 	}
 	else
 	{
-		if (FAILED(hr = FindPinByMediaType(m_pBDATuner, MEDIATYPE_Stream, KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
+		piLastFilter = m_pBDATuner;
+	}
+
+	m_pCapturePin.Release();
+
+	if FAILED(hr = FindPinByMediaType(piLastFilter, MEDIATYPE_Stream, KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT, &m_pCapturePin, REQUESTED_PINDIR_OUTPUT))
+	{
+		//If that failed then try the other mpeg2 type, but this shouldn't happen.
+		if FAILED(hr = FindPinByMediaType(piLastFilter, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin, REQUESTED_PINDIR_OUTPUT))
 		{
-			//If that failed then try the other mpeg2 type, but this shouldn't happen.
-			if (FAILED(hr = FindPinByMediaType(m_pBDATuner, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
-			{
-				return (log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
-			}
+			return (log << "Failed to find Tranport Stream pin on last filter\n").Show(hr);
 		}
 	}
+
 	return S_OK;
 }
 
 HRESULT BDACard::GetCapturePin(IPin** pCapturePin)
 {
-	return m_pCapturePin->QueryInterface(IID_IPin, (void **)pCapturePin);
+	return m_pCapturePin->QueryInterface(IID_IPin, reinterpret_cast<void**>(pCapturePin));
 }
 

@@ -355,6 +355,14 @@ SOURCE=.\src\ParseLine.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\ReferenceCountingClass.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\ReferenceCountingClass.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\XMLDocument.cpp
 # End Source File
 # Begin Source File

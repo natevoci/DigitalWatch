@@ -684,7 +684,7 @@ HRESULT TVControl::SetSource(LPWSTR szSourceName)
 				m_pActiveSource = NULL;
 			}
 
-			if (SUCCEEDED(source->Initialise(m_pFilterGraph)))
+			if SUCCEEDED(source->Initialise(m_pFilterGraph))
 			{
 				m_pActiveSource = source;
 				return m_pActiveSource->Play();

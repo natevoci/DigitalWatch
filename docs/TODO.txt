@@ -2,8 +2,6 @@
 DigitalWatch TODO
 -----------------
 
-- Media Types and Decoders
-
 - osd
 
 - channel scanning

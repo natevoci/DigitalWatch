@@ -90,13 +90,13 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 				newKeyMapEntry.Keycode = _wtoi(attr->value);
 
 			attr = element->Attributes.Item(L"shift");
-			newKeyMapEntry.Shift = (attr) && (attr->value[0] != 0);
+			newKeyMapEntry.Shift = (attr) && (attr->value[0] != '0');
 
 			attr = element->Attributes.Item(L"ctrl");
-			newKeyMapEntry.Ctrl = (attr) && (attr->value[0] != 0);
+			newKeyMapEntry.Ctrl = (attr) && (attr->value[0] != '0');
 
 			attr = element->Attributes.Item(L"alt");
-			newKeyMapEntry.Alt = (attr) && (attr->value[0] != 0);
+			newKeyMapEntry.Alt = (attr) && (attr->value[0] != '0');
 
 			strCopy(newKeyMapEntry.Function, element->value);
 

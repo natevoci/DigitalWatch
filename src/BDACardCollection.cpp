@@ -174,6 +174,8 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 			{
 				bdaCard = new BDACard();
 				bdaCard->bActive = TRUE;
+				bdaCard->bNew = TRUE;
+				bdaCard->bDetected = TRUE;
 
 				bdaCard->tunerDevice = *pTunerDevice;
 				if (pDemodDevice)
@@ -215,14 +217,14 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 	do
 	{
 		//--- Create Graph ---
-		if (FAILED(hr = piGraphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER)))
+		if FAILED(hr = piGraphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER))
 		{
 			//(log << "Failed Creating DVB-T Graph Builder\n").Write();
 			break;
 		}
 
 		//--- Initialise Tune Request ---
-		if (FAILED(hr = InitDVBTTuningSpace(piTuningSpace)))
+		if FAILED(hr = InitDVBTTuningSpace(piTuningSpace))
 		{
 			//(log << "Failed to initialise the Tune Request\n").Write();
 			break;
@@ -231,20 +233,20 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		//--- Get NetworkType CLSID ---
 		CComBSTR bstrNetworkType;
 		CLSID CLSIDNetworkType;
-		if (FAILED(hr = piTuningSpace->get_NetworkType(&bstrNetworkType)))
+		if FAILED(hr = piTuningSpace->get_NetworkType(&bstrNetworkType))
 		{
 			//(log << "Failed to get TuningSpace Network Type\n").Write();
 			break;
 		}
 
-		if (FAILED(hr = CLSIDFromString(bstrNetworkType, &CLSIDNetworkType)))
+		if FAILED(hr = CLSIDFromString(bstrNetworkType, &CLSIDNetworkType))
 		{
 			//(log << "Could not convert Network Type to CLSID\n").Write();
 			break;
 		}
 
 		//--- Create Network Provider ---
-		if (FAILED(hr = AddFilter(piGraphBuilder.p, CLSIDNetworkType, piBDANetworkProvider.p, L"Network Provider")))
+		if FAILED(hr = AddFilter(piGraphBuilder, CLSIDNetworkType, &piBDANetworkProvider, L"Network Provider"))
 		{
 			//(log << "Failed to add Network Provider to the graph\n").Write();
 			break;
@@ -252,7 +254,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		bRemoveNP = TRUE;
 
 		//--- Create TuneRequest ---
-		if (FAILED(hr = CreateDVBTTuneRequest(piTuningSpace, pTuneRequest, -1, -1)))
+		if FAILED(hr = CreateDVBTTuneRequest(piTuningSpace, pTuneRequest, -1, -1))
 		{
 			//(log << "Failed to create the Tune Request.\n").Write();
 			break;
@@ -266,9 +268,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 			break;
 		}
 
-		hr = pTuner->put_TuneRequest(pTuneRequest);
-		pTuner.Release();
-		if (FAILED(hr))
+		if FAILED(hr = pTuner->put_TuneRequest(pTuneRequest))
 		{
 			//(log << "Failed to submit the Tune Tequest to the Network Provider\n").Write();
 			break;
@@ -276,14 +276,14 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 
 		//--- We can now add and connect the tuner filter ---
 		
-		if (FAILED(hr = AddFilterByDevicePath(piGraphBuilder, piBDATuner.p, pTunerDevice->strDevicePath, pTunerDevice->strFriendlyName)))
+		if FAILED(hr = AddFilterByDevicePath(piGraphBuilder, &piBDATuner, pTunerDevice->strDevicePath, pTunerDevice->strFriendlyName))
 		{
 			//(log << "Cannot load Tuner Device\n").Write();
 			break;
 		}
 		bRemoveTuner = TRUE;
     
-		if (FAILED(hr = ConnectFilters(piGraphBuilder, piBDANetworkProvider, piBDATuner)))
+		if FAILED(hr = ConnectFilters(piGraphBuilder, piBDANetworkProvider, piBDATuner))
 		{
 			//(log << "Failed to connect Network Provider to Tuner Filter\n").Write();
 			break;
@@ -293,12 +293,12 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		*ppDemodDevice = NULL;
 		while (hr = enumerator.Next(ppDemodDevice) == S_OK)
 		{
-			if (FAILED(hr = AddFilterByDevicePath(piGraphBuilder, piBDADemod.p, (*ppDemodDevice)->strDevicePath, (*ppDemodDevice)->strFriendlyName)))
+			if FAILED(hr = AddFilterByDevicePath(piGraphBuilder, &piBDADemod, (*ppDemodDevice)->strDevicePath, (*ppDemodDevice)->strFriendlyName))
 			{
 				break;
 			}
 
-			if (SUCCEEDED(hr = ConnectFilters(piGraphBuilder, piBDATuner, piBDADemod)))
+			if SUCCEEDED(hr = ConnectFilters(piGraphBuilder, piBDATuner, piBDADemod))
 			{
 				bFoundDemod = TRUE;
 				break;
@@ -315,12 +315,12 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 			*ppCaptureDevice = NULL;
 			while (hr = enumerator.Next(ppCaptureDevice) == S_OK)
 			{
-				if (FAILED(hr = AddFilterByDevicePath(piGraphBuilder, piBDACapture.p, (*ppCaptureDevice)->strDevicePath, (*ppCaptureDevice)->strFriendlyName)))
+				if FAILED(hr = AddFilterByDevicePath(piGraphBuilder, &piBDACapture, (*ppCaptureDevice)->strDevicePath, (*ppCaptureDevice)->strFriendlyName))
 				{
 					break;
 				}
 
-				if (SUCCEEDED(hr = ConnectFilters(piGraphBuilder, piBDADemod, piBDACapture)))
+				if SUCCEEDED(hr = ConnectFilters(piGraphBuilder, piBDADemod, piBDACapture))
 				{
 					bFoundCapture = TRUE;
 					break;

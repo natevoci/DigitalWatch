@@ -25,10 +25,13 @@
 
 #include "StdAfx.h"
 #include "LogMessage.h"
+#include "DWDecoders.h"
 #include <vector>
 
+class DWMediaTypes;
 class DWMediaType
 {
+	friend DWMediaTypes;
 public:
 	DWMediaType();
 	virtual ~DWMediaType();
@@ -37,6 +40,11 @@ public:
 	GUID majortype;
     GUID subtype;
     GUID formattype;
+
+	DWDecoder *get_Decoder();
+
+private:
+	DWDecoder *m_pDecoder;
 };
 
 class DWMediaTypes
@@ -45,14 +53,15 @@ public:
 	DWMediaTypes();
 	virtual ~DWMediaTypes();
 
-	HRESULT Load(LPWSTR filename);
-	HRESULT Save(LPWSTR filename = NULL);
+	void SetDecoders(DWDecoders *pDecoders);
 
-	//DVBTChannels_Network* Network(int networkNumber);
-	//BOOL IsValidNetwork(int networkNumber);
+	HRESULT Load(LPWSTR filename);
+
+	DWMediaType *FindMediaType(AM_MEDIA_TYPE *mt);
 
 private:
 	std::vector<DWMediaType *> m_mediaTypes;
+	DWDecoders *m_pDecoders;
 
 	LPWSTR m_filename;
 
