@@ -26,9 +26,8 @@
 
 #include "StdAfx.h"
 #include "LogMessage.h"
+#include "XMLDocument.h"
 #include <vector>
-
-#define PID_TYPE_VIDEO 1
 
 class DVBTChannels;
 class DVBTChannels_Network;
@@ -56,6 +55,9 @@ public:
 	DVBTChannels_Program();
 	virtual ~DVBTChannels_Program();
 
+	HRESULT LoadFromXML(XMLElement *pElement);
+	HRESULT SaveToXML(XMLElement *pElement);
+
 	DVBTChannels_Program_PID_Types GetStreamType(int index);
 	long GetStreamPID(int index);
 	long GetStreamPID(DVBTChannels_Program_PID_Types streamtype, int index);
@@ -70,7 +72,9 @@ protected:
 	LPWSTR name;
 	std::vector<DVBTChannels_Program_Stream> streams;
 	long favoriteID;
-	BOOL bDisableAutoUpdate;
+	BOOL bManualUpdate;
+
+	LogMessage log;
 };
 
 class DVBTChannels_Network
@@ -79,6 +83,9 @@ class DVBTChannels_Network
 public:
 	DVBTChannels_Network();
 	virtual ~DVBTChannels_Network();
+
+	HRESULT LoadFromXML(XMLElement *pElement);
+	HRESULT SaveToXML(XMLElement *pElement);
 
 	long frequency;
 	long bandwidth;
@@ -89,6 +96,8 @@ public:
 
 private:
 	std::vector<DVBTChannels_Program *> programs;
+
+	LogMessage log;
 };
 
 class DVBTChannels

@@ -1,0 +1,58 @@
+<Decoder name="GPL MPEG-1/2 Decoder">
+	<MediaType name="MPEG2 Video"/>
+    <LoadFilter clsid="{CE1B27BE-851B-45DD-AB26-44389A8F71B4}" name="GPL MPEG-1/2 Decoder" />
+    <LoadFilter clsid="{CD8743A1-3736-11D0-9E69-00C04FD7C15B}" name="Overlay Mixer" />
+    <LoadFilter clsid="{70E102B0-5556-11CE-97C0-00AA0055595A}" name="Video Renderer" />
+    <SourcePin>
+    	<TargetFilter name="GPL MPEG-1/2 Decoder" pin="Video"/>
+    </>
+    <ConnectPins>
+    	<SourceFilter name="GPL MPEG-1/2 Decoder" pin="Output"/>
+    	<TargetFilter name="Overlay Mixer" pin="Input0"/>
+    </>
+    <ConnectPins>
+    	<SourceFilter name="Overlay Mixer" pin="Output"/>
+    	<TargetFilter name="Video Renderer" pin="Input"/>
+    </>
+</Decoder>
+
+<Decoder name="MPEG Audio Decoder - Default DirectSound Device">
+	<MediaType name="MPEG Audio"/>
+	<MediaType name="MPEG2 Audio"/>
+    <LoadFilter clsid="{4A2286E0-7BEF-11CE-9BD9-0000E202599C}" name="MPEG Audio Decoder" />
+    <LoadFilter clsid="{79376820-07D0-11CF-A24D-0020AFD79767}" name="Default DirectSound Device" />
+    <SourcePin>
+    	<TargetFilter name="MPEG Audio Decoder" pin="XForm In"/>
+    </>
+    <RenderPin>
+    	<SourceFilter name="MPEG Audio Decoder" pin="XForm Out"/>
+    </>
+</Decoder>
+
+<Decoder name="DNTV Live! Audio">
+	<MediaType name="MPEG Audio"/>
+	<MediaType name="MPEG2 Audio"/>
+	<MediaType name="AC3 Audio"/>
+    <LoadFilter clsid="????????????????" name="DNTV Live! Audio" />
+    <SourcePin>
+    	<TargetFilter name="DNTV Live! Audio" pin="In"/>
+    </>
+    <RenderPin>
+    	<SourceFilter name="DNTV Live! Audio" pin="Out"/>
+    </>
+</Decoder>
+
+<Decoder name="AC3Filter Audio Decoder - Default DirectSound Device">
+	<MediaType name="AC3 Audio"/>
+    <LoadFilter clsid="{A753A1EC-973E-4718-AF8E-A3F554D45C44}" name="AC3Filter" />
+    <LoadFilter clsid="{79376820-07D0-11CF-A24D-0020AFD79767}" name="Default DirectSound Device" />
+    <SourcePin>
+    	<TargetFilter name="AC3Filter" pin="In"/>
+    </>
+    <RenderPin>
+    	<SourceFilter name="AC3Filter" pin="Out"/>
+    </>
+</Decoder>
+
+<!--MediaType("Teletext")-->
+

@@ -39,7 +39,6 @@ typedef enum MouseFunction
 
 struct KeyMapEntry
 {
-	BOOL bValid;
 	long Keycode;
 	BOOL Shift;
 	BOOL Ctrl;

@@ -30,13 +30,13 @@
 #include <vector>
 #include "LogMessage.h"
 
-class BDADVBTSource : public DWSource  
+class BDADVBTSource : public DWSource
 {
 public:
 	BDADVBTSource();
 	virtual ~BDADVBTSource();
 
-	virtual void GetSourceType(LPWSTR type) { wprintf(type, L"Unknown"); }
+	virtual void GetSourceType(LPWSTR &type);
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph);
 	virtual HRESULT Destroy();
@@ -48,11 +48,6 @@ public:
 
 protected:
 	virtual HRESULT SetChannel(int network, int program);
-
-	virtual HRESULT AddFilters();
-	virtual HRESULT Connect();
-	virtual HRESULT AfterGraphBuilt();
-	virtual HRESULT Cleanup();
 
 	HRESULT LoadTuner();
 	HRESULT UnloadTuner();

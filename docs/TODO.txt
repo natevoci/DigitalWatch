@@ -2,7 +2,7 @@
 DigitalWatch TODO
 -----------------
 
-- decoder definitions
+- Media Types and Decoders
 
 - osd
 

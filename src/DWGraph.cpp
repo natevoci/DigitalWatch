@@ -53,6 +53,11 @@ BOOL DWGraph::Initialise()
 	if (m_bInitialised)
 		return (log << "DigitalWatch graph tried to initialise a second time\n").Write();
 
+//	wchar_t file[MAX_PATH];
+//	swprintf((LPWSTR)&file, L"%sMediaTypes.xml", g_pData->application.appPath);
+//	if (FAILED(hr = m_mediaTypes.Load((LPWSTR)&file)))
+//		return hr;
+
 	//--- COM should already be initialized ---
 
 	//--- Create Graph ---
@@ -114,6 +119,9 @@ HRESULT DWGraph::QueryMediaControl(IMediaControl** piMediaControl)
 	
 HRESULT DWGraph::Start()
 {
+	if (m_piMediaControl == NULL)
+		return E_POINTER;
+
 	HRESULT hr;
 
 	//Set the video renderer to use our window.
@@ -190,6 +198,13 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 	AM_MEDIA_TYPE *mediaType;
 	while (piMediaTypes->Next(1, &mediaType, 0) == NOERROR)
 	{
+		/*
+		CComBSTR bstrNetworkType;
+		CLSID CLSIDNetworkType;
+		if (FAILED(hr = CLSIDFromString(bstrNetworkType, &CLSIDNetworkType)))
+			return (log << "Could not convert Network Type to CLSID\n").Write(hr);
+		*/
+
 		if ((mediaType->majortype  == KSDATAFORMAT_TYPE_VIDEO) &&
 			(mediaType->subtype    == MEDIASUBTYPE_MPEG2_VIDEO) &&
 			(mediaType->formattype == FORMAT_MPEG2Video))
@@ -201,7 +216,7 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 			}
 		}
 		else
-		if ((mediaType->majortype == MEDIATYPE_Audio) &&
+		if ((mediaType->majortype  == MEDIATYPE_Audio) &&
 			(mediaType->subtype    == MEDIASUBTYPE_MPEG1AudioPayload) &&
 			(mediaType->formattype == FORMAT_WaveFormatEx))
 		{
@@ -212,7 +227,7 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 			}
 		}
 		else
-		if ((mediaType->majortype == MEDIATYPE_Audio) &&
+		if ((mediaType->majortype  == MEDIATYPE_Audio) &&
 			(mediaType->subtype    == MEDIASUBTYPE_DOLBY_AC3) &&
 			(mediaType->formattype == FORMAT_WaveFormatEx))
 		{

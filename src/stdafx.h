@@ -16,4 +16,5 @@
 #include <memory.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <streams.h>
 

@@ -38,13 +38,10 @@
 // BDADVBTSourceTuner
 //////////////////////////////////////////////////////////////////////
 
-
 BDADVBTSourceTuner::BDADVBTSourceTuner(BDACard *pBDACard)
 {
 	m_pBDACard = pBDACard;
 	m_pDWGraph = NULL;
-
-	//activationRank = 0;
 
 	m_bInitialised = 0;
 	m_bActive = FALSE;

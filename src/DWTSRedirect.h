@@ -23,7 +23,7 @@
 #ifndef DWTSREDIRECT_H
 #define DWTSREDIRECT_H
 
-#include <streams.h>
+#include "StdAfx.h"
 
 class DWTSRedirectInputPin;
 

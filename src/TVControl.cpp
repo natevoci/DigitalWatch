@@ -79,13 +79,16 @@ BOOL TVControl::Initialise()
 	(log << "Initialising TVControl\n").Write();
 
 	wchar_t file[MAX_PATH];
-	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"Keys.ini");
+	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"Keys.xml");
 	if (globalKeyMap.LoadKeyMap((LPWSTR)&file) == FALSE)
 		return FALSE;
 
 	m_pFilterGraph = new DWGraph();
 	m_pFilterGraph->Initialise();
 	m_pActiveSource = NULL;
+
+	m_sources.push_back(new BDADVBTSource());
+//	m_sources.push_back(new TSFileSource());
 
 	return TRUE;
 }
@@ -662,42 +665,34 @@ int TVControl::GetFunctionType(char* strFunction)
 */
 HRESULT TVControl::SetSource(LPWSTR szSourceName)
 {
-	if (_wcsicmp(szSourceName, L"TV") == 0)
-	{
-		if (m_pActiveSource)
-		{
-			m_pActiveSource->Destroy();
-			delete m_pActiveSource;
-			m_pActiveSource = NULL;
-		}
+	LPWSTR pType = NULL;
 
-		BDADVBTSource *dvbt = new BDADVBTSource();
-		if (SUCCEEDED(dvbt->Initialise(m_pFilterGraph)))
-		{
-			m_pActiveSource = dvbt;
-			m_sources.push_back(dvbt);
-			return m_pActiveSource->Play();
-		}
-		return E_FAIL;
-	}
-	else if (_wcsicmp(szSourceName, L"File") == 0)
+	std::vector<DWSource *>::iterator it = m_sources.begin();
+	for ( ; it < m_sources.end() ; it++ )
 	{
-		if (m_pActiveSource)
-		{
-			m_pActiveSource->Destroy();
-			delete m_pActiveSource;
-			m_pActiveSource = NULL;
-		}
+		DWSource *source = *it;
+		source->GetSourceType(pType);
 
-		/*TSFileSource *file = new TSFileSource();
-		if (SUCCEEDED(dvbt->Initialise(m_pFilterGraph)))
+		if (_wcsicmp(szSourceName, pType) == 0)
 		{
-			m_pActiveSource = file;
-			m_sources.push_back(file);
-			return m_pActiveSource->Play();
-		}*/
-		return E_FAIL;
+			delete pType;
+
+			if (m_pActiveSource)
+			{
+				//TODO: create a m_pActiveSource->DisconnectFromGraph() method
+				m_pActiveSource->Destroy();
+				m_pActiveSource = NULL;
+			}
+
+			if (SUCCEEDED(source->Initialise(m_pFilterGraph)))
+			{
+				m_pActiveSource = source;
+				return m_pActiveSource->Play();
+			}
+			return E_FAIL;
+		}
 	}
+	delete pType;
 
 	return S_FALSE;
 }

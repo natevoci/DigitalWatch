@@ -33,8 +33,7 @@
 #include <ksmedia.h> // Must be included before bdamedia.h
 #include <bdatypes.h> // Must be included before bdamedia.h
 #include <bdamedia.h>
-#include "FileWriter.h"
-#include "FileReader.h"
+#include "XMLDocument.h"
 
 BDACardCollection::BDACardCollection()
 {
@@ -67,7 +66,6 @@ BOOL BDACardCollection::LoadCards()
 
 BOOL BDACardCollection::LoadCards(LPWSTR filename)
 {
-	USES_CONVERSION;
 	strCopy(m_filename, filename);
 
 	LoadCardsFromFile();
@@ -77,130 +75,31 @@ BOOL BDACardCollection::LoadCards(LPWSTR filename)
 
 BOOL BDACardCollection::LoadCardsFromFile()
 {
-	FileReader file;
-	if (file.Open(m_filename) == FALSE)
+	XMLDocument file;
+	if (file.Load(m_filename) != S_OK)
 	{
-		(log << "Could not open cards file: " << m_filename << "\n").Write();
-		return FALSE;
+		return (log << "Could not load cards file: " << m_filename << "\n").Write(false);
 	}
 
 	(log << "Loading BDA DVB-T Cards file: " << m_filename << "\n").Write();
 
-	try
+	BDACard* currCard = NULL;
+
+	int elementCount = file.Elements.Count();
+	for ( int item=0 ; item<elementCount ; item++ )
 	{
-		int line = 0;
-		LPWSTR pBuff = NULL;
-		LPWSTR pCurr;
-		BDACard* currCard = NULL;
+		XMLElement *element = file.Elements.Item(item);
+		if (_wcsicmp(element->name, L"card") != 0)
+			continue;
 
-		while (file.ReadLine(pBuff))
-		{
-			line++;
-
-			pCurr = pBuff;
-			skipWhitespaces(pCurr);
-			if ((pCurr[0] == '\0') || (pCurr[0] == '#'))
-				continue;
-
-			ParseLine parseLine;
-			if (parseLine.Parse(pBuff) == FALSE)
-				return (log << "Parse Error in " << m_filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage() << "\n").Show(FALSE);
-
-			if (parseLine.HasRHS())
-				return (log << "Parse Error in " << m_filename << ": Line " << line << "\nEquals not valid for this command\n").Show(FALSE);
-
-			if (parseLine.LHS.ParameterCount < 1)
-				return (log << "Parse Error in " << m_filename << ": Line " << line << "\nMissing expected parameter\n").Show(FALSE);
-
-			if (parseLine.LHS.ParameterCount > 1)
-				return (log << "Parse Error in " << m_filename << ": Line " << line << "\nToo many parameters\n").Show(FALSE);
-
-			pCurr = parseLine.LHS.FunctionName;
-
-			if (_wcsicmp(pCurr, L"TunerDevice") == 0)
-			{
-				pCurr = parseLine.LHS.Parameter[0];
-
-				AddCardToList(currCard);
-
-				currCard = new BDACard();
-				strCopy(currCard->tunerDevice.strDevicePath, pCurr);
-				continue;
-			}
-			if (_wcsicmp(pCurr, L"TunerName") == 0)
-			{
-				if (!currCard)
-					return (log << "Parse Error in " << m_filename << ": Line " << line << "TunerName function must come after a TunerDevice function.\n").Write(FALSE);
-
-				pCurr = parseLine.LHS.Parameter[0];
-				strCopy(currCard->tunerDevice.strFriendlyName, pCurr);
-				currCard->tunerDevice.bValid = TRUE;
-				continue;
-			}
-			if (_wcsicmp(pCurr, L"DemodDevice") == 0)
-			{
-				if (!currCard)
-					return (log << "Parse Error in " << m_filename << ": Line " << line << "DemodDevice function must come after a TunerDevice function.\n").Write(FALSE);
-
-				pCurr = parseLine.LHS.Parameter[0];
-				strCopy(currCard->demodDevice.strDevicePath, pCurr);
-				currCard->demodDevice.bValid = TRUE;
-				continue;
-			}
-			if (_wcsicmp(pCurr, L"DemodName") == 0)
-			{
-				if (!currCard)
-					return (log << "Parse Error in " << m_filename << ": Line " << line << "DemodName function must come after a TunerDevice function.\n").Write(FALSE);
-
-				pCurr = parseLine.LHS.Parameter[0];
-				strCopy(currCard->demodDevice.strFriendlyName, pCurr);
-				continue;
-			}
-			if (_wcsicmp(pCurr, L"CaptureDevice") == 0)
-			{
-				if (!currCard)
-					return (log << "Parse Error in " << m_filename << ": Line " << line << "CaptureDevice function must come after a TunerDevice function.\n").Write(FALSE);
-
-				pCurr = parseLine.LHS.Parameter[0];
-				strCopy(currCard->captureDevice.strDevicePath, pCurr);
-				currCard->captureDevice.bValid = TRUE;
-				continue;
-			}
-			if (_wcsicmp(pCurr, L"CaptureName") == 0)
-			{
-				if (!currCard)
-					return (log << "Parse Error in " << m_filename << ": Line " << line << "CaptureName function must come after a TunerDevice function.\n").Write(FALSE);
-
-				pCurr = parseLine.LHS.Parameter[0];
-				strCopy(currCard->captureDevice.strFriendlyName, pCurr);
-				continue;
-			}
-			if (_wcsicmp(pCurr, L"Active") == 0)
-			{
-				if (!currCard)
-					//return (log << "Parse Error in " << m_filename << ": Line " << line << "TunerName function must come after a TunerDevice function.\n").Write();
-					return FALSE;
-
-				pCurr = parseLine.LHS.Parameter[0];
-				currCard->bActive = (pCurr[0] != '0');
-				continue;
-			}
-
-			//return (log << "Parse Error in " << m_filename << ": Line " << line << ":unexpected term '" << pCurr << "'\n").Show();
-			return FALSE;
-		}
-
-		AddCardToList(currCard);
-	}	   
-	catch (LPWSTR str)
-	{
-		(log << "Error caught reading cards file: " << str << "\n").Show();
-		file.Close();
-		return FALSE;
+		currCard = new BDACard();
+		if (currCard->LoadFromXML(element) == S_OK)
+			AddCardToList(currCard);
+		else
+			delete currCard;
 	}
-	file.Close();
 
-	return TRUE;
+	return (cards.size() > 0);
 }
 
 void BDACardCollection::AddCardToList(BDACard* currCard)
@@ -209,65 +108,33 @@ void BDACardCollection::AddCardToList(BDACard* currCard)
 	if (currCard)
 	{
 		if ((currCard->tunerDevice.strDevicePath == NULL) ||
-			(currCard->tunerDevice.strFriendlyName == NULL) ||
-			(currCard->captureDevice.strDevicePath == NULL) ||
-			(currCard->captureDevice.strFriendlyName == NULL))
+			(currCard->tunerDevice.strFriendlyName == NULL))
 		{
-			//(log << "Error in " << m_filename << ": Cannot add device without setting both tuner and capture name and device paths\n").Write();
+			(log << "Error in " << m_filename << ": Cannot add device without setting tuner name and device path\n").Write();
 			return;
 		}
 		cards.push_back(currCard);
-		//(log << "  " << currCard->tunerDevice.strFriendlyName << " [" << (currCard->bActive ? "Active" : "Not Active") << "] - " << currCard->tunerDevice.strDevicePath << "\n").Write();
-		//(log << "    " << currCard->captureDevice.strFriendlyName << " - " << currCard->captureDevice.strDevicePath << "\n").Write();
 	}
 }
 
 BOOL BDACardCollection::SaveCards(LPWSTR filename)
 {
-	USES_CONVERSION;
+	XMLDocument file;
 
-	FileWriter file;
+	std::vector<BDACard *>::iterator it = cards.begin();
+	for ( ; it < cards.end() ; it++ )
+	{
+		XMLElement *pElement = new XMLElement(L"Card");
+		BDACard *pCard = *it;
+		pCard->SaveToXML(pElement);
+		file.Elements.Add(pElement);
+	}
+	
 	if (filename)
-	{
-		if (file.Open(filename) == FALSE)
-			//return (log << "Could not open cards file for writing: " << filename << "\n").Show();
-			return FALSE;
-	}
+		file.Save(filename);
 	else
-	{
-		if (file.Open(m_filename) == FALSE)
-			//return (log << "Could not open cards file for writing: " << m_filename << "\n").Show();
-			return FALSE;
-	}
-
-	(log << "Saving BDA DVB-T Cards file: " << m_filename << "\n").Write();
-
-	try
-	{
-		file << "# DigitalWatch - BDA Cards File" << file.EOL;
-		file << "#" << file.EOL;
-		file << file.EOL;
-
-		BDACard *currCard;
-		std::vector<BDACard *>::iterator it = cards.begin();
-		for ( ; it != cards.end() ; it++ )
-		{
-			currCard = *it;
-			file << "TunerDevice(\"" << W2A(currCard->tunerDevice.strDevicePath) << "\")" << file.EOL;
-			file << "  TunerName(\"" << W2A(currCard->tunerDevice.strFriendlyName) << "\")" << file.EOL;
-			file << "  CaptureDevice(\"" << W2A(currCard->captureDevice.strDevicePath) << "\")" << file.EOL;
-			file << "  CaptureName(\"" << W2A(currCard->captureDevice.strFriendlyName) << "\")" << file.EOL;
-			file << "  Active(" << (currCard->bActive ? 1 : 0) << ")" << file.EOL;
-			file << file.EOL;
-		}
-	}
-	catch (LPWSTR str)
-	{
-		(log << "Error caught saving cards file: " << str << "\n").Show();
-		file.Close();
-		return FALSE;
-	}
-	file.Close();
+		file.Save(m_filename);
+		
 	return TRUE;
 }
 

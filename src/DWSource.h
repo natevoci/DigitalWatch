@@ -30,7 +30,7 @@ interface DWSource
 {
 public:
 	/* General */
-	virtual void GetSourceType(LPWSTR type) = 0;
+	virtual void GetSourceType(LPWSTR &type) = 0;
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph) = 0;
 	virtual HRESULT Destroy() = 0;

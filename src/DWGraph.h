@@ -25,7 +25,7 @@
 
 #include "StdAfx.h"
 #include "LogMessage.h"
-#include <streams.h>
+#include "DWMediaTypes.h"
 
 class DWGraph  
 {
@@ -58,6 +58,8 @@ private:
 	BOOL m_bInitialised;
 
 	DWORD m_rotEntry;
+
+	DWMediaTypes m_mediaTypes;
 
 	LogMessage log;
 };

@@ -24,12 +24,8 @@
 #include "ParseLine.h"
 #include "Globals.h"
 #include "GlobalFunctions.h"
-
-#include <fstream>
-using namespace std;
-
 #include <stdio.h>
-#include "ParseLine.h"
+#include "XMLDocument.h"
 
 KeyMap::KeyMap(void) : m_filename(0)
 {
@@ -62,126 +58,57 @@ BOOL KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR &f
 
 BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 {
-	USES_CONVERSION;
-
 	strCopy(m_filename, filename);
 
-	ifstream file;
-	file.open(W2A(filename));
-
-	if (file.is_open() != 1)
+	XMLDocument file;
+	if (file.Load(m_filename) != S_OK)
 	{
-		return (log << "Could not open global keys file: " << filename << "\n").Show();
+		return (log << "Could not load keys file: " << m_filename << "\n").Show(FALSE);
 	}
-	(log << "Opening keymap file: " << filename << "\n").Write();
 
-	try
+	(log << "Loading Keys file: " << m_filename << "\n").Write();
+
+	XMLElement *element;
+	XMLAttribute *attr;
+
+	int elementCount = file.Elements.Count();
+	for ( int item=0 ; item<elementCount ; item++ )
 	{
-		int line = 0;
-		char charbuff[256];
-		wchar_t buff[256];
-		LPWSTR pBuff;
-		LPWSTR pCurr;
-		int state = 0;
-
-
-		
-		while (file.getline((LPSTR)&charbuff, 256), !file.eof() || (pBuff[0] != '\0'))
+		element = file.Elements.Item(item);
+		if (_wcsicmp(element->name, L"Key") == 0)
 		{
-			pBuff = (LPWSTR)&buff;
+			KeyMapEntry newKeyMapEntry;
+			ZeroMemory(&newKeyMapEntry, sizeof(KeyMapEntry));
 
-			long length = strlen((LPCSTR)&charbuff);
-			mbstowcs(pBuff, (LPCSTR)&charbuff, length);
-			pBuff[length] = 0;
-
-			line++;
-
-			pCurr = pBuff;
-			skipWhitespaces(pCurr);
-
-			if ((pCurr[0] == '\0') || (pCurr[0] == '#'))
+			attr = element->Attributes.Item(L"code");
+			if (attr == NULL)
 				continue;
 
-			/*
-			if (pCurr[0] == '[')
-			{
-				pCurr++;
-				LPWSTR pEOS = wcschr(pCurr, ']');
+			if ((attr->value[0] == '\'') && (attr->value[2] == '\''))
+				newKeyMapEntry.Keycode = attr->value[1];
+			else
+				newKeyMapEntry.Keycode = _wtoi(attr->value);
 
-				if (pEOS == NULL)
-					return_FALSE_SHOWMSG("Parse Error in " << filename << ": Line " << line << "\nMissing ']'");
-				if (pEOS == pCurr)
-					return_FALSE_SHOWMSG("Parse Error in " << filename << ": Line " << line << "\nMissing section name");
-				pEOS[0] = '\0';
+			attr = element->Attributes.Item(L"shift");
+			newKeyMapEntry.Shift = (attr) && (attr->value[0] != 0);
 
-				//strCopy(currGroup.Name, pCurr)
+			attr = element->Attributes.Item(L"ctrl");
+			newKeyMapEntry.Ctrl = (attr) && (attr->value[0] != 0);
 
-				continue;
-			}
-			*/
+			attr = element->Attributes.Item(L"alt");
+			newKeyMapEntry.Alt = (attr) && (attr->value[0] != 0);
 
-			ParseLine parseLine;
-			if (parseLine.Parse(pBuff) == FALSE)
-				return (log << "Parse Error in " << filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage() << "\n").Show();
+			strCopy(newKeyMapEntry.Function, element->value);
 
-			pCurr = parseLine.LHS.FunctionName;
+			keyMaps.push_back(newKeyMapEntry);
+			continue;
+		}
 
-			if (_wcsicmp(pCurr, L"Key") == 0)
-			{
-				if (parseLine.LHS.ParameterCount < 1)
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nZero parameters found. Expecting at least a keycode\n").Show();
-				if (parseLine.LHS.ParameterCount > 4)
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nToo many parameters found\n").Show();
-
-				KeyMapEntry newKeyMapEntry;
-				ZeroMemory(&newKeyMapEntry, sizeof(KeyMapEntry));
-
-				pCurr = parseLine.LHS.Parameter[0];
-				if (!pCurr)
-					return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-
-				if ((pCurr[0] == '\'') && (pCurr[2] == '\''))
-					newKeyMapEntry.Keycode = pCurr[1];
-				else
-					newKeyMapEntry.Keycode = _wtoi(pCurr);
-
-				if (parseLine.LHS.ParameterCount >= 2)
-				{
-					pCurr = parseLine.LHS.Parameter[1];
-					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-					newKeyMapEntry.Shift = (_wtoi(pCurr) != 0);
-				}
-				if (parseLine.LHS.ParameterCount >= 3)
-				{
-					pCurr = parseLine.LHS.Parameter[2];
-					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-					newKeyMapEntry.Ctrl = (_wtoi(pCurr) != 0);
-				}
-				if (parseLine.LHS.ParameterCount >= 4)
-				{
-					pCurr = parseLine.LHS.Parameter[3];
-					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-					newKeyMapEntry.Alt = (_wtoi(pCurr) != 0);
-				}
-
-				if (!parseLine.HasRHS())
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nMissing right hand side of key assignment\n").Show();
-
-				strCopy(newKeyMapEntry.Function, parseLine.RHS.Function);
-
-				(log << "  Loaded Key(" << newKeyMapEntry.Keycode << ", " << newKeyMapEntry.Shift << ", " << newKeyMapEntry.Ctrl << ", " << newKeyMapEntry.Alt << ") = " << newKeyMapEntry.Function << "\n").Write();
-				keyMaps.push_back(newKeyMapEntry);
-
-				continue;
-			}
+		if (_wcsicmp(element->name, L"Mouse") == 0)
+		{
+			continue;
 		}
 	}
-	catch (LPWSTR str)
-	{
-		(log << str << "\n").Show();
-		file.close();
-		return FALSE;
-	}
-	file.close();
+
 	return TRUE;
 }

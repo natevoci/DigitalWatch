@@ -31,10 +31,10 @@ public:
 	FileReader();
 	virtual ~FileReader();
 
-	BOOL Open(LPCWSTR filename);
+	HRESULT Open(LPCWSTR filename);
 	void Close();
 
-	BOOL ReadLine(LPWSTR &pStr);
+	HRESULT ReadLine(LPWSTR &pStr);
 
 private:
 	BOOL ReadMore();

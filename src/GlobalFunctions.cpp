@@ -22,6 +22,7 @@
 
 #include "StdAfx.h"
 #include "GlobalFunctions.h"
+#include <math.h>
 
 void PStringCopy(char** destString, char* srcString)
 {
@@ -240,5 +241,43 @@ void strCopyA2W(LPWSTR &dest, LPCSTR src)
 void strCopyW2A(LPSTR &dest, LPCWSTR src)
 {
 	strCopyW2A(dest, src, -1);
+}
+
+void strCopy(LPSTR &dest, long value)
+{
+	if (dest)
+		delete[] dest;
+	BOOL bNegative = (value < 0);
+	value = abs(value);
+	long length = (long)log10(value) + (bNegative ? 2 : 1);
+	dest = new char[length + 1];
+
+	for ( int i=length-1 ; i>=0 ; i-- )
+	{
+		dest[i] = '0' + (value % 10);
+		value /= 10;
+	}
+	if (bNegative)
+		dest[0] = '-';
+	dest[length] = 0;
+}
+
+void strCopy(LPWSTR &dest, long value)
+{
+	if (dest)
+		delete[] dest;
+	BOOL bNegative = (value < 0);
+	value = abs(value);
+	long length = (long)log10(value) + (bNegative ? 2 : 1);
+	dest = new wchar_t[length + 1];
+
+	for ( int i=length-1 ; i>=0 ; i-- )
+	{
+		dest[i] = '0' + (value % 10);
+		value /= 10;
+	}
+	if (bNegative)
+		dest[0] = '-';
+	dest[length] = 0;
 }
 

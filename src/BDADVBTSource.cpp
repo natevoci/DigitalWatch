@@ -22,6 +22,7 @@
 
 #include "BDADVBTSource.h"
 #include "Globals.h"
+#include "GlobalFunctions.h"
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
 #include "ParseLine.h"
@@ -38,6 +39,7 @@
 
 BDADVBTSource::BDADVBTSource()
 {
+	m_pDWGraph = NULL;
 }
 
 BDADVBTSource::~BDADVBTSource()
@@ -45,17 +47,22 @@ BDADVBTSource::~BDADVBTSource()
 	Destroy();
 }
 
+void BDADVBTSource::GetSourceType(LPWSTR &type)
+{
+	strCopy(type, L"TV");
+}
+
 HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 {
 	m_pDWGraph = pFilterGraph;
 	
 	wchar_t file[MAX_PATH];
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Channels.ini", g_pData->application.appPath);
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Channels.xml", g_pData->application.appPath);
 	if (channels.LoadChannels((LPWSTR)&file) == FALSE)
 		return E_FAIL;
 
 	//Get list of BDA capture cards
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.ini", g_pData->application.appPath);
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
 	cardList.LoadCards((LPWSTR)&file);
 	cardList.SaveCards();
 	if (cardList.cards.size() == 0)
@@ -118,33 +125,7 @@ HRESULT BDADVBTSource::ExecuteCommand(LPWSTR command)
 
 		return SetChannel(n1, n2);
 	}
-/*	else if (_wcsicmp(pCurr, L"Key") == 0)
-	{
-		if (parseLine.LHS.ParameterCount < 1)
-			return (log << "Keycode parameter expected: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
-		if (parseLine.LHS.ParameterCount > 4)
-			return (log << "Too many parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
-		if ((parseLine.LHS.Parameter[0][0] == '\'') && (parseLine.LHS.Parameter[0][2] == '\''))
-			n1 = parseLine.LHS.Parameter[0][1];
-		else
-			n1 = _wtoi(parseLine.LHS.Parameter[0]);
-
-		n2 = 0;
-		if (parseLine.LHS.ParameterCount >= 2)
-			n2 = _wtoi(parseLine.LHS.Parameter[1]);
-
-		n3 = 0;
-		if (parseLine.LHS.ParameterCount >= 3)
-			n3 = _wtoi(parseLine.LHS.Parameter[2]);
-
-		n4 = 0;
-		if (parseLine.LHS.ParameterCount >= 4)
-			n4 = _wtoi(parseLine.LHS.Parameter[3]);
-
-		return Key(n1, n2, n3, n4);
-	}
-*/
 	//Just referencing these variables to stop warnings.
 	n3 = 0;
 	n4 = 0;
@@ -530,28 +511,32 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::AddFilters()
-{
-	return 0;
-}
-
-HRESULT BDADVBTSource::Connect()
-{
-	return 0;
-}
-
-HRESULT BDADVBTSource::AfterGraphBuilt()
-{
-	return 0;
-}
-
-HRESULT BDADVBTSource::Cleanup()
-{
-	return 0;
-}
-
 HRESULT BDADVBTSource::Destroy()
 {
-	return 0;
+	HRESULT hr;
+
+	if (m_pDWGraph)
+	{
+		if (FAILED(hr = m_pDWGraph->Stop()))
+			(log << "Failed to stop DWGraph\n").Write();
+
+		if (FAILED(hr = UnloadTuner()))
+			(log << "Failed to unload tuner\n").Write();
+
+		if (FAILED(hr = m_pDWGraph->Cleanup()))
+			(log << "Failed to cleanup DWGraph\n").Write();
+
+		std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
+		for ( ; it != m_Tuners.end() ; it++ )
+		{
+			BDADVBTSourceTuner *tuner = *it;
+			delete tuner;
+		}
+		m_Tuners.clear();
+	}
+
+	m_pDWGraph = NULL;
+
+	return S_OK;
 }
 

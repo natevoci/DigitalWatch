@@ -226,11 +226,27 @@ SOURCE=.\src\DWSource.h
 # End Group
 # Begin Source File
 
+SOURCE=.\src\DWDecoders.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWDecoders.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\DWGraph.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\DWGraph.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWMediaTypes.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWMediaTypes.h
 # End Source File
 # End Group
 # Begin Source File
@@ -336,6 +352,14 @@ SOURCE=.\src\ParseLine.cpp
 # Begin Source File
 
 SOURCE=.\src\ParseLine.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\XMLDocument.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\XMLDocument.h
 # End Source File
 # End Group
 # Begin Group "Docs"

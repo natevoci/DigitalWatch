@@ -81,8 +81,6 @@ void LogMessage::RemoveCallback(int handle)
 
 void LogMessage::WriteLogMessage()
 {
-	USES_CONVERSION;
-
 	if (m_str[0] != 0)
 	{
 		vector<LogMessageCallback *>::iterator it;
@@ -114,8 +112,6 @@ int LogMessage::Show()
 
 int LogMessage::Show(int returnValue)
 {
-	USES_CONVERSION;
-
 	if (m_str[0] != 0)
 	{
 		vector<LogMessageCallback *>::iterator it;

@@ -1,6 +1,6 @@
 /**
- *	BDACardCollection.h
- *	Copyright (C) 2004 Nate
+ *	DWMediaTypes.h
+ *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,45 +20,41 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BDACARD_H
-#define BDACARD_H
+#ifndef DWMEDIATYPES_H
+#define DWMEDIATYPES_H
 
 #include "StdAfx.h"
-#include "SystemDeviceEnumerator.h"
 #include "LogMessage.h"
-#include "XMLDocument.h"
+#include <vector>
 
-class BDACard
+class DWMediaType
 {
 public:
-	BDACard();
-	virtual ~BDACard();
+	DWMediaType();
+	virtual ~DWMediaType();
 
-	HRESULT LoadFromXML(XMLElement *pElement);
-	HRESULT SaveToXML(XMLElement *pElement);
+	LPWSTR name;
+	GUID majortype;
+    GUID subtype;
+    GUID formattype;
+};
 
-	DirectShowSystemDevice tunerDevice;
-	DirectShowSystemDevice demodDevice;
-	DirectShowSystemDevice captureDevice;
+class DWMediaTypes
+{
+public:
+	DWMediaTypes();
+	virtual ~DWMediaTypes();
 
-	HRESULT AddFilters(IGraphBuilder* piGraphBuilder);
-	HRESULT Connect(IBaseFilter* pSource);
-	HRESULT GetCapturePin(IPin** pCapturePin);
+	HRESULT Load(LPWSTR filename);
+	HRESULT Save(LPWSTR filename = NULL);
 
-	HRESULT RemoveFilters();
-
-	BOOL bActive;
-	BOOL bNew;
-	BOOL bDetected;
+	//DVBTChannels_Network* Network(int networkNumber);
+	//BOOL IsValidNetwork(int networkNumber);
 
 private:
-	CComPtr <IGraphBuilder> m_piGraphBuilder;
+	std::vector<DWMediaType *> m_mediaTypes;
 
-	CComPtr <IBaseFilter> m_pBDATuner;
-	CComPtr <IBaseFilter> m_pBDADemod;
-	CComPtr <IBaseFilter> m_pBDACapture;
-
-	CComPtr <IPin> m_pCapturePin;
+	LPWSTR m_filename;
 
 	LogMessage log;
 };

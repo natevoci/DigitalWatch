@@ -26,6 +26,7 @@
 #include "StdAfx.h"
 #include "FilterGraphTools.h"
 #include "LogMessage.h"
+#include "GlobalFunctions.h"
 
 //#include <dshow.h>
 #include <ks.h> // Must be included before ksmedia.h
@@ -45,6 +46,87 @@ BDACard::~BDACard()
 	m_pCapturePin.Release();
 	RemoveFilters();
 	m_piGraphBuilder.Release();
+}
+
+HRESULT BDACard::LoadFromXML(XMLElement *pElement)
+{
+	XMLAttribute *attr;
+	attr = pElement->Attributes.Item(L"active");
+	bActive = (attr) && (attr->value[0] == '1');
+
+	XMLElement *device;
+	device = pElement->Elements.Item(L"Tuner");
+	if (device == NULL)
+	{
+		return (log << "Cannot add device without setting tuner name and device path\n").Write(E_FAIL);
+	}
+
+	attr = device->Attributes.Item(L"device");
+	strCopy(tunerDevice.strDevicePath, (attr ? attr->value : L""));
+	attr = device->Attributes.Item(L"name");
+	strCopy(tunerDevice.strFriendlyName, (attr ? attr->value : L""));
+	tunerDevice.bValid = TRUE;
+	(log << "  " << tunerDevice.strFriendlyName << " [" << (bActive ? "Active" : "Not Active") << "] - " << tunerDevice.strDevicePath << "\n").Write();
+
+	device = pElement->Elements.Item(L"Demod");
+	if (device != NULL)
+	{
+		attr = device->Attributes.Item(L"device");
+		strCopy(demodDevice.strDevicePath, (attr ? attr->value : L""));
+		attr = device->Attributes.Item(L"name");
+		strCopy(demodDevice.strFriendlyName, (attr ? attr->value : L""));
+		demodDevice.bValid = TRUE;
+		(log << "  " << demodDevice.strFriendlyName << " - " << demodDevice.strDevicePath << "\n").Write();
+	}
+
+	device = pElement->Elements.Item(L"Capture");
+	if (device != NULL)
+	{
+		attr = device->Attributes.Item(L"device");
+		strCopy(captureDevice.strDevicePath, (attr ? attr->value : L""));
+		attr = device->Attributes.Item(L"name");
+		strCopy(captureDevice.strFriendlyName, (attr ? attr->value : L""));
+		captureDevice.bValid = TRUE;
+		(log << "  " << captureDevice.strFriendlyName << " - " << captureDevice.strDevicePath << "\n").Write();
+	}
+
+	return S_OK;
+}
+
+HRESULT BDACard::SaveToXML(XMLElement *pElement)
+{
+	if (bActive)
+	{
+		XMLAttribute *attr = new XMLAttribute(L"active", L"1");
+		pElement->Attributes.Add(attr);
+	}
+
+	if (tunerDevice.bValid)
+	{
+		XMLElement *device;
+		device = new XMLElement(L"Tuner");
+		device->Attributes.Add(new XMLAttribute(L"device", tunerDevice.strDevicePath));
+		device->Attributes.Add(new XMLAttribute(L"name", tunerDevice.strFriendlyName));
+		pElement->Elements.Add(device);
+	}
+	if (demodDevice.bValid)
+	{
+		XMLElement *device;
+		device = new XMLElement(L"Demod");
+		device->Attributes.Add(new XMLAttribute(L"device", demodDevice.strDevicePath));
+		device->Attributes.Add(new XMLAttribute(L"name", demodDevice.strFriendlyName));
+		pElement->Elements.Add(device);
+	}
+	if (captureDevice.bValid)
+	{
+		XMLElement *device;
+		device = new XMLElement(L"Capture");
+		device->Attributes.Add(new XMLAttribute(L"device", captureDevice.strDevicePath));
+		device->Attributes.Add(new XMLAttribute(L"name", captureDevice.strFriendlyName));
+		pElement->Elements.Add(device);
+	}
+
+	return S_OK;
 }
 
 HRESULT BDACard::AddFilters(IGraphBuilder* piGraphBuilder)

@@ -24,7 +24,6 @@
 #define BDADVBTSOURCETUNER_H
 
 #include "StdAfx.h"
-#include <streams.h>
 #include <bdatif.h>
 #include "BDACardCollection.h"
 #include "DWGraph.h"
@@ -64,8 +63,6 @@ public:
 	BOOL IsRecording();
 	*/
 	BOOL SupportsRecording() { return FALSE; }
-
-	//long activationRank;
 
 	//IBaseFilter*  m_piDWTSRedirect;
 	//DWTSRedirect* m_pfDWTSRedirect;

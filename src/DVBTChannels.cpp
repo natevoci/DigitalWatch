@@ -24,10 +24,6 @@
 #include "ParseLine.h"
 #include "GlobalFunctions.h"
 
-#include <fstream>
-using namespace std;
-
-
 //////////////////////////////////////////////////////////////////////
 // DVBTChannels_Program
 //////////////////////////////////////////////////////////////////////
@@ -35,13 +31,113 @@ using namespace std;
 DVBTChannels_Program::DVBTChannels_Program() :	programNumber(0),
 												name(0),
 												favoriteID(0),
-												bDisableAutoUpdate(0)
+												bManualUpdate(0)
 {
 }
 
 DVBTChannels_Program::~DVBTChannels_Program()
 {
 	streams.clear();
+}
+
+HRESULT DVBTChannels_Program::LoadFromXML(XMLElement *pElement)
+{
+	XMLAttribute *attr;
+	attr = pElement->Attributes.Item(L"ProgramNumber");
+	if (attr == NULL)
+		return (log << "program id must be supplied in a program definition").Write(E_FAIL);
+	programNumber = _wtol(attr->value);
+
+	attr = pElement->Attributes.Item(L"Name");
+	strCopy(name, (attr ? attr->value : L""));
+
+	attr = pElement->Attributes.Item(L"FavoriteID");
+	if (attr)
+		favoriteID = _wtol(attr->value);
+
+	attr = pElement->Attributes.Item(L"ManualUpdate");
+	if (attr)
+		bManualUpdate = (attr->value[0] != 0);
+	else
+		bManualUpdate = FALSE;
+
+	int elementCount = pElement->Elements.Count();
+	for ( int item=0 ; item<elementCount ; item++ )
+	{
+		XMLElement *element = pElement->Elements.Item(item);
+		if (_wcsicmp(element->name, L"Stream") == 0)
+		{
+			DVBTChannels_Program_Stream newStream;
+
+			attr = element->Attributes.Item(L"PID");
+			if (attr == NULL)
+				continue;
+
+			newStream.PID = _wtol(attr->value);
+
+			attr = element->Attributes.Item(L"Type");
+			if (attr == NULL)
+				continue;
+
+			newStream.Type = (DVBTChannels_Program_PID_Types)_wtol(attr->value);
+
+			attr = element->Attributes.Item(L"Active");
+			if (attr == NULL)
+				newStream.bActive = FALSE;
+			else
+				newStream.bActive = (attr->value[0] != 0);
+
+			streams.push_back(newStream);
+			continue;
+		}
+	}
+
+	return S_OK;
+}
+
+HRESULT DVBTChannels_Program::SaveToXML(XMLElement *pElement)
+{
+	LPWSTR pValue = NULL;
+	strCopy(pValue, programNumber);
+	pElement->Attributes.Add(new XMLAttribute(L"ProgramNumber", pValue));
+	delete pValue;
+
+	pElement->Attributes.Add(new XMLAttribute(L"Name", name));
+
+	if (favoriteID > 0)
+	{
+		pValue = NULL;
+		strCopy(pValue, favoriteID);
+		pElement->Attributes.Add(new XMLAttribute(L"FavoriteID", pValue));
+		delete pValue;
+	}
+
+	if (bManualUpdate)
+		pElement->Attributes.Add(new XMLAttribute(L"ManualUpdate", L"1"));
+
+	std::vector<DVBTChannels_Program_Stream>::iterator it = streams.begin();
+	for ( ; it != streams.end() ; it++ )
+	{
+		DVBTChannels_Program_Stream pgStream = *it;
+
+		XMLElement *pStreamElement = new XMLElement(L"Stream");
+
+		pValue = NULL;
+		strCopy(pValue, pgStream.PID);
+		pStreamElement->Attributes.Add(new XMLAttribute(L"PID", pValue));
+		delete pValue;
+
+		pValue = NULL;
+		strCopy(pValue, pgStream.Type);
+		pStreamElement->Attributes.Add(new XMLAttribute(L"Type", pValue));
+		delete pValue;
+
+		if (pgStream.bActive)
+			pStreamElement->Attributes.Add(new XMLAttribute(L"Active", L"1"));
+
+		pElement->Elements.Add(pStreamElement);
+	}
+	return S_OK;
 }
 
 DVBTChannels_Program_PID_Types DVBTChannels_Program::GetStreamType(int index)
@@ -122,6 +218,67 @@ DVBTChannels_Network::~DVBTChannels_Network()
 	programs.clear();
 }
 
+HRESULT DVBTChannels_Network::LoadFromXML(XMLElement *pElement)
+{
+	XMLAttribute *attr;
+	attr = pElement->Attributes.Item(L"Frequency");
+	if (attr == NULL)
+		return (log << "Frequency must be supplied in a network definition").Write(E_FAIL);
+	frequency = _wtol(attr->value);
+
+	attr = pElement->Attributes.Item(L"Bandwidth");
+	if (attr)
+		bandwidth = _wtol(attr->value);
+
+	attr = pElement->Attributes.Item(L"Name");
+	strCopy(name, (attr ? attr->value : L""));
+
+	int elementCount = pElement->Elements.Count();
+	for ( int item=0 ; item<elementCount ; item++ )
+	{
+		XMLElement *element = pElement->Elements.Item(item);
+		if (_wcsicmp(element->name, L"Program") == 0)
+		{
+			DVBTChannels_Program *newProgram = new DVBTChannels_Program();
+			if (newProgram->LoadFromXML(element) == S_OK)
+				programs.push_back(newProgram);
+			else
+				delete newProgram;
+			continue;
+		}
+	}
+
+	return S_OK;
+}
+
+HRESULT DVBTChannels_Network::SaveToXML(XMLElement *pElement)
+{
+	LPWSTR pValue = NULL;
+	strCopy(pValue, frequency);
+	pElement->Attributes.Add(new XMLAttribute(L"Frequency", pValue));
+	delete pValue;
+
+	pValue = NULL;
+	strCopy(pValue, bandwidth);
+	pElement->Attributes.Add(new XMLAttribute(L"Bandwidth", pValue));
+	delete pValue;
+
+	pElement->Attributes.Add(new XMLAttribute(L"Name", name));
+
+	std::vector<DVBTChannels_Program *>::iterator it = programs.begin();
+	for ( ; it != programs.end() ; it++ )
+	{
+		DVBTChannels_Program *program = *it;
+		XMLElement *pProgElement = new XMLElement(L"Program");
+		if (program->SaveToXML(pProgElement) == S_OK)
+			pElement->Elements.Add(pProgElement);
+		else
+			delete pProgElement;
+	}
+
+	return S_OK;
+}
+
 DVBTChannels_Program* DVBTChannels_Network::Program(int programNumber)
 {
 	if (!IsValidProgram(programNumber))
@@ -179,332 +336,65 @@ BOOL DVBTChannels::IsValidNetwork(int networkNumber)
 
 BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 {
-	USES_CONVERSION;
-
 	strCopy(m_filename, filename);
 
-	ifstream file;
-	file.open(W2A(filename));
-
-	if (file.is_open() != 1)
-		return (log << "Could not open channels file: " << filename << "\n").Show();
-
-	try
+	XMLDocument file;
+	if (file.Load(m_filename) != S_OK)
 	{
-		int line = 0;
-		char charbuff[256];
-		wchar_t buff[256];
-		LPWSTR pBuff;
-		LPWSTR pCurr;
-		int state = 0;
-		DVBTChannels_Network *currNetwork;
-		DVBTChannels_Program *currProgram;
+		return (log << "Could not load channels file: " << m_filename << "\n").Show(FALSE);
+	}
 
-		//file.getline(pBuff, 256);
-		while (file.getline((LPSTR)&charbuff, 256), !file.eof() || (pBuff[0] != '\0'))
+	(log << "Loading DVBT Channels file: " << m_filename << "\n").Write();
+
+	int elementCount = file.Elements.Count();
+	for ( int item=0 ; item<elementCount ; item++ )
+	{
+		XMLElement *element = file.Elements.Item(item);
+		if (_wcsicmp(element->name, L"Bandwidth") == 0)
 		{
-			pBuff = (LPWSTR)&buff;
+			m_bandwidth = _wtol(element->value);
+			continue;
+		}
 
-			//strCopyA2W(pBuff, (LPCSTR)&charbuff);
-			long length = strlen((LPCSTR)&charbuff);
-			mbstowcs(pBuff, (LPCSTR)&charbuff, length);
-			pBuff[length] = 0;
-
-			line++;
-
-			pCurr = pBuff;
-			skipWhitespaces(pCurr);
-
-			if ((pCurr[0] == '\0') || (pCurr[0] == '#'))
-				continue;
-
-			if (pCurr[0] == '[')
-			{
-				pCurr++;
-				LPWSTR pEOS = wcschr(pCurr, ']');
-				if (pEOS == NULL)
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nMissing ']'\n").Show();
-				if (pEOS == pCurr)
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nMissing section name\n").Show();
-				pEOS[0] = '\0';
-
-				if (state == 0)
-				{
-					if (_wcsicmp(pCurr, L"Networks") != 0)
-						return (log << "Parse Error in " << filename << ": Line " << line << "\nThe first section must be [Networks]\n[" << pCurr << "] was found instead\n").Show();
-					state = 1;
-					continue;
-				}
-				else if (state == 1)
-				{
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nNo Network() definitions found in [Networks] section.\n").Show();
-				}
-				else if ((state == 2) || (state == 4))
-				{
-					long frequency = _wtol(pCurr);
-
-					std::vector<DVBTChannels_Network *>::iterator it = networks.begin();
-					currNetwork = NULL;
-					for ( ; it != networks.end() ; it++ )
-					{
-						DVBTChannels_Network *nw = *it;
-						if (nw->frequency == frequency)
-						{
-							currNetwork = *it;
-							break;
-						}
-					}
-					if (currNetwork == NULL)
-						return (log << "Parse Error in " << filename << ": Line " << line << "\nFrequency section found without matching Network function\n").Show();
-
-					state = 3;
-				}
-				else
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nSecond consecutive frequency section found\n").Show();
-
-				continue;
-			}
-
-			ParseLine parseLine;
-			if (parseLine.Parse(pBuff) == FALSE)
-				return (log << "Parse Error in " << filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage() << "\n").Show();
-
-
-			if (parseLine.HasRHS())
-				return (log << "Parse Error in " << filename << ": Line " << line << "\nEquals not valid for this command\n").Show();
-
-			pCurr = parseLine.LHS.FunctionName;
-
-			if (_wcsicmp(pCurr, L"Bandwidth") == 0)
-			{
-				if (parseLine.LHS.ParameterCount < 1)
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a bandwidth parameter\n").Show();
-
-				pCurr = parseLine.LHS.Parameter[0];
-				if (!pCurr)
-					return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-
-				m_bandwidth = _wtol(pCurr);
-				continue;
-			}
-
-			if (_wcsicmp(pCurr, L"Network") == 0)
-			{
-				if ((state != 1) && (state != 2))
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nthe Network function is only valid in the [Networks] section.\n").Show();
-
-				if (parseLine.LHS.ParameterCount < 1)
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a frequency parameter\n").Show();
-
-				pCurr = parseLine.LHS.Parameter[0];
-				if (!pCurr)
-					return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-
-				long frequency = _wtol(pCurr);
-				
-				std::vector<DVBTChannels_Network *>::iterator it = networks.begin();
-				for ( ; it != networks.end() ; it++ )
-				{
-					DVBTChannels_Network *nw = *it;
-					if (nw->frequency == frequency)
-						return (log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate frequency found\n").Show();
-				}
-
-				//Add Network
-				currNetwork = new DVBTChannels_Network();
-				currNetwork->frequency = frequency;
-				currNetwork->bandwidth = m_bandwidth;
-				networks.push_back(currNetwork);
-
-				state = 2;
-				continue;
-			}
-
-			if (_wcsicmp(pCurr, L"Program") == 0)
-			{
-				if (state < 3)
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nthe Program function is only valid in the a specific frequency section.\n").Show();
-
-				if (parseLine.LHS.ParameterCount < 1)
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a program number parameter\n").Show();
-
-				pCurr = parseLine.LHS.Parameter[0];
-				if (!pCurr)
-					return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-
-				long programNumber = _wtol(pCurr);
-
-				std::vector<DVBTChannels_Program *>::iterator it = currNetwork->programs.begin();
-				for ( ; it != currNetwork->programs.end() ; it++ )
-				{
-					DVBTChannels_Program *pg = *it;
-					if (pg->programNumber == programNumber)
-						return (log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate program number found\n").Show();
-				}
-
-				//Add Program
-				currProgram = new DVBTChannels_Program();
-				currProgram->programNumber = programNumber;
-				currNetwork->programs.push_back(currProgram);
-
-				state = 4;
-				continue;
-			}
-
-			if (_wcsicmp(pCurr, L"Name") == 0)
-			{
-				if (state == 2)
-				{
-					if (parseLine.LHS.ParameterCount < 1)
-						return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a name parameter\n").Show();
-
-					pCurr = parseLine.LHS.Parameter[0];
-					if (!pCurr)
-						return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-
-					strCopy(currNetwork->name, pCurr);
-				}
-				else if (state == 4)
-				{
-					if (parseLine.LHS.ParameterCount < 1)
-						return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a name parameter\n").Show();
-
-					pCurr = parseLine.LHS.Parameter[0];
-					if (!pCurr)
-						return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-
-					strCopy(currProgram->name, pCurr);
-				}
-				else
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nName function is only valid after a Network or Program function\n").Show();
-
-				continue;
-			}
-
-			if (_wcsicmp(pCurr, L"Stream") == 0)
-			{
-				if (state == 4)
-				{
-					if (parseLine.LHS.ParameterCount < 3)
-						return (log << "Parse Error in " << filename << ": Line " << line << "\nInsufficient number of parameters. Stream(PID, Type, Active)\n").Show();
-
-					pCurr = parseLine.LHS.Parameter[0];
-					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-					long PID = _wtol(pCurr);
-
-					pCurr = parseLine.LHS.Parameter[1];
-					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-					long Type = _wtol(pCurr);
-
-					pCurr = parseLine.LHS.Parameter[2];
-					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
-					long Active = _wtol(pCurr);
-
-
-					std::vector<DVBTChannels_Program_Stream>::iterator it = currProgram->streams.begin();
-					for ( ; it != currProgram->streams.end() ; it++ )
-					{
-						DVBTChannels_Program_Stream pgStream = *it;
-						if (pgStream.PID == PID)
-							return (log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate program number found\n").Show();
-					}
-
-					//Add Stream
-					DVBTChannels_Program_Stream pgStream;
-					pgStream.PID = PID;
-					pgStream.Type = (DVBTChannels_Program_PID_Types)Type;
-					pgStream.bActive = (Active != 0);
-					currProgram->streams.push_back(pgStream);
-				}
-				else
-					return (log << "Parse Error in " << filename << ": Line " << line << "\nStream function is only valid after a Program function\n").Show();
-
-				continue;
-			}
+		if (_wcsicmp(element->name, L"Network") == 0)
+		{
+			DVBTChannels_Network *newNetwork = new DVBTChannels_Network();
+			newNetwork->bandwidth = m_bandwidth;
+			if (newNetwork->LoadFromXML(element) == S_OK)
+				networks.push_back(newNetwork);
+			else
+				delete newNetwork;
+			continue;
 		}
 	}
-	catch (LPWSTR str)
-	{
-		(log << str << "\n").Show();
-		file.close();
-		return FALSE;
-	}
-	file.close();
+
 	if (networks.size() == 0)
-		return (log << "You need to specify at least one network in your channels file\n").Show();
+		return (log << "You need to specify at least one network in your channels file\n").Show(FALSE);
 	return TRUE;
 }
 
 BOOL DVBTChannels::SaveChannels(LPWSTR filename)
 {
-	USES_CONVERSION;
+	XMLDocument file;
 
-	ofstream file;
+	XMLElement *pElement = new XMLElement(L"Bandwidth");
+	strCopy(pElement->value, m_bandwidth);
+	file.Elements.Add(pElement);
+
+	std::vector<DVBTChannels_Network *>::iterator it = networks.begin();
+	for ( ; it < networks.end() ; it++ )
+	{
+		pElement = new XMLElement(L"Network");
+		DVBTChannels_Network *network = *it;
+		network->SaveToXML(pElement);
+		file.Elements.Add(pElement);
+	}
+
 	if (filename)
-		file.open(W2A(filename));
+		file.Save(filename);
 	else
-		file.open(W2A(m_filename));
+		file.Save(m_filename);
 
-	if (file.is_open() != 1)
-		return (log << "Could not open channels file for writing: " << filename << "\n").Show();
-
-	try
-	{
-		file << "# DigitalWatch - Channels File" << endl;
-		file << "#" << endl;
-		file << endl;
-		file << "Bandwidth(" << m_bandwidth << ")" << endl;
-		file << endl;
-		file << "[Networks]" << endl;
-
-		DVBTChannels_Network *currNetwork;
-		DVBTChannels_Program *currProgram;
-
-		std::vector<DVBTChannels_Network *>::iterator nw_it = networks.begin();
-		for ( ; nw_it != networks.end() ; nw_it++ )
-		{
-			currNetwork = *nw_it;
-			file << "Network(" << currNetwork->frequency << ")" << endl;
-			if (currNetwork->name)
-				file << "    Name(\"" << W2A(currNetwork->name) << "\")" << endl;
-		}
-
-		nw_it = networks.begin();
-		for ( ; nw_it != networks.end() ; nw_it++ )
-		{
-			currNetwork = *nw_it;
-
-			file << endl;
-			file << "[" << currNetwork->frequency << "]" << endl;
-
-			std::vector<DVBTChannels_Program *>::iterator pg_it = currNetwork->programs.begin();
-			for ( ; pg_it != currNetwork->programs.end() ; pg_it++ )
-			{
-				currProgram = *pg_it;
-				file << "Program(" << currProgram->programNumber << ")" << endl;
-
-				if (currProgram->name)
-					file << "    Name(\"" << W2A(currProgram->name) << "\")" << endl;
-
-				std::vector<DVBTChannels_Program_Stream>::iterator st_it = currProgram->streams.begin();
-				for ( ; st_it != currProgram->streams.end() ; st_it++ )
-				{
-					DVBTChannels_Program_Stream pgStream = *st_it;
-					char line[256];
-					sprintf((LPSTR)&line, "    Stream(%4i, %i, %i)", pgStream.PID, pgStream.Type, (pgStream.bActive ? 1 : 0));
-					file << (LPSTR)&line << endl;
-				}
-			}
-		}
-
-	}
-	catch (LPWSTR str)
-	{
-		(log << str << "\n").Show();
-		file.close();
-		return FALSE;
-	}
-	file.close();
 	return TRUE;
 }
 
