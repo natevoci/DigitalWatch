@@ -54,7 +54,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 libcmt.lib libcimt.lib strmbase.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe"
+# ADD LINK32 ddraw.lib dxguid.lib libcmt.lib libcimt.lib strmbase.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe"
 # SUBTRACT LINK32 /nodefaultlib
 
 !ELSEIF  "$(CFG)" == "DigitalWatch - Win32 Debug"
@@ -81,7 +81,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 libcmtd.lib libcimtd.lib strmbasd.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib dsnetifc.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe" /pdbtype:sept /libpath:"lib/"
+# ADD LINK32 ddraw.lib dxguid.lib libcmtd.lib libcimtd.lib strmbasd.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib dsnetifc.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe" /pdbtype:sept /libpath:"lib/"
 # SUBTRACT LINK32 /nodefaultlib
 
 !ENDIF 
@@ -277,6 +277,62 @@ SOURCE=.\src\SystemDeviceEnumerator.h
 # Begin Group "OSD"
 
 # PROP Default_Filter ""
+# Begin Group "OSD Data"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\DWOnScreenDisplayDataItem.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\DWOnScreenDisplayDataItem.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOnScreenDisplayDataList.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOnScreenDisplayDataList.h
+# End Source File
+# End Group
+# Begin Group "OSD Controls"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\DWOnScreenDisplayWindows.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOnScreenDisplayWindows.h
+# End Source File
+# End Group
+# Begin Source File
+
+SOURCE=.\src\DWDirectDraw.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWDirectDraw.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWDirectDrawImage.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWDirectDrawImage.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOnScreenDisplay.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOnScreenDisplay.h
+# End Source File
 # End Group
 # Begin Group "Data"
 

@@ -142,7 +142,7 @@ HRESULT BDADVBTSource::ExecuteCommand(LPWSTR command)
 
 		n1 = _wtoi(parseLine.LHS.Parameter[0]);
 
-		n2 = -1;
+		n2 = 0;
 		if (parseLine.LHS.ParameterCount >= 2)
 			n2 = _wtoi(parseLine.LHS.Parameter[1]);
 
@@ -187,6 +187,9 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 
 	if (!channels.IsValidNetwork(nNetwork))
 		return (log << "Network number is not valid\n").Write(E_INVALIDARG);
+
+	if (nProgram == 0)
+		nProgram = 1;
 
 	if (!channels.Network(nNetwork)->IsValidProgram(nProgram))
 		return (log << "Program number is not valid\n").Write(E_INVALIDARG);

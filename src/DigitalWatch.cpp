@@ -25,6 +25,7 @@
 #include "AppData.h"
 #include "TVControl.h"
 #include "DigitalWatchWindow.h"
+#include "DWOnScreenDisplay.h"
 #include "LogMessage.h"
 #include "LogMessageWriter.h"
 #include "GlobalFunctions.h"
@@ -32,12 +33,10 @@
 AppData* g_pData;
 TVControl* g_pTv;
 DigitalWatchWindow* g_pDWWindow;
+DWOnScreenDisplay* g_pOSD;
 LogMessageWriter g_DWLogWriter;
 
-int APIENTRY WinMain(HINSTANCE hInstance,
-                     HINSTANCE hPrevInstance,
-                     LPSTR     lpCmdLine,
-                     int       nCmdShow)
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	MSG msg;
 	msg.wParam = 0;
@@ -63,9 +62,11 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
 	g_pTv = new TVControl();
 	g_pDWWindow = new DigitalWatchWindow();
+	g_pOSD = new DWOnScreenDisplay();
 
 	g_pTv->SetLogCallback(&g_DWLogWriter);
 	g_pDWWindow->SetLogCallback(&g_DWLogWriter);
+	g_pOSD->SetLogCallback(&g_DWLogWriter);
 
 	switch (g_pData->settings.application.priority)
 	{
@@ -88,13 +89,17 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
 	if (g_pDWWindow->Create(hInstance, hPrevInstance, lpCmdLine, nCmdShow))
 	{
-		g_pTv->Initialise();
+		if FAILED(g_pOSD->Initialise())
+			return -1;
+		if FAILED(g_pTv->Initialise())
+			return -1;
+
 		//tv->VideoDecoderEntry(appSettings->defaultVideoDecoder);
 		//tv->AudioDecoderEntry(appSettings->defaultAudioDecoder);
 
 		//appData->StoreGlobalValues();
-		/*if (appSettings->startLastChannel != 0)
-		{
+		//if (appSettings->startLastChannel != 0)
+		/*{
 			tv->SetChannel(appSettings->lastNetwork, appSettings->lastProgram);
 		}*/
 		/*if (appSettings->disableScreenSaver != 0)
@@ -102,13 +107,42 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 			SetTimer(appData->hWnd, 998, 30000, NULL);
 		}*/
 		//g_pTv->StartTimer();
-		while (GetMessage(&msg, NULL, 0, 0)) 
+
+		BOOL bGotMsg;
+		msg.message = WM_NULL;
+		PeekMessage( &msg, NULL, 0U, 0U, PM_NOREMOVE );
+
+		long lastTickCount = 0;
+
+		while (WM_QUIT != msg.message)
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			// Use PeekMessage() so we can use idle time to render the scene.
+			bGotMsg = (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE) != 0);
+
+			if (bGotMsg)
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+			else
+			{
+				// Give some CPU time to other processes
+				long tickCount = GetTickCount();
+				if ((tickCount - lastTickCount) > 10)
+				{
+					lastTickCount = tickCount;
+					// Render a frame during idle time (no messages are waiting)
+					if FAILED(g_pOSD->Render(tickCount))
+						SendMessage(g_pData->hWnd, WM_CLOSE, 0, 0);
+					//g_pTv->ProcessQueue();
+				}
+				Sleep(1);
+			}
 		}
+
 		//KillTimer(appData->hWnd, 998);
 	}
+
 
 	delete g_pDWWindow;
 	delete g_pTv;

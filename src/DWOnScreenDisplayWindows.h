@@ -1,6 +1,6 @@
 /**
- *	DigitalWatchWindow.h
- *	Copyright (C) 2003-2004 Nate
+ *	DWOnScreenDisplayWindows.h
+ *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,27 +20,45 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DITITALWATCHWINDOW_H
-#define DITITALWATCHWINDOW_H
+#ifndef DWONSCREENDISPLAYWINDOWS_H
+#define DWONSCREENDISPLAYWINDOWS_H
 
-#include "TVControl.h"
-#include "AppData.h"
+#include "StdAfx.h"
 #include "LogMessage.h"
+#include "XMLDocument.h"
+#include <vector>
 
-#include "DWDirectDraw.h"
-
-class DigitalWatchWindow : public LogMessageCaller
+class DWOnScreenDisplayWindows;
+class DWOnScreenDisplayWindow : public LogMessageCaller
 {
+	friend DWOnScreenDisplayWindows;
 public:
-	DigitalWatchWindow();
-	~DigitalWatchWindow();
+	DWOnScreenDisplayWindow();
+	virtual ~DWOnScreenDisplayWindow();
 
-	int Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
-
-	LRESULT WndProc(HWND, UINT, WPARAM, LPARAM);
+	LPWSTR Name();
 
 private:
-	DWDirectDraw m_DD;
+	XMLElement *m_pElement;
+};
+
+
+class DWOnScreenDisplayWindows : public LogMessageCaller
+{
+public:
+	DWOnScreenDisplayWindows();
+	virtual ~DWOnScreenDisplayWindows();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
+
+	HRESULT Load(LPWSTR filename);
+
+	DWOnScreenDisplayWindow *Item(LPWSTR pName);
+
+private:
+	std::vector<DWOnScreenDisplayWindow *> m_windows;
+
+	LPWSTR m_filename;
 };
 
 #endif

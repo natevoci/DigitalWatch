@@ -1,6 +1,6 @@
 /**
- *	DigitalWatchWindow.h
- *	Copyright (C) 2003-2004 Nate
+ *	DWOnScreenDisplay.h
+ *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,27 +20,45 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DITITALWATCHWINDOW_H
-#define DITITALWATCHWINDOW_H
+#ifndef DWOSD
+#define DWOSD
 
-#include "TVControl.h"
-#include "AppData.h"
-#include "LogMessage.h"
-
+#include "StdAfx.h"
 #include "DWDirectDraw.h"
+#include "DWDirectDrawImage.h"
+#include "DWOnScreenDisplayDataList.h"
 
-class DigitalWatchWindow : public LogMessageCaller
+#include "DWOnScreenDisplayWindows.h"
+
+#include "LogMessage.h"
+#include <vector>
+
+class DWOnScreenDisplay : public LogMessageCaller
 {
 public:
-	DigitalWatchWindow();
-	~DigitalWatchWindow();
+	DWOnScreenDisplay();
+	virtual ~DWOnScreenDisplay();
 
-	int Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+	void SetLogCallback(LogMessageCallback *callback);
 
-	LRESULT WndProc(HWND, UINT, WPARAM, LPARAM);
+	HRESULT Initialise();
+
+	HRESULT Render(long tickCount);
+
+	DWDirectDraw* get_DirectDraw();
+
+	DWOnScreenDisplayDataList* GetList(LPWSTR pListName);
 
 private:
-	DWDirectDraw m_DD;
+	long GetPanningPos(long tickCount, long span, double speed);
+
+	DWDirectDraw* m_pDirectDraw;
+	//DWDirectDrawImage* m_pImage;
+
+	DWOnScreenDisplayWindows m_windows;
+
+	std::vector<DWOnScreenDisplayDataList *> m_Lists;
 };
 
 #endif
+

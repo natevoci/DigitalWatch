@@ -1,87 +1,47 @@
-# DigitalWatch - OSD.ini
-#
 
-# $(LongYear) - Year (4 digit)
-# $(ShortYear) - Year (2 digit)
-# $(Month) - Month (2 digit)
-# $(Day) - Day (2 digit)
-# $(Hour24) - Hour in 24 hour time (2 digit)
-# $(Minute) - Minute (2 digit)
-# $(Second) - Second (2 digit)
-# $(Hour12) - Hour in 12 hour time (2 digit)
-# $(AMPM) - AM/PM
-# $(ap) - a/p
-# $(LongDayOfWeek) - Day of week (eg. Sunday, Monday, ...)
-# $(ShortDayOfWeek) - Short day of week (eg. Sun, Mon, ...)
-# $(LongMonth) - Name of month (eg. January, February, ...)
-# $(ShortMonth) - Short name of month (eg. Jan, Feb, ...)
-#
-# $(NetworkName) - Current Network Name
-# $(ProgramName) - Current Program Name
-# $(NetworkNumber) - Current Network Number
-# $(ProgramNumber) - Current Program Number
-#
-# $(Frequency)
-# $(VideoPid)
-# $(AudioPid)
-# $(AC3)
-#
-# $(Recording)
-# $(RecordingStopped)
-# $(RecordingPaused)
-# $(RecordingUnpaused)
-# $(RecordingTimeLeft)
-#
-# $(VideoDecoder)
-# $(VideoDecoderId)
-# $(AudioDecoder)
-# $(AudioDecoderId)
-# $(Resolution)
-# $(ResolutionLeft)
-# $(ResolutionTop)
-# $(ResolutionWidth)
-# $(ResolutionHeight)
-# $(ResolutionMove)
-# $(ResolutionResize)
-#
-# $(Zoom)
-# $(ZoomMode)
-#
-# $(AlwaysOnTop)
-# $(Fullscreen)
-#
-# $(Volume)
-# $(Mute)
-#
-# $(KeyCode)
-# $(KeyShift)
-# $(KeyCtrl)
-# $(KeyAlt)
-#
-# $(SignalQuality)
-# $(SignalStrength)
-#
-# $(TimeShift)
-# $(TimeShiftJumpDirection)
-# $(TimeShiftJumpSeconds)
-#
-# $(Brightness)
-# $(Contrast)
-# $(Hue)
-# $(Saturation)
-# $(Gamma)
-#
-# $(NowAndNext)
-# $(NaNTime[n])
-# $(NaNLength[n])
-# $(NaNProgram[n])
-# $(NaNDescription[n])
-#
-# $(() - $(
+<window name="Messages">
+	<listbox>
+		<pos x=10 y=10 />
+		<size width=500 height=500 />
+		
+		<items>#messages</items>
+		
+		<textColor>#ffffffff</textColor>
+		<backColor>#ff505050</backColor>
+	</listbox>
+</window>
 
-Event(ErrorMessage)
-  DrawText("$(ErrorMessage)", 50, 30,  0,  0,  0,  0,  4, 0x00FFFF00, Arial)
+<window name="MainMenu">
+	<button>
+		<pos x=100 y=100 />
+		<text>Watch TV</text>
+		<onClick>SetSource(TV)</onClick>
+	</button>
+</window>
 
+<window name="MessageBox">
+	<button>
+		<pos x=100 y=100 />
+		<background color=#1109B3" />
+		<border color="#A1A1A1" width=5 />
+		<text color="#FFFFFF">#MessageBox</text>
+	</button>
+</window>
+
+<window name="TVOverlay">
+	<image>
+		<pos x=0 y=476 />
+		<size width=768 height=100 />
+		<filename>images\background.bmp</filename>
+	</image>
+	<label>
+		<pos x=20 y=486 />
+		<size width=400 height=20 />
+		<text>#CurrentNetwork</text>
+	</label>
+</window>
+
+<!--
 Event(ShowAll)
   DrawBitmap("images\background.bmp",  0, 94, -1, -1, 100, 6)
   DrawBitmap("images\background.bmp",  0, 94, -1, -1, 100, 6)
@@ -182,4 +142,4 @@ Event(ShowSignal)
 
 Event(ShowNowAndNext)
   DrawText("$(NowAndNext)",  2, 10, -1, -1, 60, 80, 4, 0x00FFFFFF, Arial)
-
+-->

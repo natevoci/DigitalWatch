@@ -22,6 +22,7 @@
 
 #include "DWDecoders.h"
 #include "GlobalFunctions.h"
+#include "Globals.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWDecoder
@@ -91,6 +92,17 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				if (hr != S_OK)
 					return (log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Show(hr);
 
+				CComPtr <IDDrawExclModeVideo> piDDrawExclMode;
+				piOMFilter.QueryInterface(&piDDrawExclMode);
+				if (piDDrawExclMode == NULL)
+					return (log << "Error: Could not QI for IDDrawExclModeVideo\n").Write(hr);
+
+				//hr = piDDrawExclMode->SetDDrawObject((IDirectDraw *)g_pOSD->get_DirectDraw()->get_Object());
+				//hr = piDDrawExclMode->SetDDrawSurface((IDirectDrawSurface *)g_pOSD->get_DirectDraw()->get_FrontSurface());
+				hr = piDDrawExclMode->SetCallbackInterface(g_pOSD->get_DirectDraw()->get_OverlayCallbackInterface(), 0);
+				if FAILED(hr)
+					return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
+
 				CComPtr <IBaseFilter> piVRFilter;
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoRenderer, &piVRFilter, L"Video Renderer");
 				if (hr != S_OK)
@@ -99,6 +111,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = graphTools.ConnectFilters(piGraphBuilder, piOMFilter, piVRFilter);
 				if (hr != S_OK)
 					return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
+				
 			}
 			else if (_wcsicmp(pName, L"VMR7") == 0)
 			{
@@ -289,11 +302,12 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 
 	strCopy(m_filename, filename);
 
+	HRESULT hr;
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);
-	if (file.Load(m_filename) != S_OK)
+	if FAILED(hr = file.Load(m_filename))
 	{
-		return (log << "Could not load decoders file: " << m_filename << "\n").Show(FALSE);
+		return (log << "Could not load decoders file: " << m_filename << "\n").Show(hr);
 	}
 
 	XMLElement *element = NULL;

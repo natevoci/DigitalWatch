@@ -64,10 +64,11 @@ HRESULT TVControl::Initialise()
 	//SetTimer(g_pData->hWnd, 996, 100, NULL);
 	//SetTimer(g_pData->hWnd, 997, 1000, NULL);
 
+	HRESULT hr;
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"Keys.xml");
-	if (globalKeyMap.LoadKeyMap((LPWSTR)&file) == FALSE)
-		return E_FAIL;
+	if FAILED(hr = globalKeyMap.LoadKeyMap((LPWSTR)&file))
+		return hr;
 
 	m_pFilterGraph = new DWGraph();
 	m_pFilterGraph->SetLogCallback(m_pLogCallback);
@@ -365,7 +366,13 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 	else if (nKeycode == MOUSE_SCROLL_DOWN)
 		(log << L"Scroll Down\n").Write();
 	else
-		(log << (char)nKeycode << " (" << nKeycode << ")" << "\n").Write();
+	{
+		LPTSTR keyName = new TCHAR[100];
+		GetKeyNameText((MapVirtualKey(nKeycode, 0) << 16), keyName, 100);
+
+		(log << keyName << " (" << nKeycode << ")" << "\n").Write();
+		delete[] keyName;
+	}
 
 	LogMessageIndent indent(&log);
 

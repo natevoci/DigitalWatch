@@ -120,9 +120,9 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);
-	if (file.Load(m_filename) != S_OK)
+	if FAILED(hr = file.Load(m_filename))
 	{
-		return (log << "Could not load media types file: " << m_filename << "\n").Show(E_FAIL);
+		return (log << "Could not load media types file: " << m_filename << "\n").Show(hr);
 	}
 
 	XMLElement *element = NULL;
