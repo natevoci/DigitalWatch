@@ -1,0 +1,54 @@
+'------------------------------------------------------------------------------
+'FILE DESCRIPTION: New Macro File
+'------------------------------------------------------------------------------
+
+Sub InsertDigitalWatchGPL()
+	ActiveDocument.Selection.StartOfDocument
+	ActiveDocument.Selection = "/**"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = " *	" & ActiveDocument.Name
+	ActiveDocument.Selection.NewLine
+	ActiveDocument.Selection = "*	Copyright (C) 2004 "
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	This file is part of DigitalWatch, a free DTV watching and recording"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	program for the VisionPlus DVB-T."
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	DigitalWatch is free software; you can redistribute it and/or modify"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	it under the terms of the GNU General Public License as published by"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	the Free Software Foundation; either version 2 of the License, or"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	(at your option) any later version."
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	DigitalWatch is distributed in the hope that it will be useful,"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	but WITHOUT ANY WARRANTY; without even the implied warranty of"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	GNU General Public License for more details."
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	You should have received a copy of the GNU General Public License"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	along with DigitalWatch; if not, write to the Free Software"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA"
+	ActiveDocument.Selection.NewLine
+ 	ActiveDocument.Selection = "*/"
+	ActiveDocument.Selection.NewLine
+	ActiveDocument.Selection.NewLine
+	ActiveDocument.Selection.LineUp dsMove, 20
+	ActiveDocument.Selection.EndOfLine
+End Sub
+
+

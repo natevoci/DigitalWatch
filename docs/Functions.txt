@@ -1,0 +1,140 @@
+----------------------
+DigitalWatch Functions
+----------------------
+
+These are the predefined functions that you can assign to keys, mouse-clicks,
+control bar buttons, and channels.
+If you assign a function that is not one of these then DigitalWatch will
+look in osd.ini for an event of the same name to trigger.
+
+Channel functions have no effect in channels.ini
+
+
+SetChannel(int network, int program = -1)
+    network - A network number from the channels.ini file.
+    program - A program number from the channels.ini file or,
+              -1 for the default program of the network.
+              -2 for the next program in the network if not changing network.
+                 otherwise selects the default program of the network.
+
+ManualChannel(int frequency, int vpid, int apid)
+    frequency - tune to this frequency
+    vpid      - use this video PID
+    apid      - use this audio PID. prefix with A for ac3
+    This is primarily for use by external programs like WebSchedulerMod.
+
+NetworkUp() - Changes to the next network and uses the default program.
+
+NetworkDown() - Changes to the previsous network and uses the default program.
+
+ProgramUp() - Changes to the next program of the current network.
+
+ProgramDown() - Changes to the previous program of the current network.
+
+LastChannel() - Changes to the network and program selected prior to the
+                current one.
+
+TVPlaying(int playing)
+    playing - 0 to turn off live viewing (also pauses timeshifting)
+              1 to turn on live viewing (also resumes timeshifting)
+              2 to toggle on/off (also pauses/resumes timeshifting)
+
+Recording(int recording, string filename)
+    recording - 0 to Stop
+                1 to Start
+                2 to Toggle
+    filename  - (optional) full path and filename of destination file
+                if this is omitted then settings.ini will be used to name the file
+
+RecordingTimer(int minutes)
+    minutes - adds a number of minutes to the timer to stop recording.
+              If called when not recording then it's the same as Recording(1)
+
+VolumeUp(int percentage)
+    percentage - increase volume by this percentage.
+
+VolumeDown(int percentage)
+    percentage - decrease volume by this percentage.
+
+SetVolume(int percentage)
+    percentage - set the volume to this percentage. 100% is the default.
+
+Mute(int mute)
+    mute - 0 for off
+           1 for on
+           2 for toggle
+
+VideoDecoderEntry(int index)
+    index - choose 0 to use automatic video graph building
+            choose 1+ to choose an entry from the VideoDecoders.ini file
+            choose -1 to cycle through entries.
+
+AudioDecoderEntry(int nIndex)
+    index - choose 0 to use automatic audio graph building
+            choose 1+ to choose an entry from the AudioDecoders.ini file
+            choose -1 to cycle through entries.
+
+ResolutionEntry(int nIndex)
+    index = choose 0 to resize to the default size
+            choose 1+ to choose an entry from the Resolutions.ini file
+            choose -1 to cycle through entries.
+
+Resolution(int left, int top, int width, int height, int move, int resize)
+    left, top     - the new upper left corner of the window.
+    width, height - the new width and height of the video area.
+    move   - if non-zero moves the window to the left, top position
+    resize - if non-zero resizes the window to be width by height
+
+SetColorControls(int brightness, int contrast, int hue, int saturation, int gamma)
+    brightness - value from    0 to 10000. default 750
+    contrast   - value from    0 to 20000. default 10000
+    hue        - value from -180 to   180. default 0
+    saturation - value from    0 to 20000. default 10000
+    gamma      - value from    1 to   500. default 1
+
+AlwaysOnTop(int alwaysOnTop)
+    alwaysOnTop - 0 for off
+                  1 for on
+                  2 for toggle
+
+Fullscreen(int fullscreen)
+    fullscreen - 0 for off
+                 1 for on
+                 2 for toggle
+
+Zoom(int percentage)
+    percentage - zoom factor. (see ZoomMode for value meanings)
+
+ZoomIn(int percentage)
+    percentage - value to add to the zoom factor
+
+ZoomOut(int percentage)
+    percentage - value to subtract from the zoom factor
+
+ZoomMode(int mode)
+    mode - if  0, then 100% zoom fits all the video in the window
+           if  1, then 100% zoom makes the video the full height of the window (center-cut)
+           if -1, then cycles through modes.
+
+AspectRatio(int width, int height)
+    width  - value greater than 0. (eg. 4)
+    height - value greater than 0. (eg. 3)
+
+ShowFilterProperties() - Shows the properties dialogs for each filter
+
+TimeShift(int mode)
+    mode - 0 for pause
+           1 for play
+           2 for toggle
+
+TimeShiftJump(int seconds)
+    seconds - The number of seconds to jump.
+              Can be negative to jump backwards
+
+Key(int keycode, int shift, int ctrl, int alt)
+    keycode - keycode of key, or key inside single quotes. eg. 'T'
+    shift   - non-zero means shift is down
+    ctrl    - non-zero means ctrl is down
+    alt     - non-zero means alt is down
+
+Exit()

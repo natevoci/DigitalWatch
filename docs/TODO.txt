@@ -1,0 +1,1017 @@
+-----------------
+DigitalWatch TODO
+-----------------
+
+- Load and Save bda dvb-t cards.ini
+- get dsnetwork sender and reciever working.
+- implement demuxer stuff in BDADVBTSource.
+- channel scanning
+
+
+
+
+
+Documentation
+- LoadAudioRenderer
+- OSD
+
+
+
+Major Upgrades
+- BDA source selection
+  - Read BDA Tuner and BDA Capture device from file
+
+- OSD
+  - OSD filter
+    - VMR9 direct to screen. IVMRMixerBitmap9::SetAlphaBitmap
+    - VMR9 deinterlacing
+
+  - Make a Menu mode.
+    - Menu for channels, video decoders, audio decoders, resolutions, timeshifting, filters, ...
+    - menu background bitmaps.
+
+  - Settings page for Global settings such as AR, Auto Fullscreen, etc...
+      or should it just be a separate app like myHTPC Configuration?
+
+
+- move timeshifting into filtergraphmanager.
+
+- Fix recording
+  - Modify DWDump more. Remove the need for DWDumpFilter.
+
+- Incorperate Josh's BDA NaN code
+  - add Now and Next info to options for CaptureFileName mask.
+
+- Revamp channel management
+  - dynamic data sizes (channels, osd text, decoders, control bar buttons, keys, resolutions)
+  - Store all programs and notify when they change
+
+
+Minor fixes
+- if vpid == 0 then don't make pin.
+
+- Fix GetCommandPath " bug. Use CommandLineToArgvW
+
+
+
+Enhancements
+- Set title bar to DigitalWatch - $(NaNProgram)
+- Bold text in OSD?
+
+- Init.ini functions that happen on startup
+
+- option to make ProgramUp move to next or last network
+
+- Timeshifting position slider
+
+- KeepWindowAR(0/1/2) 0=unlock, 1=lock, 2=toggle
+- KeepWindowAR(x, y) lock to x:y AR.
+
+- Command-line parameters
+    as a hack only perform 1 command each time it's run?
+    Need to make sure commands are run at the appropriate time
+    ie. before SetChannel() / is SetChannel() / after SetChannel()
+
+- Still Image Capture
+
+- class DSNetworkSink : DVBInput, and class DSNetworkSource : DVBInput
+    For network streaming.
+    Will need to add more stuff to DVBInput like BOOL CanLock() and BOOL CanSetPids()
+
+- On the fly DVBInput change.
+    Not really important now, but might be handy once network or file input are done.
+
+- Timer to put the computer to sleep.
+- Timer to shutdown the computer.
+    These need to not happen if currently recording.
+
+- TS Parser
+    To fix the microsoft demultiplexer pausing problem.
+    Can continually parse channel info and provide live feedback to DigitalWatch
+    so that if the pids for a program change then it can adapt on the fly.
+    Can write my own recording mechanism that hopefully won't have the same bugs
+    as twinhan's.
+    Can get extra stats such as continuity errors etc.
+
+- startup.ini - A list of Functions. Basically a startup script.
+
+OSD
+  - osd entry background bitmaps. For those who don't want transparency, but want more than the plain black background.
+
+  - Channel info
+    - video info. res, fps, interlaced vs progressive.
+    - audio info. mpa vs ac3, 2.0, 5.1.
+
+- Change zoom method to get AR working with clone mode.
+    Tried: Don't think it's possible. Maybe with VMR9?
+
+-----------------
+ DigitalWatch KB
+-----------------
+
+http://robdvd.radfiles.net/viewtopic.php?p=11515#11515
+JoeyBloggs
+On a separate issue, What The ??? where is signal strength coming from ? 
+
+Code: 
+################################################################################ 
+ExamineTuner() 
+2 pin types: 
+Pin 0 = 0 
+Pin 1 = 1 
+2 node types: 
+Node 0 = 0 
+Node 1 = 1 
+node interfaces: 
+NodeType 0 has 2 interfaces: 
+Found Interface {71985F47-1CA1-11D3-9CC8-00C04F7971E0} IID_IBDA_FrequencyFilter    
+Found Interface {1347D106-CF3A-428A-A5CB-AC0D9A2A4338} IID_IBDA_SignalStatistics  
+NodeType 1 has 3 interfaces: 
+Found Interface {DDF15B12-BD25-11D2-9CA0-00C04F7971E0} IID_IBDA_AutoDemodulate     - QI FAILED !!! - hr = 0x80004002 
+Found Interface {1347D106-CF3A-428A-A5CB-AC0D9A2A4338} IID_IBDA_SignalStatistics  
+Found Interface {39101D0B-F040-4B1E-90D5-5A0CCFE577C1} Unknown Interface           - QI FAILED !!! - hr = 0x80004002 
+################################################################################ 
+################################################################################ 
+ITuner Signal Strength = 82 
+################################################################################ 
+Node(0,1,0) Signal Strength = 0 hr = 0x0 
+Node(0,1,0) Signal Quality  = 0 hr = 0x80070490 
+Node(0,1,1) Signal Strength = 0 hr = 0x80070490 
+Node(0,1,1) Signal Quality  = 92 hr = 0x0 
+################################################################################ 
+
+
+
+http://robdvd.radfiles.net/viewtopic.php?p=13150#13150
+Nate: @device:pnp:\\?\pci#ven_109e&dev_036e&subsys_00011822&rev_11#3&61aaa01 &0&40  #{71985f48-1ca1-11d3-9cc8-00c04f7971e0}\{4e6038f2-0897-4d49-be68-b90e1e651e7b}
+Null: @device:pnp:\\?\pci#ven_109e&dev_036e&subsys_00011822&rev_11#4&11c9f252&0&28f0#{71985f48-1ca1-11d3-9cc8-00c04f7971e0}\{4e6038f2-0897-4d49-be68-b90e1e651e7b} 
+
+http://robdvd.radfiles.net/viewtopic.php?p=13158#13158
+//Code to parse monikers from null_pointer
+BOOL CFilterDescription::createInstance() 
+{ 
+
+   TCHAR tempDesc[1024]; 
+    WCHAR filterDesc[1024]; 
+   wsprintf(tempDesc, TEXT("%s"), filterID.c_str()); 
+
+#ifndef UNICODE 
+    MultiByteToWideChar(CP_ACP, 0, tempDesc, -1, filterDesc, NUMELMS(filterDesc)); 
+#else 
+    wcscpy(tempDesc, T2W(filterDesc)); 
+#endif 
+
+    IBindCtx *lpBC; 
+    HRESULT hr = CreateBindCtx(0, &lpBC); 
+   IMoniker *pmFilter = 0; 
+    if(SUCCEEDED(hr)) 
+   { 
+        DWORD dwEaten; 
+        hr = MkParseDisplayName(lpBC, filterDesc, &dwEaten, &pmFilter); 
+        lpBC->Release(); 
+    } 
+
+   if(pmFilter) 
+   { 
+      pmFilter->BindToObject(0, 0, IID_IBaseFilter, (void**)&filterPointer); 
+      pmFilter->Release(); 
+   } 
+   else 
+   { 
+      loadErrMsg(TEXT("Could Not Load Filter: %s"), filterName); 
+   } 
+
+   return true; 
+} 
+
+
+http://robdvd.radfiles.net/viewtopic.php?p=10491#10491
+BDA Channel Scanning
+
+
+
+http://robdvd.radfiles.net/viewtopic.php?p=10700#10700
+/////////////////////////////////////////////////////////////////////////////// 
+void GetTransportInformationFilterData() 
+{ 
+   HRESULT hr = S_OK; 
+
+   ///////////////////////// 
+
+    if (true) 
+   { 
+      IBaseFilter* piBaseFilter = NULL; 
+      ITuner*      piTuner      = NULL; 
+
+      FindInterfaceInGraph(m_piGraphBuilder, IID_ITuner, &piBaseFilter, reinterpret_cast<void**>(&piTuner) );
+
+      if (piTuner != NULL) 
+      { 
+         long lSignalStrength = 0; 
+
+         hr = piTuner->get_SignalStrength(&lSignalStrength); 
+
+         MYTRACE("Signal Strength = %ld\n", lSignalStrength); 
+
+         piTuner->Release(); 
+      } 
+      else 
+      { 
+         MYTRACE("FindInterfaceInGraph(m_piGraphBuilder, IID_ITuner - FAILED !!!\n"); 
+      } 
+   } 
+
+   ///////////////////////// 
+
+    if (true) 
+   { 
+      IBaseFilter*           piBaseFilter       = NULL; 
+      IBDA_SignalStatistics* piSignalStatistics = NULL; 
+
+      FindInterfaceInGraph(m_piGraphBuilder, IID_IBDA_SignalStatistics, &piBaseFilter, reinterpret_cast<void**>(&piSignalStatistics) ); 
+
+      if (piSignalStatistics != NULL) 
+      { 
+         long lSignalStrength = 0; 
+         long lSignalQuality  = 0; 
+
+         hr = piSignalStatistics->get_SignalStrength(&lSignalStrength); 
+         hr = piSignalStatistics->get_SignalQuality (&lSignalQuality ); 
+
+         MYTRACE("Signal Strength = %ld\n", lSignalStrength); 
+         MYTRACE("Signal Quality  = %ld\n", lSignalQuality ); 
+
+         piSignalStatistics->Release(); 
+      } 
+      else 
+      { 
+         MYTRACE("FindInterfaceInGraph(m_piGraphBuilder, IID_IBDA_SignalStatistics - FAILED !!!\n"); 
+      } 
+   } 
+
+   ///////////////////////// 
+    
+   if (m_piGuideData != NULL) 
+   { 
+      IEnumVARIANT*  piEnumProgramEntries = NULL; 
+
+      hr = m_piGuideData->GetGuideProgramIDs(&piEnumProgramEntries); 
+
+      if (SUCCEEDED(hr)) 
+      { 
+         CComVariant                varProgramEntryId; 
+         IEnumGuideDataProperties*  piEnumProperties = NULL; 
+          
+         MYTRACE("while (piEnumProgramEntries->Next(1, &varProgramEntryId, 0) == S_OK)\n"); 
+
+         hr = piEnumProgramEntries->Reset(); 
+
+         while (piEnumProgramEntries->Next(1, &varProgramEntryId, 0) == S_OK) 
+         { 
+            hr = m_piGuideData->GetProgramProperties(varProgramEntryId, &piEnumProperties); 
+
+            if (SUCCEEDED(hr)) 
+            { 
+               MYTRACE("m_piGuideData->GetProgramProperties()\n"); 
+
+               piEnumProperties->Release(); 
+            } 
+            else 
+            { 
+               MYTRACE("m_piGuideData->GetProgramProperties() - FAILED !!!\n"); 
+            } 
+         } 
+
+         piEnumProgramEntries->Release(); 
+      } 
+
+      ///////////// 
+       
+      IEnumTuneRequests*  piEnumTuneRequests = NULL; 
+
+      hr = m_piGuideData->GetServices(&piEnumTuneRequests); 
+
+      if (SUCCEEDED(hr)) 
+      { 
+         ITuneRequest*  piTuneRequest = NULL; 
+         IComponents*   piComponents  = NULL; 
+
+         MYTRACE("while (piEnumTuneRequests->Next(1, &piTuneRequest, 0) == S_OK)\n"); 
+
+         //hr = piEnumTuneRequests->Reset(); 
+
+         while (piEnumTuneRequests->Next(1, &piTuneRequest, 0) == S_OK) 
+         { 
+            hr = piTuneRequest->get_Components(&piComponents); 
+
+            if (SUCCEEDED(hr)) 
+            { 
+               MYTRACE("piTuneRequest->get_Components(&piComponents)\n"); 
+
+               long lComponents = 0; 
+
+               hr = piComponents->get_Count(&lComponents); 
+
+
+               MYTRACE("FOUND COMPONENTS %ld\n", lComponents); 
+
+
+               IEnumComponents* piEnumComponents = NULL; 
+               IComponent*      piComponent      = NULL; 
+
+               hr = piComponents->EnumComponents(&piEnumComponents); 
+
+               if (SUCCEEDED(hr)) 
+               { 
+                  while (piEnumComponents->Next(1, &piComponent, 0) == S_OK) 
+                  { 
+                     MYTRACE("FOUND A COMPONENT - piComponent\n"); 
+                   
+                     piComponent->Release(); 
+                  } 
+
+                  piEnumComponents->Release(); 
+               } 
+
+               piComponents->Release(); 
+            } 
+            else 
+            { 
+               MYTRACE("piTuneRequest->get_Components(&piComponents) - FAILED !!!\n"); 
+            } 
+
+            piTuneRequest->Release(); 
+         } 
+
+         piEnumTuneRequests->Release(); 
+      } 
+
+      ///////////// 
+
+      IEnumVARIANT*  piEnumScheduleEntries = NULL; 
+
+      hr = m_piGuideData->GetScheduleEntryIDs(&piEnumScheduleEntries); 
+
+      if (SUCCEEDED(hr)) 
+      { 
+         CComVariant                varScheduleEntryId; 
+         IEnumGuideDataProperties*  piEnumProperties = NULL; 
+          
+         MYTRACE("while (piEnumScheduleEntries->Next(1, &varScheduleEntryId, 0) == S_OK)\n"); 
+
+         hr = piEnumScheduleEntries->Reset(); 
+
+         while (piEnumScheduleEntries->Next(1, &varScheduleEntryId, 0) == S_OK) 
+         { 
+            hr = m_piGuideData->GetScheduleEntryProperties(varScheduleEntryId, &piEnumProperties); 
+
+            if (SUCCEEDED(hr)) 
+            { 
+               MYTRACE("m_piGuideData->GetScheduleEntryProperties()\n"); 
+
+               piEnumProperties->Release(); 
+            } 
+            else 
+            { 
+               MYTRACE("m_piGuideData->GetScheduleEntryProperties() - FAILED !!!\n"); 
+            } 
+         } 
+
+         piEnumScheduleEntries->Release(); 
+      } 
+      else 
+      { 
+         MYTRACE("m_piGuideData->GetScheduleEntryIDs(&piEnumScheduleEntries) - FAILED !!!\n"); 
+      } 
+   } 
+   else 
+   { 
+      MYTRACE("m_piGuideData == NULL - FAILED !!!\n"); 
+   } 
+}
+
+patch the above code with the following code
+
+	unsigned long ret = 1; 
+	CComVariant varProgramEntryId; 
+	IEnumVARIANT *piEnumProgramEntries; 
+	hr = pGuideData->GetGuideProgramIDs(&piEnumProgramEntries); 
+
+	piEnumProgramEntries->Reset(); 
+
+	while(SUCCEEDED(piEnumProgramEntries->Next(1, &varProgramEntryId, &ret)) && ret > 0) 
+	{ 
+	   IEnumGuideDataProperties *ppEnumProperties; 
+	   hr = pGuideData->GetProgramProperties(varProgramEntryId, &ppEnumProperties); 
+
+
+	   IGuideDataProperty *ppProp; 
+	   unsigned long pcelt = 1; 
+
+	   while(SUCCEEDED(ppEnumProperties->Next(1, &ppProp, &pcelt)) && pcelt > 0) 
+	   { 
+
+		  CComBSTR name; 
+		  ppProp->get_Name(&name); 
+
+		  CComVariant value; 
+		  ppProp->get_Value(&value); 
+
+		  // Do stuff here 
+
+	   } 
+
+	} 
+
+
+
+http://robdvd.radfiles.net/viewtopic.php?t=1117
+/////////////////////////////////////////////////////////////////////////////// 
+void CBaseDtvTunerBDASource::PrintMpeg2Data() 
+{ 
+   HRESULT hr = S_OK; 
+
+   IBaseFilter*  piBaseFilter  = NULL; 
+   IMpeg2Data*   piIMpeg2Data  = NULL; 
+   ISectionList* piSectionList = NULL; 
+
+   // Initialize pMPEG by searching the graph for a filter that exposes the 
+   // IMpeg2Data interface (not shown). Run the graph to get MPEG-2 data. 
+
+   if (m_piMPEG2SectionsAndTablesFilter != NULL) 
+   { 
+      m_piMPEG2SectionsAndTablesFilter->QueryInterface(ClassIdFromString(_T("{9B396D40-F380-4e3c-A514-1A82BF6EBFE6}")), reinterpret_cast<void**>(&piIMpeg2Data) ); 
+   } 
+   else 
+   { 
+      FindInterfaceInGraph(m_piGraphBuilder, ClassIdFromString(_T("{9B396D40-F380-4e3c-A514-1A82BF6EBFE6}")), &piBaseFilter, reinterpret_cast<void**>(&piIMpeg2Data) ); 
+   } 
+
+
+   if (piIMpeg2Data != NULL) 
+   { 
+      // Get the next section with PID 0, which is reserved for the PAT. 
+      PID   pid       = 0x00; 
+      TID   tid       = 0x00; 
+      DWORD dwTimeout = 5000; // msec 
+
+   /* 
+      hr = pMPEG->GetSection(pid, tid, NULL, dwTimeout, &piSectionList); 
+
+      if (SUCCEEDED(hr)) 
+      { 
+         // Use pSectionList to access the data 
+         piSectionList->Release(); 
+      } 
+   */ 
+      hr = piIMpeg2Data->GetTable(pid, tid, NULL, dwTimeout, &piSectionList); 
+
+      if (SUCCEEDED(hr)) 
+      { 
+         WORD cSections; 
+          
+         hr = piSectionList->GetNumberOfSections(&cSections); 
+
+         MYTRACE(_T("piSectionList->GetNumberOfSections() = %d\n"), cSections); 
+
+         for (WORD i = 0; i < cSections; i++) 
+         { 
+            // Iterate through the list of sections. 
+            SECTION* pstSection; 
+            DWORD    ulSize; 
+
+            hr = piSectionList->GetSectionData(i, &ulSize, &pstSection); 
+          
+            if (SUCCEEDED(hr)) 
+            { 
+               PrintMpeg2Section(pstSection, ulSize); 
+            } 
+         } 
+          
+         piSectionList->Release(); 
+      } 
+
+      piIMpeg2Data->Release(); 
+   } 
+} 
+
+/////////////////////////////////////////////////////////////////////////////// 
+void CBaseDtvTunerBDASource::PrintMpeg2Section(SECTION *pSection, DWORD dwPacketLength) 
+{ 
+    if (!pSection) 
+    { 
+        return; 
+    } 
+
+    if (dwPacketLength < sizeof(SECTION)) 
+    { 
+        ATLTRACE(L"Malformed MPEG-2 section data.\n"); 
+        return; 
+    } 
+
+    // Coerce the header bits to a bit field structure. 
+    MPEG_HEADER_BITS *pHeader = (MPEG_HEADER_BITS*)&pSection->Header.W; 
+
+    ATLTRACE(L"Packet Length: %d bytes.\n", dwPacketLength); 
+    ATLTRACE(L"Table ID: 0x%.2x\n", pSection->TableId); 
+    ATLTRACE(L"Section Syntax Indicator: 0x%x\n", pHeader->SectionSyntaxIndicator); 
+    ATLTRACE(L"Private Indicator: 0x%x\n", pHeader->PrivateIndicator); 
+    ATLTRACE(L"Reserved: 0x%x\n", pHeader->Reserved); 
+    ATLTRACE(L"Section Length: %d\n", pHeader->SectionLength); 
+
+    if (pHeader->SectionSyntaxIndicator) 
+    { 
+        // Coerce the section structure to a long section header. 
+        LONG_SECTION *pLong = (LONG_SECTION*) pSection; 
+
+        MPEG_HEADER_VERSION_BITS *pVersion = (MPEG_HEADER_VERSION_BITS*)&pLong->Version.B; 
+
+        ATLTRACE(L"Long section fields ...\n"); 
+        ATLTRACE(L"TID Extension: 0x%.4x\n", pLong->TableIdExtension); 
+        ATLTRACE(L"Reserved: 0x%x\n", pVersion->Reserved); 
+        ATLTRACE(L"Version: %d\n", pVersion->VersionNumber); 
+        ATLTRACE(L"Current/Next: 0x%x\n", pVersion->CurrentNextIndicator); 
+        ATLTRACE(L"Section Number: %d\n", pLong->SectionNumber); 
+        ATLTRACE(L"Last Section Number: %d\n", pLong->LastSectionNumber); 
+
+        // Look for DSM-CC message types. 
+        if (pSection->TableId == 0x3B || pSection->TableId == 0x3C) 
+        { 
+            // Coerce the section structure to a DSM-CC header. 
+            DSMCC_SECTION *pDsmcc = (DSMCC_SECTION*) pSection; 
+
+            ATLTRACE(L"DSM-CC section fields ...\n"); 
+            ATLTRACE(L"Protocol Discriminator: 0x%.2x\n", pDsmcc->ProtocolDiscriminator); 
+            ATLTRACE(L"Type: 0x%.2x\n", pDsmcc->DsmccType); 
+            ATLTRACE(L"MessageId: 0x%.4x\n", pDsmcc->MessageId); 
+            ATLTRACE(L"TransactionId: 0x%.8x\n", pDsmcc->TransactionId); 
+            ATLTRACE(L"Reserved: 0x%.2x\n", pDsmcc->Reserved); 
+            ATLTRACE(L"AdaptationLength: 0x%.2x\n", pDsmcc->AdaptationLength); 
+            ATLTRACE(L"MessageLength: 0x%.4x\n", pDsmcc->MessageLength); 
+            ATLTRACE(L"Remaining bytes ...\n"); 
+            
+         PrintByteArray(pDsmcc->RemainingData, pDsmcc->MessageLength + pDsmcc->AdaptationLength); 
+        } 
+        else 
+        { 
+            // This is not a DSM-CC message. Print the remaining bytes. 
+            ATLTRACE(L"Remaining bytes ...\n"); 
+            PrintByteArray(pLong->RemainingData, pHeader->SectionLength - 5); 
+        } 
+    } 
+    else 
+    { 
+        // Not a long section header. Print the remaining bytes. 
+        ATLTRACE(L"Section bytes ...\n"); 
+        PrintByteArray(pSection->SectionData, pHeader->SectionLength); 
+    } 
+
+} 
+
+/////////////////////////////////////////////////////////////////////////////// 
+void CBaseDtvTunerBDASource::PrintByteArray(const BYTE *pData, long cbSize) 
+{ 
+    for (int iter = 0; iter < cbSize; iter++) 
+    { 
+        ATLTRACE(L"0x%.2x ", pData[iter]); 
+        if (iter % 8 == 7) 
+        { 
+            ATLTRACE(L"\n"); 
+        } 
+    } 
+}
+
+
+
+http://robdvd.radfiles.net/viewtopic.php?t=1116
+Complete TIF Information retrieval
+
+   if (true) 
+   { 
+      IBaseFilter*           piBaseFilter       = NULL; 
+      IBDA_Topology*         piTopology         = NULL; 
+      IUnknown*              piControlNode      = NULL; 
+      IBDA_SignalStatistics* piSignalStatistics = NULL; 
+
+      //FindInterfaceInGraph(m_piGraphBuilder, IID_IBDA_Topology, &piBaseFilter, reinterpret_cast<void**>(&piTopology) ); 
+       
+      hr = m_piTunerDeviceFilter->QueryInterface(IID_IBDA_Topology, reinterpret_cast<void**>(&piTopology) ); 
+
+      if (piTopology != NULL) 
+      { 
+         hr = piTopology->GetControlNode(0, 1, 0, &piControlNode); 
+
+         if (piControlNode != NULL) 
+         { 
+            hr = piControlNode->QueryInterface(IID_IBDA_SignalStatistics, reinterpret_cast<void**>(&piSignalStatistics) ); 
+
+            if (piSignalStatistics != NULL) 
+            { 
+               long lSignalStrength = 0; 
+               long lSignalQuality  = 0; 
+
+               hr = piSignalStatistics->get_SignalStrength(&lSignalStrength); 
+
+               MYTRACE("Node(0,1,0) Signal Strength = %ld hr = 0x%0lx\n", lSignalStrength, hr); 
+
+               hr = piSignalStatistics->get_SignalQuality (&lSignalQuality); 
+
+               MYTRACE("Node(0,1,0) Signal Quality  = %ld hr = 0x%0lx\n", lSignalQuality, hr); 
+
+               piSignalStatistics->Release(); 
+            } 
+            else 
+            { 
+               MYTRACE("QueryInterface(IID_IBDA_SignalStatistics) - FAILED !!!\n"); 
+            } 
+         } 
+         else 
+         { 
+            MYTRACE("piTopology->GetControlNode(0, 1, 0, &piControlNode) - FAILED !!!\n"); 
+         } 
+
+
+
+         hr = piTopology->GetControlNode(0, 1, 1, &piControlNode); 
+
+         if (piControlNode != NULL) 
+         { 
+            hr = piControlNode->QueryInterface(IID_IBDA_SignalStatistics, reinterpret_cast<void**>(&piSignalStatistics) ); 
+
+            if (piSignalStatistics != NULL) 
+            { 
+               long lSignalStrength = 0; 
+               long lSignalQuality  = 0; 
+
+               hr = piSignalStatistics->get_SignalStrength(&lSignalStrength); 
+
+               MYTRACE("Node(0,1,1) Signal Strength = %ld hr = 0x%0lx\n", lSignalStrength, hr); 
+
+               hr = piSignalStatistics->get_SignalQuality (&lSignalQuality); 
+
+               MYTRACE("Node(0,1,1) Signal Quality  = %ld hr = 0x%0lx\n", lSignalQuality, hr); 
+
+               piSignalStatistics->Release(); 
+            } 
+            else 
+            { 
+               MYTRACE("QueryInterface(IID_IBDA_SignalStatistics) - FAILED !!!\n"); 
+            } 
+         } 
+         else 
+         { 
+            MYTRACE("piTopology->GetControlNode(0, 1, 1, &piControlNode) - FAILED !!!\n"); 
+         } 
+      } 
+      else 
+      { 
+         MYTRACE("QueryInterface(IID_IBDA_Topology) - FAILED !!!\n"); 
+      } 
+
+      MYTRACE(_T("################################################################################\n")); 
+   } 
+
+   ///////////////////////// 
+    
+   if (m_piGuideData != NULL) 
+   { 
+      IEnumVARIANT*  piEnumProgramEntries  = NULL; 
+
+      hr = m_piGuideData->GetGuideProgramIDs(&piEnumProgramEntries); 
+
+      if (SUCCEEDED(hr)) 
+      { 
+         CComVariant                varProgramEntryId; 
+         IEnumGuideDataProperties*  piEnumProperties = NULL; 
+         unsigned long              ulRetrieved      = 0; 
+          
+         while ( (hr = piEnumProgramEntries->Next(1, &varProgramEntryId, &ulRetrieved)) == S_OK) 
+         { 
+            hr = m_piGuideData->GetProgramProperties(varProgramEntryId, &piEnumProperties); 
+
+            if (SUCCEEDED(hr)) 
+            { 
+               MYTRACE("m_piGuideData->GetProgramProperties()\n"); 
+
+               IGuideDataProperty* piProperty = NULL; 
+
+               long    lLang; 
+               BSTR    szName; 
+               VARIANT varValue; 
+               CString sName; 
+               CString sValue; 
+
+               VariantInit(&varValue); 
+
+               while ( (hr = piEnumProperties->Next(1, &piProperty,  &ulRetrieved)) == S_OK) 
+               { 
+                  VariantClear(&varValue); 
+
+                  piProperty->get_Language(&lLang   ); 
+                  piProperty->get_Name    (&szName  ); 
+                  piProperty->get_Value   (&varValue); 
+       
+                  sName = szName; 
+
+                  switch (varValue.vt) 
+                  { 
+                     case VT_BSTR: { sValue =                 varValue.bstrVal; break; } 
+                     case VT_I4:   { sValue.Format(_T("%ld"), varValue.lVal);   break; } 
+                     default:      { sValue =                  _T("TODO");      break; } 
+                  } 
+
+                  MYTRACE("Program Property %s = %s\n", sName, sValue); 
+               } 
+
+               piEnumProperties->Release(); 
+            } 
+            else 
+            { 
+               MYTRACE("m_piGuideData->GetProgramProperties() - FAILED !!!\n"); 
+            } 
+         } 
+
+         piEnumProgramEntries->Release(); 
+      } 
+      else 
+      { 
+         MYTRACE("m_piGuideData->GetGuideProgramIDs(&piEnumProgramEntries) - FAILED !!! - hr = 0x%0lx\n", hr); 
+      } 
+
+      MYTRACE(_T("################################################################################\n")); 
+       
+      IEnumTuneRequests*  piEnumTuneRequests  = NULL; 
+
+      hr = m_piGuideData->GetServices(&piEnumTuneRequests); 
+
+      if (SUCCEEDED(hr)) 
+      { 
+         ITuneRequest*     piTuneRequest    = NULL; 
+         IDVBTuneRequest*  piDvbTuneRequest = NULL; 
+         IComponents*      piComponents     = NULL; 
+         unsigned long     ulRetrieved      = 0; 
+
+         IEnumGuideDataProperties*  piEnumProperties = NULL; 
+          
+         ITuneRequestInfo* piTuneRequestInfo = NULL; 
+
+         hr = m_piTransportInformationFilter->QueryInterface(IID_ITuneRequestInfo, reinterpret_cast<void**>(&piTuneRequestInfo) ); 
+
+         if (SUCCEEDED(hr)) 
+         { 
+             while ( (hr = piEnumTuneRequests->Next(1, &piTuneRequest, &ulRetrieved)) == S_OK) 
+            { 
+               hr = m_piGuideData->GetServiceProperties(piTuneRequest, &piEnumProperties); 
+
+               if (SUCCEEDED(hr)) 
+               { 
+                  MYTRACE("m_piGuideData->GetServiceProperties()\n"); 
+
+                  IGuideDataProperty* piProperty = NULL; 
+
+                  long    lLang; 
+                  BSTR    szName; 
+                  VARIANT varValue; 
+                  CString sName; 
+                  CString sValue; 
+
+                  VariantInit(&varValue); 
+
+                  while ( (hr = piEnumProperties->Next(1, &piProperty,  &ulRetrieved)) == S_OK) 
+                  { 
+                     VariantClear(&varValue); 
+
+                     piProperty->get_Language(&lLang   ); 
+                     piProperty->get_Name    (&szName  ); 
+                     piProperty->get_Value   (&varValue); 
+          
+                     sName = szName; 
+
+                     switch (varValue.vt) 
+                     { 
+                        case VT_BSTR: { sValue =                 varValue.bstrVal; break; } 
+                        case VT_I4:   { sValue.Format(_T("%ld"), varValue.lVal);   break; } 
+                        default:      { sValue =                  _T("TODO");      break; } 
+                     } 
+
+                     MYTRACE("Service Property %s = %s\n", sName, sValue); 
+                  } 
+
+                  piEnumProperties->Release(); 
+               } 
+               else 
+               { 
+                  MYTRACE("m_piGuideData->GetServiceProperties() - FAILED !!!\n"); 
+               } 
+                
+                
+               //////////////////// 
+
+               hr = piTuneRequest->QueryInterface(IID_IDVBTuneRequest, reinterpret_cast<void**>(&piDvbTuneRequest) ); 
+
+               if (SUCCEEDED(hr)) 
+               { 
+                  piTuneRequestInfo->CreateComponentList(piDvbTuneRequest); 
+
+                  DumpTuneRequest(piTuneRequest); 
+
+                  piDvbTuneRequest->Release(); 
+               } 
+
+               piTuneRequest->Release(); 
+            } 
+
+            piEnumTuneRequests->Release(); 
+         } 
+         else 
+         { 
+            MYTRACE("m_piTransportInformationFilter->QueryInterface(IID_ITuneRequestInfo, reinterpret_cast<void**>(&piTuneRequestInfo) - FAILED !!! - hr = 0x%0lx\n", hr); 
+         } 
+      } 
+      else 
+      { 
+         MYTRACE("m_piGuideData->GetServices(&piEnumTuneRequests) - FAILED !!! - hr = 0x%0lx\n", hr); 
+      } 
+
+      MYTRACE(_T("################################################################################\n")); 
+
+      IEnumVARIANT*  piEnumScheduleEntries = NULL; 
+
+      hr = m_piGuideData->GetScheduleEntryIDs(&piEnumScheduleEntries); 
+
+      if (SUCCEEDED(hr)) 
+      { 
+         CComVariant                varScheduleEntryId; 
+         IEnumGuideDataProperties*  piEnumProperties = NULL; 
+         unsigned long              ulRetrieved      = 0; 
+          
+         while ( (hr = piEnumScheduleEntries->Next(1, &varScheduleEntryId, &ulRetrieved)) == S_OK) 
+         { 
+            hr = m_piGuideData->GetScheduleEntryProperties(varScheduleEntryId, &piEnumProperties); 
+
+            if (SUCCEEDED(hr)) 
+            { 
+               MYTRACE("m_piGuideData->GetScheduleEntryProperties()\n"); 
+
+               IGuideDataProperty* piProperty = NULL; 
+
+               long      lLang; 
+               BSTR      szName; 
+               VARIANT   varValue; 
+               CString   sName; 
+               CString   sValue; 
+               CDateTime oDateTime; 
+
+               VariantInit(&varValue); 
+
+               while ( (hr = piEnumProperties->Next(1, &piProperty,  &ulRetrieved)) == S_OK) 
+               { 
+                  VariantClear(&varValue); 
+
+                  piProperty->get_Language(&lLang   ); 
+                  piProperty->get_Name    (&szName  ); 
+                  piProperty->get_Value   (&varValue); 
+       
+                  sName = szName; 
+
+                  switch (varValue.vt) 
+                  { 
+                     case VT_BSTR: { sValue =                 varValue.bstrVal; break; } 
+                     case VT_I4:    
+                     {  
+                       //sValue.Format(_T("%ld"), varValue.lVal);    
+                        oDateTime.SetFromGPSTime(varValue.lVal);  
+                        sValue = oDateTime.GetXmlTvFormat(); 
+                         break; 
+                     } 
+                     default:      { sValue =                  _T("TODO");      break; } 
+                  } 
+
+
+                  MYTRACE("ScheduleEntry Property %s = %s\n", sName, sValue); 
+               } 
+
+               piEnumProperties->Release(); 
+            } 
+            else 
+            { 
+               MYTRACE("m_piGuideData->GetScheduleEntryProperties() - FAILED !!!\n"); 
+            } 
+         } 
+
+         piEnumScheduleEntries->Release(); 
+      } 
+      else 
+      { 
+         MYTRACE("m_piGuideData->GetScheduleEntryIDs(&piEnumScheduleEntries) - FAILED !!!\n"); 
+      } 
+
+      MYTRACE(_T("################################################################################\n")); 
+   } 
+   else 
+   { 
+      MYTRACE("m_piGuideData == NULL - FAILED !!!\n"); 
+   } 
+}
+
+/////////////////////////////////////////////////////////////////////////////// 
+void CBaseDtvTunerBDASource::DumpTuneRequest(ITuneRequest* piTuneRequest) 
+{ 
+   HRESULT hr = S_OK; 
+
+   IDVBTuneRequest*  piDvbTuneRequest  = NULL; 
+   IComponents*      piComponents      = NULL; 
+   IEnumComponents*  piEnumComponents  = NULL; 
+   IComponent*       piComponent       = NULL; 
+   IMPEG2Component*  piMPEG2Component  = NULL; 
+   IComponentType*   piComponentType   = NULL; 
+
+   ComponentCategory eComponentCategory; 
+   CString           sComponentCategory; 
+
+   unsigned long     ulRetrieved   = 0; 
+
+   long              lONID         = -1; 
+   long              lSID          = -1; 
+   long              lTSID         = -1; 
+
+   BSTR              szDescription = NULL; 
+   CString           sDescription  = _T(""); 
+   long              lPID          = -1; 
+   long              lProgPID      = -1; 
+   long              lPCRPID       = -1; 
+
+   hr = piTuneRequest->QueryInterface(IID_IDVBTuneRequest, reinterpret_cast<void**>(&piDvbTuneRequest) ); 
+
+   if(SUCCEEDED(hr)) 
+   { 
+      hr = piDvbTuneRequest->get_ONID(&lONID); 
+      hr = piDvbTuneRequest->get_SID (&lSID ); 
+      hr = piDvbTuneRequest->get_TSID(&lTSID); 
+
+       
+      hr = piDvbTuneRequest->get_Components(&piComponents); 
+
+      if(SUCCEEDED(hr)) 
+      { 
+         hr = piComponents->EnumComponents(&piEnumComponents); 
+
+         if (SUCCEEDED(hr)) 
+         { 
+            while (piEnumComponents->Next(1, &piComponent, &ulRetrieved) == S_OK) 
+            { 
+               lPID     = -1; 
+               lProgPID = -1; 
+               lPCRPID  = -1; 
+
+               hr = piComponent->QueryInterface(&piMPEG2Component); 
+
+               hr = piMPEG2Component->get_Description  (&szDescription  ); 
+               hr = piMPEG2Component->get_PID          (&lPID           ); 
+               hr = piMPEG2Component->get_ProgramNumber(&lProgPID       ); 
+               hr = piMPEG2Component->get_PCRPID       (&lPCRPID        ); 
+               hr = piMPEG2Component->get_Type         (&piComponentType); 
+                
+               sDescription = szDescription; 
+
+               SysFreeString(szDescription); 
+
+               hr = piComponentType->get_Category(&eComponentCategory); 
+
+               switch(eComponentCategory) 
+               { 
+                  case CategoryNotSet: { sComponentCategory = _T("NotSet "); break; } 
+                  case CategoryOther:  { sComponentCategory = _T("Other  "); break; } 
+                  case CategoryVideo:  { sComponentCategory = _T("Video  "); break; } 
+                  case CategoryAudio:  { sComponentCategory = _T("Audio  "); break; } 
+                  case CategoryText:   { sComponentCategory = _T("Text   "); break; } 
+                  case CategoryData:   { sComponentCategory = _T("Data   "); break; } 
+                  default:             { sComponentCategory = _T("Unknown"); break; } 
+               } 
+
+               MYTRACE(_T("ONID = %ld : SID = %ld : TSID = %ld : ProgPID = %ld : PID = %ld : pcrPID = %ld : CAT = %s : Desc = '%s'\n"), lONID, lSID, lTSID, lProgPID, lPID, lPCRPID, sComponentCategory, sDescription); 
+
+               if (piMPEG2Component != NULL) { piMPEG2Component->Release(); piMPEG2Component = NULL; } 
+               if (piComponentType  != NULL) { piComponentType->Release();  piComponentType  = NULL; } 
+                
+               piComponent->Release(); 
+            } 
+                
+            MYTRACE(_T("\n")); 
+         } 
+         else 
+         { 
+            MYTRACE("piComponents->EnumComponents(&piEnumComponents) - FAILED !!!\n"); 
+         } 
+      } 
+      else 
+      { 
+         MYTRACE(_T("piDvbTuneRequest->get_Components(&piComponents) - FAILED !!!\n")); 
+      } 
+   } 
+   else 
+   { 
+      MYTRACE(_T("piTuneRequest->QueryInterface(IID_IDVBTuneRequest, reinterpret_cast<void**>(&piDvbTuneRequest) - FAILED !!!\n")); 
+   } 
+}
+

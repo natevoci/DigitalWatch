@@ -1,0 +1,356 @@
+# DigitalWatch - Configuration.txt
+#
+
+------------
+channels.ini
+------------
+Channels in DigitalWatch are orgainised by network and program.
+A network contains a group of programs whic are all on the same frequency.
+Just list the Program definitions under each Network definition.
+See the file in the channels folder for examples.
+
+Format:
+
+[Networks]
+Network(frequency, bandwidth)
+  Name(name)
+...
+
+[network frequency]
+Program(name, program number)
+# all these are optional
+  VideoPid(vpid)
+  AudioPid(apid, isAC3)(multiple if there is AC3 and mp2 audio for this 
+program)
+  LastSelectedAudioPid(apid)
+  Teletext(datapid)
+  FavoriteID(number)
+  DisableAutoUpdate()
+# end optional
+
+Program(name, program number)
+...
+
+[network frequency]
+...
+
+
+--------
+Keys.ini
+--------
+The keys.ini file associates keycodes with functions.
+See the docs\Functions.txt file for details about the functions.
+
+Format:
+
+[menu]
+  Key(keycode, shift, ctrl, alt) = function(params...)
+
+    menu     - Only one group, [TV], is used at the moment.
+               Once menu's are implemented then you will be able to a group
+               for each menu.
+    keycode  - The virtual key code number of the key to assign.
+               if a key isn't assigned, and keycode is enabled in osd.ini then
+               the keycode will be shown on the osd when the key is pressed.
+               You can also specify a character inside single quotes eg. 'X'
+               if it's a character from a to z then it should be a capital.
+    shift    - 0 for shift not pressed
+               1 for shift pressed
+    ctrl     - 0 for ctrl not pressed
+               1 for ctrl pressed
+    alt      - 0 for alt not pressed
+               1 for alt pressed
+    function - any function listed in the docs\Functions.txt
+
+  Mouse(event, shift, ctrl, alt) = function(params...)
+  
+    event - 2 for left double click
+            3 for right click
+            4 for middle click
+            5 for mousewheel scroll up
+            6 for mousewheel scroll down
+    shift    - 0 for shift not pressed
+               1 for shift pressed
+    ctrl     - 0 for ctrl not pressed
+               1 for ctrl pressed
+    alt      - 0 for alt not pressed
+               1 for alt pressed
+    function - any function listed in the docs\Functions.txt
+
+
+-------
+OSD.ini
+-------
+
+I have to rewrite this because the osd changed heaps in this release.
+You should be able to pick up the general idea by going through the file.
+
+------------
+Settings.ini
+------------
+
+CardNumber - If you have multiple cards then you can choose to use the
+             second or third card by putting a 2 or 3 here.
+             DigitalWatch does not support using two card simultaneously yet.
+             You can also specify the use of a different card by executing
+             DigitalWatch.exe /card x
+             Default: 1
+
+DVBInput - Selects which input module to use for providing Video and Audio streams.
+           1 - DVBSource -> TS Splitter
+           2 - DVBSource -> Mpeg-2 Demultiplexer
+           4 - DVBSource -> Mpeg-2 Demultiplexer -> TimeShifting
+           When using 2 or 4 any AC3 pids in channels.ini need to be prefixed with an A.
+           eg. Program_2("Nine Digital HD", 0, 512, A650, 0)
+           Default: 2
+
+CaptureFileName - The location and name of a recorded file.
+    %Y - Year (4 digit)
+    %y - Year (2 digit)
+    %m - Month
+    %d - Day
+    %H - Hour (24 hour)
+    %M - Minute
+    %s - Second
+    %h - Hour (12 hour)
+    %A - AM/PM
+    %a - a/p
+    %W - Day of week (eg. Sunday, Monday, ...)
+    %w - Short day of week (eg. Sun, Mon, ...)
+    %X - Name of month (eg. January, February, ...)
+    %x - Short name of month (eg. Jan, Feb, ...)
+
+    %N - Current Network Name
+    %P - Current Program Name
+    %n - Current Network Number
+    %p - Current Program Number
+
+    %% - %
+
+OSDTimeFormat - The format of the time displayed on the OSD.
+                It uses the same tokens as CaptureFileName
+
+TimeShiftFolder - The folder where timeshifting files will be stored
+
+TimeShiftBufferMinutes - The number of minutes to buffer for timeshifting
+
+AspectRatio - The AR setting isn't for the AR of your output device. It's the
+              AR that the source video should be shown at.
+              To work out the correct value for here first you need to work
+              out if the pixel stretch ratio for your system.
+                (stretch ratio) = (tv or monitor AR) / (video card AR)
+                                = (16/9)             / (800/600)
+                                = 1.33
+              then to compensate you need to squash the source by the same
+              factor.
+                (DW AR setting) = (source AR. Always 16:9) / (stretch ratio)
+                                = (16/9)                   / (1.33)
+                                = 1.33
+                                = 4/3
+              Default: 16:9
+
+Zoom - Percentage of window size to scale video.
+       Default: 100
+
+ZoomMode - if 0, then 100% zoom fits all the video in the window
+           if 1, then 100% zoom makes the video the full height of the window
+           Default: 0
+
+StartFullscreen  - if 0, DigitalWatch starts in windowed mode
+                   if 1, DigitalWatch starts in fullscreen mode
+
+StartAlwaysOnTop - if 0, DigitalWatch starts with AlwaysOnTop turned off
+                   if 1, DigitalWatch starts with AlwaysOnTop turned on
+
+StartLastWindowPosition - if 0, then windows default window position
+                          if 1, then LastWindow* values used
+LastWindowPositionX - X coordinate of upper-left corner of video window
+LastWindowPositionY - Y coordinate of upper-left corner of video window
+LastWindowWidth     - Width of video area
+LastWindowHeight    - Height of video area
+
+StoreFullscreenState  - if 0, StartFullscreen is left alone.
+                        if 1, StartFullscreen is updated match the fullscreen
+                              state when DigitalWatch closes.
+
+StoreAlwaysOnTopState - if 0, StartAlwaysOnTop is left alone.
+                        if 1, StartAlwaysOnTop is update to match the
+                              AlwaysOnTop state when DigitalWatch closes.
+
+StoreLastWindowPosition - if 0, LastWindow* values are left alone.
+                          if 1, LastWindow* values are updated when
+                                DigitalWatch closes.
+
+StartLastChannel - if 0, DigitalWatch does not load a channel when it starts
+                   if 1, DigitalWatch loads the channel specified by
+                         LastNetwork and LastProgram when it starts.
+
+LastNetwork - value matching a Network_* entry in channels.ini
+
+LastProgram = value matchins a Program_* entry in channels.ini
+
+DefaultVideoDecoder - if 0, uses automatic graph building for video.
+                      else, 1 based index of an entry in VideoDecoders.ini
+
+DefaultAudioDecoder - if 0, uses automatic graph building for audio.
+                      else, 1 based index of an entry in AudioDecoders.ini
+
+DefaultBrightness
+DefaultContrast
+DefaultHue
+DefaultSaturation
+DefaultGamma
+     - color control values for channels without a SetColorControls entry
+       in channels.ini
+
+DisableScreenSaver - if 0, Screen saver not disabled.
+                     if 1, Screen saver disabled.
+
+BasePriority - if  2, Realtime
+               if  1, High
+               if  0, Normal
+               if -1, Idle
+
+AddToROT -
+            if 0, the graph isn't added to the Running Object Table.
+            if 1, the graph is added to the Running Object Table.
+
+-------------------------------------
+VideoDecoders.ini & AudioDecoders.ini
+-------------------------------------
+See the default VideoDecoders.ini and AudioDecoders.ini for an examples
+
+Format:
+    [group header]
+    eg. [filter group name]
+
+    LoadFilter(CLSID, "unique name")
+        - loads a directshow filter into the graph and give it a name.
+
+    SourcePin("unique name", "Input Pin")
+        - Use once to connect the video stream source to the
+                     first filter you want to use.
+
+    ConnectPins("unique name", "Output Pin", "next name", "Input Pin")
+        - Connect the output of one filter to the input of the next
+
+    RenderPin("next name", "Output Pin")
+        - Renders an output pin of a filter. Not needed if
+          you connect up all the filters with ConnectPin.
+
+    RenderSourcePin()
+        - Renders the source pin of the graph. Try using this
+          if you have trouble with SourcePin, ConnectPins, and RenderPin.
+
+
+If you want to figure out the these entries for yourself then
+    - load up graphedt.exe (from DirectX SDK 9)
+    - open up the "graph->insert filters" dialog
+    - find and click on the filter you want to use
+        (eg. Intervideo Audio Decoder)
+    - in the Filter Moniker: box there should be something like
+        @device:sw:{083863F1-70DE-11D0-BD40-00A0C911CE86}\{7E2E0DC1-31FD-11D2-9C21-00104B3801F6}
+        the bit after the \ is the CLSID to use.
+
+    - Now click insert filter then close the dialog.
+    - The Input and Output pin names should be shown on the filter.
+        Input pin: XForm In
+        Output pin: XFrom Out
+
+    Now with that information you'll be able to make an entry.
+
+[Intervideo Audio Decoder]
+LoadFilter ({7E2E0DC1-31FD-11D2-9C21-00104B3801F6}, "Intervideo Audio Decoder")
+LoadFilter ({79376820-07D0-11CF-A24D-0020AFD79767}, "Default DirectSound Device")
+SourcePin  ("Intervideo Audio Decoder", "XForm In")
+ConnectPins("Intervideo Audio Decoder", "XFrom Out", "Default DirectSound Device", "Audio Input pin (rendered)")
+
+
+
+---------------
+Resolutions.ini
+---------------
+A list of resolution entries.
+
+Format:
+
+    Resolution_<number>(left, top, width, height, move, size)
+
+eg. Resolution_1(10, 100, 704, 408, 1, 1)
+
+    number        - Choose a unique number greater than 0.
+    left, top     - values used when moving the window
+    width, height - values used when resizing the window
+    move          - 1 to move the window
+                    0 to not move the window
+    size          - 1 to resize the window
+                    0 to not resize the window
+
+
+---------------
+ControlBar.ini
+---------------
+
+Format:
+
+  Bitmap(filename, x, y, width, height)
+    Specifies the file and the region of the file to use.
+eg. Bitmap(images\controlbar.bmp, 0, 0, 1004, 47)
+
+    filename - image filename relative to DigitalWatch.exe path
+    x, y, width, height - region of the bitmap to use for the controlbar
+
+  
+  Location(left %, top %, width %, height %)
+    Defines where the control bar will appear in the window
+eg. Location(5, 86, 90, 6)
+
+    All these values can include decimal places.
+    left % - left edge of the controlbar on the window
+             eg. 10 is 1/10th way across the window
+    top % - top edge of the controlbar on the window
+            eg. 50 is half way down the window
+    width % - width of the controlbar on the window
+              eg. 80 is 4/5ths the width of the window
+    height % - height of the controlbar on the window
+               eg. 5 is 1/20th the height of the window
+
+  ActivationPerimeter(distance %)
+eg. ActivationPerimeter(2.5)
+
+    distance % - the distance from the edge of the controlbar that mouse
+                 movement will activate the controlbar.
+
+  Button(x, y, width, height)
+    Denotes an area of the bitmap as a button
+eg. Button(491, 1, 46, 46)
+
+    x, y - bitmap coordinates relative to x and y from the Bitmap() function
+    width, height - the size of the button
+
+
+  Click(shift, ctrl, alt) = function
+    Specifies what functions to call when a button is clicked
+eg. Click(0,0,0) = ZoomIn(10)
+eg. Click(1,0,0) = ZoomIn(1)
+
+    At least one Click() must be defined for each Button()
+
+    shift - 1 for if the shift key is pressed
+            0 for if the shift key is not pressed
+    ctrl - 1 for if the ctrl key is pressed
+           0 for if the ctrl key is not pressed
+    alt - 1 for if the alt key is pressed
+          0 for if the alt key is not pressed
+    function - any function listed in the docs\Functions.txt
+
+
+  Highlight(x, y, width, height)
+    Specifies the area of the bitmap to display when the mouse is over the
+    button. If this omitted then highlighting is done by inverting the
+    normal button image.
+eg. Highlight(491, 1, 46, 46)
+
+    x, y - the upper left corner of the area in the source image
+    width, height - the size of the area in the source image
+
