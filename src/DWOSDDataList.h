@@ -1,6 +1,6 @@
 /**
- *	DigitalWatchWindow.h
- *	Copyright (C) 2003-2004 Nate
+ *	DWOSDDataList.h
+ *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,24 +20,20 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DITITALWATCHWINDOW_H
-#define DITITALWATCHWINDOW_H
+#ifndef DWOSDDATALIST_H
+#define DWOSDDATALIST_H
 
-#include "TVControl.h"
-#include "AppData.h"
-#include "LogMessage.h"
+#include "StdAfx.h"
+#include <vector>
 
-class DigitalWatchWindow : public LogMessageCaller
+class DWOSDDataList
 {
 public:
-	DigitalWatchWindow();
-	~DigitalWatchWindow();
+	DWOSDDataList();
+	virtual ~DWOSDDataList();
 
-	int Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
-
-	LRESULT WndProc(HWND, UINT, WPARAM, LPARAM);
-
-private:
+	LPWSTR name;
+	std::vector<LPWSTR> entries;
 };
 
 #endif

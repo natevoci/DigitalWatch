@@ -49,7 +49,7 @@ void DWOnScreenDisplay::SetLogCallback(LogMessageCallback *callback)
 {
 	LogMessageCaller::SetLogCallback(callback);
 
-	m_windows.SetLogCallback(callback);
+	windows.SetLogCallback(callback);
 
 }
 
@@ -62,7 +62,7 @@ HRESULT DWOnScreenDisplay::Initialise()
 
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"OSD.xml");
-	if FAILED(hr = m_windows.Load((LPWSTR)&file))
+	if FAILED(hr = windows.Load((LPWSTR)&file))
 		return hr;
 
 //	m_pImage->LoadBitmap(TEXT("image.bmp"));
@@ -94,8 +94,10 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 	if FAILED(hr)
 		return (log << "Failed to clear directdraw: " << hr << "\n").Write(hr);
 
+	hr = windows.Render(tickCount);
+
 	//TODO: Stuff
-	RECT rcDest, rcSrc;
+/*	RECT rcDest, rcSrc;
 	SetRect(&rcDest,
 		GetPanningPos(tickCount, 500, 5.0),
 		GetPanningPos(tickCount, 200, 22.0),
@@ -103,25 +105,25 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 		100);
 	SetRect(&rcSrc, 0, 0, 0, 0);
 
-//	hr = m_pImage->Draw(&rcDest, &rcSrc);
-//	if FAILED(hr)
-//		return hr;
-
+	hr = m_pImage->Draw(&rcDest, &rcSrc);
+	if FAILED(hr)
+		return hr;
+*/
 
 	//TODO: End Stuff
 
 	//Display FPS
 	IDirectDrawSurface7* piSurface = m_pDirectDraw->get_BackSurface();
-	HDC hdc;
-	hr = piSurface->GetDC(&hdc);
+	HDC hDC;
+	hr = piSurface->GetDC(&hDC);
 
-	SetBkColor(hdc, RGB(0, 0, 255));
-	SetTextColor(hdc, RGB(255, 255, 0));
+	SetBkColor(hDC, RGB(0, 0, 255));
+	SetTextColor(hDC, RGB(255, 255, 0));
 	TCHAR buffer[30];
 	sprintf(buffer, TEXT("FPS - %f"), m_pDirectDraw->GetFPS());
-	TextOut(hdc, 0, 560, buffer, lstrlen(buffer));
+	TextOut(hDC, 0, 560, buffer, lstrlen(buffer));
 
-	hr = piSurface->ReleaseDC(hdc);
+	hr = piSurface->ReleaseDC(hDC);
 
 	//Flip
 	hr = m_pDirectDraw->Flip();
@@ -136,10 +138,10 @@ DWDirectDraw* DWOnScreenDisplay::get_DirectDraw()
 	return m_pDirectDraw;
 }
 
-DWOnScreenDisplayDataList* DWOnScreenDisplay::GetList(LPWSTR pListName)
+DWOSDDataList* DWOnScreenDisplay::GetList(LPWSTR pListName)
 {
 	//look for existing list of same name
-	std::vector<DWOnScreenDisplayDataList *>::iterator it = m_Lists.begin();
+	std::vector<DWOSDDataList *>::iterator it = m_Lists.begin();
 	for ( ; it < m_Lists.end() ; it++ )
 	{
 		LPWSTR pName = (*it)->name;
@@ -148,7 +150,7 @@ DWOnScreenDisplayDataList* DWOnScreenDisplay::GetList(LPWSTR pListName)
 			return (*it);
 		}
 	}
-	DWOnScreenDisplayDataList* newList = new DWOnScreenDisplayDataList();
+	DWOSDDataList* newList = new DWOSDDataList();
 	strCopy(newList->name, pListName);
 	m_Lists.push_back(newList);
 	return newList;

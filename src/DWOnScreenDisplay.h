@@ -25,10 +25,11 @@
 
 #include "StdAfx.h"
 #include "DWDirectDraw.h"
-#include "DWDirectDrawImage.h"
-#include "DWOnScreenDisplayDataList.h"
+//#include "DWDirectDrawImage.h"
 
-#include "DWOnScreenDisplayWindows.h"
+#include "DWOSDWindows.h"
+
+#include "DWOSDDataList.h"
 
 #include "LogMessage.h"
 #include <vector>
@@ -47,7 +48,10 @@ public:
 
 	DWDirectDraw* get_DirectDraw();
 
-	DWOnScreenDisplayDataList* GetList(LPWSTR pListName);
+	DWOSDDataList* GetList(LPWSTR pListName);
+
+
+	DWOSDWindows windows;
 
 private:
 	long GetPanningPos(long tickCount, long span, double speed);
@@ -55,9 +59,7 @@ private:
 	DWDirectDraw* m_pDirectDraw;
 	//DWDirectDrawImage* m_pImage;
 
-	DWOnScreenDisplayWindows m_windows;
-
-	std::vector<DWOnScreenDisplayDataList *> m_Lists;
+	std::vector<DWOSDDataList *> m_Lists;
 };
 
 #endif

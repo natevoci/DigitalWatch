@@ -1,5 +1,5 @@
 /**
- *	DWOnScreenDisplayWindows.h
+ *	DWOSDWindows.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,43 +20,60 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWONSCREENDISPLAYWINDOWS_H
-#define DWONSCREENDISPLAYWINDOWS_H
+#ifndef DWOSDWINDOWS_H
+#define DWOSDWINDOWS_H
 
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "XMLDocument.h"
+#include "DWOSDImage.h"
+#include "DWOSDControl.h"
 #include <vector>
 
-class DWOnScreenDisplayWindows;
-class DWOnScreenDisplayWindow : public LogMessageCaller
+class DWOSDWindows;
+class DWOSDWindow : public LogMessageCaller
 {
-	friend DWOnScreenDisplayWindows;
+	friend DWOSDWindows;
 public:
-	DWOnScreenDisplayWindow();
-	virtual ~DWOnScreenDisplayWindow();
+	DWOSDWindow();
+	virtual ~DWOSDWindow();
 
 	LPWSTR Name();
 
+	void Show(long secondsToShowFor = -1);
+	void Hide();
+	void Toggle();
+
 private:
-	XMLElement *m_pElement;
+	HRESULT LoadFromXML(XMLElement *pElement);
+	HRESULT Render(long tickCount);
+
+	LPWSTR m_pName;
+	std::vector<DWOSDControl *> m_controls;
+
+	BOOL m_bVisible;
+	long m_lTimeToHide;
 };
 
 
-class DWOnScreenDisplayWindows : public LogMessageCaller
+class DWOSDWindows : public LogMessageCaller
 {
 public:
-	DWOnScreenDisplayWindows();
-	virtual ~DWOnScreenDisplayWindows();
+	DWOSDWindows();
+	virtual ~DWOSDWindows();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	HRESULT Load(LPWSTR filename);
+	
+	DWOSDWindow *GetWindow(LPWSTR pName);
+	DWOSDImage *GetImage(LPWSTR pName);
 
-	DWOnScreenDisplayWindow *Item(LPWSTR pName);
+	HRESULT Render(long tickCount);
 
 private:
-	std::vector<DWOnScreenDisplayWindow *> m_windows;
+	std::vector<DWOSDWindow *> m_windows;
+	std::vector<DWOSDImage *> m_images;
 
 	LPWSTR m_filename;
 };

@@ -41,6 +41,7 @@ void SetdRectEmpty(dRECT* bounds);
 void GetCommandPath(LPWSTR pPath);
 void GetCommandExe(LPWSTR pExe);
 
+long wcsToColor(LPWSTR string);
 
 BOOL findchr(char character, LPCSTR strCharSet);
 BOOL isWhitespace(char character);

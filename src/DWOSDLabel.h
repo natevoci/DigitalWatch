@@ -1,5 +1,5 @@
 /**
- *	DWOnScreenDisplayDataList.cpp
+ *	DWOSDLabel.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,25 +20,42 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "DWOnScreenDisplayDataList.h"
+#ifndef DWOSDLABEL_H
+#define DWOSDLABEL_H
 
-//////////////////////////////////////////////////////////////////////
-// DWOnScreenDisplayDataList
-//////////////////////////////////////////////////////////////////////
+#include "StdAfx.h"
+#include "DWOSDControl.h"
+#include "XMLDocument.h"
+#include "DWOSDImage.h"
 
-DWOnScreenDisplayDataList::DWOnScreenDisplayDataList()
+class DWOSDLabel : public DWOSDControl  
 {
-	name = NULL;
-}
+public:
+	DWOSDLabel();
+	virtual ~DWOSDLabel();
 
-DWOnScreenDisplayDataList::~DWOnScreenDisplayDataList()
-{
-	if (name)
-		delete[] name;
-	std::vector<LPWSTR>::iterator it = entries.begin();
-	for ( ; it < entries.end() ; it++ )
-	{
-		delete[] (*it);
-	}
-	entries.clear();
-}
+	HRESULT LoadFromXML(XMLElement *pElement);
+
+	virtual HRESULT Render(long tickCount);
+
+private:
+
+	long m_nPosX;
+	long m_nPosY;
+	LPWSTR m_wszText;
+	LPWSTR m_wszFont;
+	COLORREF m_dwTextColor;
+	long m_nHeight;
+	long m_nWeight;
+
+	DWOSDImage* m_pBackgroundImage;
+	RECT m_rectBackgroundPadding;
+
+	//DC handling
+	void InitDC(HDC &hDC);
+	void UninitDC(HDC &hDC);
+	HFONT m_hFont, m_hOldFont;
+
+};
+
+#endif

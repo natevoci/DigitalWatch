@@ -1,5 +1,3 @@
-<!-- DigitalWatch - Keys.ini -->
-
   <Key code='T' shift>			SetSource(BDA)</>
   <Key code='F' shift>			SetSource(FILE)</>
 
@@ -102,10 +100,10 @@
   <Key code='A'>				ShowAll(2)</>
 
   <!-- Tab on keyboard and VP remote -->
-  <Key code=  9>				ShowTime(2)</>
+  <Key code=  9>				ToggleWindow("Time")</>
   <Key code='P' shift>			ShowChannelInfo()</>
-  <Key code='Q'>				ShowSignal(2)</>
-  <Key code='E'>				ShowNowAndNext(2)</>
+  <Key code='Q'>				ShowWindow("Signal")</>
+  <Key code='E'>				ShowWindow("NowAndNext")</>
 
   <Key code='1' shift>			SetColorControls(  350, 10000, 0, 10000, 1)</>
   <Key code='2' shift>			SetColorControls(  450, 10000, 0, 10000, 1)</>

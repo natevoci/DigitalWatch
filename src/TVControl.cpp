@@ -155,7 +155,7 @@ HRESULT TVControl::Fullscreen(int nFullScreen)
 	return (bResult ? S_OK : E_FAIL);
 }
 
-HRESULT TVControl::SetSource(LPWSTR szSourceName)
+HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 {
 	std::vector<DWSource *>::iterator it = m_sources.begin();
 	for ( ; it < m_sources.end() ; it++ )
@@ -163,7 +163,7 @@ HRESULT TVControl::SetSource(LPWSTR szSourceName)
 		DWSource *source = *it;
 		LPWSTR pType = source->GetSourceType();
 
-		if (_wcsicmp(szSourceName, pType) == 0)
+		if (_wcsicmp(wszSourceName, pType) == 0)
 		{
 			if (m_pActiveSource)
 			{
@@ -330,6 +330,39 @@ HRESULT TVControl::AspectRatio(int width, int height)
 
 	//OSD "AspectRatio"
 	return S_OK;
+}
+
+HRESULT TVControl::ShowWindow(LPWSTR szWindowName, long secondsToShowFor)
+{
+	DWOSDWindow *window = g_pOSD->windows.GetWindow(szWindowName);
+	if (window)
+	{
+		window->Show(secondsToShowFor);
+		return S_OK;
+	}
+	return S_FALSE;
+}
+
+HRESULT TVControl::HideWindow(LPWSTR szWindowName)
+{
+	DWOSDWindow *window = g_pOSD->windows.GetWindow(szWindowName);
+	if (window)
+	{
+		window->Hide();
+		return S_OK;
+	}
+	return S_FALSE;
+}
+
+HRESULT TVControl::ToggleWindow(LPWSTR szWindowName)
+{
+	DWOSDWindow *window = g_pOSD->windows.GetWindow(szWindowName);
+	if (window)
+	{
+		window->Toggle();
+		return S_OK;
+	}
+	return S_FALSE;
 }
 
 HRESULT TVControl::Exit()
@@ -563,6 +596,35 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 		n1 = _wtoi(parseLine.LHS.Parameter[0]);
 		n2 = _wtoi(parseLine.LHS.Parameter[1]);
 		return AspectRatio(n1, n2);
+	}
+	else if (_wcsicmp(pCurr, L"ShowWindow") == 0)
+	{
+		if ((parseLine.LHS.ParameterCount != 1) && (parseLine.LHS.ParameterCount != 2))
+			return (log << "TVControl::ExecuteCommand - Expecting 1 or 2 parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		if (parseLine.LHS.ParameterCount == 1)
+		{
+			return ShowWindow(parseLine.LHS.Parameter[0]);
+		}
+		else
+		{
+			n1 = _wtoi(parseLine.LHS.Parameter[1]);
+			return ShowWindow(parseLine.LHS.Parameter[0], n1);
+		}
+	}
+	else if (_wcsicmp(pCurr, L"HideWindow") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		return HideWindow(parseLine.LHS.Parameter[0]);
+	}
+	else if (_wcsicmp(pCurr, L"ToggleWindow") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		return ToggleWindow(parseLine.LHS.Parameter[0]);
 	}
 	
 	/*

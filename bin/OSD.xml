@@ -1,3 +1,20 @@
+<image name="BrownButton">
+	<filename>images\brown-button.bmp</filename>
+	<colorkey>#000000</colorkey>
+	<!--<stretchArea left=17 top=17 right=408 bottom=49 />-->
+	<stretchArea left=17 right=408 />
+</image>
+
+<window name="Time">
+	<label>
+		<pos x=100 y=100 />
+		<text height=30 weight=400 color="#FFFFFF">Testing time window</text>
+		<background>
+			<image>BrownButton</image>
+			<padding left=10 top=0 right=10 bottom=3 />
+		</background>
+	</label>
+</window>
 
 <window name="Messages">
 	<listbox>
@@ -6,8 +23,8 @@
 		
 		<items>#messages</items>
 		
-		<textColor>#ffffffff</textColor>
-		<backColor>#ff505050</backColor>
+		<textColor>#FFFFFF</textColor>
+		<backColor>#505050</backColor>
 	</listbox>
 </window>
 

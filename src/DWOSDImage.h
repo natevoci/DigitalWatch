@@ -1,6 +1,6 @@
 /**
- *	DigitalWatchWindow.h
- *	Copyright (C) 2003-2004 Nate
+ *	DWOSDImage.h
+ *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,24 +20,37 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DITITALWATCHWINDOW_H
-#define DITITALWATCHWINDOW_H
+#ifndef DWOSDIMAGE_H
+#define DWOSDIMAGE_H
 
-#include "TVControl.h"
-#include "AppData.h"
+#include "StdAfx.h"
 #include "LogMessage.h"
+#include "XMLDocument.h"
+#include "DWDirectDrawImage.h"
 
-class DigitalWatchWindow : public LogMessageCaller
+class DWOSDWindows;
+class DWOSDImage : public LogMessageCaller
 {
+	friend DWOSDWindows;
 public:
-	DigitalWatchWindow();
-	~DigitalWatchWindow();
+	DWOSDImage();
+	virtual ~DWOSDImage();
 
-	int Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+	LPWSTR Name();
 
-	LRESULT WndProc(HWND, UINT, WPARAM, LPARAM);
+	HRESULT Draw(long x, long y, long width, long height);
 
 private:
+	HRESULT LoadFromXML(XMLElement *pElement);
+
+	LPWSTR m_pwszName;
+
+	LPWSTR m_pwszFilename;
+	BOOL m_bUseColorKey;
+	COLORREF m_dwColorKey;
+	RECT m_rectStretchArea;
+
+	DWDirectDrawImage* m_pImage;
 };
 
 #endif

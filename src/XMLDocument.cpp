@@ -620,10 +620,6 @@ HRESULT XMLDocument::ParseElementData(XMLElement *pElement)
 			skipWhitespaces(pToken);
 			break;
 
-		case tokenCharacter:
-			pToken +=1;
-			break;
-
 		case tokenEndOfLine:
 			if FAILED(hr = ReadLine())
 				return hr;
@@ -651,6 +647,7 @@ HRESULT XMLDocument::ParseElementData(XMLElement *pElement)
 			return S_OK;
 
 		default:
+			pToken +=1;
 			break;
 		};
 	}

@@ -282,19 +282,19 @@ SOURCE=.\src\SystemDeviceEnumerator.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\DWOnScreenDisplayDataItem.cpp
+SOURCE=.\src\DWOSDDataItem.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\DWOnScreenDisplayDataItem.h
+SOURCE=.\src\DWOSDDataItem.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOnScreenDisplayDataList.cpp
+SOURCE=.\src\DWOSDDataList.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOnScreenDisplayDataList.h
+SOURCE=.\src\DWOSDDataList.h
 # End Source File
 # End Group
 # Begin Group "OSD Controls"
@@ -302,11 +302,35 @@ SOURCE=.\src\DWOnScreenDisplayDataList.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\src\DWOnScreenDisplayWindows.cpp
+SOURCE=.\src\DWOSDControl.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOnScreenDisplayWindows.h
+SOURCE=.\src\DWOSDControl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDImage.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDImage.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDLabel.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDLabel.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDWindows.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDWindows.h
 # End Source File
 # End Group
 # Begin Source File

@@ -58,7 +58,7 @@ public:
 	HRESULT AlwaysOnTop(int nAlwaysOnTop = 1);	//0=off, 1=on, 2=toggle
 	HRESULT Fullscreen(int nFullScreen = 1);	//0=off, 1=on, 2=toggle
 
-	HRESULT SetSource(LPWSTR szSourceName);
+	HRESULT SetSource(LPWSTR wszSourceName);
 
 	HRESULT VolumeUp(int value);
 	HRESULT VolumeDown(int value);
@@ -72,6 +72,10 @@ public:
 	HRESULT ZoomOut(int percentage);
 	HRESULT ZoomMode(int mode);
 	HRESULT AspectRatio(int width, int height);
+
+	HRESULT ShowWindow(LPWSTR szWindowName, long secondsToShowFor = -1);
+	HRESULT HideWindow(LPWSTR szWindowName);
+	HRESULT ToggleWindow(LPWSTR szWindowName);
 
 	HRESULT Exit();
 	

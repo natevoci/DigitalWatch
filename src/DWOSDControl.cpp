@@ -1,6 +1,6 @@
 /**
- *	DigitalWatchWindow.h
- *	Copyright (C) 2003-2004 Nate
+ *	DWOSDControl.cpp
+ *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,24 +20,20 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DITITALWATCHWINDOW_H
-#define DITITALWATCHWINDOW_H
+#include "DWOSDControl.h"
+#include "Globals.h"
 
-#include "TVControl.h"
-#include "AppData.h"
-#include "LogMessage.h"
+//////////////////////////////////////////////////////////////////////
+// DWOSDControl
+//////////////////////////////////////////////////////////////////////
 
-class DigitalWatchWindow : public LogMessageCaller
+DWOSDControl::DWOSDControl()
 {
-public:
-	DigitalWatchWindow();
-	~DigitalWatchWindow();
+	m_piSurface = g_pOSD->get_DirectDraw()->get_BackSurface();
+}
 
-	int Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow);
+DWOSDControl::~DWOSDControl()
+{
 
-	LRESULT WndProc(HWND, UINT, WPARAM, LPARAM);
+}
 
-private:
-};
-
-#endif

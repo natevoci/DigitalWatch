@@ -102,6 +102,30 @@ void GetCommandExe(LPWSTR pExe)
 	wcscpy(pExe, cmdLine);
 }
 
+long wcsToColor(LPWSTR str)
+{
+	long result = 0;
+	if (str[0] == '#')
+		str++;
+
+	int length = wcslen(str);
+	if (length <= 0)
+		return 0;
+		
+	for (int i=length-1 ; i>=0 ; i-- )
+	{
+		if ((str[i] >= '0') && (str[i] <= '9'))
+			result += ((str[i]-'0') << ((length-1-i)*4));
+		if ((str[i] >= 'A') && (str[i] <= 'F'))
+			result += ((str[i]-'A'+10) << ((length-1-i)*4));
+	}
+
+	if (length <= 6)
+		result = result | 0xFF000000;
+	
+	return result;
+}
+
 BOOL findchr(char character, LPCSTR strCharSet)
 {
 	int length = strlen(strCharSet);

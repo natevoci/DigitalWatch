@@ -1,5 +1,5 @@
 /**
- *	DWOnScreenDisplayDataList.h
+ *	DWOSDDataList.cpp
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,20 +20,25 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWONSCREENDISPLAYDATALIST_H
-#define DWONSCREENDISPLAYDATALIST_H
+#include "DWOSDDataList.h"
 
-#include "StdAfx.h"
-#include <vector>
+//////////////////////////////////////////////////////////////////////
+// DWOSDDataList
+//////////////////////////////////////////////////////////////////////
 
-class DWOnScreenDisplayDataList
+DWOSDDataList::DWOSDDataList()
 {
-public:
-	DWOnScreenDisplayDataList();
-	virtual ~DWOnScreenDisplayDataList();
+	name = NULL;
+}
 
-	LPWSTR name;
-	std::vector<LPWSTR> entries;
-};
-
-#endif
+DWOSDDataList::~DWOSDDataList()
+{
+	if (name)
+		delete[] name;
+	std::vector<LPWSTR>::iterator it = entries.begin();
+	for ( ; it < entries.end() ; it++ )
+	{
+		delete[] (*it);
+	}
+	entries.clear();
+}

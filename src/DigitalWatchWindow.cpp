@@ -193,11 +193,6 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 	case WM_SIZE:
 		lResult = DefWindowProc(hWnd, message, wParam, lParam);
 		
-		if ((wParam == SIZE_MAXIMIZED) && !g_pData->values.window.bFullScreen)
-			g_pData->values.window.bFullScreen = TRUE;
-		if ((wParam == SIZE_RESTORED) && g_pData->values.window.bFullScreen)
-			g_pData->values.window.bFullScreen = FALSE;
-
 		g_pTv->OnSize();
 		//g_pTv->m_pOSD->RefreshOSD();
 
