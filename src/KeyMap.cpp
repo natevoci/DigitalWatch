@@ -75,7 +75,7 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 	for ( int item=0 ; item<elementCount ; item++ )
 	{
 		element = file.Elements.Item(item);
-		if (_wcsicmp(element->name, L"Key") == 0)
+		if ((_wcsicmp(element->name, L"Key") == 0) || (_wcsicmp(element->name, L"Mouse") == 0))
 		{
 			KeyMapEntry newKeyMapEntry;
 			ZeroMemory(&newKeyMapEntry, sizeof(KeyMapEntry));
@@ -84,10 +84,17 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 			if (attr == NULL)
 				continue;
 
-			if ((attr->value[0] == '\'') && (attr->value[2] == '\''))
-				newKeyMapEntry.Keycode = attr->value[1];
+			if (_wcsicmp(element->name, L"Key") == 0)
+			{
+				if ((attr->value[0] == '\'') && (attr->value[2] == '\''))
+					newKeyMapEntry.Keycode = attr->value[1];
+				else
+					newKeyMapEntry.Keycode = _wtoi(attr->value);
+			}
 			else
-				newKeyMapEntry.Keycode = _wtoi(attr->value);
+			{
+				newKeyMapEntry.Keycode = -1 * _wtoi(attr->value);
+			}
 
 			attr = element->Attributes.Item(L"shift");
 			newKeyMapEntry.Shift = (attr) && (attr->value[0] != '0');
@@ -101,11 +108,6 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 			strCopy(newKeyMapEntry.Function, element->value);
 
 			keyMaps.push_back(newKeyMapEntry);
-			continue;
-		}
-
-		if (_wcsicmp(element->name, L"Mouse") == 0)
-		{
 			continue;
 		}
 	}

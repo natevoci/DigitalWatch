@@ -34,7 +34,9 @@
 #include <vector>
 #include "LogMessage.h"
 
-#define TIMER_AUTO_HIDE_CURSOR 999
+#define TIMER_AUTO_HIDE_CURSOR			999
+#define TIMER_DISABLE_POWER_SAVING		998
+#define TIMER_RECORDING_TIMELEFT		997
 
 #define FT_UNKNOWN             0
 #define FT_CHANNEL_CHANGE      1
@@ -53,22 +55,36 @@ public:
 	HRESULT Initialise();
 	HRESULT Destroy();
 
-	HRESULT ExecuteCommand(LPCWSTR command);
+	HRESULT AlwaysOnTop(int nAlwaysOnTop = 1);	//0=off, 1=on, 2=toggle
+	HRESULT Fullscreen(int nFullScreen = 1);	//0=off, 1=on, 2=toggle
+
+	HRESULT SetSource(LPWSTR szSourceName);
+
+	HRESULT VolumeUp(int value);
+	HRESULT VolumeDown(int value);
+	HRESULT SetVolume(int value);
+	HRESULT Mute(int nMute);
+
+	HRESULT SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma);
+
+	HRESULT Zoom(int percentage);
+	HRESULT ZoomIn(int percentage);
+	HRESULT ZoomOut(int percentage);
+	HRESULT ZoomMode(int mode);
+	HRESULT AspectRatio(int width, int height);
 
 	HRESULT Exit();
-
-	BOOL AlwaysOnTop(int nAlwaysOnTop = 1);	//0=off, 1=on, 2=toggle
-	BOOL Fullscreen(int nFullScreen = 1);	//0=off, 1=on, 2=toggle
-
+	
 	HRESULT Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt);
+	HRESULT ExecuteCommand(LPCWSTR command);
 
+public:
 	BOOL ShowCursor(BOOL bAllowHide = TRUE);
 	BOOL HideCursor();
 
-	void Timer(int wParam);
-
-protected:
-	HRESULT SetSource(LPWSTR szSourceName);
+	HRESULT OnSizing(long fwSide, LPRECT rect);
+	HRESULT OnSize();
+	HRESULT OnTimer(int wParam);
 
 private:
 	KeyMap globalKeyMap;
@@ -79,8 +95,6 @@ private:
 };
 
 /*
-	void StartTimer();
-
 	int GetFunctionType(char* strFunction);
 
 	BOOL SetChannel(int nNetwork, int nProgram = -1);

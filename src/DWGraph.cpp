@@ -23,6 +23,7 @@
 #include "DWGraph.h"
 #include "Globals.h"
 
+#include <math.h>
 #include <mpconfig.h>
 #include <ks.h> // Must be included before ksmedia.h
 #include <ksmedia.h> // Must be included before bdamedia.h
@@ -168,7 +169,7 @@ HRESULT DWGraph::Start()
 		//	return (log << "could not set IVideoWindow AutoShow: " << hr << "\n").Write(hr);
 	}
 
-	hr = RefreshVideoPosition();
+	hr = InitialiseVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to refresh video posistion: " << hr << "\n").Write(hr);
 
@@ -272,37 +273,12 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 	return hr;
 }
 
-HRESULT DWGraph::RefreshVideoPosition()
+HRESULT DWGraph::InitialiseVideoPosition()
 {
-//	if (!m_bInitialised || (m_pAppData->bPlaying == FALSE))
-//		return FALSE;
-//	if (!m_bVideo)
-//		return TRUE;
 	HRESULT hr = S_OK;
 
-	CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
-	if (!piVideoWindow)
-		return (log << "Could not query graph builder for IVideoWindow\n").Write(S_FALSE);
-
-	CComQIPtr <IBasicVideo> piBasicVideo(m_piGraphBuilder);
-	if (!piBasicVideo)
-		return (log << "could not query graph builder for IBasicVideo\n").Write(S_FALSE);
-
-	RECT mainRect, zoomRect;
-	GetVideoRect(&zoomRect);
-	GetClientRect(g_pData->hWnd, &mainRect);
-	
-	//RECT srcRect;
-	//srcRect.left = 0; srcRect.top = 0;
-	//hr = piBasicVideo->GetVideoSize(&srcRect.right, &srcRect.bottom);
-	//if (hr == S_OK) hr = piBasicVideo->SetSourcePosition(srcRect.left, srcRect.top, srcRect.right-srcRect.left, srcRect.bottom-srcRect.top);
-
-	//SetWindowPos(g_pData->hWnd, NULL, mainRect.left, mainRect.top, mainRect.right-mainRect.left, mainRect.bottom-mainRect.top, /*SWP_NOMOVE | */SWP_NOZORDER);
-	if FAILED(hr = piVideoWindow->SetWindowPosition(0, 0, mainRect.right-mainRect.left, mainRect.bottom-mainRect.top))
-		return (log << "could not set IVideoWindow position: " << hr << "\n").Write(hr);
-
-	if (hr == S_OK)
-		hr = piBasicVideo->SetDestinationPosition(zoomRect.left, zoomRect.top, zoomRect.right-zoomRect.left, zoomRect.bottom-zoomRect.top);
+	if (!m_piGraphBuilder)
+		return (log << "IGraphBuilder doesn't exist yet").Write(S_FALSE);
 
 	//Set overlay to streched AR mode
 	CComPtr <IPin> piPin;
@@ -317,10 +293,41 @@ HRESULT DWGraph::RefreshVideoPosition()
 		}
 	}
 
-	if FAILED(hr = piVideoWindow->put_Visible(OATRUE))
-		return (log << "could not set IVideoWindow visible: " << hr << "\n").Write(hr);
+	return RefreshVideoPosition();
+}
 
-	Sleep(10);
+HRESULT DWGraph::RefreshVideoPosition()
+{
+	HRESULT hr = S_OK;
+
+	if (!m_piGraphBuilder)
+		return (log << "IGraphBuilder doesn't exist yet").Write(S_FALSE);
+
+	CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
+	if (!piVideoWindow)
+		return (log << "Could not query graph builder for IVideoWindow\n").Write(S_FALSE);
+
+	CComQIPtr <IBasicVideo> piBasicVideo(m_piGraphBuilder);
+	if (!piBasicVideo)
+		return (log << "could not query graph builder for IBasicVideo\n").Write(S_FALSE);
+
+	//RECT srcRect;
+	//srcRect.left = 0; srcRect.top = 0;
+	//hr = piBasicVideo->GetVideoSize(&srcRect.right, &srcRect.bottom);
+	//if (hr == S_OK) hr = piBasicVideo->SetSourcePosition(srcRect.left, srcRect.top, srcRect.right-srcRect.left, srcRect.bottom-srcRect.top);
+
+	RECT mainRect;
+	GetClientRect(g_pData->hWnd, &mainRect);
+	if FAILED(hr = piVideoWindow->SetWindowPosition(0, 0, mainRect.right-mainRect.left, mainRect.bottom-mainRect.top))
+		return (log << "could not set IVideoWindow position: " << hr << "\n").Write(hr);
+
+	RECT zoomRect;
+	GetVideoRect(&zoomRect);
+	if FAILED(hr = piBasicVideo->SetDestinationPosition(zoomRect.left, zoomRect.top, zoomRect.right-zoomRect.left, zoomRect.bottom-zoomRect.top))
+		return (log << "count not set IBasicVideo destination position: " << hr << "\n").Write(hr);
+
+//	if FAILED(hr = piVideoWindow->put_Visible(OATRUE))
+//		return (log << "could not set IVideoWindow visible: " << hr << "\n").Write(hr);
 
 	return S_OK;
 }
@@ -379,5 +386,107 @@ void DWGraph::GetVideoRect(RECT *rect)
 			break;
 		}
 	}
+}
+
+HRESULT DWGraph::GetVolume(long &volume)
+{
+	HRESULT hr = S_OK;
+
+	volume = 0;
+	CComQIPtr <IBasicAudio> piBasicAudio(m_piGraphBuilder);
+	if (!piBasicAudio)
+		return (log << "could not query graph builder for IBasicAudio\n").Write(E_FAIL);
+
+	hr = piBasicAudio->get_Volume(&volume);
+	if FAILED(hr)
+		return (log << "Failed to retrieve volume: " << hr << "\n").Write(hr);
+
+	volume = (int)sqrt((double)-volume);
+	volume = 100 - volume;
+	g_pData->values.audio.currVolume = volume;
+	return S_OK;
+}
+
+HRESULT DWGraph::SetVolume(long volume)
+{
+	if (volume < 0)
+		volume = 0;
+	if (volume > 100)
+		volume = 100;
+	HRESULT hr = S_OK;
+	CComQIPtr <IBasicAudio> piBasicAudio(m_piGraphBuilder);
+	if (!piBasicAudio)
+		return (log << "could not query graph builder for IBasicAudio\n").Write(E_FAIL);
+
+	g_pData->values.audio.currVolume = volume;
+	volume -= 100;
+	volume *= volume;
+	volume = -volume;
+	hr = piBasicAudio->put_Volume(volume);
+	if FAILED(hr)
+		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
+
+	return S_OK;
+}
+
+HRESULT DWGraph::Mute(BOOL bMute)
+{
+	int value = 0;
+	if (!bMute)
+		value = g_pData->values.audio.currVolume;
+		
+	HRESULT hr = S_OK;
+	CComQIPtr <IBasicAudio> piBasicAudio(m_piGraphBuilder);
+	if (!piBasicAudio)
+		return (log << "could not query graph builder for IBasicAudio\n").Write(E_FAIL);
+
+	value -= 100;
+	value *= value;
+	value = -value;
+	hr = piBasicAudio->put_Volume(value);
+	if FAILED(hr)
+		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
+
+	return S_OK;
+}
+
+HRESULT DWGraph::SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma)
+{
+	g_pData->values.display.overlay.brightness = nBrightness;
+	g_pData->values.display.overlay.contrast = nContrast;
+	g_pData->values.display.overlay.hue = nHue;
+	g_pData->values.display.overlay.saturation = nSaturation;
+	g_pData->values.display.overlay.gamma = nGamma;
+
+	return ApplyColorControls();
+}
+
+HRESULT DWGraph::ApplyColorControls()
+{
+	HRESULT hr = S_OK;
+
+	CComPtr <IPin> piPin;
+	hr = graphTools.GetOverlayMixerInputPin(m_piGraphBuilder, L"Input0", &piPin);
+	if (FAILED(hr))
+		return hr;
+
+	CComPtr <IMixerPinConfig2> piMixerPinConfig2;
+	if FAILED(hr = piPin->QueryInterface(IID_IMixerPinConfig2, (void **)&piMixerPinConfig2))
+		return (log << "Failed to get IMixerPinConfig2 interface from pin\n").Write(E_FAIL);
+
+	DDCOLORCONTROL colorControl;
+	colorControl.dwSize = sizeof(DDCOLORCONTROL);
+	colorControl.dwFlags = DDCOLOR_BRIGHTNESS | DDCOLOR_CONTRAST | DDCOLOR_HUE | DDCOLOR_SATURATION | DDCOLOR_GAMMA;
+	colorControl.lBrightness = g_pData->values.display.overlay.brightness;
+	colorControl.lContrast = g_pData->values.display.overlay.contrast;
+	colorControl.lHue = g_pData->values.display.overlay.hue;
+	colorControl.lSaturation = g_pData->values.display.overlay.saturation;
+	colorControl.lGamma = g_pData->values.display.overlay.gamma;
+
+	hr = piMixerPinConfig2->SetOverlaySurfaceColorControls(&colorControl);
+	if FAILED(hr)
+		return (log << "Failed to SetOverlaySurfaceColorControls: " << hr << "\n").Write(hr);
+
+	return S_OK;
 }
 

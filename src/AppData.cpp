@@ -38,7 +38,6 @@ AppData::AppData()
 	application.appPath = new wchar_t[MAX_PATH];
 	GetCommandPath(application.appPath);
 	application.bCursorVisible = TRUE;
-	application.recordingTimeLeft = 0;
 
 	//SETTINGS
 	settings.application.disableScreenSaver = 0;
@@ -90,18 +89,15 @@ AppData::AppData()
 	//VALUES
 	values.window.bFullScreen = FALSE;
 	values.window.bAlwaysOnTop = FALSE;
-
-	values.currTVNetwork = -1;
-	values.currTVProgram = -1;
-
-	values.lastTVNetwork = -1;
-	values.lastTVProgram = -1;
+	values.window.bLockAspect = FALSE;
+	values.window.aspectRatio.width = 0;
+	values.window.aspectRatio.height = 0;
 
 	values.selectedVideoDecoder = 0;
 	values.selectedAudioDecoder = 0;
 
-	values.currVolume = 100;
-	values.bMute = FALSE;
+	values.audio.currVolume = 100;
+	values.audio.bMute = FALSE;
 
 	values.display.aspectRatio.width = 16;
 	values.display.aspectRatio.height = 9;
@@ -114,12 +110,6 @@ AppData::AppData()
 	values.display.overlay.hue = 0;
 	values.display.overlay.saturation = 10000;
 	values.display.overlay.gamma = 1;
-
-	//Load VideoDecoders.ini
-	//Load AudioDecoders.ini
-	//Load Channels.ini
-	//Load Resolutions.ini
-	//Load Keys.ini
 
 	ZeroMemory(&markedValues, sizeof(VALUES));
 	ZeroMemory(&globalValues, sizeof(VALUES));

@@ -82,13 +82,23 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 
 	SetWindowLong(g_pData->hWnd, GWL_STYLE, GetWindowLong(g_pData->hWnd, GWL_STYLE) & (~(WS_CAPTION/* | WS_BORDER*/))); 
 	
-	SetWindowPos(g_pData->hWnd, NULL, 0, 0, 726, 414, SWP_NOMOVE | SWP_NOZORDER);
+	int x = 0;
+	int y = 0;
+	g_pData->values.window.aspectRatio.width = 726;
+	g_pData->values.window.aspectRatio.height = 414;
+	UINT flags = SWP_NOMOVE | SWP_NOZORDER;
 
 	if (g_pData->settings.window.startLastWindowPosition != 0)
 	{
 		(log << "Restoring last window position. x=" << g_pData->settings.window.lastWindowPositionX << " y=" << g_pData->settings.window.lastWindowPositionY << " width=" <<g_pData->settings.window.lastWindowWidth << " height=" << g_pData->settings.window.lastWindowHeight << "\n").Write();
-		SetWindowPos(g_pData->hWnd, NULL, g_pData->settings.window.lastWindowPositionX, g_pData->settings.window.lastWindowPositionY, g_pData->settings.window.lastWindowWidth, g_pData->settings.window.lastWindowHeight, SWP_NOZORDER );
+		x = g_pData->settings.window.lastWindowPositionX;
+		y = g_pData->settings.window.lastWindowPositionY;
+		g_pData->values.window.aspectRatio.width = g_pData->settings.window.lastWindowWidth;
+		g_pData->values.window.aspectRatio.height = g_pData->settings.window.lastWindowHeight;
+		flags = SWP_NOZORDER;
 	}
+
+	SetWindowPos(g_pData->hWnd, NULL, x, y, g_pData->values.window.aspectRatio.width, g_pData->values.window.aspectRatio.height, flags);
 
 	ShowWindow(g_pData->hWnd, nCmdShow);
 	UpdateWindow(g_pData->hWnd);
@@ -118,9 +128,6 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 	static int yPos = 0;
 	static RECT moveRect;
 	static COPYDATASTRUCT *cds;
-	static BOOL bShiftDown = FALSE;
-	static BOOL bCtrlDown = FALSE;
-	static BOOL bAltDown = FALSE;
 
 	switch (message) 
 	{
@@ -165,79 +172,76 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 	case WM_KEYDOWN:
 		if (wParam == 255)
 			break;
-		if (wParam == 16)
-		{
-			bShiftDown = TRUE;
+		if (wParam == VK_SHIFT)
 			break;
-		}
-		if (wParam == 17)
-		{
-			bCtrlDown = TRUE;
+		if (wParam == VK_CONTROL)
 			break;
-		}
-		if (wParam == 18)
-		{
-			bAltDown = TRUE;
+		if (wParam == VK_MENU)
 			break;
-		}
-		//hack to stop alt-space (system menu) locking alt key down.
-		if ((wParam == 32) && !bShiftDown && !bCtrlDown && bAltDown)
+
 		{
-			bAltDown = FALSE;
-		}
-		else
-		{
+			BOOL bShiftDown = ((GetKeyState(VK_SHIFT) & 0x80) != 0);
+			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
+			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
+
 			g_pTv->Key(wParam, bShiftDown, bCtrlDown, bAltDown);
 		}
 		break;
-	case WM_SYSKEYUP:
-	case WM_KEYUP:
-		if (wParam == 16)
-			bShiftDown = FALSE;
-		if (wParam == 17)
-			bCtrlDown = FALSE;
-		if (wParam == 18)
-			bAltDown = FALSE;
+	case WM_SIZING:
+		g_pTv->OnSizing(wParam, (LPRECT)lParam);
 		break;
 	case WM_SIZE:
 		lResult = DefWindowProc(hWnd, message, wParam, lParam);
-		/*switch (wParam)
-		{
-		case SIZE_MAXIMIZED:
-			m_pAppData->values.bFullScreen = TRUE;
-			break;
-		case SIZE_RESTORED:
-			m_pAppData->values.bFullScreen = FALSE;
-			break;
-		}
-		if ((m_pTv != NULL) && (m_pTv->m_pFilterGraph->IsPlaying()))
-		{
-			m_pTv->m_pFilterGraph->RefreshVideoPosition();
-			m_pTv->m_pOSD->RefreshOSD();
-		}*/
+		
+		if ((wParam == SIZE_MAXIMIZED) && !g_pData->values.window.bFullScreen)
+			g_pData->values.window.bFullScreen = TRUE;
+		if ((wParam == SIZE_RESTORED) && g_pData->values.window.bFullScreen)
+			g_pData->values.window.bFullScreen = FALSE;
+
+		g_pTv->OnSize();
+		//g_pTv->m_pOSD->RefreshOSD();
+
 		break;
 
 	case WM_LBUTTONDBLCLK:
-		/*if (m_pTv->ControlBarMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) == FALSE)
-			m_pTv->Key(MOUSE_LDBLCLICK, bShiftDown, bCtrlDown, bAltDown);*/
+		//if (m_pTv->ControlBarMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) == FALSE)
+		{
+			BOOL bShiftDown = ((GetKeyState(VK_SHIFT) & 0x80) != 0);
+			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
+			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
+			g_pTv->Key(MOUSE_LDBLCLICK, bShiftDown, bCtrlDown, bAltDown);
+		}
 		break;
 	case WM_RBUTTONDOWN:
-		/*if (m_pTv->ControlBarMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) == FALSE)
-			m_pTv->Key(MOUSE_RCLICK, bShiftDown, bCtrlDown, bAltDown);*/
+		//if (m_pTv->ControlBarMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) == FALSE)
+		{
+			BOOL bShiftDown = ((GetKeyState(VK_SHIFT) & 0x80) != 0);
+			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
+			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
+			g_pTv->Key(MOUSE_RCLICK, bShiftDown, bCtrlDown, bAltDown);
+		}
 		break;
 	case WM_MBUTTONDOWN:
-		/*if (m_pTv->ControlBarMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) == FALSE)
-			m_pTv->Key(MOUSE_MCLICK, bShiftDown, bCtrlDown, bAltDown);*/
+		//if (m_pTv->ControlBarMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) == FALSE)
+		{
+			BOOL bShiftDown = ((GetKeyState(VK_SHIFT) & 0x80) != 0);
+			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
+			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
+			g_pTv->Key(MOUSE_MCLICK, bShiftDown, bCtrlDown, bAltDown);
+		}
 		break;
 	case WM_MOUSEWHEEL:
-		/*if (m_pTv->ControlBarMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) == FALSE)
+		//if (m_pTv->ControlBarMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)) == FALSE)
 		{
+			BOOL bShiftDown = ((GetKeyState(VK_SHIFT) & 0x80) != 0);
+			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
+			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
 			wheelMovement = (short)HIWORD(wParam);
 			if (wheelMovement > 0)
-				m_pTv->Key(MOUSE_SCROLL_UP  , bShiftDown, bCtrlDown, bAltDown);
+				g_pTv->Key(MOUSE_SCROLL_UP  , bShiftDown, bCtrlDown, bAltDown);
 			if (wheelMovement < 0)
-				m_pTv->Key(MOUSE_SCROLL_DOWN, bShiftDown, bCtrlDown, bAltDown);
-		}*/
+				g_pTv->Key(MOUSE_SCROLL_DOWN, bShiftDown, bCtrlDown, bAltDown);
+		}
 		break;
 
 	case WM_LBUTTONDOWN:
@@ -263,9 +267,9 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 		bLeftMouseDown = FALSE;
 		break;
 	case WM_MOUSEMOVE:
-		//m_pTv->ShowCursor();
+		g_pTv->ShowCursor();
 
-		if (bLeftMouseDown /*&& ((m_pTv == NULL) || !m_pTv->m_pAppData->values.bFullScreen)*/)
+		if (bLeftMouseDown && !g_pData->values.window.bFullScreen)
 		{
 			RECT currRect;
 			GetWindowRect(hWnd, &currRect);
@@ -291,42 +295,10 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 		{
 			ReleaseCapture();
 			bLeftMouseDown = FALSE;
-			bShiftDown = FALSE;
-			bCtrlDown = FALSE;
-			bAltDown = FALSE;
 		}
 		break;
 	case WM_TIMER:
-/*		switch (wParam)
-		{
-		case 990:	//Every second while recording
-			if (m_pAppData->recordingTimeLeft == 1)
-			{
-				m_pTv->Recording(0);
-			}
-			if (m_pAppData->recordingTimeLeft > 1)
-			{
-				m_pAppData->recordingTimeLeft--;
-			}
-			break;
-		case 996:	//every 100ms the whole time the program is running.
-			m_pTv->m_pOSD->RepaintOSD(TRUE);
-			break;
-		case 997:	//Every second the whole time the program is running.
-			m_pTv->m_pOSD->Update();
-			break;
-		case 998:	//Every 30 seconds to keep power saving coming on.
-			SetThreadExecutionState(ES_DISPLAY_REQUIRED);
-			break;
-		case 999:	//3 seconds after mouse movement
-			KillTimer(hWnd, 999);
-			if (m_pTv->m_pAppData->values.bFullScreen)
-				m_pTv->HideCursor();
-			break;
-		default:	//values from 1000 up can be used by the osd.*/
-			g_pTv->Timer((int)wParam);
-			/*break;
-		}*/
+		g_pTv->OnTimer((int)wParam);
 		break;
 	case WM_NCHITTEST:
 	case WM_SETCURSOR:

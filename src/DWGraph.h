@@ -52,8 +52,17 @@ public:
 
 	HRESULT RefreshVideoPosition();
 
+	HRESULT GetVolume(long &volume);
+	HRESULT SetVolume(long volume);
+	HRESULT Mute(BOOL bMute);
+
+	HRESULT SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma);
+
 protected:
 	void GetVideoRect(RECT *rect);
+	HRESULT ApplyColorControls();
+
+	HRESULT InitialiseVideoPosition();
 
 private:
 	CComPtr <IGraphBuilder> m_piGraphBuilder;

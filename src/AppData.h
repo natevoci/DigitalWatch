@@ -40,7 +40,6 @@ public:
 	struct APPLICATION
 	{
 		LPWSTR appPath;
-		long recordingTimeLeft;
 		long bCursorVisible;
 	} application;
 
@@ -125,19 +124,22 @@ public:
 		{
 			long bFullScreen;
 			long bAlwaysOnTop;
+			long bLockAspect;
+			struct VALUES_ASPECT_RATIO
+			{
+				float width;
+				float height;
+			} aspectRatio;
 		} window;
-
-		long currTVNetwork;
-		long currTVProgram;
-
-		long lastTVNetwork;
-		long lastTVProgram;
 
 		long selectedVideoDecoder;
 		long selectedAudioDecoder;
 
-		long currVolume;
-		long bMute;
+		struct VALUES_AUDIO
+		{
+			long currVolume;
+			long bMute;
+		} audio;
 
 		struct VALUES_DISPLAY
 		{

@@ -59,6 +59,11 @@ HRESULT TVControl::Initialise()
 	(log << "Initialising TVControl\n").Write();
 	LogMessageIndent indent(&log);
 
+	SetTimer(g_pData->hWnd, TIMER_DISABLE_POWER_SAVING, 30000, NULL);
+	SetTimer(g_pData->hWnd, TIMER_RECORDING_TIMELEFT, 1000, NULL);
+	//SetTimer(g_pData->hWnd, 996, 100, NULL);
+	//SetTimer(g_pData->hWnd, 997, 1000, NULL);
+
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"Keys.xml");
 	if (globalKeyMap.LoadKeyMap((LPWSTR)&file) == FALSE)
@@ -107,31 +112,15 @@ HRESULT TVControl::Destroy()
 	return S_OK;
 }
 
-/*
-void TVControl::StartTimer()
+HRESULT TVControl::AlwaysOnTop(int nAlwaysOnTop)
 {
-	SetTimer(m_pAppData->hWnd, 996, 100, NULL);
-	SetTimer(m_pAppData->hWnd, 997, 1000, NULL);
-}
-*/
+	long bAlwaysOnTop = ((nAlwaysOnTop == 1) || ((nAlwaysOnTop == 2) && !g_pData->values.window.bAlwaysOnTop));
+	if (g_pData->values.window.bAlwaysOnTop == bAlwaysOnTop)
+		return S_OK;
 
-HRESULT TVControl::Exit()
-{
-/*
-	if (m_pFilterGraph->IsRecording())
-	{
-		return_FALSE_SHOWMSG("Cannot exit while recording");
-	}
-*/
-//	KillTimer(m_pAppData->hWnd, 996);
-	return (DestroyWindow(g_pData->hWnd) ? S_OK : E_FAIL);
-}
+	g_pData->values.window.bAlwaysOnTop = bAlwaysOnTop;
 
-BOOL TVControl::AlwaysOnTop(int nAlwaysOnTop)
-{
 	BOOL bResult = FALSE;
-
-	g_pData->values.window.bAlwaysOnTop = ((nAlwaysOnTop == 1) || ((nAlwaysOnTop == 2) && !g_pData->values.window.bAlwaysOnTop));
 
 	if (g_pData->values.window.bAlwaysOnTop)
 		bResult = SetWindowPos(g_pData->hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
@@ -140,24 +129,29 @@ BOOL TVControl::AlwaysOnTop(int nAlwaysOnTop)
 
 	//if (bResult)
 	//	m_pOSD->ShowItem("AlwaysOnTop");
-	return bResult;
+	return (bResult ? S_OK : E_FAIL);
 }
 
-BOOL TVControl::Fullscreen(int nFullScreen)
+HRESULT TVControl::Fullscreen(int nFullScreen)
 {
+	long bFullScreen = ((nFullScreen == 1) || ((nFullScreen == 2) && !g_pData->values.window.bFullScreen));
+	if (g_pData->values.window.bFullScreen == bFullScreen)
+		return S_OK;
+
+	g_pData->values.window.bFullScreen = bFullScreen;
+
 	WINDOWPLACEMENT wPlace;
 	GetWindowPlacement(g_pData->hWnd, &wPlace);
-
-	g_pData->values.window.bFullScreen = ((nFullScreen == 1) || ((nFullScreen == 2) && !g_pData->values.window.bFullScreen));
-
-	ShowCursor();
 
 	if (g_pData->values.window.bFullScreen)
 		wPlace.showCmd = SW_MAXIMIZE;
 	else
 		wPlace.showCmd = SW_RESTORE;
-	//m_pOSD->ShowItem("Fullscreen");
-	return SetWindowPlacement(g_pData->hWnd, &wPlace);
+
+	BOOL bResult = SetWindowPlacement(g_pData->hWnd, &wPlace);
+	//if (bResult)
+	//	m_pOSD->ShowItem("Fullscreen");
+	return (bResult ? S_OK : E_FAIL);
 }
 
 HRESULT TVControl::SetSource(LPWSTR szSourceName)
@@ -189,14 +183,190 @@ HRESULT TVControl::SetSource(LPWSTR szSourceName)
 	return S_FALSE;
 }
 
+HRESULT TVControl::VolumeUp(int value)
+{
+	HRESULT hr;
+	long volume;
+	hr = m_pFilterGraph->GetVolume(volume);
+	if FAILED(hr)
+		return (log << "Failed to retrieve volume: " << hr << "\n").Write(hr);
+
+	hr = m_pFilterGraph->SetVolume(volume+value);
+	if FAILED(hr)
+		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("Volume");
+	return S_OK;
+}
+
+HRESULT TVControl::VolumeDown(int value)
+{
+	HRESULT hr;
+	long volume;
+	hr = m_pFilterGraph->GetVolume(volume);
+	if FAILED(hr)
+		return (log << "Failed to retrieve volume: " << hr << "\n").Write(hr);
+
+	hr = m_pFilterGraph->SetVolume(volume-value);
+	if FAILED(hr)
+		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("Volume");
+	return S_OK;
+}
+
+HRESULT TVControl::SetVolume(int value)
+{
+	HRESULT hr = m_pFilterGraph->SetVolume(value);
+	if FAILED(hr)
+		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("Volume");
+	return hr;
+}
+
+HRESULT TVControl::Mute(int nMute)
+{
+	g_pData->values.audio.bMute = ((nMute == 1) || ((nMute == 2) && !g_pData->values.audio.bMute));
+	HRESULT hr = m_pFilterGraph->Mute(g_pData->values.audio.bMute);
+	if FAILED(hr)
+		return (log << "Failed to set mute: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("Mute");
+	return S_OK;
+}
+
+HRESULT TVControl::SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma)
+{
+	if (nBrightness <     0) nBrightness =     0;
+	if (nBrightness > 10000) nBrightness = 10000;
+	if (nContrast   <     0) nContrast   =     0;
+	if (nContrast   > 20000) nContrast   = 20000;
+	if (nHue        <  -180) nHue        =  -180;
+	if (nHue        >   180) nHue        =   180;
+	if (nSaturation <     0) nSaturation =     0;
+	if (nSaturation > 20000) nSaturation = 20000;
+	if (nGamma      <     1) nGamma      =     1;
+	if (nGamma      >   500) nGamma      =   500;
+
+	HRESULT hr = m_pFilterGraph->SetColorControls(nBrightness, nContrast, nHue, nSaturation, nGamma);
+	if FAILED(hr)
+		return (log << "Failed to set color controls: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("ColorControls");
+	return S_OK;
+}
+
+HRESULT TVControl::Zoom(int percentage)
+{
+	g_pData->values.display.zoom = percentage;
+	if (g_pData->values.display.zoom < 10)	//Limit the smallest zoom to 10%
+		g_pData->values.display.zoom = 10;
+	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	if FAILED(hr)
+		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("Zoom");
+	return S_OK;
+}
+
+HRESULT TVControl::ZoomIn(int percentage)
+{
+	g_pData->values.display.zoom += percentage;
+	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	if FAILED(hr)
+		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("ZoomIn");
+	return S_OK;
+}
+
+HRESULT TVControl::ZoomOut(int percentage)
+{
+	g_pData->values.display.zoom -= percentage;
+	if (g_pData->values.display.zoom < 10)	//Limit the smallest zoom to 10%
+		g_pData->values.display.zoom = 10;
+	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	if FAILED(hr)
+		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("ZoomOut");
+	return S_OK;
+}
+
+HRESULT TVControl::ZoomMode(int mode)
+{
+	const int maxModes = 2;
+	if (mode >= maxModes)
+		return (log << "zoommode " << mode << " is not a valid mode\n").Write(E_FAIL);
+	if (mode < 0)
+	{
+		mode = g_pData->values.display.zoomMode + 1;
+		if (mode >= maxModes)
+			mode = 0;
+	}
+	g_pData->values.display.zoomMode = mode;
+	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	if FAILED(hr)
+		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
+
+	//m_pOSD->ShowItem("ZoomMode");
+	return S_OK;
+}
+
+HRESULT TVControl::AspectRatio(int width, int height)
+{
+	if (width <= 0)
+		return (log << "Zero or negative width supplied: " << width << "\n").Write(E_FAIL);
+	if (height <= 0)
+		return (log << "Zero or negative height supplied: " << height << "\n").Write(E_FAIL);
+
+	g_pData->values.display.aspectRatio.width = width;
+	g_pData->values.display.aspectRatio.height = height;
+	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	if FAILED(hr)
+		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
+
+	//OSD "AspectRatio"
+	return S_OK;
+}
+
+HRESULT TVControl::Exit()
+{
+/*
+	if (m_pFilterGraph->IsRecording())
+	{
+		return_FALSE_SHOWMSG("Cannot exit while recording");
+	}
+*/
+//	KillTimer(g_pData->hWnd, 996);
+	return (DestroyWindow(g_pData->hWnd) ? S_OK : E_FAIL);
+}
+
 HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 {
-	(log << "TVControl::Key - "
-		 << (bShift ? L"shift " : L"")
-		 << (bCtrl ? L"ctrl " : L"")
-		 << (bAlt ? L"alt " : L"")
-		 << (char)nKeycode << " (" << nKeycode << ")" << "\n"
-	).Write();
+	if (nKeycode >= 0)
+		log << "TVControl::Key - ";
+	else
+		log << "TVControl::Mouse - ";
+
+	if (bShift) log << L"shift ";
+	if (bCtrl ) log << L"ctrl ";
+	if (bAlt  ) log << L"alt ";
+
+	if (nKeycode == MOUSE_LDBLCLICK)
+		(log << L"Left Double Click\n").Write();
+	else if (nKeycode == MOUSE_RCLICK)
+		(log << L"Right Click\n").Write();
+	else if (nKeycode == MOUSE_MCLICK)
+		(log << L"Middle Click\n").Write();
+	else if (nKeycode == MOUSE_SCROLL_UP)
+		(log << L"Scroll Up\n").Write();
+	else if (nKeycode == MOUSE_SCROLL_DOWN)
+		(log << L"Scroll Down\n").Write();
+	else
+		(log << (char)nKeycode << " (" << nKeycode << ")" << "\n").Write();
+
 	LogMessageIndent indent(&log);
 
 	LPWSTR command = NULL;
@@ -216,46 +386,10 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 		return hr;
 	}
 /*
-	m_pAppData->KeyPress.Set(nKeycode, bShift, bCtrl, bAlt);
+	g_pData->KeyPress.Set(nKeycode, bShift, bCtrl, bAlt);
 	m_pOSD->ShowItem("KeyPress");
 */
 	return S_FALSE;
-}
-
-BOOL TVControl::ShowCursor(BOOL bAllowHide)
-{
-	KillTimer(g_pData->hWnd, TIMER_AUTO_HIDE_CURSOR);
-	if (g_pData->values.window.bFullScreen && bAllowHide)
-	{
-		SetTimer(g_pData->hWnd, TIMER_AUTO_HIDE_CURSOR, 3000, NULL);
-	}
-	if (!g_pData->application.bCursorVisible)
-	{
-		::ShowCursor(TRUE);
-		g_pData->application.bCursorVisible = TRUE;
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
-}
-
-BOOL TVControl::HideCursor()
-{
-	KillTimer(g_pData->hWnd, TIMER_AUTO_HIDE_CURSOR);
-	if (g_pData->application.bCursorVisible)
-	{
-		while (::ShowCursor(FALSE) >= 0);
-		g_pData->application.bCursorVisible = FALSE;
-
-		//m_pControlBar->Hide();
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
 }
 
 HRESULT TVControl::ExecuteCommand(LPCWSTR command)
@@ -263,7 +397,7 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 	(log << "TVControl::ExecuteCommand - " << command << "\n").Write();
 	LogMessageIndent indent(&log);
 
-	int n1, n2, n3, n4;//, n5, n6;
+	int n1, n2, n3, n4, n5;//, n6;
 	//wchar_t buff[256];
 	LPWSTR pBuff = (LPWSTR)command;
 	LPWSTR pCurr;
@@ -337,6 +471,91 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		return SetSource(parseLine.LHS.Parameter[0]);
+	}
+	else if (_wcsicmp(pCurr, L"VolumeUp") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		return VolumeUp(n1);
+	}
+	else if (_wcsicmp(pCurr, L"VolumeDown") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		return VolumeDown(n1);
+	}
+	else if (_wcsicmp(pCurr, L"SetVolume") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		return SetVolume(n1);
+	}
+	else if (_wcsicmp(pCurr, L"Mute") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		return Mute(n1);
+	}
+	else if (_wcsicmp(pCurr, L"SetColorControls") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 5)
+			return (log << "TVControl::ExecuteCommand - Expecting 5 parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		n2 = _wtoi(parseLine.LHS.Parameter[1]);
+		n3 = _wtoi(parseLine.LHS.Parameter[2]);
+		n4 = _wtoi(parseLine.LHS.Parameter[3]);
+		n5 = _wtoi(parseLine.LHS.Parameter[4]);
+		return SetColorControls(n1, n2, n3, n4, n5);
+	}
+	else if (_wcsicmp(pCurr, L"Zoom") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		return Zoom(n1);
+	}
+	else if (_wcsicmp(pCurr, L"ZoomIn") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		return ZoomIn(n1);
+	}
+	else if (_wcsicmp(pCurr, L"ZoomOut") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		return ZoomOut(n1);
+	}
+	else if (_wcsicmp(pCurr, L"ZoomMode") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		return ZoomMode(n1);
+	}
+	else if (_wcsicmp(pCurr, L"AspectRatio") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 2)
+			return (log << "TVControl::ExecuteCommand - Expecting 2 parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		n2 = _wtoi(parseLine.LHS.Parameter[1]);
+		return AspectRatio(n1, n2);
 	}
 	
 	/*
@@ -434,38 +653,6 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 		}
 	}
 
-	if (_wcsicmp(pCurr, "VolumeUp") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			return VolumeUp(n1);
-		}
-	}
-	if (_wcsicmp(pCurr, "VolumeDown") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			return VolumeDown(n1);
-		}
-	}
-	if (_wcsicmp(pCurr, "SetVolume") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			return SetVolume(n1);
-		}
-	}
-	if (_wcsicmp(pCurr, "Mute") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			return Mute(n1);
-		}
-	}
 
 	if (_wcsicmp(pCurr, "VideoDecoderEntry") == 0)
 	{
@@ -510,66 +697,8 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 			return Resolution(n1, n2, n3, n4, (n5==0), (n6!=0));
 		}
 	}
-	if (_wcsicmp(pCurr, "SetColorControls") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-			n1 = atoi(pCurr);
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-			n2 = atoi(pCurr);
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-			n3 = atoi(pCurr);
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-			n4 = atoi(pCurr);
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n5 = atoi(pCurr);
-			return SetColorControls(n1, n2, n3, n4, n5);
-		}
-	}
 	*/
 	/*
-	if (_wcsicmp(pCurr, "Zoom") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			return Zoom(n1);
-		}
-	}
-	if (_wcsicmp(pCurr, "ZoomIn") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			return ZoomIn(n1);
-		}
-	}
-	if (_wcsicmp(pCurr, "ZoomOut") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			return ZoomOut(n1);
-		}
-	}
-	if (_wcsicmp(pCurr, "ZoomMode") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			return ZoomMode(n1);
-		}
-	}
-	if (_wcsicmp(pCurr, "AspectRatio") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-			n1 = atoi(pCurr);
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n2 = atoi(pCurr);
-			return AspectRatio(n1, n2);
-		}
-	}
 
 	if (_wcsicmp(pCurr, "ShowFilterProperties") == 0)
 	{
@@ -716,6 +845,7 @@ int TVControl::GetFunctionType(char* strFunction)
 	return nResult;
 }
 */
+
 /*
 BOOL TVControl::SetChannel(int nNetwork, int nProgram)
 {
@@ -1083,48 +1213,6 @@ BOOL TVControl::RecordingPause(int nPause)
 	return FALSE;
 }
 
-BOOL TVControl::VolumeUp(int value)
-{
-	BOOL bResult;
-	int volume = m_pFilterGraph->GetVolume();
-	bResult = m_pFilterGraph->SetVolume(volume+value);
-	if (bResult)
-	{
-		m_pOSD->ShowItem("Volume");
-	}
-	return bResult;
-}
-
-BOOL TVControl::VolumeDown(int value)
-{
-	BOOL bResult;
-	int volume = m_pFilterGraph->GetVolume();
-	bResult = m_pFilterGraph->SetVolume(volume-value);
-	if (bResult)
-	{
-		m_pOSD->ShowItem("Volume");
-	}
-	return bResult;
-}
-
-BOOL TVControl::SetVolume(int value)
-{
-	BOOL bResult = m_pFilterGraph->SetVolume(value);
-	m_pOSD->ShowItem("Volume");
-	return bResult;
-}
-
-BOOL TVControl::Mute(int nMute)
-{
-	m_pAppData->values.bMute = ((nMute == 1) || ((nMute == 2) && !m_pAppData->values.bMute));
-	if (m_pFilterGraph->Mute(m_pAppData->values.bMute))
-	{
-		m_pOSD->ShowItem("Mute");
-		return TRUE;
-	}
-	return FALSE;
-}
-
 BOOL TVControl::VideoDecoderEntry(int nIndex)
 {
 	BOOL bResult;
@@ -1203,78 +1291,6 @@ BOOL TVControl::Resolution(int nLeft, int nTop, int nWidth, int nHeight, BOOL bM
 	return bResult;
 }
 
-BOOL TVControl::SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma)
-{
-	if (nBrightness <     0) nBrightness =     0;
-	if (nBrightness > 10000) nBrightness = 10000;
-	if (nContrast   <     0) nContrast   =     0;
-	if (nContrast   > 20000) nContrast   = 20000;
-	if (nHue        <  -180) nHue        =  -180;
-	if (nHue        >   180) nHue        =   180;
-	if (nSaturation <     0) nSaturation =     0;
-	if (nSaturation > 20000) nSaturation = 20000;
-	if (nGamma      <     1) nGamma      =     1;
-	if (nGamma      >   500) nGamma      =   500;
-
-	BOOL bResult = m_pFilterGraph->SetColorControls(nBrightness, nContrast, nHue, nSaturation, nGamma);
-	if (bResult)
-		m_pOSD->ShowItem("ColorControls");
-	return bResult;
-}
-
-BOOL TVControl::Zoom(int percentage)
-{
-	m_pAppData->values.zoom = percentage;
-	m_pFilterGraph->RefreshVideoPosition();
-	m_pOSD->ShowItem("Zoom");
-	return TRUE;
-}
-
-BOOL TVControl::ZoomIn(int percentage)
-{
-	m_pAppData->values.zoom += percentage;
-	m_pFilterGraph->RefreshVideoPosition();
-	m_pOSD->ShowItem("ZoomIn");
-	return TRUE;
-}
-
-BOOL TVControl::ZoomOut(int percentage)
-{
-	if (m_pAppData->values.zoom-percentage <= 0)
-		return FALSE;
-	m_pAppData->values.zoom -= percentage;
-	m_pFilterGraph->RefreshVideoPosition();
-	m_pOSD->ShowItem("ZoomOut");
-	return TRUE;
-}
-
-BOOL TVControl::ZoomMode(int mode)
-{
-	int maxModes = 1;
-	if (mode > maxModes)
-		return FALSE;
-	if (mode < 0)
-	{
-		mode = m_pAppData->values.zoomMode + 1;
-		if (mode > maxModes)
-			mode = 0;
-	}
-	m_pAppData->values.zoomMode = mode;
-	m_pFilterGraph->RefreshVideoPosition();
-	m_pOSD->ShowItem("ZoomMode");
-	return TRUE;
-}
-
-BOOL TVControl::AspectRatio(int width, int height)
-{
-	if ((width <= 0) || (height <= 0))
-		return FALSE;
-	m_pAppData->values.aspectRatioWidth = width;
-	m_pAppData->values.aspectRatioHeight = height;
-	m_pFilterGraph->RefreshVideoPosition();
-	return TRUE;
-}
-
 BOOL TVControl::ShowFilterProperties()
 {
 	ShowCursor(FALSE);
@@ -1337,37 +1353,113 @@ BOOL TVControl::ControlBarMouseMove(int x, int y)
 
 */
 
-void TVControl::Timer(int wParam)
+BOOL TVControl::ShowCursor(BOOL bAllowHide)
+{
+	KillTimer(g_pData->hWnd, TIMER_AUTO_HIDE_CURSOR);
+	if (g_pData->values.window.bFullScreen && bAllowHide)
+	{
+		SetTimer(g_pData->hWnd, TIMER_AUTO_HIDE_CURSOR, 3000, NULL);
+	}
+	if (!g_pData->application.bCursorVisible)
+	{
+		::ShowCursor(TRUE);
+		g_pData->application.bCursorVisible = TRUE;
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
+}
+
+BOOL TVControl::HideCursor()
+{
+	KillTimer(g_pData->hWnd, TIMER_AUTO_HIDE_CURSOR);
+	if (g_pData->application.bCursorVisible)
+	{
+		while (::ShowCursor(FALSE) >= 0);
+		g_pData->application.bCursorVisible = FALSE;
+
+		//m_pControlBar->Hide();
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
+}
+
+HRESULT TVControl::OnSizing(long fwSide, LPRECT rect)
+{
+	if ((GetKeyState(VK_SHIFT) & 0x80) != 0)
+	{
+		g_pData->values.window.aspectRatio.width = rect->right - rect->left;
+		g_pData->values.window.aspectRatio.height = rect->bottom - rect->top;
+	}
+	else
+	{
+		int newSize;
+		switch (fwSide)
+		{
+		case WMSZ_LEFT:
+		case WMSZ_RIGHT:
+		case WMSZ_BOTTOMLEFT:
+		case WMSZ_BOTTOMRIGHT:
+			newSize = (rect->right-rect->left);
+			newSize = newSize * g_pData->values.window.aspectRatio.height / g_pData->values.window.aspectRatio.width;
+			rect->bottom = rect->top + newSize;
+			break;
+
+		case WMSZ_TOP:
+		case WMSZ_BOTTOM:
+			newSize = (rect->bottom-rect->top);
+			newSize = newSize * g_pData->values.window.aspectRatio.width / g_pData->values.window.aspectRatio.height;
+			rect->right = rect->left + newSize;
+			break;
+
+		case WMSZ_TOPLEFT:
+		case WMSZ_TOPRIGHT:
+			newSize = (rect->right-rect->left);
+			newSize = newSize * g_pData->values.window.aspectRatio.height / g_pData->values.window.aspectRatio.width;
+			rect->top = rect->bottom - newSize;
+			break;
+		};
+	}
+	return S_OK;
+}
+
+HRESULT TVControl::OnSize()
+{
+	HRESULT hr = S_OK;
+	if (m_pFilterGraph)
+		hr = m_pFilterGraph->RefreshVideoPosition();
+	return hr;
+}
+
+HRESULT TVControl::OnTimer(int wParam)
 {
 	switch (wParam)
 	{
-	/*case 990:	//Every second while recording
-		if (m_pAppData->recordingTimeLeft == 1)
-		{
-			m_pTv->Recording(0);
-		}
-		if (m_pAppData->recordingTimeLeft > 1)
-		{
-			m_pAppData->recordingTimeLeft--;
-		}
-		break;
+	case TIMER_RECORDING_TIMELEFT:	//Every second while recording
+		//TODO: Create DWSource::RecordingTimeLeftUpdate()
+		return S_OK;
+/*
 	case 996:	//every 100ms the whole time the program is running.
 		m_pTv->m_pOSD->RepaintOSD(TRUE);
-		break;
+		return S_OK;
 	case 997:	//Every second the whole time the program is running.
 		m_pTv->m_pOSD->Update();
-		break;
-	case 998:	//Every 30 seconds to keep power saving coming on.
+		return S_OK;
+*/
+	case TIMER_DISABLE_POWER_SAVING:	//Every 30 seconds to keep power saving coming on.
 		SetThreadExecutionState(ES_DISPLAY_REQUIRED);
-		break;*/
+		return S_OK;
 	case TIMER_AUTO_HIDE_CURSOR:	//3 seconds after mouse movement
 		KillTimer(g_pData->hWnd, TIMER_AUTO_HIDE_CURSOR);
 		if (g_pData->values.window.bFullScreen)
 			HideCursor();
-		break;
-	default:	//values from 1000 up can be used by the osd.
-		//m_pOSD->Timer(wParam);
-		break;
+		return S_OK;
 	}
+	return S_FALSE;
 }
 
