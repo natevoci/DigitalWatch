@@ -31,16 +31,12 @@
 DWOnScreenDisplay::DWOnScreenDisplay()
 {
 	m_pDirectDraw = new DWDirectDraw();
-//	m_pImage = new DWDirectDrawImage(m_pDirectDraw);
+	m_pOverlayWindow = NULL;
+	m_pCurrentWindow = NULL;
 }
 
 DWOnScreenDisplay::~DWOnScreenDisplay()
 {
-//	if (m_pImage)
-//	{
-//		delete m_pImage;
-//		m_pImage = NULL;
-//	}
 	delete m_pDirectDraw;
 	m_pDirectDraw = NULL;
 }
@@ -50,7 +46,6 @@ void DWOnScreenDisplay::SetLogCallback(LogMessageCallback *callback)
 	LogMessageCaller::SetLogCallback(callback);
 
 	windows.SetLogCallback(callback);
-
 }
 
 HRESULT DWOnScreenDisplay::Initialise()
@@ -65,8 +60,8 @@ HRESULT DWOnScreenDisplay::Initialise()
 	if FAILED(hr = windows.Load((LPWSTR)&file))
 		return hr;
 
-//	m_pImage->LoadBitmap(TEXT("image.bmp"));
-//	m_pImage->SetColorKey(RGB(0, 4, 0));
+	m_pOverlayWindow = windows.GetWindow(L"Overlay");
+	m_pCurrentWindow = m_pOverlayWindow;
 
 	return S_OK;
 }
@@ -94,7 +89,8 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 	if FAILED(hr)
 		return (log << "Failed to clear directdraw: " << hr << "\n").Write(hr);
 
-	hr = windows.Render(tickCount);
+	m_pCurrentWindow->Render(tickCount);
+	//hr = windows.Render(tickCount);
 
 	//TODO: Stuff
 /*	RECT rcDest, rcSrc;
@@ -112,6 +108,7 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 
 	//TODO: End Stuff
 
+/*
 	//Display FPS
 	IDirectDrawSurface7* piSurface = m_pDirectDraw->get_BackSurface();
 	HDC hDC;
@@ -124,7 +121,7 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 	TextOut(hDC, 0, 560, buffer, lstrlen(buffer));
 
 	hr = piSurface->ReleaseDC(hDC);
-
+*/
 	//Flip
 	hr = m_pDirectDraw->Flip();
 	if FAILED(hr)
@@ -133,8 +130,56 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 	return S_OK;
 }
 
+HRESULT DWOnScreenDisplay::ShowMenu(LPWSTR szMenuName)
+{
+	DWOSDWindow *window = windows.GetWindow(szMenuName);
+	if (window)
+	{
+		if (m_pCurrentWindow != m_pOverlayWindow)
+			m_windowStack.push_back(m_pCurrentWindow);
+		m_pCurrentWindow = window;
+		return S_OK;
+	}
+	return S_FALSE;
+}
+
+HRESULT DWOnScreenDisplay::ExitMenu(long nNumberOfMenusToExit)
+{
+	if (nNumberOfMenusToExit < 0)
+	{
+		if (m_pCurrentWindow == m_pOverlayWindow)
+			return S_FALSE;
+		m_windowStack.clear();
+		m_pCurrentWindow = m_pOverlayWindow;
+		return S_OK;
+	}
+	for (int i=0 ; i<nNumberOfMenusToExit ; i++ )
+	{
+		if (m_windowStack.size() > 0)
+		{
+			m_pCurrentWindow = m_windowStack.back();
+			m_windowStack.pop_back();
+		}
+		else
+		{
+			m_pCurrentWindow = m_pOverlayWindow;
+			break;
+		}
+	}
+	return (i<nNumberOfMenusToExit) ? S_FALSE : S_OK;
+}
+
 DWDirectDraw* DWOnScreenDisplay::get_DirectDraw()
 {
 	return m_pDirectDraw;
 }
 
+DWOSDWindow* DWOnScreenDisplay::Overlay()
+{
+	return m_pOverlayWindow;
+}
+
+DWOSDImage* DWOnScreenDisplay::GetImage(LPWSTR pName)
+{
+	return windows.GetImage(pName);
+}

@@ -73,9 +73,12 @@ public:
 	HRESULT ZoomMode(int mode);
 	HRESULT AspectRatio(int width, int height);
 
-	HRESULT ShowWindow(LPWSTR szWindowName, long secondsToShowFor = -1);
-	HRESULT HideWindow(LPWSTR szWindowName);
-	HRESULT ToggleWindow(LPWSTR szWindowName);
+	HRESULT ShowMenu(LPWSTR szMenuName);
+	HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
+
+	HRESULT ShowOSDItem(LPWSTR szName, long secondsToShowFor = -1);
+	HRESULT HideOSDItem(LPWSTR szName);
+	HRESULT ToggleOSDItem(LPWSTR szName);
 
 	HRESULT Exit();
 	

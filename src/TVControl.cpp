@@ -332,36 +332,53 @@ HRESULT TVControl::AspectRatio(int width, int height)
 	return S_OK;
 }
 
-HRESULT TVControl::ShowWindow(LPWSTR szWindowName, long secondsToShowFor)
+HRESULT TVControl::ShowMenu(LPWSTR szMenuName)
 {
-	DWOSDWindow *window = g_pOSD->windows.GetWindow(szWindowName);
-	if (window)
+	HRESULT hr = S_FALSE;
+	hr = g_pOSD->ShowMenu(szMenuName);
+	return hr;
+}
+
+HRESULT TVControl::ExitMenu(long nNumberOfMenusToExit)
+{
+	HRESULT hr = S_FALSE;
+	hr = g_pOSD->ExitMenu(nNumberOfMenusToExit);
+	return hr;
+}
+
+HRESULT TVControl::ShowOSDItem(LPWSTR szName, long secondsToShowFor)
+{
+	DWOSDControl *control = g_pOSD->Overlay()->GetControl(szName);
+	if (control)
 	{
-		window->Show(secondsToShowFor);
+		control->Show(secondsToShowFor);
 		return S_OK;
 	}
+
 	return S_FALSE;
 }
 
-HRESULT TVControl::HideWindow(LPWSTR szWindowName)
+HRESULT TVControl::HideOSDItem(LPWSTR szName)
 {
-	DWOSDWindow *window = g_pOSD->windows.GetWindow(szWindowName);
-	if (window)
+	DWOSDControl *control = g_pOSD->Overlay()->GetControl(szName);
+	if (control)
 	{
-		window->Hide();
+		control->Hide();
 		return S_OK;
 	}
+
 	return S_FALSE;
 }
 
-HRESULT TVControl::ToggleWindow(LPWSTR szWindowName)
+HRESULT TVControl::ToggleOSDItem(LPWSTR szName)
 {
-	DWOSDWindow *window = g_pOSD->windows.GetWindow(szWindowName);
-	if (window)
+	DWOSDControl *control = g_pOSD->Overlay()->GetControl(szName);
+	if (control)
 	{
-		window->Toggle();
+		control->Toggle();
 		return S_OK;
 	}
+
 	return S_FALSE;
 }
 
@@ -383,31 +400,39 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 		log << "TVControl::Key - ";
 	else
 		log << "TVControl::Mouse - ";
+	log.Write();
 
 	if (bShift) log << L"shift ";
 	if (bCtrl ) log << L"ctrl ";
 	if (bAlt  ) log << L"alt ";
 
 	if (nKeycode == MOUSE_LDBLCLICK)
-		(log << L"Left Double Click\n").Write();
+		log << L"Left Double Click";
 	else if (nKeycode == MOUSE_RCLICK)
-		(log << L"Right Click\n").Write();
+		log << L"Right Click";
 	else if (nKeycode == MOUSE_MCLICK)
-		(log << L"Middle Click\n").Write();
+		log << L"Middle Click";
 	else if (nKeycode == MOUSE_SCROLL_UP)
-		(log << L"Scroll Up\n").Write();
+		log << L"Scroll Up";
 	else if (nKeycode == MOUSE_SCROLL_DOWN)
-		(log << L"Scroll Down\n").Write();
+		log << L"Scroll Down";
 	else
 	{
 		LPTSTR keyName = new TCHAR[100];
 		GetKeyNameText((MapVirtualKey(nKeycode, 0) << 16), keyName, 100);
 
-		(log << keyName << " (" << nKeycode << ")" << "\n").Write();
+		log << keyName << " (" << nKeycode << ")";
 		delete[] keyName;
 	}
 
+	HideOSDItem(L"UnknownKey");
+	g_pOSD->data.SetItem(L"LastKey", log.GetBuffer());
+
+	log << "\n";
+	log.Write();
+
 	LogMessageIndent indent(&log);
+
 
 	LPWSTR command = NULL;
 	if (globalKeyMap.GetFunction(nKeycode, bShift, bCtrl, bAlt, &command))
@@ -421,10 +446,14 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 			}
 		}
 		if (hr == S_FALSE)
+		{
 			(log << "Function '" << command << "' called but has no implementation.\n").Write();
+		}
 		delete command;
 		return hr;
 	}
+
+	ShowOSDItem(L"UnknownKey", 5);
 /*
 	g_pData->KeyPress.Set(nKeycode, bShift, bCtrl, bAlt);
 	m_pOSD->ShowItem("KeyPress");
@@ -597,68 +626,59 @@ HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 		n2 = _wtoi(parseLine.LHS.Parameter[1]);
 		return AspectRatio(n1, n2);
 	}
-	else if (_wcsicmp(pCurr, L"ShowWindow") == 0)
+	else if (_wcsicmp(pCurr, L"ShowMenu") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		return ShowMenu(parseLine.LHS.Parameter[0]);
+	}
+	else if (_wcsicmp(pCurr, L"ExitMenu") == 0)
+	{
+		if ((parseLine.LHS.ParameterCount != 0) && (parseLine.LHS.ParameterCount != 1))
+			return (log << "TVControl::ExecuteCommand - Expecting 0 or 1 parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		if (parseLine.LHS.ParameterCount == 0)
+		{
+			return ExitMenu();
+		}
+		else
+		{
+			n1 = _wtoi(parseLine.LHS.Parameter[0]);
+			return ExitMenu(n1);
+		}
+	}
+	else if (_wcsicmp(pCurr, L"ShowOSDItem") == 0)
 	{
 		if ((parseLine.LHS.ParameterCount != 1) && (parseLine.LHS.ParameterCount != 2))
 			return (log << "TVControl::ExecuteCommand - Expecting 1 or 2 parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		if (parseLine.LHS.ParameterCount == 1)
 		{
-			return ShowWindow(parseLine.LHS.Parameter[0]);
+			return ShowOSDItem(parseLine.LHS.Parameter[0]);
 		}
 		else
 		{
 			n1 = _wtoi(parseLine.LHS.Parameter[1]);
-			return ShowWindow(parseLine.LHS.Parameter[0], n1);
+			return ShowOSDItem(parseLine.LHS.Parameter[0], n1);
 		}
 	}
-	else if (_wcsicmp(pCurr, L"HideWindow") == 0)
+	else if (_wcsicmp(pCurr, L"HideOSDItem") == 0)
 	{
 		if (parseLine.LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
-		return HideWindow(parseLine.LHS.Parameter[0]);
+		return HideOSDItem(parseLine.LHS.Parameter[0]);
 	}
-	else if (_wcsicmp(pCurr, L"ToggleWindow") == 0)
+	else if (_wcsicmp(pCurr, L"ToggleOSDItem") == 0)
 	{
 		if (parseLine.LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
-		return ToggleWindow(parseLine.LHS.Parameter[0]);
+		return ToggleOSDItem(parseLine.LHS.Parameter[0]);
 	}
 	
 	/*
-	if (_wcsicmp(pCurr, "SetChannel") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			n1 = atoi(pCurr);
-			n2 = -1;
-			if (parseFunction.GetNextParam(pCurr) == TRUE)
-				n2 = atoi(pCurr);
-			return SetChannel(n1, n2);
-		}
-	}
-	if (_wcsicmp(pCurr, "ManualChannel") == 0)
-	{
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-			n1 = atoi(pCurr);
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-			n2 = atoi(pCurr);
-		if (parseFunction.GetNextParam(pCurr) == TRUE)
-		{
-			if ((pCurr[0] == 'A') || (pCurr[0] == 'a'))
-			{
-				pCurr++;
-				n4 = 1;
-			}
-			else
-				n4 = 0;
-				
-			n3 = atoi(pCurr);
-			return ManualChannel(n1, n2, n3, n4);
-		}
-	}
 	if (_wcsicmp(pCurr, "NetworkUp") == 0)
 	{
 		return NetworkUp();

@@ -168,6 +168,7 @@ HRESULT BDADVBTSource::Play()
 	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
 		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
 
+	//TODO: replace this with last selected channel, or menu depending on options.
 	if (channels.IsValidNetwork(1) && channels.Network(1)->IsValidProgram(1))
 		return SetChannel(1, 1);
 
@@ -196,7 +197,7 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 
 	g_pOSD->data.SetItem(L"CurrentNetwork", channels.Network(nNetwork)->name);
 	g_pOSD->data.SetItem(L"CurrentProgram", channels.Network(nNetwork)->Program(nProgram)->name);
-	g_pTv->ShowWindow(L"TVOverlay", 10);
+	g_pTv->ShowOSDItem(L"Channel", 10);
 
 	//Check if already on this network
 	/*if (nNetwork == m_nCurrentNetwork)

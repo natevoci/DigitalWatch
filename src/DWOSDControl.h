@@ -32,9 +32,22 @@ public:
 	DWOSDControl();
 	virtual ~DWOSDControl();
 
-	virtual HRESULT Render(long tickCount) = 0;
+	LPWSTR Name();
+	HRESULT Render(long tickCount);
+
+	virtual void Show(long secondsToShowFor = -1);
+	virtual void Hide();
+	virtual void Toggle();
 
 	IDirectDrawSurface7* m_piSurface;
+
+protected:
+	virtual HRESULT Draw(long tickCount) = 0;
+
+	BOOL m_bVisible;
+	long m_lTimeToHide;
+
+	LPWSTR m_pName;
 };
 
 #endif

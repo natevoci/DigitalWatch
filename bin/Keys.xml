@@ -1,17 +1,20 @@
+  <Key code= 13>				ShowMenu(MainMenu)</>
+  <Key code= 27>				ExitMenu()</>
+
   <Key code='T' shift>			SetSource(BDA)</>
   <Key code='F' shift>			SetSource(FILE)</>
 
   <!-- keyboard numbers -->
   <Key code='0'>				SetChannel(10)</>
-  <Key code='1'>				SetChannel(1, -2)</>
-  <Key code='2'>				SetChannel(2, -2)</>
-  <Key code='3'>				SetChannel(3, -2)</>
-  <Key code='4'>				SetChannel(4, -2)</>
-  <Key code='5'>				SetChannel(5, -2)</>
-  <Key code='6'>				SetChannel(6, -2)</>
-  <Key code='7'>				SetChannel(7, -2)</>
-  <Key code='8'>				SetChannel(8, -2)</>
-  <Key code='9'>				SetChannel(9, -2)</>
+  <Key code='1'>				SetChannel(1)</>
+  <Key code='2'>				SetChannel(2)</>
+  <Key code='3'>				SetChannel(3)</>
+  <Key code='4'>				SetChannel(4)</>
+  <Key code='5'>				SetChannel(5)</>
+  <Key code='6'>				SetChannel(6)</>
+  <Key code='7'>				SetChannel(7)</>
+  <Key code='8'>				SetChannel(8)</>
+  <Key code='9'>				SetChannel(9)</>
 
   <!-- keypad numbers -->
   <Key code= 96>				SetChannel(10)</>
@@ -97,13 +100,13 @@
   <Key code='N'>				TimeShiftJump(20)</>
   <Key code='I'>				TimeShiftJump(-20)</>
 
-  <Key code='A'>				ToggleWindow("TVOverlay")</>
+  <Key code='A'>				ToggleOSDItem("Channel")</>
 
   <!-- Tab on keyboard and VP remote -->
-  <Key code=  9>				ToggleWindow("Time")</>
+  <Key code=  9>				ToggleOSDItem("Time")</>
   <Key code='P' shift>			ShowChannelInfo()</>
-  <Key code='Q'>				ShowWindow("Signal")</>
-  <Key code='E'>				ShowWindow("NowAndNext")</>
+  <Key code='Q'>				ShowOSDItem("Signal")</>
+  <Key code='E'>				ShowOSDItem("NowAndNext")</>
 
   <Key code='1' shift>			SetColorControls(  350, 10000, 0, 10000, 1)</>
   <Key code='2' shift>			SetColorControls(  450, 10000, 0, 10000, 1)</>

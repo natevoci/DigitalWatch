@@ -22,7 +22,9 @@
 
 #include "DWOSDWindows.h"
 #include "GlobalFunctions.h"
+#include "DWOSDGroup.h"
 #include "DWOSDLabel.h"
+#include "DWOSDButton.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWOSDWindow
@@ -31,13 +33,12 @@
 DWOSDWindow::DWOSDWindow()
 {
 	m_pName = NULL;
-
-	m_bVisible = FALSE;
-	m_lTimeToHide = 0;
 }
 
 DWOSDWindow::~DWOSDWindow()
 {
+	if (m_pName)
+		delete[] m_pName;
 }
 
 LPWSTR DWOSDWindow::Name()
@@ -45,23 +46,16 @@ LPWSTR DWOSDWindow::Name()
 	return m_pName;
 }
 
-void DWOSDWindow::Show(long secondsToShowFor)
+DWOSDControl* DWOSDWindow::GetControl(LPWSTR pName)
 {
-	if ((secondsToShowFor > 0) && (!m_bVisible || (m_lTimeToHide > 0)))
-		m_lTimeToHide = GetTickCount() + (secondsToShowFor * 1000);
-	m_bVisible = TRUE;
-}
-
-void DWOSDWindow::Hide()
-{
-	m_lTimeToHide = 0;
-	m_bVisible = FALSE;
-}
-
-void DWOSDWindow::Toggle()
-{
-	m_lTimeToHide = 0;
-	m_bVisible = !m_bVisible;
+	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
+	for ( ; it < m_controls.end() ; it++ )
+	{
+		DWOSDControl *item = *it;
+		if (_wcsicmp(item->Name(), pName) == 0)
+			return item;
+	}
+	return NULL;
 }
 
 HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
@@ -81,34 +75,45 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 	for ( int item=0 ; item<elementCount ; item++ )
 	{
 		element = pElement->Elements.Item(item);
-		if (_wcsicmp(element->name, L"label") == 0)
+		if (_wcsicmp(element->name, L"group") == 0)
 		{
-			DWOSDLabel* label = new DWOSDLabel();
-			label->SetLogCallback(m_pLogCallback);
-			label->LoadFromXML(element);
-			m_controls.push_back(label);
+			DWOSDGroup* group = new DWOSDGroup();
+			group->SetLogCallback(m_pLogCallback);
+			if FAILED(group->LoadFromXML(element))
+				delete group;
+			else
+				m_controls.push_back(group);
 		}
-	};
+		else if (_wcsicmp(element->name, L"label") == 0)
+		{
+			DWOSDLabel* control = new DWOSDLabel();
+			control->SetLogCallback(m_pLogCallback);
+			if FAILED(control->LoadFromXML(element))
+				delete control;
+			else
+				m_controls.push_back(control);
+		}
+		else if (_wcsicmp(element->name, L"button") == 0)
+		{
+			DWOSDButton* control = new DWOSDButton();
+			control->SetLogCallback(m_pLogCallback);
+			if FAILED(control->LoadFromXML(element))
+				delete control;
+			else
+				m_controls.push_back(control);
+		}
+	}
 
 	return S_OK;
 }
 
 HRESULT DWOSDWindow::Render(long tickCount)
 {
-	if ((m_lTimeToHide != 0) && (m_lTimeToHide < tickCount))
+	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
+	for ( ; it < m_controls.end() ; it++ )
 	{
-		m_bVisible = FALSE;
-		m_lTimeToHide = 0;
-	}
-
-	if (m_bVisible)
-	{
-		std::vector<DWOSDControl *>::iterator it = m_controls.begin();
-		for ( ; it < m_controls.end() ; it++ )
-		{
-			DWOSDControl *control = *it;
-			control->Render(tickCount);
-		}
+		DWOSDControl *control = *it;
+		control->Render(tickCount);
 	}
 	return S_OK;
 }
@@ -180,7 +185,7 @@ HRESULT DWOSDWindows::Load(LPWSTR filename)
 			else
 				delete window;
 		}
-		if (_wcsicmp(element->name, L"image") == 0)
+		else if (_wcsicmp(element->name, L"image") == 0)
 		{
 			DWOSDImage *image = new DWOSDImage();
 			image->SetLogCallback(m_pLogCallback);
@@ -219,17 +224,4 @@ DWOSDImage *DWOSDWindows::GetImage(LPWSTR pName)
 	return NULL;
 }
 
-HRESULT DWOSDWindows::Render(long tickCount)
-{
-	HRESULT hr;
-	std::vector<DWOSDWindow *>::iterator it = m_windows.begin();
-	for ( ; it < m_windows.end() ; it++ )
-	{
-		DWOSDWindow *item = *it;
-		hr = item->Render(tickCount);
-		if FAILED(hr)
-			(log << "Failed to render window " << item->Name() << ": " << hr << "\n").Write();
-	}
-	return S_OK;
-}
 

@@ -91,6 +91,8 @@ public:
 	LogMessage& operator<< (const LPCSTR& val);
 	LogMessage& operator<< (const LPCWSTR& val);
 
+	LPWSTR GetBuffer();
+
 private:
 	void _writef(LPWSTR sz,...);
 

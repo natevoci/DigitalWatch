@@ -282,6 +282,14 @@ SOURCE=.\src\SystemDeviceEnumerator.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\src\DWOSDData.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDData.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\DWOSDDataItem.cpp
 # End Source File
 # Begin Source File
@@ -302,11 +310,27 @@ SOURCE=.\src\DWOSDDataList.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\src\DWOSDButton.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDButton.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\DWOSDControl.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\DWOSDControl.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDGroup.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWOSDGroup.h
 # End Source File
 # Begin Source File
 

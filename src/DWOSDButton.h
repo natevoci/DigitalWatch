@@ -1,5 +1,5 @@
 /**
- *	DWOSDWindows.h
+ *	DWOSDButton.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,57 +20,44 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSDWINDOWS_H
-#define DWOSDWINDOWS_H
+#ifndef DWOSDBUTTON_H
+#define DWOSDBUTTON_H
 
 #include "StdAfx.h"
-#include "LogMessage.h"
+#include "DWOSDControl.h"
 #include "XMLDocument.h"
 #include "DWOSDImage.h"
-#include "DWOSDControl.h"
-#include <vector>
 
-class DWOSDWindows;
-class DWOSDWindow : public LogMessageCaller
+class DWOSDButton : public DWOSDControl  
 {
-	friend DWOSDWindows;
 public:
-	DWOSDWindow();
-	virtual ~DWOSDWindow();
+	DWOSDButton();
+	virtual ~DWOSDButton();
 
-	LPWSTR Name();
-	HRESULT Render(long tickCount);
-
-	DWOSDControl *GetControl(LPWSTR pName);
-
-private:
 	HRESULT LoadFromXML(XMLElement *pElement);
 
-	LPWSTR m_pName;
-	std::vector<DWOSDControl *> m_controls;
-};
+protected:
+	virtual HRESULT Draw(long tickCount);
 
+	long m_nPosX;
+	long m_nPosY;
+	long m_nWidth;
+	long m_nHeight;
 
-class DWOSDWindows : public LogMessageCaller
-{
-public:
-	DWOSDWindows();
-	virtual ~DWOSDWindows();
+	LPWSTR m_wszText;
+	LPWSTR m_wszFont;
+	COLORREF m_dwTextColor;
+	long m_nTextHeight;
+	long m_nTextWeight;
 
-	virtual void SetLogCallback(LogMessageCallback *callback);
+	DWOSDImage* m_pBackgroundImage;
+	RECT m_rectBackgroundPadding;
 
-	HRESULT Load(LPWSTR filename);
-	
-	void Show(LPWSTR pWindowName);
+	//DC handling
+	void InitDC(HDC &hDC);
+	void UninitDC(HDC &hDC);
+	HFONT m_hFont, m_hOldFont;
 
-	DWOSDWindow *GetWindow(LPWSTR pName);
-	DWOSDImage *GetImage(LPWSTR pName);
-
-private:
-	std::vector<DWOSDWindow *> m_windows;
-	std::vector<DWOSDImage *> m_images;
-
-	LPWSTR m_filename;
 };
 
 #endif

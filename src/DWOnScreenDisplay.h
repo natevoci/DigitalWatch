@@ -43,18 +43,28 @@ public:
 	void SetLogCallback(LogMessageCallback *callback);
 
 	HRESULT Initialise();
-
 	HRESULT Render(long tickCount);
 
-	DWDirectDraw* get_DirectDraw();
+	HRESULT ShowMenu(LPWSTR szMenuName);
+	HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
 
-	DWOSDWindows windows;
+	DWDirectDraw* get_DirectDraw();
+	DWOSDWindow* Overlay();
+
+
+	//Methods for controls to use
+	DWOSDImage* GetImage(LPWSTR pName);
 	DWOSDData data;
 
 private:
+	DWOSDWindows windows;
+
 	long GetPanningPos(long tickCount, long span, double speed);
 
 	DWDirectDraw* m_pDirectDraw;
+	DWOSDWindow* m_pOverlayWindow;
+	DWOSDWindow* m_pCurrentWindow;
+	std::vector <DWOSDWindow *> m_windowStack;
 };
 
 #endif

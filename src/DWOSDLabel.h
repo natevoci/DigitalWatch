@@ -36,9 +36,8 @@ public:
 
 	HRESULT LoadFromXML(XMLElement *pElement);
 
-	virtual HRESULT Render(long tickCount);
-
-private:
+protected:
+	virtual HRESULT Draw(long tickCount);
 
 	long m_nPosX;
 	long m_nPosY;

@@ -363,6 +363,11 @@ LogMessage& LogMessage::operator<< (const LPCWSTR& val)
 	return *this;
 }
 
+LPWSTR LogMessage::GetBuffer()
+{
+	return m_pStr;
+}
+
 void LogMessage::_writef(LPWSTR sz,...)
 {
     va_list va;

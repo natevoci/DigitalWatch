@@ -85,36 +85,129 @@ $(() - $(
 	<stretchArea left=17 right=408 />
 </image>
 
-<window name="Time">
-	<label>
-		<pos x=20 y=526 />
-		<text height=20 weight=700 color="#FFFFFF">$(Hour24) - $(Minute) - $(Second)$(ap)</text>
-		<background>
-			<image>BrownButton</image>
-			<padding left=10 top=0 right=10 bottom=3 />
-		</background>
-	</label>
+<image name="BrownBackground">
+	<filename>images\brown-button.bmp</filename>
+	<colorkey>#000000</colorkey>
+	<stretchArea left=17 top=17 right=408 bottom=49 />
+</image>
+
+<window name="Overlay">
+	<group name="UnknownKey">
+		<label>
+			<pos x=384 y=288 />
+			<text>$(LastKey)</text>
+			<font height=40 color="#FFFFFF" />
+			<align horizontal="centre" vertical="centre" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=3 />
+			</background>
+		</label>
+	</group>
+	<group name="Channel">
+		<label>
+			<pos x=748 y=514 />
+			<text>$(CurrentProgram)</text>
+			<font height=40 color="#FFFFFF" />
+			<align horizontal="right" vertical="bottom" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=3 />
+			</background>
+		</label>
+		<label>
+			<pos x=748 y=560 />
+			<text>$(CurrentNetwork)</text>
+			<font height=40 color="#FFFFFF" />
+			<align horizontal="right" vertical="bottom" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=3 />
+			</background>
+		</label>
+	</group>
+	<group name="Time">
+		<label>
+			<pos x=20 y=526 />
+			<text>$(Hour24) - $(Minute) - $(Second)$(ap)</text>
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=3 />
+			</background>
+		</label>
+	</group>
+	<!--
+	<group name="Recording">
+	</group>
+	-->
+	<!--
+	<group name="VideoDecoder">
+	</group>
+	-->
+	<!--
+	<group name="AudioDecoder">
+	</group>
+	-->
+	<!--
+	<group name="Zoom">
+	</group>
+	-->
+	<!--
+	<group name="AlwaysOnTop">
+	</group>
+	-->
+	<!--
+	<group name="Fullscreen">
+	</group>
+	-->
+	<!--
+	<group name="Volume">
+	</group>
+	-->
+	<!--
+	<group name="Mute">
+	</group>
+	-->
+	<!--
+	<group name="Signal">
+	</group>
+	-->
+	<!--
+	<group name="NowAndNext">
+	</group>
+	-->
+	<!--
+	<group name="">
+	</group>
+	-->
+	<!--
+	<group name="">
+	</group>
+	-->
 </window>
 
-<window name="TVOverlay">
+<window name="MainMenu">
 	<label>
-		<pos x=748 y=514 />
-		<text height=40 color="#FFFFFF">$(CurrentProgram)</text>
-		<align horizontal="right" vertical="bottom" />
+		<pos x=384 y=40 />
+		<text>Main Menu</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
 		<background>
-			<image>BrownButton</image>
-			<padding left=10 top=0 right=10 bottom=3 />
+			<image>BrownBackground</image>
+			<padding left=250 right=250 top=20 bottom=470 />
 		</background>
 	</label>
-	<label>
-		<pos x=748 y=560 />
-		<text height=40 color="#FFFFFF">$(CurrentNetwork)</text>
-		<align horizontal="right" vertical="bottom" />
+	<button>
+		<pos x=184 y=120 />
+		<size width=400 height=60 />
+		<text>Watch TV</text>
+		<font height=40 weight=700 color="#FFFFFF" />
 		<background>
 			<image>BrownButton</image>
-			<padding left=10 top=0 right=10 bottom=3 />
 		</background>
-	</label>
+	</button>
+	
 </window>
 
 <window name="Messages">
@@ -127,14 +220,6 @@ $(() - $(
 		<textColor>#FFFFFF</textColor>
 		<backColor>#505050</backColor>
 	</listbox>
-</window>
-
-<window name="MainMenu">
-	<button>
-		<pos x=100 y=100 />
-		<text>Watch TV</text>
-		<onClick>SetSource(TV)</onClick>
-	</button>
 </window>
 
 <window name="MessageBox">
