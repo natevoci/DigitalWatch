@@ -1,5 +1,5 @@
 /**
- *	DWSource.h
+ *	LogMessageWriter.h
  *	Copyright (C) 2004 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,33 +20,22 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWSOURCE_H
-#define DWSOURCE_H
+#ifndef LOGMESSAGEWRITER_H
+#define LOGMESSAGEWRITER_H
 
 #include "StdAfx.h"
-#include "DWGraph.h"
+#include "LogMessage.h"
 
-interface DWSource
+class LogMessageWriter : public LogMessageCallback
 {
 public:
-	/* General */
-	virtual void GetSourceType(LPWSTR type) = 0;
-
-	virtual HRESULT Initialise(DWGraph* pFilterGraph) = 0;
-	virtual HRESULT Destroy() = 0;
-
-	/* Interface */
-	virtual HRESULT ExecuteCommand(LPWSTR command) = 0;
-	//Keys, ControlBar, OSD, Menu, etc...
-
-	virtual HRESULT Play() = 0;
-
-	/* Filtergraph */
-/*	virtual HRESULT AddFilters() = 0;
-	virtual HRESULT Connect() = 0;
-	virtual HRESULT AfterGraphBuilt() = 0;
-	virtual HRESULT Cleanup() = 0;
-*/	
+	LogMessageWriter();
+	virtual ~LogMessageWriter();
+	void SetFilename(LPWSTR filename);
+	virtual void Write(LPSTR pStr);
+	virtual void Clear();
+private:
+	LPWSTR m_logFilename;
 };
 
 #endif

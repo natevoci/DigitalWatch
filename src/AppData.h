@@ -44,6 +44,7 @@ public:
 		long bCursorVisible;
 	} application;
 
+	//These values reflect what is stored in the settings file.
 	struct SETTINGS
 	{
 		struct SETTINGS_APPLICATION
@@ -51,7 +52,7 @@ public:
 			BOOL disableScreenSaver;
 			int priority;
 			BOOL addToROT;
-			LPWSTR logFilename;
+			//LPWSTR logFilename;
 		} application;
 
 		struct SETTINGS_WINDOW
@@ -116,7 +117,9 @@ public:
 		} lastChannel;
 	} settings;
 
-	struct VALUES	//all values in this structure have to be 32bit to make marking work.
+	//These values reflect runtime values that are not stored in the settings file
+	//all values in this structure have to be 32bit to make marking work.
+	struct VALUES
 	{
 		struct VALUES_WINDOW
 		{

@@ -25,9 +25,13 @@
 #define DVBTCHANNELS_H
 
 #include "StdAfx.h"
+#include "LogMessage.h"
 #include <vector>
 
 #define PID_TYPE_VIDEO 1
+
+class DVBTChannels;
+class DVBTChannels_Network;
 
 enum DVBTChannels_Program_PID_Types
 {
@@ -47,10 +51,21 @@ struct DVBTChannels_Program_Stream
 
 class DVBTChannels_Program
 {
+	friend DVBTChannels;
 public:
 	DVBTChannels_Program();
 	virtual ~DVBTChannels_Program();
 
+	DVBTChannels_Program_PID_Types GetStreamType(int index);
+	long GetStreamPID(int index);
+	long GetStreamPID(DVBTChannels_Program_PID_Types streamtype, int index);
+
+
+	long GetStreamCount();
+	long GetStreamCount(DVBTChannels_Program_PID_Types streamtype);
+
+
+protected:
 	long programNumber;
 	LPWSTR name;
 	std::vector<DVBTChannels_Program_Stream> streams;
@@ -60,6 +75,7 @@ public:
 
 class DVBTChannels_Network
 {
+	friend DVBTChannels;
 public:
 	DVBTChannels_Network();
 	virtual ~DVBTChannels_Network();
@@ -68,10 +84,14 @@ public:
 	long bandwidth;
 	LPWSTR name;
 
+	DVBTChannels_Program* Program(int programNumber);
+	BOOL IsValidProgram(int programNumber);
+
+private:
 	std::vector<DVBTChannels_Program *> programs;
 };
 
-class DVBTChannels  
+class DVBTChannels
 {
 public:
 	DVBTChannels();
@@ -80,10 +100,16 @@ public:
 	BOOL LoadChannels(LPWSTR filename);
 	BOOL SaveChannels(LPWSTR filename = NULL);
 
-	std::vector<DVBTChannels_Network *> networks;
+	DVBTChannels_Network* Network(int networkNumber);
+	BOOL IsValidNetwork(int networkNumber);
+
 private:
+	std::vector<DVBTChannels_Network *> networks;
+
 	long m_bandwidth;
 	LPWSTR m_filename;
+
+	LogMessage log;
 };
 
 #endif

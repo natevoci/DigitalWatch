@@ -27,7 +27,6 @@
 #include "FilterGraphTools.h"
 #include "LogMessage.h"
 
-//#include "GlobalFunctions.h"
 //#include <dshow.h>
 #include <ks.h> // Must be included before ksmedia.h
 #include <ksmedia.h> // Must be included before bdamedia.h
@@ -43,67 +42,96 @@ BDACard::BDACard()
 
 BDACard::~BDACard()
 {
-	m_pBDATuner.Release();
-	m_pBDADemod.Release();
-	m_pBDACapture.Release();
+	m_pCapturePin.Release();
+	RemoveFilters();
+	m_piGraphBuilder.Release();
 }
 
 HRESULT BDACard::AddFilters(IGraphBuilder* piGraphBuilder)
 {
 	HRESULT hr;
 
-	if (FAILED(hr = AddFilterByDevicePath(piGraphBuilder, m_pBDATuner.p, tunerDevice.strDevicePath, tunerDevice.strFriendlyName)))
+	m_piGraphBuilder.Release();
+	if (FAILED(hr = piGraphBuilder->QueryInterface(IID_IGraphBuilder, (void**)&m_piGraphBuilder)))
 	{
-		return (g_log << "Cannot load Tuner Device\n").Show(hr);
+		return (log << "BDACard::AddFilters - Cannot query IGraphBuilder\n").Write(hr);
+	}
+
+	if (FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, m_pBDATuner.p, tunerDevice.strDevicePath, tunerDevice.strFriendlyName)))
+	{
+		return (log << "Cannot load Tuner Device\n").Show(hr);
 	}
 
 	if (demodDevice.bValid)
 	{
-		if (FAILED(hr = AddFilterByDevicePath(piGraphBuilder, m_pBDADemod.p, demodDevice.strDevicePath, demodDevice.strFriendlyName)))
+		if (FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, m_pBDADemod.p, demodDevice.strDevicePath, demodDevice.strFriendlyName)))
 		{
-			return (g_log << "Cannot load Demod Device\n").Show(hr);
+			return (log << "Cannot load Demod Device\n").Show(hr);
 		}
 	}
 
 	if (captureDevice.bValid)
 	{
-		if (FAILED(hr = AddFilterByDevicePath(piGraphBuilder, m_pBDACapture.p, captureDevice.strDevicePath, captureDevice.strFriendlyName)))
+		if (FAILED(hr = AddFilterByDevicePath(m_piGraphBuilder, m_pBDACapture.p, captureDevice.strDevicePath, captureDevice.strFriendlyName)))
 		{
-			return (g_log << "Cannot load Capture Device\n").Show(hr);
+			return (log << "Cannot load Capture Device\n").Show(hr);
 		}
 	}
 	return S_OK;
 }
 
-HRESULT BDACard::Connect(IGraphBuilder* piGraphBuilder, IBaseFilter* pSource)
+HRESULT BDACard::RemoveFilters()
+{
+	if (m_pBDACapture)
+	{
+		m_piGraphBuilder->RemoveFilter(m_pBDACapture);
+		m_pBDACapture.Release();
+	}
+	if (m_pBDADemod)
+	{
+		m_piGraphBuilder->RemoveFilter(m_pBDADemod);
+		m_pBDADemod.Release();
+	}
+	if (m_pBDATuner)
+	{
+		m_piGraphBuilder->RemoveFilter(m_pBDATuner);
+		m_pBDATuner.Release();
+	}
+	return S_OK;
+}
+
+HRESULT BDACard::Connect(IBaseFilter* pSource)
 {
 	HRESULT hr;
 
-    if (FAILED(hr = ConnectFilters(piGraphBuilder, pSource, m_pBDATuner)))
+	if (!m_piGraphBuilder)
+		return E_FAIL;
+
+    if (FAILED(hr = ConnectFilters(m_piGraphBuilder, pSource, m_pBDATuner)))
 	{
-		return (g_log << "Failed to connect Network Provider to Tuner Filter\n").Show(hr);
+		return (log << "Failed to connect Network Provider to Tuner Filter\n").Show(hr);
 	}
 
 	if (captureDevice.bValid)
 	{
 		if (demodDevice.bValid)
 		{
-			if (FAILED(hr = ConnectFilters(piGraphBuilder, m_pBDATuner, m_pBDADemod)))
+			if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod)))
 			{
-				return (g_log << "Failed to connect Tuner Filter to Demod Filter\n").Show(hr);
+				return (log << "Failed to connect Tuner Filter to Demod Filter\n").Show(hr);
 			}
 
-			if (FAILED(hr = ConnectFilters(piGraphBuilder, m_pBDADemod, m_pBDACapture)))
+			if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDADemod, m_pBDACapture)))
 			{
-				return (g_log << "Failed to connect Demod Filter to Capture Filter\n").Show(hr);
+				return (log << "Failed to connect Demod Filter to Capture Filter\n").Show(hr);
 			}
 
 		}
 		else
 		{
-			if (FAILED(hr = ConnectFilters(piGraphBuilder, m_pBDATuner, m_pBDACapture)))
+			if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDACapture)))
 			{
-				return (g_log << "Failed to connect Tuner Filter to Capture Filter\n").Show(hr);
+				return (log << "Failed to connect Tuner Filter to Capture Filter\n").Show(hr);
 			}
 		}
 		
@@ -112,15 +140,15 @@ HRESULT BDACard::Connect(IGraphBuilder* piGraphBuilder, IBaseFilter* pSource)
 			//If that failed then try the other mpeg2 type, but this shouldn't happen.
 			if (FAILED(hr = FindPinByMediaType(m_pBDACapture, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
 			{
-				return (g_log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
+				return (log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
 			}
 		}
 	}
 	else if (demodDevice.bValid)
 	{
-		if (FAILED(hr = ConnectFilters(piGraphBuilder, m_pBDATuner, m_pBDADemod)))
+		if (FAILED(hr = ConnectFilters(m_piGraphBuilder, m_pBDATuner, m_pBDADemod)))
 		{
-			return (g_log << "Failed to connect Tuner Filter to Demod Filter\n").Show(hr);
+			return (log << "Failed to connect Tuner Filter to Demod Filter\n").Show(hr);
 		}
 
 		if (FAILED(hr = FindPinByMediaType(m_pBDADemod, MEDIATYPE_Stream, KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
@@ -128,7 +156,7 @@ HRESULT BDACard::Connect(IGraphBuilder* piGraphBuilder, IBaseFilter* pSource)
 			//If that failed then try the other mpeg2 type, but this shouldn't happen.
 			if (FAILED(hr = FindPinByMediaType(m_pBDADemod, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
 			{
-				return (g_log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
+				return (log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
 			}
 		}
 	}
@@ -139,7 +167,7 @@ HRESULT BDACard::Connect(IGraphBuilder* piGraphBuilder, IBaseFilter* pSource)
 			//If that failed then try the other mpeg2 type, but this shouldn't happen.
 			if (FAILED(hr = FindPinByMediaType(m_pBDATuner, MEDIATYPE_Stream, MEDIASUBTYPE_MPEG2_TRANSPORT, &m_pCapturePin.p, REQUESTED_PINDIR_OUTPUT)))
 			{
-				return (g_log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
+				return (log << "Failed to find Tranport Stream pin on Capture filter\n").Show(hr);
 			}
 		}
 	}

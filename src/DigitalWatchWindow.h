@@ -25,6 +25,7 @@
 
 #include "TVControl.h"
 #include "AppData.h"
+#include "LogMessage.h"
 
 #define MAX_LOADSTRING 100
 
@@ -45,6 +46,8 @@ private:
 	//AppData* m_pAppData;
 	//TVControl* m_pTv;
 	//AppSettings* m_pAppSettings;
+
+	LogMessage log;
 };
 
 #endif

@@ -44,8 +44,8 @@ AppData::AppData()
 	settings.application.disableScreenSaver = 0;
 	settings.application.priority = 0;
 	settings.application.addToROT = 1;
-	settings.application.logFilename = new wchar_t[MAX_PATH];
-	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"\\DigitalWatch.log");
+//	settings.application.logFilename = new wchar_t[MAX_PATH];
+//	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
 	settings.window.startFullscreen = 0;
 	settings.window.startAlwaysOnTop = 0;
@@ -127,6 +127,10 @@ AppData::AppData()
 
 AppData::~AppData()
 {
+	if (application.appPath)
+		delete[] application.appPath;
+	if (settings.display.OSDTimeFormat)
+		delete[] settings.display.OSDTimeFormat;
 }
 
 void AppData::RestoreMarkedChanges()

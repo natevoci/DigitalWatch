@@ -8,7 +8,7 @@ Sub InsertDigitalWatchGPL()
 	ActiveDocument.Selection.NewLine
  	ActiveDocument.Selection = " *	" & ActiveDocument.Name
 	ActiveDocument.Selection.NewLine
-	ActiveDocument.Selection = "*	Copyright (C) 2004 "
+	ActiveDocument.Selection = "*	Copyright (C) 2005 "
 	ActiveDocument.Selection.NewLine
  	ActiveDocument.Selection = "*"
 	ActiveDocument.Selection.NewLine

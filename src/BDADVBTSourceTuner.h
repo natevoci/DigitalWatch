@@ -27,6 +27,8 @@
 #include <streams.h>
 #include <bdatif.h>
 #include "BDACardCollection.h"
+#include "DWGraph.h"
+#include "LogMessage.h"
 
 class BDADVBTSourceTuner
 {
@@ -34,13 +36,20 @@ public:
 	BDADVBTSourceTuner(BDACard *pBDACard);
 	virtual ~BDADVBTSourceTuner();
 
-	BOOL Initialise(DWGraph *pDWGraph);
-	BOOL DestroyAll();
+	HRESULT Initialise(DWGraph *pDWGraph);
+	HRESULT DestroyAll();
 
-	BOOL LockChannel(long frequency, long bandwidth);
+	HRESULT AddSourceFilters();
+	HRESULT RemoveSourceFilters();
+
+	HRESULT QueryTransportStreamPin(IPin** piPin);
+
+	HRESULT LockChannel(long frequency, long bandwidth);
 	long GetCurrentFrequency();
 
-	BOOL GetSignalStats(BOOL &locked, long &strength, long &quality);
+	HRESULT GetSignalStats(BOOL &locked, long &strength, long &quality);
+
+	BOOL IsActive();
 
 	/*
 	GetNowAndNext(...);
@@ -56,38 +65,36 @@ public:
 	*/
 	BOOL SupportsRecording() { return FALSE; }
 
-	long activationRank;
-	BOOL lockedAsActiveTuner;
+	//long activationRank;
 
-	IBaseFilter*  m_piDWTSRedirect;
+	//IBaseFilter*  m_piDWTSRedirect;
 	//DWTSRedirect* m_pfDWTSRedirect;
 
 private:
-//	BOOL InitTuningSpace();
-//	BOOL submitTuneRequest(ITuneRequest* &pExTuneRequest);
-
 	BDACard *m_pBDACard;
 	DWGraph *m_pDWGraph;
 
 	BOOL m_bInitialised;
+	BOOL m_bActive;
+
 	long m_lFrequency;
 	long m_lBandwidth;
 
 	//BOOL m_bRecording;
 
-	VARIANT m_pTuningSpaceIndex;
+	//VARIANT m_pTuningSpaceIndex;
 
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IMediaControl> m_piMediaControl;
 
 	CComPtr <IBaseFilter> m_piBDANetworkProvider;
-	CComPtr <IBaseFilter> m_piBDATuner;
-	CComPtr <IBaseFilter> m_piBDACapture;
+//	CComPtr <IBaseFilter> m_piBDATuner;
+//	CComPtr <IBaseFilter> m_piBDACapture;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 	CComPtr <IBaseFilter> m_piBDATIF;
 	CComPtr <IBaseFilter> m_piBDASecTab;
 	CComPtr <IBaseFilter> m_piInfinitePinTee;
-	CComPtr <IBaseFilter> m_piDSNetworkSink;
+	//CComPtr <IBaseFilter> m_piDSNetworkSink;
 
 	CComPtr <ITuningSpace> m_piTuningSpace;
 
@@ -97,6 +104,8 @@ private:
 	*/
 
 	DWORD m_rotEntry;
+
+	LogMessage log;
 };
 
 #endif

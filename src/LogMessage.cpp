@@ -56,12 +56,7 @@ LogMessage::~LogMessage()
 	if (m_str[0] != 0)
 		WriteLogMessage();
 
-	vector<LogMessageCallback *>::iterator it;
-	for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
-	{
-		delete *it;
-		callbacks.erase(it);
-	}
+	callbacks.clear();
 }
 
 int LogMessage::AddCallback(LogMessageCallback *callback)

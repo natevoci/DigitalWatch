@@ -51,6 +51,11 @@ BDACardCollection::~BDACardCollection()
 	cards.clear();
 }
 
+LogMessage BDACardCollection::get_Logger()
+{
+	return log;
+}
+
 BOOL BDACardCollection::LoadCards()
 {
 	if (m_filename)
@@ -74,10 +79,12 @@ BOOL BDACardCollection::LoadCardsFromFile()
 {
 	FileReader file;
 	if (file.Open(m_filename) == FALSE)
-		//return (g_log << "Could not open cards file: " << m_filename).Write();
+	{
+		(log << "Could not open cards file: " << m_filename << "\n").Write();
 		return FALSE;
+	}
 
-	//(g_log << "Loading BDA DVB-T Cards file: " << m_filename).Write();
+	(log << "Loading BDA DVB-T Cards file: " << m_filename << "\n").Write();
 
 	try
 	{
@@ -97,20 +104,16 @@ BOOL BDACardCollection::LoadCardsFromFile()
 
 			ParseLine parseLine;
 			if (parseLine.Parse(pBuff) == FALSE)
-				//return (g_log << "Parse Error in " << m_filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage()).Show();
-				return FALSE;
+				return (log << "Parse Error in " << m_filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage() << "\n").Show(FALSE);
 
 			if (parseLine.HasRHS())
-				//return (g_log << "Parse Error in " << m_filename << ": Line " << line << "\nEquals not valid for this command").Show();
-				return FALSE;
+				return (log << "Parse Error in " << m_filename << ": Line " << line << "\nEquals not valid for this command\n").Show(FALSE);
 
 			if (parseLine.LHS.ParameterCount < 1)
-				//return (g_log << "Parse Error in " << m_filename << ": Line " << line << "\nMissing expected parameter").Show();
-				return FALSE;
+				return (log << "Parse Error in " << m_filename << ": Line " << line << "\nMissing expected parameter\n").Show(FALSE);
 
 			if (parseLine.LHS.ParameterCount > 1)
-				//return (g_log << "Parse Error in " << m_filename << ": Line " << line << "\nToo many parameters").Show();
-				return FALSE;
+				return (log << "Parse Error in " << m_filename << ": Line " << line << "\nToo many parameters\n").Show(FALSE);
 
 			pCurr = parseLine.LHS.FunctionName;
 
@@ -127,28 +130,46 @@ BOOL BDACardCollection::LoadCardsFromFile()
 			if (_wcsicmp(pCurr, L"TunerName") == 0)
 			{
 				if (!currCard)
-					//return (g_log << "Parse Error in " << m_filename << ": Line " << line << "TunerName function must come after a TunerDevice function.\n").Write();
-					return FALSE;
+					return (log << "Parse Error in " << m_filename << ": Line " << line << "TunerName function must come after a TunerDevice function.\n").Write(FALSE);
 
 				pCurr = parseLine.LHS.Parameter[0];
 				strCopy(currCard->tunerDevice.strFriendlyName, pCurr);
+				currCard->tunerDevice.bValid = TRUE;
+				continue;
+			}
+			if (_wcsicmp(pCurr, L"DemodDevice") == 0)
+			{
+				if (!currCard)
+					return (log << "Parse Error in " << m_filename << ": Line " << line << "DemodDevice function must come after a TunerDevice function.\n").Write(FALSE);
+
+				pCurr = parseLine.LHS.Parameter[0];
+				strCopy(currCard->demodDevice.strDevicePath, pCurr);
+				currCard->demodDevice.bValid = TRUE;
+				continue;
+			}
+			if (_wcsicmp(pCurr, L"DemodName") == 0)
+			{
+				if (!currCard)
+					return (log << "Parse Error in " << m_filename << ": Line " << line << "DemodName function must come after a TunerDevice function.\n").Write(FALSE);
+
+				pCurr = parseLine.LHS.Parameter[0];
+				strCopy(currCard->demodDevice.strFriendlyName, pCurr);
 				continue;
 			}
 			if (_wcsicmp(pCurr, L"CaptureDevice") == 0)
 			{
 				if (!currCard)
-					//return (g_log << "Parse Error in " << m_filename << ": Line " << line << "TunerName function must come after a TunerDevice function.\n").Write();
-					return FALSE;
+					return (log << "Parse Error in " << m_filename << ": Line " << line << "CaptureDevice function must come after a TunerDevice function.\n").Write(FALSE);
 
 				pCurr = parseLine.LHS.Parameter[0];
 				strCopy(currCard->captureDevice.strDevicePath, pCurr);
+				currCard->captureDevice.bValid = TRUE;
 				continue;
 			}
 			if (_wcsicmp(pCurr, L"CaptureName") == 0)
 			{
 				if (!currCard)
-					//return (g_log << "Parse Error in " << m_filename << ": Line " << line << "TunerName function must come after a TunerDevice function.\n").Write();
-					return FALSE;
+					return (log << "Parse Error in " << m_filename << ": Line " << line << "CaptureName function must come after a TunerDevice function.\n").Write(FALSE);
 
 				pCurr = parseLine.LHS.Parameter[0];
 				strCopy(currCard->captureDevice.strFriendlyName, pCurr);
@@ -157,7 +178,7 @@ BOOL BDACardCollection::LoadCardsFromFile()
 			if (_wcsicmp(pCurr, L"Active") == 0)
 			{
 				if (!currCard)
-					//return (g_log << "Parse Error in " << m_filename << ": Line " << line << "TunerName function must come after a TunerDevice function.\n").Write();
+					//return (log << "Parse Error in " << m_filename << ": Line " << line << "TunerName function must come after a TunerDevice function.\n").Write();
 					return FALSE;
 
 				pCurr = parseLine.LHS.Parameter[0];
@@ -165,7 +186,7 @@ BOOL BDACardCollection::LoadCardsFromFile()
 				continue;
 			}
 
-			//return (g_log << "Parse Error in " << m_filename << ": Line " << line << ":unexpected term '" << pCurr << "'").Show();
+			//return (log << "Parse Error in " << m_filename << ": Line " << line << ":unexpected term '" << pCurr << "'\n").Show();
 			return FALSE;
 		}
 
@@ -173,8 +194,7 @@ BOOL BDACardCollection::LoadCardsFromFile()
 	}	   
 	catch (LPWSTR str)
 	{
-		//(g_log << "Error caught reading cards file: " << str).Show();
-		cout << "Error caught reading cards file: " << str << endl;
+		(log << "Error caught reading cards file: " << str << "\n").Show();
 		file.Close();
 		return FALSE;
 	}
@@ -193,12 +213,12 @@ void BDACardCollection::AddCardToList(BDACard* currCard)
 			(currCard->captureDevice.strDevicePath == NULL) ||
 			(currCard->captureDevice.strFriendlyName == NULL))
 		{
-			//(g_log << "Error in " << m_filename << ": Cannot add device without setting both tuner and capture name and device paths").Write();
+			//(log << "Error in " << m_filename << ": Cannot add device without setting both tuner and capture name and device paths\n").Write();
 			return;
 		}
 		cards.push_back(currCard);
-		//(g_log << "  " << currCard->tunerDevice.strFriendlyName << " [" << (currCard->bActive ? "Active" : "Not Active") << "] - " << currCard->tunerDevice.strDevicePath).Write();
-		//(g_log << "    " << currCard->captureDevice.strFriendlyName << " - " << currCard->captureDevice.strDevicePath).Write();
+		//(log << "  " << currCard->tunerDevice.strFriendlyName << " [" << (currCard->bActive ? "Active" : "Not Active") << "] - " << currCard->tunerDevice.strDevicePath << "\n").Write();
+		//(log << "    " << currCard->captureDevice.strFriendlyName << " - " << currCard->captureDevice.strDevicePath << "\n").Write();
 	}
 }
 
@@ -210,17 +230,17 @@ BOOL BDACardCollection::SaveCards(LPWSTR filename)
 	if (filename)
 	{
 		if (file.Open(filename) == FALSE)
-			//return (g_log << "Could not open cards file for writing: " << filename).Show();
+			//return (log << "Could not open cards file for writing: " << filename << "\n").Show();
 			return FALSE;
 	}
 	else
 	{
 		if (file.Open(m_filename) == FALSE)
-			//return (g_log << "Could not open cards file for writing: " << m_filename).Show();
+			//return (log << "Could not open cards file for writing: " << m_filename << "\n").Show();
 			return FALSE;
 	}
 
-	//(g_log << "Saving BDA DVB-T Cards file: " << m_filename).Write();
+	(log << "Saving BDA DVB-T Cards file: " << m_filename << "\n").Write();
 
 	try
 	{
@@ -243,8 +263,7 @@ BOOL BDACardCollection::SaveCards(LPWSTR filename)
 	}
 	catch (LPWSTR str)
 	{
-		//(g_log << str).Show();
-		cout << "Error caught saving cards file: " << str << endl;
+		(log << "Error caught saving cards file: " << str << "\n").Show();
 		file.Close();
 		return FALSE;
 	}
@@ -256,7 +275,7 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 {
 	HRESULT hr = S_OK;
 
-	//(g_log << "Checking for new BDA DVB-T Cards").Write();
+	(log << "Checking for new BDA DVB-T Cards\n").Write();
 
 	DirectShowSystemDevice* pTunerDevice;
 	DirectShowSystemDeviceEnumerator enumerator(KSCATEGORY_BDA_NETWORK_TUNER);
@@ -277,7 +296,7 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 		if (bdaCard)
 		{
 			bdaCard->bDetected = TRUE;
-			//verify tuner can connect to the capture filter.
+			//TODO: maybe?? verify tuner can connect to the capture filter.
 		}
 		else
 		{
@@ -287,8 +306,9 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 			if (FindCaptureDevice(pTunerDevice, &pDemodDevice, &pCaptureDevice))
 			{
 				bdaCard = new BDACard();
-				bdaCard->tunerDevice = *pTunerDevice;
+				bdaCard->bActive = TRUE;
 
+				bdaCard->tunerDevice = *pTunerDevice;
 				if (pDemodDevice)
 					bdaCard->demodDevice = *pDemodDevice;
 				if (pCaptureDevice)
@@ -303,7 +323,7 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 	}
 
 	if (cards.size() == 0)
-		//return (g_log << "No cards found").Show();
+		//return (log << "No cards found\n").Show();
 		return FALSE;
 
 	return TRUE;
@@ -330,14 +350,14 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		//--- Create Graph ---
 		if (FAILED(hr = piGraphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER)))
 		{
-			//(g_log << "Failed Creating DVB-T Graph Builder").Write();
+			//(log << "Failed Creating DVB-T Graph Builder\n").Write();
 			break;
 		}
 
 		//--- Initialise Tune Request ---
 		if (FAILED(hr = InitDVBTTuningSpace(piTuningSpace)))
 		{
-			//(g_log << "Failed to initialise the Tune Request").Write();
+			//(log << "Failed to initialise the Tune Request\n").Write();
 			break;
 		}
 
@@ -346,28 +366,28 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		CLSID CLSIDNetworkType;
 		if (FAILED(hr = piTuningSpace->get_NetworkType(&bstrNetworkType)))
 		{
-			//(g_log << "Failed to get TuningSpace Network Type").Write();
+			//(log << "Failed to get TuningSpace Network Type\n").Write();
 			break;
 		}
 
 		if (FAILED(hr = CLSIDFromString(bstrNetworkType, &CLSIDNetworkType)))
 		{
-			//(g_log << "Could not convert Network Type to CLSID").Write();
+			//(log << "Could not convert Network Type to CLSID\n").Write();
 			break;
 		}
 
 		//--- Create Network Provider ---
 		if (FAILED(hr = AddFilter(piGraphBuilder.p, CLSIDNetworkType, piBDANetworkProvider.p, L"Network Provider")))
 		{
-			//(g_log << "Failed to add Network Provider to the graph").Write();
+			//(log << "Failed to add Network Provider to the graph\n").Write();
 			break;
 		}
 		bRemoveNP = TRUE;
 
 		//--- Create TuneRequest ---
-		if (FAILED(hr = SubmitDVBTTuneRequest(piTuningSpace, pTuneRequest, -1, -1)))
+		if (FAILED(hr = CreateDVBTTuneRequest(piTuningSpace, pTuneRequest, -1, -1)))
 		{
-			//(g_log << "Failed to create the Tune Request.").Write();
+			//(log << "Failed to create the Tune Request.\n").Write();
 			break;
 		}
 
@@ -375,7 +395,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		CComQIPtr <ITuner> pTuner(piBDANetworkProvider);
 		if (!pTuner)
 		{
-			//(g_log << "Failed while interfacing Tuner with Network Provider").Write();
+			//(log << "Failed while interfacing Tuner with Network Provider\n").Write();
 			break;
 		}
 
@@ -383,7 +403,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		pTuner.Release();
 		if (FAILED(hr))
 		{
-			//(g_log << "Failed to submit the Tune Tequest to the Network Provider").Write();
+			//(log << "Failed to submit the Tune Tequest to the Network Provider\n").Write();
 			break;
 		}
 
@@ -391,14 +411,14 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		
 		if (FAILED(hr = AddFilterByDevicePath(piGraphBuilder, piBDATuner.p, pTunerDevice->strDevicePath, pTunerDevice->strFriendlyName)))
 		{
-			//(g_log << "Cannot load Tuner Device").Write();
+			//(log << "Cannot load Tuner Device\n").Write();
 			break;
 		}
 		bRemoveTuner = TRUE;
     
 		if (FAILED(hr = ConnectFilters(piGraphBuilder, piBDANetworkProvider, piBDATuner)))
 		{
-			//(g_log << "Failed to connect Network Provider to Tuner Filter").Write();
+			//(log << "Failed to connect Network Provider to Tuner Filter\n").Write();
 			break;
 		}
 
@@ -417,7 +437,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 				break;
 			}
 
-			//(g_log << "Connection failed, trying next card").Write();
+			//(log << "Connection failed, trying next card\n").Write();
 			piBDADemod.Release();
 			delete *ppDemodDevice;
 			*ppDemodDevice = NULL;
@@ -439,7 +459,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 					break;
 				}
 
-				//(g_log << "Connection failed, trying next card").Write();
+				//(log << "Connection failed, trying next card\n").Write();
 				piBDACapture.Release();
 				delete *ppCaptureDevice;
 				*ppCaptureDevice = NULL;
@@ -447,7 +467,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		}
 
 		//if (hr != S_OK)
-			//(g_log << "No Cards Left").Write();
+			//(log << "No Cards Left\n").Write();
 	} while (FALSE);
 
 	DisconnectAllPins(piGraphBuilder);

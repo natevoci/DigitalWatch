@@ -25,6 +25,7 @@
 #define KEYMAP_H
 
 #include "StdAfx.h"
+#include "LogMessage.h"
 #include <vector>
 
 typedef enum MouseFunction
@@ -59,6 +60,8 @@ public:
 	std::vector<KeyMapEntry> keyMaps;
 private:
 	LPWSTR m_filename;
+
+	LogMessage log;
 };
 
 #endif

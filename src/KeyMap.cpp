@@ -23,20 +23,17 @@
 #include "KeyMap.h"
 #include "ParseLine.h"
 #include "Globals.h"
-#include "LogMessage.h"
 #include "GlobalFunctions.h"
 
-#if (_MSC_VER == 1200)
-#include <fstream.h>
-#else
 #include <fstream>
 using namespace std;
-#endif
+
 #include <stdio.h>
 #include "ParseLine.h"
 
 KeyMap::KeyMap(void) : m_filename(0)
 {
+	log.AddCallback(&g_DWLogWriter);
 }
 
 KeyMap::~KeyMap(void)
@@ -74,9 +71,9 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 
 	if (file.is_open() != 1)
 	{
-		return (g_log << "Could not open global keys file: " << filename).Show();
+		return (log << "Could not open global keys file: " << filename << "\n").Show();
 	}
-	(g_log << "Opening keymap file: " << filename).Write();
+	(log << "Opening keymap file: " << filename << "\n").Write();
 
 	try
 	{
@@ -125,23 +122,23 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 
 			ParseLine parseLine;
 			if (parseLine.Parse(pBuff) == FALSE)
-				return (g_log << "Parse Error in " << filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage()).Show();
+				return (log << "Parse Error in " << filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage() << "\n").Show();
 
 			pCurr = parseLine.LHS.FunctionName;
 
 			if (_wcsicmp(pCurr, L"Key") == 0)
 			{
 				if (parseLine.LHS.ParameterCount < 1)
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nZero parameters found. Expecting at least a keycode").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nZero parameters found. Expecting at least a keycode\n").Show();
 				if (parseLine.LHS.ParameterCount > 4)
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nToo many parameters found").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nToo many parameters found\n").Show();
 
 				KeyMapEntry newKeyMapEntry;
 				ZeroMemory(&newKeyMapEntry, sizeof(KeyMapEntry));
 
 				pCurr = parseLine.LHS.Parameter[0];
 				if (!pCurr)
-					return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+					return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 
 				if ((pCurr[0] == '\'') && (pCurr[2] == '\''))
 					newKeyMapEntry.Keycode = pCurr[1];
@@ -151,28 +148,28 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 				if (parseLine.LHS.ParameterCount >= 2)
 				{
 					pCurr = parseLine.LHS.Parameter[1];
-					if (!pCurr) return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 					newKeyMapEntry.Shift = (_wtoi(pCurr) != 0);
 				}
 				if (parseLine.LHS.ParameterCount >= 3)
 				{
 					pCurr = parseLine.LHS.Parameter[2];
-					if (!pCurr) return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
-					newKeyMapEntry.Shift = (_wtoi(pCurr) != 0);
+					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
+					newKeyMapEntry.Ctrl = (_wtoi(pCurr) != 0);
 				}
 				if (parseLine.LHS.ParameterCount >= 4)
 				{
 					pCurr = parseLine.LHS.Parameter[3];
-					if (!pCurr) return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
-					newKeyMapEntry.Shift = (_wtoi(pCurr) != 0);
+					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
+					newKeyMapEntry.Alt = (_wtoi(pCurr) != 0);
 				}
 
 				if (!parseLine.HasRHS())
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nMissing right hand side of key assignment").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nMissing right hand side of key assignment\n").Show();
 
 				strCopy(newKeyMapEntry.Function, parseLine.RHS.Function);
 
-				(g_log << "  Loaded Key(" << newKeyMapEntry.Keycode << ", " << newKeyMapEntry.Shift << ", " << newKeyMapEntry.Ctrl << ", " << newKeyMapEntry.Alt << ") = " << newKeyMapEntry.Function).Write();
+				(log << "  Loaded Key(" << newKeyMapEntry.Keycode << ", " << newKeyMapEntry.Shift << ", " << newKeyMapEntry.Ctrl << ", " << newKeyMapEntry.Alt << ") = " << newKeyMapEntry.Function << "\n").Write();
 				keyMaps.push_back(newKeyMapEntry);
 
 				continue;
@@ -181,7 +178,7 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 	}
 	catch (LPWSTR str)
 	{
-		(g_log << str).Show();
+		(log << str << "\n").Show();
 		file.close();
 		return FALSE;
 	}

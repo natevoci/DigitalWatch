@@ -25,7 +25,7 @@
 
 #include "AppData.h"
 #include "TVControl.h"
-#include "LogMessage.h"
+#include "LogMessageWriter.h"
 
 #define reminderStringize( L )		#L
 #define reminderMakeString( M, L )	M(L)
@@ -33,5 +33,7 @@
 
 extern AppData* g_pData;
 extern TVControl* g_pTv;
+extern LogMessageWriter g_DWLogWriter;
+
 
 #endif

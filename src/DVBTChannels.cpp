@@ -20,22 +20,16 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #include "DVBTChannels.h"
 #include "ParseLine.h"
-#include "Globals.h"
-#include "LogMessage.h"
 #include "GlobalFunctions.h"
 
-#if (_MSC_VER == 1200)
-	#include <fstream.h>
-#else
-	#include <fstream>
-	using namespace std;
-#endif
+#include <fstream>
+using namespace std;
+
 
 //////////////////////////////////////////////////////////////////////
-// Construction/Destruction
+// DVBTChannels_Program
 //////////////////////////////////////////////////////////////////////
 
 DVBTChannels_Program::DVBTChannels_Program() :	programNumber(0),
@@ -47,8 +41,70 @@ DVBTChannels_Program::DVBTChannels_Program() :	programNumber(0),
 
 DVBTChannels_Program::~DVBTChannels_Program()
 {
+	streams.clear();
 }
 
+DVBTChannels_Program_PID_Types DVBTChannels_Program::GetStreamType(int index)
+{
+	if ((index >= 0) && (index < streams.size()))
+	{
+		DVBTChannels_Program_Stream pgStream = streams.at(index);
+		return pgStream.Type;
+	}
+	return unknown;
+}
+
+long DVBTChannels_Program::GetStreamPID(int index)
+{
+	if ((index >= 0) && (index < streams.size()))
+	{
+		DVBTChannels_Program_Stream pgStream = streams.at(index);
+		return pgStream.PID;
+	}
+	return 0;
+}
+
+long DVBTChannels_Program::GetStreamCount()
+{
+	return streams.size();
+}
+
+long DVBTChannels_Program::GetStreamPID(DVBTChannels_Program_PID_Types streamtype, int index)
+{
+	int found = 0;
+	std::vector<DVBTChannels_Program_Stream>::iterator it = streams.begin();
+	for ( ; it != streams.end() ; it++ )
+	{
+		DVBTChannels_Program_Stream pgStream = *it;
+		if ((pgStream.Type == streamtype) && pgStream.bActive)
+		{
+			if (found == index)
+				return pgStream.PID;
+			found++;
+		}
+	}
+	return 0;
+}
+
+long DVBTChannels_Program::GetStreamCount(DVBTChannels_Program_PID_Types streamtype)
+{
+	int found = 0;
+	std::vector<DVBTChannels_Program_Stream>::iterator it = streams.begin();
+	for ( ; it != streams.end() ; it++ )
+	{
+		DVBTChannels_Program_Stream pgStream = *it;
+		if ((pgStream.Type == streamtype) && pgStream.bActive)
+		{
+			found++;
+		}
+	}
+	return found;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// DVBTChannels_Network
+//////////////////////////////////////////////////////////////////////
 
 DVBTChannels_Network::DVBTChannels_Network() :	frequency(0),
 												bandwidth(0),
@@ -58,7 +114,34 @@ DVBTChannels_Network::DVBTChannels_Network() :	frequency(0),
 
 DVBTChannels_Network::~DVBTChannels_Network()
 {
+	std::vector<DVBTChannels_Program *>::iterator it = programs.begin();
+	for ( ; it != programs.end() ; it++ )
+	{
+		delete *it;
+	}
+	programs.clear();
 }
+
+DVBTChannels_Program* DVBTChannels_Network::Program(int programNumber)
+{
+	if (!IsValidProgram(programNumber))
+		return NULL;
+	return programs.at(programNumber-1);
+}
+
+BOOL DVBTChannels_Network::IsValidProgram(int programNumber)
+{
+	if (programNumber < 1)
+		return FALSE;
+	if (programNumber > programs.size())
+		return FALSE;
+	return TRUE;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// DVBTChannels
+//////////////////////////////////////////////////////////////////////
 
 DVBTChannels::DVBTChannels() :	m_bandwidth(7),
 								m_filename(0)
@@ -69,6 +152,29 @@ DVBTChannels::~DVBTChannels()
 {
 	if (m_filename)
 		delete m_filename;
+
+	std::vector<DVBTChannels_Network *>::iterator it = networks.begin();
+	for ( ; it != networks.end() ; it++ )
+	{
+		delete *it;
+	}
+	networks.clear();
+}
+
+DVBTChannels_Network* DVBTChannels::Network(int networkNumber)
+{
+	if (!IsValidNetwork(networkNumber))
+		return NULL;
+	return networks.at(networkNumber-1);
+}
+
+BOOL DVBTChannels::IsValidNetwork(int networkNumber)
+{
+	if (networkNumber < 1)
+		return FALSE;
+	if (networkNumber > networks.size())
+		return FALSE;
+	return TRUE;
 }
 
 BOOL DVBTChannels::LoadChannels(LPWSTR filename)
@@ -81,7 +187,7 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 	file.open(W2A(filename));
 
 	if (file.is_open() != 1)
-		return (g_log << "Could not open channels file: " << filename).Show();
+		return (log << "Could not open channels file: " << filename << "\n").Show();
 
 	try
 	{
@@ -117,21 +223,21 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 				pCurr++;
 				LPWSTR pEOS = wcschr(pCurr, ']');
 				if (pEOS == NULL)
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nMissing ']'").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nMissing ']'\n").Show();
 				if (pEOS == pCurr)
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nMissing section name").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nMissing section name\n").Show();
 				pEOS[0] = '\0';
 
 				if (state == 0)
 				{
 					if (_wcsicmp(pCurr, L"Networks") != 0)
-						return (g_log << "Parse Error in " << filename << ": Line " << line << "\nThe first section must be [Networks]\n[" << pCurr << "] was found instead").Show();
+						return (log << "Parse Error in " << filename << ": Line " << line << "\nThe first section must be [Networks]\n[" << pCurr << "] was found instead\n").Show();
 					state = 1;
 					continue;
 				}
 				else if (state == 1)
 				{
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nNo Network() definitions found in [Networks] section.").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nNo Network() definitions found in [Networks] section.\n").Show();
 				}
 				else if ((state == 2) || (state == 4))
 				{
@@ -149,34 +255,34 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 						}
 					}
 					if (currNetwork == NULL)
-						return (g_log << "Parse Error in " << filename << ": Line " << line << "\nFrequency section found without matching Network function").Show();
+						return (log << "Parse Error in " << filename << ": Line " << line << "\nFrequency section found without matching Network function\n").Show();
 
 					state = 3;
 				}
 				else
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nSecond consecutive frequency section found").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nSecond consecutive frequency section found\n").Show();
 
 				continue;
 			}
 
 			ParseLine parseLine;
 			if (parseLine.Parse(pBuff) == FALSE)
-				return (g_log << "Parse Error in " << filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage()).Show();
+				return (log << "Parse Error in " << filename << ": Line " << line << ":" << parseLine.GetErrorPosition() << "\n" << parseLine.GetErrorMessage() << "\n").Show();
 
 
 			if (parseLine.HasRHS())
-				return (g_log << "Parse Error in " << filename << ": Line " << line << "\nEquals not valid for this command").Show();
+				return (log << "Parse Error in " << filename << ": Line " << line << "\nEquals not valid for this command\n").Show();
 
 			pCurr = parseLine.LHS.FunctionName;
 
 			if (_wcsicmp(pCurr, L"Bandwidth") == 0)
 			{
 				if (parseLine.LHS.ParameterCount < 1)
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a bandwidth parameter").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a bandwidth parameter\n").Show();
 
 				pCurr = parseLine.LHS.Parameter[0];
 				if (!pCurr)
-					return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+					return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 
 				m_bandwidth = _wtol(pCurr);
 				continue;
@@ -185,14 +291,14 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 			if (_wcsicmp(pCurr, L"Network") == 0)
 			{
 				if ((state != 1) && (state != 2))
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nthe Network function is only valid in the [Networks] section.").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nthe Network function is only valid in the [Networks] section.\n").Show();
 
 				if (parseLine.LHS.ParameterCount < 1)
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a frequency parameter").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a frequency parameter\n").Show();
 
 				pCurr = parseLine.LHS.Parameter[0];
 				if (!pCurr)
-					return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+					return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 
 				long frequency = _wtol(pCurr);
 				
@@ -201,7 +307,7 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 				{
 					DVBTChannels_Network *nw = *it;
 					if (nw->frequency == frequency)
-						return (g_log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate frequency found").Show();
+						return (log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate frequency found\n").Show();
 				}
 
 				//Add Network
@@ -217,14 +323,14 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 			if (_wcsicmp(pCurr, L"Program") == 0)
 			{
 				if (state < 3)
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nthe Program function is only valid in the a specific frequency section.").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nthe Program function is only valid in the a specific frequency section.\n").Show();
 
 				if (parseLine.LHS.ParameterCount < 1)
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a program number parameter").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a program number parameter\n").Show();
 
 				pCurr = parseLine.LHS.Parameter[0];
 				if (!pCurr)
-					return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+					return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 
 				long programNumber = _wtol(pCurr);
 
@@ -233,7 +339,7 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 				{
 					DVBTChannels_Program *pg = *it;
 					if (pg->programNumber == programNumber)
-						return (g_log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate program number found").Show();
+						return (log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate program number found\n").Show();
 				}
 
 				//Add Program
@@ -250,27 +356,27 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 				if (state == 2)
 				{
 					if (parseLine.LHS.ParameterCount < 1)
-						return (g_log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a name parameter").Show();
+						return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a name parameter\n").Show();
 
 					pCurr = parseLine.LHS.Parameter[0];
 					if (!pCurr)
-						return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+						return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 
 					strCopy(currNetwork->name, pCurr);
 				}
 				else if (state == 4)
 				{
 					if (parseLine.LHS.ParameterCount < 1)
-						return (g_log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a name parameter").Show();
+						return (log << "Parse Error in " << filename << ": Line " << line << "\nExpecting a name parameter\n").Show();
 
 					pCurr = parseLine.LHS.Parameter[0];
 					if (!pCurr)
-						return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+						return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 
 					strCopy(currProgram->name, pCurr);
 				}
 				else
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nName function is only valid after a Network or Program function").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nName function is only valid after a Network or Program function\n").Show();
 
 				continue;
 			}
@@ -280,18 +386,18 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 				if (state == 4)
 				{
 					if (parseLine.LHS.ParameterCount < 3)
-						return (g_log << "Parse Error in " << filename << ": Line " << line << "\nInsufficient number of parameters. Stream(PID, Type, Active)").Show();
+						return (log << "Parse Error in " << filename << ": Line " << line << "\nInsufficient number of parameters. Stream(PID, Type, Active)\n").Show();
 
 					pCurr = parseLine.LHS.Parameter[0];
-					if (!pCurr) return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 					long PID = _wtol(pCurr);
 
 					pCurr = parseLine.LHS.Parameter[1];
-					if (!pCurr) return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 					long Type = _wtol(pCurr);
 
 					pCurr = parseLine.LHS.Parameter[2];
-					if (!pCurr) return (g_log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception").Write();
+					if (!pCurr) return (log << "Internal Error in " << filename << ": Line " << line << "\nnull pointer exception\n").Write();
 					long Active = _wtol(pCurr);
 
 
@@ -300,7 +406,7 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 					{
 						DVBTChannels_Program_Stream pgStream = *it;
 						if (pgStream.PID == PID)
-							return (g_log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate program number found").Show();
+							return (log << "Parse Error in " << filename << ": Line " << line << "\nDuplicate program number found\n").Show();
 					}
 
 					//Add Stream
@@ -311,7 +417,7 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 					currProgram->streams.push_back(pgStream);
 				}
 				else
-					return (g_log << "Parse Error in " << filename << ": Line " << line << "\nStream function is only valid after a Program function").Show();
+					return (log << "Parse Error in " << filename << ": Line " << line << "\nStream function is only valid after a Program function\n").Show();
 
 				continue;
 			}
@@ -319,13 +425,13 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 	}
 	catch (LPWSTR str)
 	{
-		(g_log << str).Show();
+		(log << str << "\n").Show();
 		file.close();
 		return FALSE;
 	}
 	file.close();
 	if (networks.size() == 0)
-		return (g_log << "You need to specify at least one network in your channels file").Show();
+		return (log << "You need to specify at least one network in your channels file\n").Show();
 	return TRUE;
 }
 
@@ -340,7 +446,7 @@ BOOL DVBTChannels::SaveChannels(LPWSTR filename)
 		file.open(W2A(m_filename));
 
 	if (file.is_open() != 1)
-		return (g_log << "Could not open channels file for writing: " << filename).Show();
+		return (log << "Could not open channels file for writing: " << filename << "\n").Show();
 
 	try
 	{
@@ -394,7 +500,7 @@ BOOL DVBTChannels::SaveChannels(LPWSTR filename)
 	}
 	catch (LPWSTR str)
 	{
-		(g_log << str).Show();
+		(log << str << "\n").Show();
 		file.close();
 		return FALSE;
 	}

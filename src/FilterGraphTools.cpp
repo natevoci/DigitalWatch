@@ -28,24 +28,32 @@
 #include <stdio.h>
 #include <winerror.h>
 
-HRESULT AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rclsid, IBaseFilter* &pFilter, LPCWSTR pName)
+LogMessage g_FilterGraphToolsLog;
+
+HRESULT AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rclsid, IBaseFilter* &pFilter, LPCWSTR pName, BOOL bSilent)
 {
 	HRESULT hr;
 	hr = CoCreateInstance(rclsid, NULL, CLSCTX_INPROC_SERVER, IID_IBaseFilter, (void **)&pFilter);
 	if FAILED(hr)
 	{
-		if (hr == 0x80040154)
-			(g_log << "Failed to load filter: " << pName << "  error number " << hr <<"\n\nThe filter is not registered.").Write();
-		else
-			(g_log << "Failed to load filter: " << pName << "  error number " << hr).Write();
+		if (!bSilent)
+		{
+			if (hr == 0x80040154)
+				(g_FilterGraphToolsLog << "Failed to load filter: " << pName << "  error number " << hr << "\n\nThe filter is not registered.\n").Write();
+			else
+				(g_FilterGraphToolsLog << "Failed to load filter: " << pName << "  error number " << hr << "\n").Write();
+		}
 		return hr;
 	}
 
 	hr = piGraphBuilder->AddFilter(pFilter, pName);
 	if FAILED(hr)
 	{
-		(g_log << "Failed to add filter: " << pName).Write();
-		return hr;
+		if (!bSilent)
+		{
+			(g_FilterGraphToolsLog << "Failed to add filter: " << pName << "\n").Write();
+			return hr;
+		}
 	}
 	return S_OK;
 }
@@ -59,7 +67,7 @@ HRESULT AddFilterByName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, CL
 
 	if(FAILED(hr = pSysDevEnum.CoCreateInstance(CLSID_SystemDeviceEnum)))
 	{
-        (g_log << "AddFilterByName: Cannot CoCreate ICreateDevEnum").Write();
+        (g_FilterGraphToolsLog << "AddFilterByName: Cannot CoCreate ICreateDevEnum\n").Write();
         return E_FAIL;
     }
 
@@ -77,14 +85,14 @@ HRESULT AddFilterByName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, CL
 			CComPtr <IPropertyBag> pBag;
 			if (FAILED(hr = pMoniker->BindToStorage(NULL, NULL, IID_IPropertyBag, reinterpret_cast<void**>(&pBag))))
 			{
-				(g_log << "AddFilterByName: Cannot BindToStorage").Write();
+				(g_FilterGraphToolsLog << "AddFilterByName: Cannot BindToStorage\n").Write();
 				pMoniker.Release();
 				break;
 			}
 
 		    if (FAILED(hr = pBag->Read(L"FriendlyName", &varBSTR, NULL)))
 			{
-				(g_log << "AddFilterByName: Failed to get name of filter").Write();
+				(g_FilterGraphToolsLog << "AddFilterByName: Failed to get name of filter\n").Write();
 				pBag.Release();
 				pMoniker.Release();
 				continue;
@@ -111,7 +119,7 @@ HRESULT AddFilterByName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, CL
 			//Load filter
 			if (FAILED(hr = pMoniker->BindToObject(NULL, NULL, IID_IBaseFilter, reinterpret_cast<void**>(&pFilter))))
 			{
-				(g_log << "AddFilterByName: Cannot BindToObject").Write();
+				(g_FilterGraphToolsLog << "AddFilterByName: Cannot BindToObject\n").Write();
 				pBag.Release();
 				pMoniker.Release();
 				break;
@@ -120,7 +128,7 @@ HRESULT AddFilterByName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, CL
 			//Add filter to graph
 			if(FAILED(hr = piGraphBuilder->AddFilter(pFilter, varBSTR.bstrVal)))
 			{
-				(g_log << "AddFilterByName: Failed to add Filter").Write();
+				(g_FilterGraphToolsLog << "AddFilterByName: Failed to add Filter\n").Write();
 				pBag.Release();
 				pMoniker.Release();
 				return E_FAIL;
@@ -135,25 +143,25 @@ HRESULT AddFilterByName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, CL
 		pEnum.Release();
 		break;
 	case S_FALSE:
-		(g_log << "AddFilterByName: Failed to create System Device Enumerator").Write();
+		(g_FilterGraphToolsLog << "AddFilterByName: Failed to create System Device Enumerator\n").Write();
 		return E_FAIL;
 		break;
 	case E_OUTOFMEMORY:
-		(g_log << "AddFilterByName: There is not enough memory available to create a class enumerator.").Write();
+		(g_FilterGraphToolsLog << "AddFilterByName: There is not enough memory available to create a class enumerator.\n").Write();
 		return E_FAIL;
 		break;
 	case E_POINTER:
-		(g_log << "AddFilterByName: Class Enumerator, NULL pointer argument").Write();
-		return E_FAIL;
+		(g_FilterGraphToolsLog << "AddFilterByName: Class Enumerator, NULL pointer argument\n").Write();
+	  	return E_FAIL;
 		break;
 	}
 
 	pSysDevEnum.Release();
-	(g_log << "AddFilterByName: Failed to find matching filter.").Write();
+	(g_FilterGraphToolsLog << "AddFilterByName: Failed to find matching filter.\n").Write();
 	return E_FAIL;
 }
 
-HRESULT AddFilterByDisplayName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, LPCWSTR pDisplayName, LPCWSTR pName)
+HRESULT AddFilterByDevicePath(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, LPCWSTR pDevicePath, LPCWSTR pName)
 {
 	HRESULT hr;
 	CComPtr <IBindCtx> pBindCtx;
@@ -162,13 +170,13 @@ HRESULT AddFilterByDisplayName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFil
 
 	if (FAILED(hr = CreateBindCtx(0, &pBindCtx.p)))
 	{
-		(g_log << "AddFilterByDevicePath: Could not create bind context").Write();
+		(g_FilterGraphToolsLog << "AddFilterByDevicePath: Could not create bind context\n").Write();
 		return hr;
 	}
 
-	if (FAILED(hr = MkParseDisplayName(pBindCtx, pDisplayName, &dwEaten, &pMoniker)) || (pMoniker.p == NULL))
+	if (FAILED(hr = MkParseDisplayName(pBindCtx, pDevicePath, &dwEaten, &pMoniker)) || (pMoniker.p == NULL))
 	{
-		(g_log << "AddFilterByDevicePath: Could not create moniker from display name " << pDisplayName << "  (" << pName << ")").Write();
+		(g_FilterGraphToolsLog << "AddFilterByDevicePath: Could not create moniker from device path " << pDevicePath << "  (" << pName << ")\n").Write();
 		pBindCtx.Release();
 		return hr;
 	}
@@ -180,26 +188,25 @@ HRESULT AddFilterByDisplayName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFil
 	}
 	else
 	{
-		strCopy(pGraphName, pDisplayName);
+		strCopy(pGraphName, pDevicePath);
 	}
 
 	hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void**)&pFilter);
 	pMoniker.Release();
 	if (FAILED(hr))
 	{
-		(g_log << "Could Not Create Filter: " << pGraphName).Write();
+		(g_FilterGraphToolsLog << "Could Not Create Filter: " << pGraphName << "\n").Write();
 		return hr;
 	}
 
 	hr = piGraphBuilder->AddFilter(pFilter, pGraphName);
 	if FAILED(hr)
 	{
-		(g_log << "Failed to add filter: " << pGraphName).Write();
+		(g_FilterGraphToolsLog << "Failed to add filter: " << pGraphName << "\n").Write();
 		return hr;
 	}
 	return S_OK;
 } 
-
 
 
 HRESULT EnumPins(IBaseFilter* source)
@@ -232,13 +239,13 @@ HRESULT EnumPins(IBaseFilter* source)
 	return hr;
 }
 
-HRESULT FindPin(IBaseFilter* source, LPCWSTR Id, IPin **pin)
+HRESULT FindPin(IBaseFilter* source, LPCWSTR Id, IPin **pin, REQUESTED_PIN_DIRECTION eRequestedPinDir)
 {
 	ULONG refCount;
 
 	if (source == NULL)
-		return S_FALSE;
-	HRESULT hr = S_FALSE;
+		return E_FAIL;
+	HRESULT hr;
 	IEnumPins * piEnumPins;
 	hr = source->EnumPins( &piEnumPins );
 
@@ -251,27 +258,84 @@ HRESULT FindPin(IBaseFilter* source, LPCWSTR Id, IPin **pin)
 			PIN_INFO pinInfo;
 			hr = piPins->QueryPinInfo(&pinInfo);
 			if (pinInfo.pFilter)
+			{
 				refCount = pinInfo.pFilter->Release();	//QueryPinInfo adds a reference to the filter.
+			}
 			if (wcscmp(Id, pinInfo.achName) == 0)
 			{
-				*pin = piPins;
-				refCount = piEnumPins->Release();
-				return S_OK;
+				if ((eRequestedPinDir == REQUESTED_PINDIR_ANY) || (eRequestedPinDir == pinInfo.dir))
+				{
+					*pin = piPins;
+					refCount = piEnumPins->Release();
+					return S_OK;
+				}
 			}
 			refCount = piPins->Release();
 		}
 		refCount = piEnumPins->Release();
 	}
 	if (hr == S_OK)
-		return S_FALSE;
+		return E_FAIL;
 	return hr;
 }
 
-HRESULT FindFirstFreePin(IBaseFilter* source, PIN_DIRECTION pinDirection, IPin **pin)
+HRESULT FindPinByMediaType(IBaseFilter* source, GUID majortype, GUID subtype, IPin **pin, REQUESTED_PIN_DIRECTION eRequestedPinDir)
+{
+	ULONG refCount;
+
+	if (source == NULL)
+		return E_FAIL;
+	HRESULT hr;
+	IEnumPins * piEnumPins;
+	hr = source->EnumPins( &piEnumPins );
+
+	if SUCCEEDED(hr)
+	{
+		IPin *piPins = NULL;
+		*pin = NULL;
+		while (( piEnumPins->Next(1, &piPins, 0) == NOERROR ) && (*pin == NULL))
+		{
+			PIN_INFO pinInfo;
+			hr = piPins->QueryPinInfo(&pinInfo);
+			if (pinInfo.pFilter)
+			{
+				refCount = pinInfo.pFilter->Release();	//QueryPinInfo adds a reference to the filter.
+			}
+			if ((eRequestedPinDir == REQUESTED_PINDIR_ANY) || (eRequestedPinDir == pinInfo.dir))
+			{
+				IEnumMediaTypes *piMediaTypes;
+				hr = piPins->EnumMediaTypes(&piMediaTypes);
+				if (hr == S_OK)
+				{
+					AM_MEDIA_TYPE *mediaType;
+					while (piMediaTypes->Next(1, &mediaType, 0) == NOERROR)
+					{
+						if ((mediaType->majortype == majortype) &&
+							(mediaType->subtype == subtype))
+						{
+							*pin = piPins;
+							piMediaTypes->Release();
+							piEnumPins->Release();
+							return S_OK;
+						}
+					}
+					piMediaTypes->Release();
+				}
+			}
+			refCount = piPins->Release();
+		}
+		refCount = piEnumPins->Release();
+	}
+	if (hr == S_OK)
+		return E_FAIL;
+	return hr;
+}
+
+HRESULT FindFirstFreePin(IBaseFilter* source, IPin **pin, PIN_DIRECTION pinDirection)
 {
 	if (source == NULL)
-		return S_FALSE;
-	HRESULT hr = S_FALSE;
+		return E_FAIL;
+	HRESULT hr;
 	ULONG refCount;
 	CComPtr <IEnumPins> piEnumPins;
 	hr = source->EnumPins( &piEnumPins );
@@ -293,7 +357,7 @@ HRESULT FindFirstFreePin(IBaseFilter* source, PIN_DIRECTION pinDirection, IPin *
 				hr = piPins->ConnectedTo(&pOtherPin);
 				if ((FAILED(hr)) && (hr != VFW_E_NOT_CONNECTED))
 				{
-					(g_log << "Failed to Determin if Pin is already connected").Write();
+					(g_FilterGraphToolsLog << "Failed to Determin if Pin is already connected\n").Write();
 					piPins.Release();
 					piEnumPins.Release();
 					return E_FAIL;
@@ -313,15 +377,15 @@ HRESULT FindFirstFreePin(IBaseFilter* source, PIN_DIRECTION pinDirection, IPin *
 		piEnumPins.Release();
 	}
 	if (hr == S_OK)
-		return S_FALSE;
+		return E_FAIL;
 	return hr;
 }
 
 HRESULT FindFilter(IGraphBuilder* piGraphBuilder, LPCWSTR Id, IBaseFilter **filter)
 {
 	if (piGraphBuilder == NULL)
-		return S_FALSE;
-	HRESULT hr ;
+		return E_FAIL;
+	HRESULT hr;
 	ULONG refCount;
 	IEnumFilters * piEnumFilters = NULL;
 	hr = piGraphBuilder->EnumFilters(&piEnumFilters);
@@ -345,15 +409,15 @@ HRESULT FindFilter(IGraphBuilder* piGraphBuilder, LPCWSTR Id, IBaseFilter **filt
 		refCount = piEnumFilters->Release();
 	}
 	if (hr == S_OK)
-		return S_FALSE;
+		return E_FAIL;
 	return hr;
 }
 
 HRESULT FindFilter(IGraphBuilder* piGraphBuilder, CLSID rclsid, IBaseFilter **filter)
 {
 	if (piGraphBuilder == NULL)
-		return S_FALSE;
-	HRESULT hr ;
+		return E_FAIL;
+	HRESULT hr;
 	ULONG refCount;
 	IEnumFilters * piEnumFilters = NULL;
 	hr = piGraphBuilder->EnumFilters(&piEnumFilters);
@@ -377,49 +441,52 @@ HRESULT FindFilter(IGraphBuilder* piGraphBuilder, CLSID rclsid, IBaseFilter **fi
 		refCount = piEnumFilters->Release();
 	}
 	if (hr == S_OK)
-		return S_FALSE;
+		return E_FAIL;
 	return hr;
 }
 
-HRESULT ConnectPins(IBaseFilter* source, LPCWSTR sourcePinName, IBaseFilter* dest, LPCWSTR destPinName)
+HRESULT ConnectPins(IGraphBuilder* piGraphBuilder, IBaseFilter* source, LPCWSTR sourcePinName, IBaseFilter* dest, LPCWSTR destPinName)
 {
 	if (source == NULL)
 	{
-		(g_log << "ConnectPins: source pointer is null").Write();
-		return S_FALSE;
+		(g_FilterGraphToolsLog << "ConnectPins: source pointer is null\n").Write();
+		return E_FAIL;
 	}
 	if (dest == NULL)
 	{
-		(g_log << "ConnectPins: dest pointer is null").Write();
-		return S_FALSE;
+		(g_FilterGraphToolsLog << "ConnectPins: dest pointer is null\n").Write();
+		return E_FAIL;
 	}
 	HRESULT hr;
 	IPin* Output = NULL;
 	IPin* Input = NULL;
 
-	hr = FindPin(source, sourcePinName, &Output);
+	hr = FindPin(source, sourcePinName, &Output, REQUESTED_PINDIR_OUTPUT);
 
 	if (hr != S_OK)
 	{
-		//char buff[128];
-		//sprintf((char*)&buff, "ConnectPins: Failed to find output pin named %S", sourcePinName);
-		//(g_log << buff).Write();
-		(g_log << "ConnectPins: Failed to find output pin named " << sourcePinName).Write();
-		return S_FALSE;
+		(g_FilterGraphToolsLog << "ConnectPins: Failed to find output pin named " << sourcePinName << "\n").Write();
+		return E_FAIL;
 	}
 
-	hr = FindPin(dest, destPinName, &Input);
+	hr = FindPin(dest, destPinName, &Input, REQUESTED_PINDIR_INPUT);
 	if (hr != S_OK)
 	{
 		HelperRelease(Output);
-		//char buff[128];
-		//sprintf((char*)&buff, "ConnectPins: Failed to find input pin named %S", destPinName);
-		//(g_log << buff);
-		(g_log << "ConnectPins: Failed to find input pin named " << destPinName).Write();
-		return S_FALSE;
+		(g_FilterGraphToolsLog << "ConnectPins: Failed to find input pin named " << destPinName << "\n").Write();
+		return E_FAIL;
 	}
 
-	hr = Output->Connect(Input, NULL);
+	hr = piGraphBuilder->ConnectDirect(Output, Input, NULL);
+
+	if (SUCCEEDED(hr))
+	{
+		::OutputDebugString("Pin connection - SUCCEEDED\n");
+	}
+	else
+	{
+		::OutputDebugString("Pin connection - FAILED !!!\n");
+	}
 
 /*
 	//This code will print out the pin format in a MessageBox
@@ -480,7 +547,7 @@ HRESULT ConnectPins(IBaseFilter* source, LPCWSTR sourcePinName, IBaseFilter* des
 			}
 			piMediaTypes->Release();
 		}
-		(g_log << string).Write();
+		(g_FilterGraphToolsLog << string << "\n").Write();
 	}
 */
 	HelperRelease(Output);
@@ -489,7 +556,7 @@ HRESULT ConnectPins(IBaseFilter* source, LPCWSTR sourcePinName, IBaseFilter* des
 	return hr;
 }
 
-HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstream)\
+HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstream)
 {
     HRESULT hr = S_OK;
 
@@ -502,7 +569,7 @@ HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstr
 
     if (FAILED(hr = pFilterUpstream->EnumPins(&pIEnumPinsUpstream)))
 	{
-        (g_log << "Cannot Enumerate Pins on Upstream Filter").Write();
+        (g_FilterGraphToolsLog << "Cannot Enumerate Pins on Upstream Filter\n").Write();
         return E_FAIL;
     }
 
@@ -510,7 +577,7 @@ HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstr
 	{
         if (FAILED(hr = pIPinUpstream->QueryPinInfo (&PinInfoUpstream)))
 		{
-            (g_log << "Cannot Obtain Pin Info for Upstream Filter").Write();
+            (g_FilterGraphToolsLog << "Cannot Obtain Pin Info for Upstream Filter\n").Write();
 			pIPinUpstream.Release();
 			pIEnumPinsUpstream.Release();
             return E_FAIL;
@@ -531,7 +598,7 @@ HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstr
 		hr = pIPinUpstream->ConnectedTo(&pPinDown);
 		if ((FAILED(hr)) && (hr != VFW_E_NOT_CONNECTED))
 		{
-			(g_log << "Failed to Determin if Upstream Ouput Pin is already connected").Write();
+			(g_FilterGraphToolsLog << "Failed to Determin if Upstream Ouput Pin is already connected\n").Write();
 			pIPinUpstream.Release();
 			pIEnumPinsUpstream.Release();
 			return E_FAIL;
@@ -547,7 +614,7 @@ HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstr
 		CComPtr <IEnumPins> pIEnumPinsDownstream;
 		if(FAILED(hr = pFilterDownstream->EnumPins(&pIEnumPinsDownstream)))
 		{
-			(g_log << "Cannot enumerate pins on downstream filter!").Write();
+			(g_FilterGraphToolsLog << "Cannot enumerate pins on downstream filter!\n").Write();
 			pIPinUpstream.Release();
 			pIEnumPinsUpstream.Release();
 			return E_FAIL;
@@ -558,7 +625,7 @@ HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstr
 		{
 			if (FAILED(hr = pIPinDownstream->QueryPinInfo(&PinInfoDownstream)))
 			{
-				(g_log << "Cannot Obtain Pin Info for Downstream Filter").Write();
+				(g_FilterGraphToolsLog << "Cannot Obtain Pin Info for Downstream Filter\n").Write();
 				pIPinDownstream.Release();
 				pIEnumPinsDownstream.Release();
 				pIPinUpstream.Release();
@@ -581,7 +648,7 @@ HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstr
 			hr = pIPinDownstream->ConnectedTo(&pPinUp);
 			if((FAILED(hr)) && (hr != VFW_E_NOT_CONNECTED))
 			{
-				(g_log << "Failed to Find if Downstream Input Pin is already connected").Write();
+				(g_FilterGraphToolsLog << "Failed to Find if Downstream Input Pin is already connected\n").Write();
 				pIPinDownstream.Release();
 				pIEnumPinsDownstream.Release();
 				pIPinUpstream.Release();
@@ -596,7 +663,7 @@ HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstr
 			}
 
 			//Connect pins
-			if (SUCCEEDED(hr = ConnectPins(pFilterUpstream, PinInfoUpstream.achName, pFilterDownstream, PinInfoDownstream.achName)))
+			if (SUCCEEDED(hr = ConnectPins(piGraphBuilder, pFilterUpstream, PinInfoUpstream.achName, pFilterDownstream, PinInfoDownstream.achName)))
 			{
 				pIPinDownstream.Release();
 				pIEnumPinsDownstream.Release();
@@ -608,6 +675,8 @@ HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstr
 		}
 		pIPinUpstream.Release();
     }
+	if (hr == S_OK)
+		return E_FAIL;
     return hr;
 }
 
@@ -617,7 +686,7 @@ HRESULT RenderPin(IGraphBuilder* piGraphBuilder, IBaseFilter* source, LPCWSTR pi
 
 	IPin* pin = NULL;
 //	hr = source->FindPin(pinName, &pin);
-	hr = FindPin(source, pinName, &pin);
+	hr = FindPin(source, pinName, &pin, REQUESTED_PINDIR_OUTPUT);
 	if (hr != S_OK)
 		return hr;
 
@@ -631,8 +700,8 @@ HRESULT RenderPin(IGraphBuilder* piGraphBuilder, IBaseFilter* source, LPCWSTR pi
 HRESULT DisconnectAllPins(IGraphBuilder* piGraphBuilder)
 {
 	if (piGraphBuilder == NULL)
-		return S_FALSE;
-	HRESULT hr ;
+		return E_FAIL;
+	HRESULT hr;
 	ULONG refCount;
 	IEnumFilters * piEnumFilters = NULL;
 	hr = piGraphBuilder->EnumFilters(&piEnumFilters);
@@ -650,7 +719,7 @@ HRESULT DisconnectAllPins(IGraphBuilder* piGraphBuilder)
 				{
 					hr = piPin->Disconnect();
 					if (hr == VFW_E_NOT_STOPPED)
-						(g_log << "Could not disconnect pin. The filter is active").Write();
+						(g_FilterGraphToolsLog << "Could not disconnect pin. The filter is active\n").Write();
 					if (hr == S_OK)
 						refCount = piPin->Release();
 				}
@@ -666,7 +735,7 @@ HRESULT DisconnectAllPins(IGraphBuilder* piGraphBuilder)
 HRESULT RemoveAllFilters(IGraphBuilder* piGraphBuilder)
 {
 	if (piGraphBuilder == NULL)
-		return S_FALSE;
+		return E_FAIL;
 	HRESULT hr;
 	IBaseFilter* piFilter = NULL;
 	IBaseFilter* piFilterArray[100];
@@ -680,7 +749,7 @@ HRESULT RemoveAllFilters(IGraphBuilder* piGraphBuilder)
 	hr = piGraphBuilder->EnumFilters(&piEnumFilters);
 	if ((hr != S_OK) || (piEnumFilters == NULL))
 	{
-		(g_log << "Error removing filters. Can't enumerate graph").Write();
+		(g_FilterGraphToolsLog << "Error removing filters. Can't enumerate graph\n").Write();
 		return hr;
 	}
 
@@ -689,7 +758,7 @@ HRESULT RemoveAllFilters(IGraphBuilder* piGraphBuilder)
 	{
 		if (piFilter == NULL)
 		{
-			(g_log << "unexpected null pointer. piFilter").Write();
+			(g_FilterGraphToolsLog << "unexpected null pointer. piFilter\n").Write();
 			return E_FAIL;
 		}
 
@@ -697,7 +766,7 @@ HRESULT RemoveAllFilters(IGraphBuilder* piGraphBuilder)
 		i++;
 		if (i >= 100)
 		{
-			(g_log << "More than 100 filters to remove").Write();
+			(g_FilterGraphToolsLog << "More than 100 filters to remove\n").Write();
 			return E_FAIL;
 		}
 	}
@@ -707,10 +776,10 @@ HRESULT RemoveAllFilters(IGraphBuilder* piGraphBuilder)
 	{
 		piGraphBuilder->RemoveFilter(piFilterArray[i]);
 	}
-	for ( i=0 ; i<100 && (piFilterArray[i] != NULL) ; i++ )
+	/*for ( i=0 ; i<100 && (piFilterArray[i] != NULL) ; i++ )
 	{
 		HelperFullRelease(piFilterArray[i]);
-	}
+	}*/
 
 	return hr;
 }
@@ -743,7 +812,7 @@ HRESULT GetOverlayMixerInputPin(IGraphBuilder* piGraphBuilder, LPCWSTR pinName, 
 		//int refcount = pfOverlayMixer->AddRef(); refcount = pfOverlayMixer->Release();
 
 		IPin* piPin = NULL;
-		hr = FindPin(pfOverlayMixer, pinName, pin);
+		hr = FindPin(pfOverlayMixer, pinName, pin, REQUESTED_PINDIR_INPUT);
 		if (hr != S_OK)
 			MessageBox(NULL, "Error: Could not find Input pin on Overlay Mixer", "DigitalWatch", MB_OK);
 
@@ -823,6 +892,7 @@ void RemoveFromRot(DWORD pdwRegister)
         pROT->Revoke(pdwRegister);
         pROT->Release();
     }
+	pdwRegister = 0;
 }
 
 
@@ -836,7 +906,7 @@ HRESULT InitDVBTTuningSpace(CComPtr<ITuningSpace> &piTuningSpace)
 
 	if FAILED(hr = piTuningSpace.CoCreateInstance(CLSID_DVBTuningSpace))
 	{
-		(g_log << "Could not create DVBTuningSpace").Write();
+		(g_FilterGraphToolsLog << "Could not create DVBTuningSpace\n").Write();
 		return hr;
 	}
 
@@ -844,14 +914,14 @@ HRESULT InitDVBTTuningSpace(CComPtr<ITuningSpace> &piTuningSpace)
 	if (!piDVBTuningSpace)
 	{
 		piTuningSpace.Release();
-		(g_log << "Could not QI TuningSpace").Write();
+		(g_FilterGraphToolsLog << "Could not QI TuningSpace\n").Write();
 		return E_FAIL;
 	}
 	if (FAILED(hr = piDVBTuningSpace->put_SystemType(DVB_Terrestrial)))
 	{
 		piDVBTuningSpace.Release();
 		piTuningSpace.Release();
-		(g_log << "Could not put SystemType").Write();
+		(g_FilterGraphToolsLog << "Could not put SystemType\n").Write();
 		return hr;
 	}
 	CComBSTR bstrNetworkType = "{216C62DF-6D7F-4E9A-8571-05F14EDB766A}";
@@ -859,7 +929,7 @@ HRESULT InitDVBTTuningSpace(CComPtr<ITuningSpace> &piTuningSpace)
 	{
 		piDVBTuningSpace.Release();
 		piTuningSpace.Release();
-		(g_log << "Could not put NetworkType").Write();
+		(g_FilterGraphToolsLog << "Could not put NetworkType\n").Write();
 		return hr;
 	}
 	piDVBTuningSpace.Release();
@@ -867,13 +937,13 @@ HRESULT InitDVBTTuningSpace(CComPtr<ITuningSpace> &piTuningSpace)
 	return S_OK;
 }
 
-HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITuneRequest> &pExTuneRequest, long frequency, long bandwidth)
+HRESULT CreateDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITuneRequest> &pExTuneRequest, long frequency, long bandwidth)
 {
 	HRESULT hr = S_OK;
 
 	if (!piTuningSpace)
 	{
-		(g_log << "Tuning Space is NULL").Write();
+		(g_FilterGraphToolsLog << "Tuning Space is NULL\n").Write();
 		return E_FAIL;
 	}
 
@@ -881,7 +951,7 @@ HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITune
 	CComQIPtr <IDVBTuningSpace2> piDVBTuningSpace(piTuningSpace);
     if (!piDVBTuningSpace)
 	{
-        (g_log << "Can't Query Interface for an IDVBTuningSpace2").Write();
+        (g_FilterGraphToolsLog << "Can't Query Interface for an IDVBTuningSpace2\n").Write();
 		return E_FAIL;
 	}
 
@@ -890,7 +960,7 @@ HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITune
 	piDVBTuningSpace.Release();
     if (FAILED(hr))
 	{
-		(g_log << "Failed to create Tune Request").Write();
+		(g_FilterGraphToolsLog << "Failed to create Tune Request\n").Write();
 		return hr;
 	}
 
@@ -899,7 +969,7 @@ HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITune
 	if (!piDVBTuneRequest)
 	{
 		pExTuneRequest.Release();
-        (g_log << "Can't Query Interface for an IDVBTuneRequest.").Write();
+        (g_FilterGraphToolsLog << "Can't Query Interface for an IDVBTuneRequest.\n").Write();
 		return E_FAIL;
 	}
 
@@ -913,13 +983,13 @@ HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITune
 	case REGDB_E_CLASSNOTREG:
 		pExTuneRequest.Release();
 		piDVBTuneRequest.Release();
-		(g_log << "The DVBTLocator class isn't registered in the registration database.").Write();
+		(g_FilterGraphToolsLog << "The DVBTLocator class isn't registered in the registration database.\n").Write();
 		return hr;
 
 	case CLASS_E_NOAGGREGATION:
 		pExTuneRequest.Release();
 		piDVBTuneRequest.Release();
-		(g_log << "The DVBTLocator class can't be created as part of an aggregate.").Write();
+		(g_FilterGraphToolsLog << "The DVBTLocator class can't be created as part of an aggregate.\n").Write();
 		return hr;
 	}
 
@@ -928,7 +998,7 @@ HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITune
 		pDVBTLocator.Release();
 		pExTuneRequest.Release();
 		piDVBTuneRequest.Release();
-		(g_log << "Can't set Frequency on Locator.").Write();
+		(g_FilterGraphToolsLog << "Can't set Frequency on Locator.\n").Write();
 		return hr;
 	}
 	if(FAILED(hr = pDVBTLocator->put_SymbolRate(bandwidth)))
@@ -936,7 +1006,7 @@ HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITune
 		pDVBTLocator.Release();
 		pExTuneRequest.Release();
 		piDVBTuneRequest.Release();
-		(g_log << "Can't set Bandwidth on Locator.").Write();
+		(g_FilterGraphToolsLog << "Can't set Bandwidth on Locator.\n").Write();
 		return hr;
 	}
 	//
@@ -949,7 +1019,7 @@ HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITune
 		pDVBTLocator.Release();
 		pExTuneRequest.Release();
 		piDVBTuneRequest.Release();
-        (g_log << "Cannot put the locator on DVB Tune Request").Write();
+        (g_FilterGraphToolsLog << "Cannot put the locator on DVB Tune Request\n").Write();
 		return hr;
     }
 
@@ -960,5 +1030,4 @@ HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITune
 
 	return hr;
 }
-
 

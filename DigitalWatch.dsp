@@ -180,6 +180,14 @@ SOURCE=.\src\TVControl.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\src\BDACard.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\BDACard.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\BDACardCollection.cpp
 # End Source File
 # Begin Source File
@@ -213,10 +221,6 @@ SOURCE=.\src\DVBTChannels.h
 # End Group
 # Begin Source File
 
-SOURCE=.\src\DWSource.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\src\DWSource.h
 # End Source File
 # End Group
@@ -243,6 +247,10 @@ SOURCE=.\src\FilterGraphTools.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\StreamFormats.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\SystemDeviceEnumerator.cpp
 # End Source File
 # Begin Source File
@@ -253,14 +261,6 @@ SOURCE=.\src\SystemDeviceEnumerator.h
 # Begin Group "OSD"
 
 # PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\src\LogMessage.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\LogMessage.h
-# End Source File
 # End Group
 # Begin Group "Data"
 
@@ -285,6 +285,26 @@ SOURCE=.\src\KeyMap.h
 # Begin Group "General"
 
 # PROP Default_Filter ""
+# Begin Group "Logging"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\LogMessage.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\LogMessage.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\LogMessageWriter.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\LogMessageWriter.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=.\src\FileReader.cpp

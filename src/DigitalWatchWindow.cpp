@@ -27,10 +27,10 @@
 #include "DigitalWatch.h"
 #include "DigitalWatchWindow.h"
 #include "Globals.h"
-#include "LogMessage.h"
 
 DigitalWatchWindow::DigitalWatchWindow()
 {
+	log.AddCallback(&g_DWLogWriter);
 }
 
 DigitalWatchWindow::~DigitalWatchWindow()
@@ -49,7 +49,7 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 	//LATER: Option for multiple instances
 	if (g_pData->hWnd != NULL)
 	{
-		(g_log << "An instance of Digital Watch is already running.\n  Bringing the existing instance to the foreground.").Write();
+		(log << "An instance of Digital Watch is already running.\n  Bringing the existing instance to the foreground.\n").Write();
 		SetForegroundWindow(g_pData->hWnd);
 		return FALSE;
 	}
@@ -78,7 +78,7 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 	{
 		__int64 err = GetLastError();
 		//return_FALSE_SHOWMSG("Error creating window: " << err)
-		return (g_log << "Error creating window: " << err).Show();
+		return (log << "Error creating window: " << err << "\n").Show();
 	}
 
 	SetWindowLong(g_pData->hWnd, GWL_STYLE, GetWindowLong(g_pData->hWnd, GWL_STYLE) & (~(WS_CAPTION/* | WS_BORDER*/))); 
@@ -87,7 +87,7 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 
 	if (g_pData->settings.window.startLastWindowPosition != 0)
 	{
-		(g_log << "Restoring last window position. x=" << g_pData->settings.window.lastWindowPositionX << " y=" << g_pData->settings.window.lastWindowPositionY << " width=" <<g_pData->settings.window.lastWindowWidth << " height=" << g_pData->settings.window.lastWindowHeight).Write();
+		(log << "Restoring last window position. x=" << g_pData->settings.window.lastWindowPositionX << " y=" << g_pData->settings.window.lastWindowPositionY << " width=" <<g_pData->settings.window.lastWindowWidth << " height=" << g_pData->settings.window.lastWindowHeight << "\n").Write();
 		SetWindowPos(g_pData->hWnd, NULL, g_pData->settings.window.lastWindowPositionX, g_pData->settings.window.lastWindowPositionY, g_pData->settings.window.lastWindowWidth, g_pData->settings.window.lastWindowHeight, SWP_NOZORDER );
 	}
 
@@ -96,12 +96,12 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 
 	if (g_pData->settings.window.startFullscreen != 0)
 	{
-		(g_log << "Restoring fullscreen state").Write();
+		(log << "Restoring fullscreen state\n").Write();
 		g_pTv->Fullscreen();
 	}
 	if (g_pData->settings.window.startAlwaysOnTop != 0)
 	{
-		(g_log << "Restoring always on top").Write();
+		(log << "Restoring always on top\n").Write();
 		g_pTv->AlwaysOnTop();
 	}
 
@@ -182,7 +182,7 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 			break;
 		}
 		//hack to stop alt-space (system menu) locking alt key down.
-		if ((wParam == 32) && bShiftDown && bCtrlDown && bAltDown)
+		if ((wParam == 32) && !bShiftDown && !bCtrlDown && bAltDown)
 		{
 			bAltDown = FALSE;
 		}

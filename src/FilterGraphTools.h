@@ -34,21 +34,29 @@
 #define HELPER_RELEASE(x) { if (x) x->Release(); x = NULL; }
 #endif
 
-HRESULT AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rclsid, IBaseFilter* &pFilter, LPCWSTR pName);
+typedef enum _RequestedPinDirection
+{
+	REQUESTED_PINDIR_INPUT    = PINDIR_INPUT,
+	REQUESTED_PINDIR_OUTPUT   = PINDIR_OUTPUT,
+	REQUESTED_PINDIR_ANY      = PINDIR_OUTPUT + 1
+} REQUESTED_PIN_DIRECTION;
+
+HRESULT AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rclsid, IBaseFilter* &pFilter, LPCWSTR pName, BOOL bSilent = FALSE);
 HRESULT AddFilterByName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, CLSID clsidDeviceClass, LPCWSTR friendlyName);
-HRESULT AddFilterByDisplayName(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, LPCWSTR pDisplayName, LPCWSTR pName);
+HRESULT AddFilterByDevicePath(IGraphBuilder* piGraphBuilder, IBaseFilter* &pFilter, LPCWSTR pDevicePath, LPCWSTR pName);
 
 HRESULT EnumPins(IBaseFilter* source);
 
-HRESULT FindPin(IBaseFilter* source, LPCWSTR Id, IPin **pin);
-HRESULT FindFirstFreePin(IBaseFilter* source, PIN_DIRECTION pinDirection, IPin **pin);
+HRESULT FindPin(IBaseFilter* source, LPCWSTR Id, IPin **pin, REQUESTED_PIN_DIRECTION eRequestedPinDir = REQUESTED_PINDIR_ANY);
+HRESULT FindPinByMediaType(IBaseFilter* source, GUID majortype, GUID subtype, IPin **pin, REQUESTED_PIN_DIRECTION eRequestedPinDir = REQUESTED_PINDIR_ANY);
+HRESULT FindFirstFreePin(IBaseFilter* source, IPin **pin, PIN_DIRECTION pinDirection);
 
 HRESULT FindFilter(IGraphBuilder* piGraphBuilder, LPCWSTR Id, IBaseFilter **filter);
 HRESULT FindFilter(IGraphBuilder* piGraphBuilder, CLSID rclsid, IBaseFilter **filter);
 
-HRESULT ConnectPins(IBaseFilter* source, LPCWSTR sourcePinName, IBaseFilter* dest, LPCWSTR destPinName);
-HRESULT ConnectFilters(IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstream);
-HRESULT RenderPin(IGraphBuilder* piGraphBuilder, IBaseFilter* source, LPCWSTR pinName);
+HRESULT ConnectPins   (IGraphBuilder* piGraphBuilder, IBaseFilter* source, LPCWSTR sourcePinName, IBaseFilter* dest, LPCWSTR destPinName);
+HRESULT ConnectFilters(IGraphBuilder* piGraphBuilder, IBaseFilter* pFilterUpstream, IBaseFilter* pFilterDownstream);
+HRESULT RenderPin     (IGraphBuilder* piGraphBuilder, IBaseFilter* source, LPCWSTR pinName);
 
 HRESULT DisconnectAllPins(IGraphBuilder* piGraphBuilder);
 HRESULT RemoveAllFilters(IGraphBuilder* piGraphBuilder);
@@ -63,6 +71,6 @@ void RemoveFromRot(DWORD pdwRegister);
 
 //BDA functions
 HRESULT InitDVBTTuningSpace(CComPtr<ITuningSpace> &piTuningSpace);
-HRESULT SubmitDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITuneRequest> &pExTuneRequest, long frequency, long bandwidth);
+HRESULT CreateDVBTTuneRequest(CComPtr<ITuningSpace> piTuningSpace, CComPtr<ITuneRequest> &pExTuneRequest, long frequency, long bandwidth);
 
 #endif

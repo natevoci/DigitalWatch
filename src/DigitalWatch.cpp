@@ -26,13 +26,13 @@
 #include "TVControl.h"
 #include "DigitalWatchWindow.h"
 #include "LogMessage.h"
+#include "LogMessageWriter.h"
 #include "GlobalFunctions.h"
 
 AppData* g_pData;
 TVControl* g_pTv;
 DigitalWatchWindow* g_pDWWindow;
-
-LogMessage g_log;
+LogMessageWriter g_DWLogWriter;
 
 int APIENTRY WinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
@@ -45,15 +45,19 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	//This is needed before any logging gets done so that g_pData->settings.application.logFilename gets set
 	g_pData = new AppData();
 
-	g_log.ClearFile();
-	(g_log << "---------------------\nDigitalWatch starting").Write();
+	LogMessage log;
+	g_DWLogWriter.SetFilename(L"DigitalWatch.log");
+	log.AddCallback(&g_DWLogWriter);
 
-	LogVersionNumber();
+	log.ClearFile();
+	(log << "---------------------\nDigitalWatch starting\n").Write();
+
+	log.LogVersionNumber();
 
 	//--- Initialize COM ---
 	if (FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED)))
 	{
-		(g_log << "Failed to initialize COM").Write();
+		(log << "Failed to initialize COM\n").Write();
 		return -1;
 	}
 
@@ -63,15 +67,15 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 	switch (g_pData->settings.application.priority)
 	{
 	case 2:
-		(g_log << "Warning: Setting priority to Realtime").Write();
+		(log << "Warning: Setting priority to Realtime\n").Write();
 		SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
 		break;
 	case 1:
-		(g_log << "Setting priority to high").Write();
+		(log << "Setting priority to high\n").Write();
 		SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 		break;
 	case -1:
-		(g_log << "Setting priority to idle").Write();
+		(log << "Setting priority to idle\n").Write();
 		SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
 		break;
 	default:
@@ -135,57 +139,3 @@ LRESULT MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void LogVersionNumber()
-{
-	USES_CONVERSION;
-	wchar_t filename[MAX_PATH];
-	GetCommandExe((LPWSTR)&filename);
-
-	DWORD zeroHandle, size = 0;
-	while (TRUE)
-	{
-		size = GetFileVersionInfoSize(W2T((LPWSTR)&filename), &zeroHandle);
-		if (size == 0)
-			break;
-
-		LPVOID pBlock = (LPVOID) new char[size];
-		if (!GetFileVersionInfo(W2T((LPWSTR)&filename), zeroHandle, size, pBlock))
-		{
-			delete[] pBlock;
-			break;
-		}
-
-		struct LANGANDCODEPAGE
-		{
-			WORD wLanguage;
-			WORD wCodePage;
-		} *lpTranslate;
-		UINT uLen = 0;
-
-		if (!VerQueryValue(pBlock, TEXT("\\VarFileInfo\\Translation"), (LPVOID*)&lpTranslate, &uLen) || (uLen == 0))
-		{
-			delete[] pBlock;
-			break;
-		}
-
-		LPWSTR SubBlock = new wchar_t[256];
-		swprintf(SubBlock, L"\\StringFileInfo\\%04x%04x\\FileVersion", lpTranslate[0].wLanguage, lpTranslate[0].wCodePage);
-
-		LPSTR lpBuffer;
-		UINT dwBytes = 0;
-		if (!VerQueryValue(pBlock, W2T(SubBlock), (LPVOID*)&lpBuffer, &dwBytes))
-		{
-			delete[] pBlock;
-			delete[] SubBlock;
-			break;
-		}
-		(g_log << "Build - v" << lpBuffer << "\n").Write();
-
-		delete[] SubBlock;
-		delete[] pBlock;
-		break;
-	}
-	if (size == 0)
-		(g_log << "Error reading version number\nDigitalWatch built at - " __TIME__ " " __DATE__ "\n").Write();
-
-}

@@ -32,6 +32,7 @@
 #include "DWGraph.h"
 #include "DWSource.h"
 #include <vector>
+#include "LogMessage.h"
 
 #define TIMER_AUTO_HIDE_CURSOR 999
 
@@ -49,19 +50,22 @@ public:
 
 	BOOL Initialise();
 
-	BOOL ExecuteFunction(LPCWSTR strFunction);
+	HRESULT ExecuteCommand(LPCWSTR command);
 
-	BOOL Exit();
+	HRESULT Exit();
 
 	BOOL AlwaysOnTop(int nAlwaysOnTop = 1);	//0=off, 1=on, 2=toggle
 	BOOL Fullscreen(int nFullScreen = 1);	//0=off, 1=on, 2=toggle
 
-	BOOL Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt);
+	HRESULT Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt);
 
 	BOOL ShowCursor(BOOL bAllowHide = TRUE);
 	BOOL HideCursor();
 
 	void Timer(int wParam);
+
+protected:
+	HRESULT SetSource(LPWSTR szSourceName);
 
 private:
 	KeyMap globalKeyMap;
@@ -69,6 +73,8 @@ private:
 	DWGraph *m_pFilterGraph;
 	DWSource *m_pActiveSource;
 	std::vector<DWSource *> m_sources;
+
+	LogMessage log;
 };
 
 /*

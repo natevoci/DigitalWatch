@@ -24,6 +24,7 @@
 #define SYSTEMDEVICEENUMERATOR_H
 
 #include "StdAfx.h"
+#include "LogMessage.h"
 #include <dshow.h>
 
 class DirectShowSystemDevice
@@ -38,6 +39,9 @@ public:
 
 	LPWSTR strFriendlyName;
 	LPWSTR strDevicePath;
+	BOOL bValid;
+
+	LogMessage log;
 };
 
 class DirectShowSystemDeviceEnumerator
@@ -53,6 +57,7 @@ private:
 	CComPtr <IEnumMoniker> m_pEnum;
 	CComPtr <ICreateDevEnum> m_pSysDevEnum;
 
+	LogMessage log;
 };
 
 #endif

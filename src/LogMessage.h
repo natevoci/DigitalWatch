@@ -88,6 +88,6 @@ private:
 };
 
 
-extern LogMessage g_log;
+//extern LogMessage g_log;
 
 #endif

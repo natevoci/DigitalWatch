@@ -25,6 +25,7 @@
 
 #include "StdAfx.h"
 #include "SystemDeviceEnumerator.h"
+#include "LogMessage.h"
 
 class BDACard
 {
@@ -37,18 +38,25 @@ public:
 	DirectShowSystemDevice captureDevice;
 
 	HRESULT AddFilters(IGraphBuilder* piGraphBuilder);
-	HRESULT Connect(IGraphBuilder* piGraphBuilder, IBaseFilter* pSource);
+	HRESULT Connect(IBaseFilter* pSource);
 	HRESULT GetCapturePin(IPin** pCapturePin);
+
+	HRESULT RemoveFilters();
 
 	BOOL bActive;
 	BOOL bNew;
 	BOOL bDetected;
+
+private:
+	CComPtr <IGraphBuilder> m_piGraphBuilder;
 
 	CComPtr <IBaseFilter> m_pBDATuner;
 	CComPtr <IBaseFilter> m_pBDADemod;
 	CComPtr <IBaseFilter> m_pBDACapture;
 
 	CComPtr <IPin> m_pCapturePin;
+
+	LogMessage log;
 };
 
 #endif

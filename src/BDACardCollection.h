@@ -25,9 +25,8 @@
 
 #include "StdAfx.h"
 #include "BDACard.h"
-//#include "SystemDeviceEnumerator.h"
 #include <vector>
-//#include <bdatif.h>
+#include "LogMessage.h"
 
 class BDACardCollection  
 {
@@ -41,6 +40,8 @@ public:
 
 	std::vector<BDACard *> cards;
 
+	LogMessage get_Logger();
+
 private:
 	BOOL LoadCardsFromHardware();
 	BOOL LoadCardsFromFile();
@@ -48,6 +49,8 @@ private:
 	BOOL FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, DirectShowSystemDevice** ppDemodDevice, DirectShowSystemDevice** ppCaptureDevice);
 
 	LPWSTR m_filename;
+
+	LogMessage log;
 };
 
 #endif

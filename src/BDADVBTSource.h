@@ -28,6 +28,7 @@
 #include "DVBTChannels.h"
 #include "BDACardCollection.h"
 #include <vector>
+#include "LogMessage.h"
 
 class BDADVBTSource : public DWSource  
 {
@@ -37,16 +38,25 @@ public:
 
 	virtual void GetSourceType(LPWSTR type) { wprintf(type, L"Unknown"); }
 
-	virtual BOOL Initialise(DWGraph* pFilterGraph);
+	virtual HRESULT Initialise(DWGraph* pFilterGraph);
+	virtual HRESULT Destroy();
 
-	virtual BOOL ExecuteCommand(LPWSTR command);
+	virtual HRESULT ExecuteCommand(LPWSTR command);
 	//Keys, ControlBar, OSD, Menu, etc...
+
+	virtual HRESULT Play();
+
+protected:
+	virtual HRESULT SetChannel(int network, int program);
 
 	virtual HRESULT AddFilters();
 	virtual HRESULT Connect();
 	virtual HRESULT AfterGraphBuilt();
 	virtual HRESULT Cleanup();
-	virtual HRESULT Destroy();
+
+	HRESULT LoadTuner();
+	HRESULT UnloadTuner();
+	HRESULT AddDemuxPins(DVBTChannels_Program* program);
 
 private:
 	BDADVBTSourceTuner *m_pCurrentTuner;
@@ -55,6 +65,14 @@ private:
 	DVBTChannels channels;
 	BDACardCollection cardList;
 	//NaN
+
+
+	DWGraph *m_pDWGraph;
+	CComPtr<IGraphBuilder> m_piGraphBuilder;
+	//CComPtr<IMediaControl> m_piMediaControl;
+	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
+
+	LogMessage log;
 };
 
 #endif

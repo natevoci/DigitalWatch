@@ -27,9 +27,7 @@
 #include "Globals.h"
 //#include "DWSource.h"
 #include "BDADVBTSource.h"
-
 #include "ParseLine.h"
-#include "LogMessage.h"
 
  /*#include "DVBInput.h"
 #include "DVBSourceTSSplitter.h"
@@ -46,6 +44,7 @@ TVControl::TVControl()
 	m_pControlBar = new ControlBar(m_pAppData, m_pFilterGraph);
 	m_pOSD = new OSD(pAppData, m_pFilterGraph, m_pControlBar);
 	m_pDVBInput = 0;*/
+	log.AddCallback(&g_DWLogWriter);
 }
 TVControl::~TVControl(void)
 {
@@ -77,7 +76,7 @@ TVControl::~TVControl(void)
 
 BOOL TVControl::Initialise()
 {
-	(g_log << "Initialising TVControl").Write();
+	(log << "Initialising TVControl\n").Write();
 
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"Keys.ini");
@@ -88,25 +87,7 @@ BOOL TVControl::Initialise()
 	m_pFilterGraph->Initialise();
 	m_pActiveSource = NULL;
 
-	BDADVBTSource *dvbt = new BDADVBTSource();
-	if (dvbt->Initialise(m_pFilterGraph))
-	{
-		m_pActiveSource = dvbt;
-		m_sources.push_back(dvbt);
-	}
-
-	/* Initialise more Source's here */
-
-	if (m_pActiveSource)
-	{
-/*		m_pFilterGraph->AddSourceFilters();
-
-		m_pOSD->Initialise();*/
-		return TRUE;
-	}
-
-	m_pFilterGraph->Destroy();
-	return FALSE;
+	return TRUE;
 }
 /*
 void TVControl::StartTimer()
@@ -115,7 +96,7 @@ void TVControl::StartTimer()
 	SetTimer(m_pAppData->hWnd, 997, 1000, NULL);
 }
 */
-BOOL TVControl::Exit()
+HRESULT TVControl::Exit()
 {
 /*	if (m_pFilterGraph->IsRecording())
 	{
@@ -125,7 +106,7 @@ BOOL TVControl::Exit()
 //	m_pFilterGraph->Cleanup();
 //	KillTimer(m_pAppData->hWnd, 996);
 //	m_pOSD->HideAll();
-	return DestroyWindow(g_pData->hWnd);
+	return (DestroyWindow(g_pData->hWnd) ? S_OK : E_FAIL);
 }
 
 BOOL TVControl::AlwaysOnTop(int nAlwaysOnTop)
@@ -161,24 +142,29 @@ BOOL TVControl::Fullscreen(int nFullScreen)
 	return SetWindowPlacement(g_pData->hWnd, &wPlace);
 }
 
-BOOL TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
+HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 {
 	wchar_t wcfunction[256];
-	LPWSTR function = (LPWSTR)&wcfunction;
-	if (globalKeyMap.GetFunction(nKeycode, bShift, bCtrl, bAlt, function))
+	LPWSTR command = (LPWSTR)&wcfunction;
+	if (globalKeyMap.GetFunction(nKeycode, bShift, bCtrl, bAlt, command))
 	{
-		if (m_pActiveSource)
+		HRESULT hr = ExecuteCommand(command);
+		if (hr == S_FALSE)	//S_FALSE if the ExecuteFunction didn't handle the function
 		{
-			if (m_pActiveSource->ExecuteCommand(function))
-				return TRUE;
+			if (m_pActiveSource)
+			{
+				hr = m_pActiveSource->ExecuteCommand(command);
+			}
 		}
-		return ExecuteFunction(function);
+		if (hr == S_FALSE)
+			(log << "Function '" << command << "' called but has no implementation.\n").Write();
+		return hr;
 	}
 /*
 	m_pAppData->KeyPress.Set(nKeycode, bShift, bCtrl, bAlt);
 	m_pOSD->ShowItem("KeyPress");
 */
-	return FALSE;
+	return S_FALSE;
 }
 
 BOOL TVControl::ShowCursor(BOOL bAllowHide)
@@ -217,11 +203,11 @@ BOOL TVControl::HideCursor()
 	}
 }
 
-BOOL TVControl::ExecuteFunction(LPCWSTR strFunction)
+HRESULT TVControl::ExecuteCommand(LPCWSTR command)
 {
 	int n1, n2, n3, n4;//, n5, n6;
 	//wchar_t buff[256];
-	LPWSTR pBuff = (LPWSTR)strFunction;
+	LPWSTR pBuff = (LPWSTR)command;
 	LPWSTR pCurr;
 
 	//pBuff = (LPWSTR)&buff;
@@ -232,25 +218,27 @@ BOOL TVControl::ExecuteFunction(LPCWSTR strFunction)
 
 	ParseLine parseLine;
 	if (parseLine.Parse(pBuff) == FALSE)
-		return (g_log << "Parse error in function: " << strFunction).Show();
+		return (log << "Parse error in function: " << command << "\n").Show(E_FAIL);
+
+	(log << "TVControl::ExecuteCommand - " << command << "\n").Write();
 
 	if (parseLine.HasRHS())
-		return (g_log << "Cannot have RHS for function").Show();
+		return (log << "Cannot have RHS for function.\n").Show(E_FAIL);
 
 	pCurr = parseLine.LHS.FunctionName;
 
 	if (_wcsicmp(pCurr, L"Exit") == 0)
 	{
 		if (parseLine.LHS.ParameterCount > 0)
-			return (g_log << "Too many parameters: " << parseLine.LHS.Function).Show;
+			return (log << "Too many parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 		return Exit();
 	}
 	else if (_wcsicmp(pCurr, L"Key") == 0)
 	{
 		if (parseLine.LHS.ParameterCount < 1)
-			return (g_log << "Keycode parameter expected: " << parseLine.LHS.Function).Show();
+			return (log << "Keycode parameter expected: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 		if (parseLine.LHS.ParameterCount > 4)
-			return (g_log << "Too many parameters: " << parseLine.LHS.Function).Show();
+			return (log << "Too many parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		if ((parseLine.LHS.Parameter[0][0] == '\'') && (parseLine.LHS.Parameter[0][2] == '\''))
 			n1 = parseLine.LHS.Parameter[0][1];
@@ -274,7 +262,7 @@ BOOL TVControl::ExecuteFunction(LPCWSTR strFunction)
 	if (_wcsicmp(pCurr, L"AlwaysOnTop") == 0)
 	{
 		if (parseLine.LHS.ParameterCount != 1)
-			return (g_log << "Expecting 1 parameter: " << parseLine.LHS.Function).Show();
+			return (log << "Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(parseLine.LHS.Parameter[0]);
 		return AlwaysOnTop(n1);
@@ -282,10 +270,17 @@ BOOL TVControl::ExecuteFunction(LPCWSTR strFunction)
 	else if (_wcsicmp(pCurr, L"Fullscreen") == 0)
 	{
 		if (parseLine.LHS.ParameterCount != 1)
-			return (g_log << "Expecting 1 parameter: " << parseLine.LHS.Function).Show();
+			return (log << "Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(parseLine.LHS.Parameter[0]);
 		return Fullscreen(n1);
+	}
+	else if (_wcsicmp(pCurr, L"SetSource") == 0)
+	{
+		if (parseLine.LHS.ParameterCount != 1)
+			return (log << "Expecting 1 parameter: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+
+		return SetSource(parseLine.LHS.Parameter[0]);
 	}
 	
 	/*
@@ -569,7 +564,7 @@ BOOL TVControl::ExecuteFunction(LPCWSTR strFunction)
 		}
 	}
 	*/
-	return FALSE;
+	return S_FALSE;
 }
 /*
 int TVControl::GetFunctionType(char* strFunction)
@@ -664,7 +659,49 @@ int TVControl::GetFunctionType(char* strFunction)
 	}
 	return nResult;
 }
+*/
+HRESULT TVControl::SetSource(LPWSTR szSourceName)
+{
+	if (_wcsicmp(szSourceName, L"TV") == 0)
+	{
+		if (m_pActiveSource)
+		{
+			m_pActiveSource->Destroy();
+			delete m_pActiveSource;
+			m_pActiveSource = NULL;
+		}
 
+		BDADVBTSource *dvbt = new BDADVBTSource();
+		if (SUCCEEDED(dvbt->Initialise(m_pFilterGraph)))
+		{
+			m_pActiveSource = dvbt;
+			m_sources.push_back(dvbt);
+			return m_pActiveSource->Play();
+		}
+		return E_FAIL;
+	}
+	else if (_wcsicmp(szSourceName, L"File") == 0)
+	{
+		if (m_pActiveSource)
+		{
+			m_pActiveSource->Destroy();
+			delete m_pActiveSource;
+			m_pActiveSource = NULL;
+		}
+
+		/*TSFileSource *file = new TSFileSource();
+		if (SUCCEEDED(dvbt->Initialise(m_pFilterGraph)))
+		{
+			m_pActiveSource = file;
+			m_sources.push_back(file);
+			return m_pActiveSource->Play();
+		}*/
+		return E_FAIL;
+	}
+
+	return S_FALSE;
+}
+/*
 BOOL TVControl::SetChannel(int nNetwork, int nProgram)
 {
 	if (m_pFilterGraph->IsRecording())
@@ -746,13 +783,13 @@ BOOL TVControl::SetChannel(int nNetwork, int nProgram)
 		{
 			int type = GetFunctionType(m_pAppData->tvChannels.Networks[nNetwork].Functions[prefunc]);
 			if (type == FT_BEFORE_START)
-				ExecuteFunction(m_pAppData->tvChannels.Networks[nNetwork].Functions[prefunc]);
+				ExecuteCommand(m_pAppData->tvChannels.Networks[nNetwork].Functions[prefunc]);
 		}
 		for ( prefunc=0 ; prefunc<m_pAppData->tvChannels.Networks[nNetwork].Programs[nProgram].FunctionsCount ; prefunc++)
 		{
 			int type = GetFunctionType(m_pAppData->tvChannels.Networks[nNetwork].Programs[nProgram].Functions[prefunc]);
 			if (type == FT_BEFORE_START)
-				ExecuteFunction(m_pAppData->tvChannels.Networks[nNetwork].Programs[nProgram].Functions[prefunc]);
+				ExecuteCommand(m_pAppData->tvChannels.Networks[nNetwork].Programs[nProgram].Functions[prefunc]);
 		}
 
 		if (!m_pFilterGraph->Stop())
@@ -785,13 +822,13 @@ BOOL TVControl::SetChannel(int nNetwork, int nProgram)
 		{
 			int type = GetFunctionType(m_pAppData->tvChannels.Networks[nNetwork].Functions[postfunc]);
 			if ((type == FT_AFTER_START) || (type == FT_ANY))
-				ExecuteFunction(m_pAppData->tvChannels.Networks[nNetwork].Functions[postfunc]);
+				ExecuteCommand(m_pAppData->tvChannels.Networks[nNetwork].Functions[postfunc]);
 		}
 		for ( postfunc=0 ; postfunc<m_pAppData->tvChannels.Networks[nNetwork].Programs[nProgram].FunctionsCount ; postfunc++)
 		{
 			int type = GetFunctionType(m_pAppData->tvChannels.Networks[nNetwork].Programs[nProgram].Functions[postfunc]);
 			if ((type == FT_AFTER_START) || (type == FT_ANY))
-				ExecuteFunction(m_pAppData->tvChannels.Networks[nNetwork].Programs[nProgram].Functions[postfunc]);
+				ExecuteCommand(m_pAppData->tvChannels.Networks[nNetwork].Programs[nProgram].Functions[postfunc]);
 		}
 
 		m_pFilterGraph->Mute(m_pAppData->values.bMute);
@@ -1267,7 +1304,7 @@ BOOL TVControl::ControlBarMouseDown(int x, int y)
 	{
 		char function[256];
 		if (m_pControlBar->GetFunction((char*)&function))
-			return ExecuteFunction(function);
+			return ExecuteCommand(function);
 	}
 	return FALSE;
 }

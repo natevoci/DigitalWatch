@@ -2,12 +2,24 @@
 DigitalWatch TODO
 -----------------
 
-- Load and Save bda dvb-t cards.ini
-- get dsnetwork sender and reciever working.
-- implement demuxer stuff in BDADVBTSource.
+- decoder definitions
+
+- osd
+
 - channel scanning
+  - Store all programs and notify when they change
+
+- Separate tuner graph from main playback graph.
+- timeshifting
+
+- Incorperate Josh's BDA NaN code
+  - add Now and Next info to options for CaptureFileName mask.
 
 
+
+- get dsnetwork sender and reciever working.
+  - class DSNetworkSink built into , and class DSNetworkSource : DWSource
+      Will need to add more stuff to DVBInput like BOOL CanLock() and BOOL CanSetPids()
 
 
 
@@ -18,40 +30,24 @@ Documentation
 
 
 Major Upgrades
-- BDA source selection
-  - Read BDA Tuner and BDA Capture device from file
 
 - OSD
   - OSD filter
     - VMR9 direct to screen. IVMRMixerBitmap9::SetAlphaBitmap
     - VMR9 deinterlacing
+	- Custom Allocator Presenter?
 
   - Make a Menu mode.
     - Menu for channels, video decoders, audio decoders, resolutions, timeshifting, filters, ...
     - menu background bitmaps.
+    - Settings page for Global settings such as AR, Auto Fullscreen, etc...
 
-  - Settings page for Global settings such as AR, Auto Fullscreen, etc...
-      or should it just be a separate app like myHTPC Configuration?
-
-
-- move timeshifting into filtergraphmanager.
-
-- Fix recording
+- Recording
   - Modify DWDump more. Remove the need for DWDumpFilter.
 
-- Incorperate Josh's BDA NaN code
-  - add Now and Next info to options for CaptureFileName mask.
 
 - Revamp channel management
   - dynamic data sizes (channels, osd text, decoders, control bar buttons, keys, resolutions)
-  - Store all programs and notify when they change
-
-
-Minor fixes
-- if vpid == 0 then don't make pin.
-
-- Fix GetCommandPath " bug. Use CommandLineToArgvW
-
 
 
 Enhancements
@@ -74,26 +70,9 @@ Enhancements
 
 - Still Image Capture
 
-- class DSNetworkSink : DVBInput, and class DSNetworkSource : DVBInput
-    For network streaming.
-    Will need to add more stuff to DVBInput like BOOL CanLock() and BOOL CanSetPids()
-
-- On the fly DVBInput change.
-    Not really important now, but might be handy once network or file input are done.
-
 - Timer to put the computer to sleep.
 - Timer to shutdown the computer.
     These need to not happen if currently recording.
-
-- TS Parser
-    To fix the microsoft demultiplexer pausing problem.
-    Can continually parse channel info and provide live feedback to DigitalWatch
-    so that if the pids for a program change then it can adapt on the fly.
-    Can write my own recording mechanism that hopefully won't have the same bugs
-    as twinhan's.
-    Can get extra stats such as continuity errors etc.
-
-- startup.ini - A list of Functions. Basically a startup script.
 
 OSD
   - osd entry background bitmaps. For those who don't want transparency, but want more than the plain black background.

@@ -24,6 +24,7 @@
 #define DWGRAPH_H
 
 #include "StdAfx.h"
+#include "LogMessage.h"
 #include <streams.h>
 
 class DWGraph  
@@ -35,9 +36,20 @@ public:
 	BOOL Initialise();
 	BOOL Destroy();
 
-	HRESULT GetGraphBuilder(CComPtr<IGraphBuilder> &piGraphBuilder);
-	HRESULT GetMediaControl(CComPtr<IMediaControl> &piMediaControl);
+	HRESULT QueryGraphBuilder(IGraphBuilder** piGraphBuilder);
+	HRESULT QueryMediaControl(IMediaControl** piMediaControl);
 	
+	HRESULT Start();
+	HRESULT Stop();
+
+	HRESULT Cleanup();
+
+	HRESULT RenderPin(IPin *piPin);
+
+	HRESULT RefreshVideoPosition();
+
+protected:
+	void GetVideoRect(RECT *rect);
 
 private:
 	CComPtr<IGraphBuilder> m_piGraphBuilder;
@@ -46,6 +58,8 @@ private:
 	BOOL m_bInitialised;
 
 	DWORD m_rotEntry;
+
+	LogMessage log;
 };
 
 #endif
