@@ -180,7 +180,9 @@ BOOL ParseLine::ParseFunction(LPWSTR &strCurr, BOOL bRHS)
 		return ParseFunction(endOfFunction, TRUE);
 	}
 
-	if (strCurr[0] == '\0')
+	if (m_bIgnoreRHS)
+		return TRUE;
+	else if (strCurr[0] == '\0')
 		return TRUE;
 	else if (strCurr[0] == '#')
 		return TRUE;
@@ -203,6 +205,11 @@ void ParseLine::AddParameter(PARSELINE_FUNCTION &LHS, LPCWSTR src, long length)
 
 	LHS.Parameter = newParams;
 	LHS.ParameterCount++;
+}
+
+void ParseLine::IgnoreRHS()
+{
+	m_bIgnoreRHS = TRUE;
 }
 
 BOOL ParseLine::HasRHS()

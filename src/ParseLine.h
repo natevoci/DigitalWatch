@@ -42,6 +42,7 @@ public:
 
 	BOOL Parse(LPWSTR line);
 
+	void IgnoreRHS();
 	BOOL HasRHS();
 	PARSELINE_FUNCTION LHS;
 	PARSELINE_FUNCTION RHS;
@@ -57,6 +58,7 @@ private:
 	BOOL SetErrorMessage(LPCWSTR message, long position);
 
 	BOOL m_bHasRHS;
+	BOOL m_bIgnoreRHS;
 
 	LPWSTR m_strLine;
 	LPWSTR m_strCurr;

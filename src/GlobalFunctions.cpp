@@ -157,7 +157,8 @@ LPSTR findEndOfTokenName(LPCSTR str)
 		if (((str[i] < 'A') || (str[i] > 'Z')) &&
 			((str[i] < 'a') || (str[i] > 'z')) &&
 			((str[i] < '0') || (str[i] > '9')) &&
-			(str[i] != '_')
+			(str[i] != '_') &&
+			(str[i] != '$')
 		   )
 		   return (LPSTR)&str[i];
 	}
@@ -196,7 +197,8 @@ LPWSTR findEndOfTokenName(LPCWSTR str)
 		if (((str[i] < 'A') || (str[i] > 'Z')) &&
 			((str[i] < 'a') || (str[i] > 'z')) &&
 			((str[i] < '0') || (str[i] > '9')) &&
-			(str[i] != '_')
+			(str[i] != '_') &&
+			(str[i] != '$')
 		   )
 		   return (LPWSTR)&str[i];
 	}

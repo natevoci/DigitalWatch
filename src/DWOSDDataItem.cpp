@@ -20,19 +20,22 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-
 #include "DWOSDDataItem.h"
 
 //////////////////////////////////////////////////////////////////////
-// Construction/Destruction
+// DWOSDDataItem
 //////////////////////////////////////////////////////////////////////
 
 DWOSDDataItem::DWOSDDataItem()
 {
-
+	name = NULL;
+	value = NULL;
 }
 
 DWOSDDataItem::~DWOSDDataItem()
 {
-
+	if (name)
+		delete[] name;
+	if (value)
+		delete[] value;
 }

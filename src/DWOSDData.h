@@ -1,5 +1,5 @@
 /**
- *	DWOSDDataItem.h
+ *	DWOSDData.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,19 +20,29 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSDDATAITEM_H
-#define DWOSDDATAITEM_H
+#ifndef DWOSDDATA_H
+#define DWOSDDATA_H
 
-#include "StdAfx.h"
+#include "DWOSDDataItem.h"
+#include "DWOSDDataList.h"
+#include "LogMessage.h"
 
-class DWOSDDataItem
+class DWOSDData : public LogMessageCaller
 {
 public:
-	DWOSDDataItem();
-	virtual ~DWOSDDataItem();
+	DWOSDData();
+	virtual ~DWOSDData();
 
-	LPWSTR name;
-	LPWSTR value;
+	void SetItem(LPWSTR name, LPWSTR value);
+	LPWSTR GetItem(LPWSTR name);
+
+	DWOSDDataList* GetList(LPWSTR pListName);
+
+	HRESULT ReplaceTokens(LPWSTR pSource, LPWSTR &pResult);
+
+private:
+	std::vector<DWOSDDataItem *> m_Items;
+	std::vector<DWOSDDataList *> m_Lists;
 };
 
 #endif

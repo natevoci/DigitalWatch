@@ -47,21 +47,21 @@ LPWSTR DWOSDWindow::Name()
 
 void DWOSDWindow::Show(long secondsToShowFor)
 {
-	m_bVisible = TRUE;
-	if (secondsToShowFor > 0)
+	if ((secondsToShowFor > 0) && (!m_bVisible || (m_lTimeToHide > 0)))
 		m_lTimeToHide = GetTickCount() + (secondsToShowFor * 1000);
+	m_bVisible = TRUE;
 }
 
 void DWOSDWindow::Hide()
 {
-	m_bVisible = FALSE;
 	m_lTimeToHide = 0;
+	m_bVisible = FALSE;
 }
 
 void DWOSDWindow::Toggle()
 {
-	m_bVisible = !m_bVisible;
 	m_lTimeToHide = 0;
+	m_bVisible = !m_bVisible;
 }
 
 HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)

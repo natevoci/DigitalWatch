@@ -138,21 +138,3 @@ DWDirectDraw* DWOnScreenDisplay::get_DirectDraw()
 	return m_pDirectDraw;
 }
 
-DWOSDDataList* DWOnScreenDisplay::GetList(LPWSTR pListName)
-{
-	//look for existing list of same name
-	std::vector<DWOSDDataList *>::iterator it = m_Lists.begin();
-	for ( ; it < m_Lists.end() ; it++ )
-	{
-		LPWSTR pName = (*it)->name;
-		if (_wcsicmp(pListName, pName) == 0)
-		{
-			return (*it);
-		}
-	}
-	DWOSDDataList* newList = new DWOSDDataList();
-	strCopy(newList->name, pListName);
-	m_Lists.push_back(newList);
-	return newList;
-}
-

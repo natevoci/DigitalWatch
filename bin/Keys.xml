@@ -97,7 +97,7 @@
   <Key code='N'>				TimeShiftJump(20)</>
   <Key code='I'>				TimeShiftJump(-20)</>
 
-  <Key code='A'>				ShowAll(2)</>
+  <Key code='A'>				ToggleWindow("TVOverlay")</>
 
   <!-- Tab on keyboard and VP remote -->
   <Key code=  9>				ToggleWindow("Time")</>

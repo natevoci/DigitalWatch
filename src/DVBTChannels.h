@@ -68,10 +68,10 @@ public:
 	long GetStreamCount();
 	long GetStreamCount(DVBTChannels_Program_PID_Types streamtype);
 
-
-protected:
 	long programNumber;
 	LPWSTR name;
+
+protected:
 	std::vector<DVBTChannels_Program_Stream> streams;
 	long favoriteID;
 	BOOL bManualUpdate;

@@ -37,6 +37,8 @@ DWOSDLabel::DWOSDLabel()
 	m_dwTextColor = 0;
 	m_nHeight = 40;
 	m_nWeight = 400;
+	m_uAlignHorizontal = TA_LEFT;
+	m_uAlignVertical = TA_TOP;
 
 	m_pBackgroundImage = NULL;
 	SetRect(&m_rectBackgroundPadding, 0, 0, 0, 0);
@@ -95,6 +97,33 @@ HRESULT DWOSDLabel::LoadFromXML(XMLElement *pElement)
 
 			strCopy(m_wszText, element->value);
 		}
+		else if (_wcsicmp(element->name, L"align") == 0)
+		{
+			attr = element->Attributes.Item(L"horizontal");
+			if (attr)
+			{
+				if (_wcsicmp(attr->value, L"left") == 0)
+					m_uAlignHorizontal = TA_LEFT;
+				else if (_wcsicmp(attr->value, L"center") == 0)
+					m_uAlignHorizontal = TA_CENTER;
+				else if (_wcsicmp(attr->value, L"centre") == 0)
+					m_uAlignHorizontal = TA_CENTER;
+				else if (_wcsicmp(attr->value, L"right") == 0)
+					m_uAlignHorizontal = TA_RIGHT;
+			}
+			attr = element->Attributes.Item(L"vertical");
+			if (attr)
+			{
+				if (_wcsicmp(attr->value, L"top") == 0)
+					m_uAlignVertical = TA_TOP;
+				else if (_wcsicmp(attr->value, L"center") == 0)
+					m_uAlignVertical = TA_CENTER;
+				else if (_wcsicmp(attr->value, L"centre") == 0)
+					m_uAlignVertical = TA_CENTER;
+				else if (_wcsicmp(attr->value, L"bottom") == 0)
+					m_uAlignVertical = TA_BOTTOM;
+			}
+		}
 		else if (_wcsicmp(element->name, L"background") == 0)
 		{
 			int subElementCount = element->Elements.Count();
@@ -136,14 +165,19 @@ HRESULT DWOSDLabel::Render(long tickCount)
 
 	HRESULT hr;
 
-	LPWSTR pStr = m_wszText;
-	//TODO: Replace Tokens
+	LPWSTR pStr = NULL;
+	//Replace Tokens
+	g_pOSD->data.ReplaceTokens(m_wszText, pStr);
+
 	if (pStr[0] == '\0')
 		return S_OK;
 
 	HDC hDC;
 
-	if (m_pBackgroundImage)
+	long nPosX = m_nPosX;
+	long nPosY = m_nPosY;
+
+	if (m_pBackgroundImage || (m_uAlignHorizontal != TA_LEFT) || (m_uAlignVertical != TA_TOP))
 	{
 		hDC = CreateCompatibleDC(NULL);
 		InitDC(hDC);
@@ -153,18 +187,31 @@ HRESULT DWOSDLabel::Render(long tickCount)
 		UninitDC(hDC);
 		DeleteDC(hDC);
 
-		m_pBackgroundImage->Draw(m_nPosX - m_rectBackgroundPadding.left,
-								 m_nPosY - m_rectBackgroundPadding.top,
-								 extent.cx + m_rectBackgroundPadding.left + m_rectBackgroundPadding.right,
-								 extent.cy + m_rectBackgroundPadding.top + m_rectBackgroundPadding.bottom);
+		if (m_uAlignHorizontal == TA_CENTER)
+			nPosX -= (extent.cx / 2);
+		else if (m_uAlignHorizontal == TA_RIGHT)
+			nPosX -= (extent.cx);
+		
+		if (m_uAlignVertical == TA_CENTER)
+			nPosY -= (extent.cy / 2);
+		else if (m_uAlignVertical == TA_BOTTOM)
+			nPosY -= (extent.cy);
+
+		if (m_pBackgroundImage)
+		{
+			m_pBackgroundImage->Draw(nPosX - m_rectBackgroundPadding.left,
+									 nPosY - m_rectBackgroundPadding.top,
+									 extent.cx + m_rectBackgroundPadding.left + m_rectBackgroundPadding.right,
+									 extent.cy + m_rectBackgroundPadding.top + m_rectBackgroundPadding.bottom);
+		}
 	}
-	
+
 	hr = m_piSurface->GetDC(&hDC);
 	if FAILED(hr)
 		return hr;
 
 	InitDC(hDC);
-	TextOut(hDC, m_nPosX, m_nPosY, W2T(pStr), wcslen(pStr));
+	TextOut(hDC, nPosX, nPosY, W2T(pStr), wcslen(pStr));
 	UninitDC(hDC);
 
 	hr = m_piSurface->ReleaseDC(hDC);
@@ -199,6 +246,11 @@ void DWOSDLabel::InitDC(HDC &hDC)
 	m_hOldFont = (HFONT)SelectObject(hDC, m_hFont);
 	SetBkMode(hDC, TRANSPARENT);
 	SetTextColor(hDC, m_dwTextColor & 0x00FFFFFF);
+
+/*	unsigned int align = m_uAlignHorizontal;
+	if (m_uAlignVertical != TA_CENTER)
+		align = align | m_uAlignVertical;
+	SetTextAlign(hDC, align);*/
 	SetTextAlign(hDC, TA_LEFT);
 }
 

@@ -194,6 +194,10 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 	if (!channels.Network(nNetwork)->IsValidProgram(nProgram))
 		return (log << "Program number is not valid\n").Write(E_INVALIDARG);
 
+	g_pOSD->data.SetItem(L"CurrentNetwork", channels.Network(nNetwork)->name);
+	g_pOSD->data.SetItem(L"CurrentProgram", channels.Network(nNetwork)->Program(nProgram)->name);
+	g_pTv->ShowWindow(L"TVOverlay", 10);
+
 	//Check if already on this network
 	/*if (nNetwork == m_nCurrentNetwork)
 	{

@@ -29,7 +29,7 @@
 
 #include "DWOSDWindows.h"
 
-#include "DWOSDDataList.h"
+#include "DWOSDData.h"
 
 #include "LogMessage.h"
 #include <vector>
@@ -48,18 +48,13 @@ public:
 
 	DWDirectDraw* get_DirectDraw();
 
-	DWOSDDataList* GetList(LPWSTR pListName);
-
-
 	DWOSDWindows windows;
+	DWOSDData data;
 
 private:
 	long GetPanningPos(long tickCount, long span, double speed);
 
 	DWDirectDraw* m_pDirectDraw;
-	//DWDirectDrawImage* m_pImage;
-
-	std::vector<DWOSDDataList *> m_Lists;
 };
 
 #endif

@@ -47,6 +47,8 @@ private:
 	COLORREF m_dwTextColor;
 	long m_nHeight;
 	long m_nWeight;
+	unsigned int m_uAlignHorizontal;
+	unsigned int m_uAlignVertical;
 
 	DWOSDImage* m_pBackgroundImage;
 	RECT m_rectBackgroundPadding;
