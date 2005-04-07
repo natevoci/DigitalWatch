@@ -25,8 +25,10 @@
 
 #include "StdAfx.h"
 #include "DWGraph.h"
+#include "ParseLine.h"
+#include "KeyMap.h"
 
-interface DWSource : public LogMessageCaller
+class DWSource : public LogMessageCaller
 {
 public:
 	/* General */
@@ -36,7 +38,8 @@ public:
 	virtual HRESULT Destroy() = 0;
 
 	/* Interface */
-	virtual HRESULT ExecuteCommand(LPWSTR command) = 0;
+	virtual HRESULT GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
+	virtual HRESULT ExecuteCommand(ParseLine* command) = 0;
 	//Keys, ControlBar, OSD, Menu, etc...
 
 	virtual HRESULT Play() = 0;
@@ -47,6 +50,10 @@ public:
 	virtual HRESULT AfterGraphBuilt() = 0;
 	virtual HRESULT Cleanup() = 0;
 */	
+
+protected:
+	KeyMap m_sourceKeyMap;
+
 };
 
 #endif

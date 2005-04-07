@@ -28,6 +28,7 @@
 #include "XMLDocument.h"
 #include "DWOSDImage.h"
 #include "DWOSDControl.h"
+#include "KeyMap.h"
 #include <vector>
 
 class DWOSDWindows;
@@ -43,11 +44,26 @@ public:
 
 	DWOSDControl *GetControl(LPWSTR pName);
 
+	HRESULT GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
+
+	HRESULT OnUp();
+	HRESULT OnDown();
+	HRESULT OnLeft();
+	HRESULT OnRight();
+	HRESULT OnSelect();
+
+	BOOL HideOverlay() { return FALSE; }
+
 private:
 	HRESULT LoadFromXML(XMLElement *pElement);
+	HRESULT SetHighlightedControl(LPWSTR wszNextControl);
 
 	LPWSTR m_pName;
 	std::vector<DWOSDControl *> m_controls;
+
+	DWOSDControl *m_pHighlightedControl;
+
+	KeyMap m_keyMap;
 };
 
 

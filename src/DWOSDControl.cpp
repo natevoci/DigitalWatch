@@ -22,6 +22,7 @@
 
 #include "DWOSDControl.h"
 #include "Globals.h"
+#include "GlobalFunctions.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWOSDControl
@@ -36,6 +37,14 @@ DWOSDControl::DWOSDControl()
 
 	m_pName = new wchar_t[1];;
 	m_pName[0] = 0;
+
+	m_bCanHighlight = FALSE;
+	m_bHighlighted = FALSE;
+	m_pControlUp = NULL;
+	m_pControlDown = NULL;
+	m_pControlLeft = NULL;
+	m_pControlRight = NULL;
+	m_pCommand = NULL;
 }
 
 DWOSDControl::~DWOSDControl()
@@ -47,6 +56,11 @@ DWOSDControl::~DWOSDControl()
 LPWSTR DWOSDControl::Name()
 {
 	return m_pName;
+}
+
+void DWOSDControl::SetName(LPWSTR pName)
+{
+	strCopy(m_pName, pName);
 }
 
 HRESULT DWOSDControl::Render(long tickCount)
@@ -81,4 +95,42 @@ void DWOSDControl::Toggle()
 	m_bVisible = !m_bVisible;
 }
 
+LPWSTR DWOSDControl::OnUp()
+{
+	return (m_pControlUp ? m_pControlUp : m_pControlLeft);
+}
 
+LPWSTR DWOSDControl::OnDown()
+{
+	return (m_pControlDown ? m_pControlDown : m_pControlRight);
+}
+
+LPWSTR DWOSDControl::OnLeft()
+{
+	return (m_pControlLeft ? m_pControlLeft : m_pControlUp);
+}
+
+LPWSTR DWOSDControl::OnRight()
+{
+	return (m_pControlRight ? m_pControlRight : m_pControlDown);
+}
+
+LPWSTR DWOSDControl::OnSelect()
+{
+	return m_pCommand;
+}
+
+void DWOSDControl::SetHighlight(BOOL bHighlighted)
+{
+	m_bHighlighted = bHighlighted;
+}
+
+BOOL DWOSDControl::CanHighlight()
+{
+	return m_bCanHighlight;
+}
+
+BOOL DWOSDControl::IsHighlighted()
+{
+	return m_bHighlighted;
+}

@@ -24,19 +24,16 @@
 #include "ParseLine.h"
 #include "GlobalFunctions.h"
 #include <stdio.h>
-#include "XMLDocument.h"
 
-KeyMap::KeyMap(void) : m_filename(0)
+KeyMap::KeyMap(void)
 {
 }
 
 KeyMap::~KeyMap(void)
 {
-	if (m_filename)
-		delete[] m_filename;
 }
 
-BOOL KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
+HRESULT KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
 {
 	std::vector<KeyMapEntry>::iterator it = keyMaps.begin();
 	for ( ; it != keyMaps.end() ; it++ )
@@ -48,33 +45,48 @@ BOOL KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *f
 			(keyMap.Alt == alt))
 		{
 			strCopy(*function, keyMap.Function);
-			return TRUE;
+			return S_OK;
 		}
 	}
-	return FALSE;
+	return E_FAIL;
 }
 
-BOOL KeyMap::LoadKeyMap(LPWSTR filename)
+HRESULT KeyMap::LoadFromFile(LPWSTR filename)
 {
 	(log << "Loading Keys file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 
-	strCopy(m_filename, filename);
+	HRESULT hr;
 
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);
-	if (file.Load(m_filename) != S_OK)
+	if (hr = file.Load(filename) != S_OK)
 	{
-		return (log << "Could not load keys file: " << m_filename << "\n").Show(FALSE);
+		return (log << "Could not load keys file: " << filename << "\n").Show(hr);
 	}
+
+	hr = LoadFromXML(&file.Elements);
+	if FAILED(hr)
+		return hr;
+
+	indent.Release();
+	(log << "Finished loading keys file\n").Write();
+
+	return hr;
+}
+
+HRESULT KeyMap::LoadFromXML(XMLElementList* elementList)
+{
+	(log << "Loading Keys from XML\n").Write();
+	LogMessageIndent indent(&log);
 
 	XMLElement *element;
 	XMLAttribute *attr;
 
-	int elementCount = file.Elements.Count();
+	int elementCount = elementList->Count();
 	for ( int item=0 ; item<elementCount ; item++ )
 	{
-		element = file.Elements.Item(item);
+		element = elementList->Item(item);
 		if ((_wcsicmp(element->name, L"Key") == 0) || (_wcsicmp(element->name, L"Mouse") == 0))
 		{
 			KeyMapEntry newKeyMapEntry;
@@ -113,7 +125,7 @@ BOOL KeyMap::LoadKeyMap(LPWSTR filename)
 	}
 
 	indent.Release();
-	(log << "Finished Loading Keys File\n").Write();
+	(log << "Finished loading keys from XML\n").Write();
 
-	return TRUE;
+	return S_OK;
 }

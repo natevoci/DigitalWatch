@@ -28,11 +28,12 @@
 // DVBTChannels_Program
 //////////////////////////////////////////////////////////////////////
 
-DVBTChannels_Program::DVBTChannels_Program() :	programNumber(0),
-												name(0),
-												favoriteID(0),
-												bManualUpdate(0)
+DVBTChannels_Program::DVBTChannels_Program()
 {
+	programNumber = 0;
+	name = NULL;
+	favoriteID = 0;
+	bManualUpdate = 0;
 }
 
 DVBTChannels_Program::~DVBTChannels_Program()
@@ -202,10 +203,12 @@ long DVBTChannels_Program::GetStreamCount(DVBTChannels_Program_PID_Types streamt
 // DVBTChannels_Network
 //////////////////////////////////////////////////////////////////////
 
-DVBTChannels_Network::DVBTChannels_Network() :	frequency(0),
-												bandwidth(0),
-												name(0)
+DVBTChannels_Network::DVBTChannels_Network()
 {
+	frequency = 0;
+	bandwidth = 0;
+	name = NULL;
+	m_nCurrentProgram = 1;
 }
 
 DVBTChannels_Network::~DVBTChannels_Network()
@@ -291,13 +294,6 @@ HRESULT DVBTChannels_Network::SaveToXML(XMLElement *pElement)
 	return S_OK;
 }
 
-DVBTChannels_Program* DVBTChannels_Network::Program(int programNumber)
-{
-	if (!IsValidProgram(programNumber))
-		return NULL;
-	return programs.at(programNumber-1);
-}
-
 BOOL DVBTChannels_Network::IsValidProgram(int programNumber)
 {
 	if (programNumber < 1)
@@ -307,14 +303,64 @@ BOOL DVBTChannels_Network::IsValidProgram(int programNumber)
 	return TRUE;
 }
 
+DVBTChannels_Program* DVBTChannels_Network::GetCurrentProgram()
+{
+	if (IsValidProgram(m_nCurrentProgram))
+		return programs.at(m_nCurrentProgram-1);
+	return NULL;
+}
+
+long DVBTChannels_Network::GetCurrentProgramId()
+{
+	if (IsValidProgram(m_nCurrentProgram))
+		return m_nCurrentProgram;
+	return -1;
+}
+
+HRESULT DVBTChannels_Network::SetCurrentProgramId(long nProgram)
+{
+	if (IsValidProgram(nProgram))
+	{
+		m_nCurrentProgram = nProgram;
+		return S_OK;
+	}
+	return E_INVALIDARG;
+}
+
+long DVBTChannels_Network::GetNextProgramId()
+{
+	long programCount = programs.size();
+	if (programCount == 0)
+		return -1;
+	if (!IsValidProgram(m_nCurrentProgram))
+		return 1;
+	if (!IsValidProgram(m_nCurrentProgram+1))
+		return 1;
+	return m_nCurrentProgram+1;
+}
+
+long DVBTChannels_Network::GetPrevProgramId()
+{
+	long programCount = programs.size();
+	if (programCount == 0)
+		return -1;
+	if (!IsValidProgram(m_nCurrentProgram))
+		return programCount;
+	if (!IsValidProgram(m_nCurrentProgram-1))
+		return programCount;
+	return m_nCurrentProgram-1;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // DVBTChannels
 //////////////////////////////////////////////////////////////////////
 
-DVBTChannels::DVBTChannels() :	m_bandwidth(7),
-								m_filename(0)
+DVBTChannels::DVBTChannels()
 {
+	m_bandwidth = 7;
+	m_filename = NULL;
+	m_nCurrentNetwork = 1;
 }
 
 DVBTChannels::~DVBTChannels()
@@ -342,34 +388,20 @@ void DVBTChannels::SetLogCallback(LogMessageCallback *callback)
 	}
 }
 
-DVBTChannels_Network* DVBTChannels::Network(int networkNumber)
-{
-	if (!IsValidNetwork(networkNumber))
-		return NULL;
-	return networks.at(networkNumber-1);
-}
-
-BOOL DVBTChannels::IsValidNetwork(int networkNumber)
-{
-	if (networkNumber < 1)
-		return FALSE;
-	if (networkNumber > networks.size())
-		return FALSE;
-	return TRUE;
-}
-
-BOOL DVBTChannels::LoadChannels(LPWSTR filename)
+HRESULT DVBTChannels::LoadChannels(LPWSTR filename)
 {
 	(log << "Loading DVBT Channels file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
+
+	HRESULT hr;
 
 	strCopy(m_filename, filename);
 
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);
-	if (file.Load(m_filename) != S_OK)
+	if FAILED(hr = file.Load(m_filename))
 	{
-		return (log << "Could not load channels file: " << m_filename << "\n").Show(FALSE);
+		return (log << "Could not load channels file: " << m_filename << "\n").Show(hr);
 	}
 
 	int elementCount = file.Elements.Count();
@@ -395,15 +427,15 @@ BOOL DVBTChannels::LoadChannels(LPWSTR filename)
 	}
 
 	if (networks.size() == 0)
-		return (log << "You need to specify at least one network in your channels file\n").Show(FALSE);
+		return (log << "You need to specify at least one network in your channels file\n").Show(E_FAIL);
 
 	indent.Release();
 	(log << "Finished Loading DVBT Channels file: " << filename << "\n").Write();
 
-	return TRUE;
+	return S_OK;
 }
 
-BOOL DVBTChannels::SaveChannels(LPWSTR filename)
+HRESULT DVBTChannels::SaveChannels(LPWSTR filename)
 {
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);
@@ -426,6 +458,64 @@ BOOL DVBTChannels::SaveChannels(LPWSTR filename)
 	else
 		file.Save(m_filename);
 
+	return S_OK;
+}
+
+BOOL DVBTChannels::IsValidNetwork(int networkNumber)
+{
+	if (networkNumber < 1)
+		return FALSE;
+	if (networkNumber > networks.size())
+		return FALSE;
 	return TRUE;
 }
+
+DVBTChannels_Network* DVBTChannels::GetCurrentNetwork()
+{
+	if (IsValidNetwork(m_nCurrentNetwork))
+		return networks.at(m_nCurrentNetwork-1);
+	return NULL;
+}
+
+long DVBTChannels::GetCurrentNetworkId()
+{
+	if (IsValidNetwork(m_nCurrentNetwork))
+		return m_nCurrentNetwork;
+	return -1;
+}
+
+HRESULT DVBTChannels::SetCurrentNetworkId(long nNetwork)
+{
+	if (IsValidNetwork(nNetwork))
+	{
+		m_nCurrentNetwork = nNetwork;
+		return S_OK;
+	}
+	return E_INVALIDARG;
+}
+
+long DVBTChannels::GetNextNetworkId()
+{
+	long networkCount = networks.size();
+	if (networkCount == 0)
+		return -1;
+	if (!IsValidNetwork(m_nCurrentNetwork))
+		return 1;
+	if (!IsValidNetwork(m_nCurrentNetwork+1))
+		return 1;
+	return m_nCurrentNetwork+1;
+}
+
+long DVBTChannels::GetPrevNetworkId()
+{
+	long networkCount = networks.size();
+	if (networkCount == 0)
+		return -1;
+	if (!IsValidNetwork(m_nCurrentNetwork))
+		return networkCount;
+	if (!IsValidNetwork(m_nCurrentNetwork-1))
+		return networkCount;
+	return m_nCurrentNetwork-1;
+}
+
 

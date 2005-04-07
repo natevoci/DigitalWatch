@@ -143,7 +143,7 @@ BOOL isWhitespace(char character)
 			(character == '\t'));
 }
 
-void skipWhitespaces(LPSTR &str)
+void skipWhitespaces(LPCSTR &str)
 {
 	while (isWhitespace(str[0]))
 		str++;
@@ -183,7 +183,7 @@ BOOL isWhitespace(wchar_t character)
 			(character == '\t'));
 }
 
-void skipWhitespaces(LPWSTR &str)
+void skipWhitespaces(LPCWSTR &str)
 {
 	while (isWhitespace(str[0]))
 		str++;

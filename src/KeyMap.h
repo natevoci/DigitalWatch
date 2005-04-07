@@ -26,6 +26,7 @@
 
 #include "StdAfx.h"
 #include "LogMessage.h"
+#include "XMLDocument.h"
 #include <vector>
 
 typedef enum MouseFunction
@@ -52,13 +53,13 @@ public:
 	KeyMap();
 	~KeyMap();
 
-	BOOL GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
+	HRESULT GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
 
-	BOOL LoadKeyMap(LPWSTR filename);
+	HRESULT LoadFromFile(LPWSTR filename);
+	HRESULT LoadFromXML(XMLElementList* elementList);
 
-	std::vector<KeyMapEntry> keyMaps;
 private:
-	LPWSTR m_filename;
+	std::vector<KeyMapEntry> keyMaps;
 };
 
 #endif

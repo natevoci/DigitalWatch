@@ -41,7 +41,7 @@ DWOSDButton::DWOSDButton()
 	m_nTextWeight = 400;
 
 	m_pBackgroundImage = NULL;
-	SetRect(&m_rectBackgroundPadding, 0, 0, 0, 0);
+	m_pHighlightImage = NULL;
 
 	m_hFont = 0;
 	m_hOldFont = 0;
@@ -121,6 +121,50 @@ HRESULT DWOSDButton::LoadFromXML(XMLElement *pElement)
 					if (subelement->value)
 						m_pBackgroundImage = g_pOSD->GetImage(subelement->value);
 				}
+				else if (_wcsicmp(subelement->name, L"highlightImage") == 0)
+				{
+					if (subelement->value)
+						m_pHighlightImage = g_pOSD->GetImage(subelement->value);
+				}
+			}
+		}
+		else if (_wcsicmp(element->name, L"highlight") == 0)
+		{
+			m_bCanHighlight = TRUE;
+			
+			attr = element->Attributes.Item(L"default");
+			if (attr)
+				m_bHighlighted = TRUE;
+
+			int subElementCount = element->Elements.Count();
+			for ( int subitem=0 ; subitem<subElementCount ; subitem++ )
+			{
+				subelement = element->Elements.Item(subitem);
+				if (_wcsicmp(subelement->name, L"onSelect") == 0)
+				{
+					if (subelement->value)
+						strCopy(m_pCommand, subelement->value);
+				}
+				else if (_wcsicmp(subelement->name, L"onUp") == 0)
+				{
+					if (subelement->value)
+						strCopy(m_pControlUp, subelement->value);
+				}
+				else if (_wcsicmp(subelement->name, L"onDown") == 0)
+				{
+					if (subelement->value)
+						strCopy(m_pControlDown, subelement->value);
+				}
+				else if (_wcsicmp(subelement->name, L"onLeft") == 0)
+				{
+					if (subelement->value)
+						strCopy(m_pControlLeft, subelement->value);
+				}
+				else if (_wcsicmp(subelement->name, L"onRight") == 0)
+				{
+					if (subelement->value)
+						strCopy(m_pControlRight, subelement->value);
+				}
 			}
 		}
 	}
@@ -143,7 +187,24 @@ HRESULT DWOSDButton::Draw(long tickCount)
 
 	HDC hDC;
 
-	m_pBackgroundImage->Draw(m_nPosX, m_nPosY, m_nWidth, m_nHeight);
+	if (m_bHighlighted)
+	{
+		if (m_pHighlightImage)
+			m_pHighlightImage->Draw(m_nPosX, m_nPosY, m_nWidth, m_nHeight);
+		else
+		{
+			//TODO: draw something since no image was supplied
+		}
+	}
+	else
+	{
+		if (m_pBackgroundImage)
+			m_pBackgroundImage->Draw(m_nPosX, m_nPosY, m_nWidth, m_nHeight);
+		else
+		{
+			//TODO: draw something since no image was supplied
+		}
+	}
 
 	hDC = CreateCompatibleDC(NULL);
 	InitDC(hDC);

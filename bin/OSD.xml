@@ -85,6 +85,13 @@ $(() - $(
 	<stretchArea left=17 right=408 />
 </image>
 
+<image name="GreenButton">
+	<filename>images\green-button.bmp</filename>
+	<colorkey>#000000</colorkey>
+	<!--<stretchArea left=17 top=17 right=408 bottom=49 />-->
+	<stretchArea left=17 right=408 />
+</image>
+
 <image name="BrownBackground">
 	<filename>images\brown-button.bmp</filename>
 	<colorkey>#000000</colorkey>
@@ -188,6 +195,11 @@ $(() - $(
 </window>
 
 <window name="MainMenu">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 38>Up()</>
+		<Key code= 40>Down()</>
+	</keys>
 	<label>
 		<pos x=384 y=40 />
 		<text>Main Menu</text>
@@ -198,16 +210,132 @@ $(() - $(
 			<padding left=250 right=250 top=20 bottom=470 />
 		</background>
 	</label>
-	<button>
+	<button name="WatchTV">
 		<pos x=184 y=120 />
 		<size width=400 height=60 />
 		<text>Watch TV</text>
 		<font height=40 weight=700 color="#FFFFFF" />
 		<background>
 			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
 		</background>
+		<highlight default=1>
+			<onSelect>
+				SetSource(BDA)
+				ExitMenu(-1)
+			</onSelect>
+			<onDown>Exit</onDown>
+		</highlight>
+	</button>
+	<button name="Exit">
+		<pos x=184 y=200 />
+		<size width=400 height=60 />
+		<text>Exit</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>Exit()</onSelect>
+			<onUp>WatchTV</onUp>
+		</highlight>
+	</button>
+</window>
+
+<window name="TVMenu">
+	<keys>
+		<Key code=13>Select()</>
+		<Key code=37>Left()</>
+		<Key code=38>Up()</>
+		<Key code=39>Right()</>
+		<Key code=40>Down()</>
+	</keys>
+	<!--
+	<label>
+		<pos x=384 y=40 />
+		<text>TV Menu</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+		<background>
+			<image>BrownBackground</image>
+			<padding left=250 right=250 top=20 bottom=470 />
+		</background>
+	</label>
+	-->
+	
+	<label>
+		<pos x=340 y=35 />
+		<text>Network</text>
+		<font height=30 weight=700 color="#FFFFFF" />
+	</label>
+	<button name="NetworkDown">
+		<pos x=444 y=20 />
+		<size width=150 height=60 />
+		<text>Previous</text>
+		<font height=30 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight default=1>
+			<onSelect>NetworkDown() ExitMenu(-1)</onSelect>
+			<onRight>NetworkUp</onRight>
+			<onDown>ProgramDown</onDown>
+		</highlight>
+	</button>
+	<button name="NetworkUp">
+		<pos x=596 y=20 />
+		<size width=150 height=60 />
+		<text>Next</text>
+		<font height=30 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>NetworkUp() ExitMenu(-1)</onSelect>
+			<onLeft>NetworkDown</onLeft>
+			<onDown>ProgramUp</onDown>
+		</highlight>
 	</button>
 	
+	
+	<label>
+		<pos x=340 y=105 />
+		<text>Program</text>
+		<font height=30 weight=700 color="#FFFFFF" />
+	</label>
+	<button name="ProgramDown">
+		<pos x=444 y=90 />
+		<size width=150 height=60 />
+		<text>Previous</text>
+		<font height=30 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>ProgramDown() ExitMenu(-1)</onSelect>
+			<onRight>ProgramUp</onRight>
+			<onUp>NetworkDown</onUp>
+		</highlight>
+	</button>
+	<button name="ProgramUp">
+		<pos x=596 y=90 />
+		<size width=150 height=60 />
+		<text>Next</text>
+		<font height=30 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>ProgramUp() ExitMenu(-1)</onSelect>
+			<onLeft>ProgramDown</onLeft>
+			<onUp>NetworkUp</onUp>
+		</highlight>
+	</button>
 </window>
 
 <window name="Messages">

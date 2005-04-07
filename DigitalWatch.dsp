@@ -221,6 +221,10 @@ SOURCE=.\src\DVBTChannels.h
 # End Group
 # Begin Source File
 
+SOURCE=.\src\DWSource.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\DWSource.h
 # End Source File
 # End Group
@@ -357,6 +361,9 @@ SOURCE=.\src\DWOSDWindows.cpp
 SOURCE=.\src\DWOSDWindows.h
 # End Source File
 # End Group
+# Begin Group "DirectDraw"
+
+# PROP Default_Filter ""
 # Begin Source File
 
 SOURCE=.\src\DWDirectDraw.cpp
@@ -373,6 +380,7 @@ SOURCE=.\src\DWDirectDrawImage.cpp
 
 SOURCE=.\src\DWDirectDrawImage.h
 # End Source File
+# End Group
 # Begin Source File
 
 SOURCE=.\src\DWOnScreenDisplay.cpp
@@ -395,11 +403,35 @@ SOURCE=.\src\AppData.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\FileReader.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\FileReader.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\FileWriter.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\FileWriter.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\KeyMap.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\KeyMap.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\XMLDocument.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\XMLDocument.h
 # End Source File
 # End Group
 # Begin Group "General"
@@ -427,22 +459,6 @@ SOURCE=.\src\LogMessageWriter.h
 # End Group
 # Begin Source File
 
-SOURCE=.\src\FileReader.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\FileReader.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\FileWriter.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\FileWriter.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\src\GlobalFunctions.cpp
 # End Source File
 # Begin Source File
@@ -464,14 +480,6 @@ SOURCE=.\src\ReferenceCountingClass.cpp
 # Begin Source File
 
 SOURCE=.\src\ReferenceCountingClass.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\XMLDocument.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\XMLDocument.h
 # End Source File
 # End Group
 # Begin Group "Docs"

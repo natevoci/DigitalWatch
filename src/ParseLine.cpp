@@ -55,7 +55,7 @@ ParseLine::~ParseLine()
 	}
 }
 
-BOOL ParseLine::Parse(LPWSTR line)
+BOOL ParseLine::Parse(LPCWSTR line)
 {
 	if (line[0] == '\0')
 		return FALSE;
@@ -166,19 +166,24 @@ BOOL ParseLine::ParseFunction(LPWSTR &strCurr, BOOL bRHS)
 	else
 		strCopy(LHS.Function, startOfFunction, strCurr-startOfFunction);
 
-	skipWhitespaces(strCurr);
-
-	if (strCurr[0] == '=')
+	if (!m_bIgnoreRHS)
 	{
-		if (bRHS)
-			return SetErrorMessage(L"Cannot assign twice. Unexpected '=' found", strCurr-m_strLine);
+		skipWhitespaces(strCurr);
 
-		m_bHasRHS = TRUE;
+		if (strCurr[0] == '=')
+		{
+			if (bRHS)
+				return SetErrorMessage(L"Cannot assign twice. Unexpected '=' found", strCurr-m_strLine);
 
-		strCurr++;
-		LPWSTR endOfFunction = strCurr;
-		return ParseFunction(endOfFunction, TRUE);
+			m_bHasRHS = TRUE;
+
+			strCurr++;
+			LPWSTR endOfFunction = strCurr;
+			return ParseFunction(endOfFunction, TRUE);
+		}
 	}
+
+	m_cbLength = strCurr - m_strLine;
 
 	if (m_bIgnoreRHS)
 		return TRUE;
@@ -234,3 +239,7 @@ BOOL ParseLine::SetErrorMessage(LPCWSTR message, long position)
 	return FALSE;
 }
 
+long ParseLine::GetLength()
+{
+	return m_cbLength;
+}

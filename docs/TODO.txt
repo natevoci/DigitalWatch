@@ -2,6 +2,10 @@
 DigitalWatch TODO
 -----------------
 
+- Command queue
+
+- figure out how to handle key mapping for different windows.
+
 - separate demux pin adding from rendering and fix the order of renderer.
   ie. video, then audio, then teletext, then other.
 

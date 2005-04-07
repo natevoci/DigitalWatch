@@ -89,25 +89,12 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 	if FAILED(hr)
 		return (log << "Failed to clear directdraw: " << hr << "\n").Write(hr);
 
+	if (m_pCurrentWindow != m_pOverlayWindow)
+	{
+		if (!m_pCurrentWindow->HideOverlay())
+			m_pOverlayWindow->Render(tickCount);
+	}
 	m_pCurrentWindow->Render(tickCount);
-	//hr = windows.Render(tickCount);
-
-	//TODO: Stuff
-/*	RECT rcDest, rcSrc;
-	SetRect(&rcDest,
-		GetPanningPos(tickCount, 500, 5.0),
-		GetPanningPos(tickCount, 200, 22.0),
-		100,
-		100);
-	SetRect(&rcSrc, 0, 0, 0, 0);
-
-	hr = m_pImage->Draw(&rcDest, &rcSrc);
-	if FAILED(hr)
-		return hr;
-*/
-
-	//TODO: End Stuff
-
 /*
 	//Display FPS
 	IDirectDrawSurface7* piSurface = m_pDirectDraw->get_BackSurface();
@@ -179,7 +166,67 @@ DWOSDWindow* DWOnScreenDisplay::Overlay()
 	return m_pOverlayWindow;
 }
 
+HRESULT DWOnScreenDisplay::GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
+{
+	if (m_pCurrentWindow == NULL)
+		return (log << "DWOnScreenDisplay::GetKeyFunction, current window is not set\n").Write(E_FAIL);
+
+	return m_pCurrentWindow->GetKeyFunction(keycode, shift, ctrl, alt, function);
+}
+
+HRESULT DWOnScreenDisplay::ExecuteCommand(ParseLine* command)
+{
+	(log << "DWOnScreenDisplay::ExecuteCommand - " << command->LHS.Function << "\n").Write();
+	LogMessageIndent indent(&log);
+
+	if (m_pCurrentWindow == NULL)
+		return (log << "DWOnScreenDisplay::ExecuteCommand, current window is not set\n").Write(S_FALSE);
+
+	LPWSTR pCurr = command->LHS.FunctionName;
+
+	if (_wcsicmp(pCurr, L"Up") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return m_pCurrentWindow->OnUp();
+	}
+	else if (_wcsicmp(pCurr, L"Down") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return m_pCurrentWindow->OnDown();
+	}
+	else if (_wcsicmp(pCurr, L"Left") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return m_pCurrentWindow->OnLeft();
+	}
+	else if (_wcsicmp(pCurr, L"Right") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return m_pCurrentWindow->OnRight();
+	}
+	else if (_wcsicmp(pCurr, L"Select") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return m_pCurrentWindow->OnSelect();
+	}
+	return S_FALSE;
+}
+
+///////////////////////////////
+// Stuff for controls to use //
+///////////////////////////////
 DWOSDImage* DWOnScreenDisplay::GetImage(LPWSTR pName)
 {
 	return windows.GetImage(pName);
 }
+

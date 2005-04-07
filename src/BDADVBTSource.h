@@ -27,9 +27,9 @@
 #include "BDADVBTSourceTuner.h"
 #include "DVBTChannels.h"
 #include "BDACardCollection.h"
-#include <vector>
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
+#include <vector>
 
 class BDADVBTSource : public DWSource
 {
@@ -44,17 +44,21 @@ public:
 	virtual HRESULT Initialise(DWGraph* pFilterGraph);
 	virtual HRESULT Destroy();
 
-	virtual HRESULT ExecuteCommand(LPWSTR command);
+	virtual HRESULT ExecuteCommand(ParseLine* command);
 	//Keys, ControlBar, OSD, Menu, etc...
 
 	virtual HRESULT Play();
 
 protected:
-	virtual HRESULT SetChannel(int network, int program);
-
 	HRESULT LoadTuner();
 	HRESULT UnloadTuner();
 	HRESULT AddDemuxPins(DVBTChannels_Program* program);
+
+	virtual HRESULT SetChannel(int network, int program);
+	virtual HRESULT NetworkUp();
+	virtual HRESULT NetworkDown();
+	virtual HRESULT ProgramUp();
+	virtual HRESULT ProgramDown();
 
 private:
 	const LPWSTR m_strSourceType;

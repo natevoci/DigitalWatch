@@ -1,59 +1,15 @@
+<!-- DigitalWatch Global Keys -->
+
+  <Key code=112>			  	ShowMenu(MainMenu)</>
   <Key code= 13>				ShowMenu(MainMenu)</>
   <Key code= 27>				ExitMenu()</>
 
   <Key code='T' shift>			SetSource(BDA)</>
   <Key code='F' shift>			SetSource(FILE)</>
 
-  <!-- keyboard numbers -->
-  <Key code='0'>				SetChannel(10)</>
-  <Key code='1'>				SetChannel(1)</>
-  <Key code='2'>				SetChannel(2)</>
-  <Key code='3'>				SetChannel(3)</>
-  <Key code='4'>				SetChannel(4)</>
-  <Key code='5'>				SetChannel(5)</>
-  <Key code='6'>				SetChannel(6)</>
-  <Key code='7'>				SetChannel(7)</>
-  <Key code='8'>				SetChannel(8)</>
-  <Key code='9'>				SetChannel(9)</>
-
-  <!-- keypad numbers -->
-  <Key code= 96>				SetChannel(10)</>
-  <Key code= 97>				SetChannel(1)</>
-  <Key code= 98>				SetChannel(2)</>
-  <Key code= 99>				SetChannel(3)</>
-  <Key code=100>				SetChannel(4)</>
-  <Key code=101>				SetChannel(5)</>
-  <Key code=102>				SetChannel(6)</>
-  <Key code=103>				SetChannel(7)</>
-  <Key code=104>				SetChannel(8)</>
-  <Key code=105>				SetChannel(9)</>
-
-  <!-- numpad + and - -->
-  <Key code=107>				NetworkUp()</>
-  <Key code=109>				NetworkDown()</>
-
-  <!-- Page-Up and Page-Down -->
-  <Key code= 33>				NetworkUp()</>
-  <Key code= 34>				NetworkDown()</>
-
   <!-- Cursor-Up and Cursor-Down with shift option. Vol+ Vol- on VP remote -->
-  <Key code= 38>				ProgramUp()</>
-  <Key code= 40>				ProgramDown()</>
   <Key code= 38 shift>			ProgramUp()</>
   <Key code= 40 shift>			ProgramDown()</>
-
-  <!-- recall on VP remote -->
-  <Key code='C'>				LastChannel()</>
-  <Key code='L'>				LastChannel()</>
-
-  <!-- capture on VP remote -->
-  <Key code='P'>				TVPlaying(2)</>
-
-  <!-- Home and End. Rec and Stop on VP remote -->
-  <Key code= 36>				RecordingTimer(10)</>
-  <Key code= 35>				Recording(0)</>
-  <Key code='R'>				Recording(2)</>
-  <Key code='R' shift>			RecordingPause(2)</>
 
   <Key code='V'>				VideoDecoderEntry(-1)</>
   <Key code='D'>				AudioDecoderEntry(-1)</>
@@ -78,35 +34,10 @@
   <Key code=187>				VolumeUp(5)</>
   <!-- Mute on VP remote -->
   <Key code='M'>				Mute(2)</>
-
   <Key code='F'>				ShowFilterProperties()</>
-
-
-  <!-- space -->
-  <Key code= 32>				TimeShift(2)</>
-  <!-- comma and period 5 seconds jump -->
-  <Key code=190>				TimeShiftJump(5)</>
-  <Key code=188>				TimeShiftJump(-5)</>
-  <!-- comma and period with alt 20 second jump -->
-  <Key code=190 alt>			TimeShiftJump(20)</>
-  <Key code=188 alt>			TimeShiftJump(-20)</>
-  <!-- comma and period with ctrl 60 second jump -->
-  <Key code=190 ctrl>			TimeShiftJump(60)</>
-  <Key code=188 ctrl>			TimeShiftJump(-60)</>
-
-  <!-- Time Shift / Pause on VP remote -->
-  <Key code='T'>				TimeShift(2)</>
-  <!-- Forward and Rewind on VP remote -->
-  <Key code='N'>				TimeShiftJump(20)</>
-  <Key code='I'>				TimeShiftJump(-20)</>
-
-  <Key code='A'>				ToggleOSDItem("Channel")</>
 
   <!-- Tab on keyboard and VP remote -->
   <Key code=  9>				ToggleOSDItem("Time")</>
-  <Key code='P' shift>			ShowChannelInfo()</>
-  <Key code='Q'>				ShowOSDItem("Signal")</>
-  <Key code='E'>				ShowOSDItem("NowAndNext")</>
 
   <Key code='1' shift>			SetColorControls(  350, 10000, 0, 10000, 1)</>
   <Key code='2' shift>			SetColorControls(  450, 10000, 0, 10000, 1)</>
@@ -128,14 +59,10 @@
   <Mouse code=2>Fullscreen(2)</>
 
   <!-- right click -->
-  <Mouse code=3>ShowNAN(2)</>
 
   <!-- middle click -->
-  <Mouse code=4>ShowOSD(2)</>
 
   <!-- scroll up -->
-  <Mouse code=5>NetworkUp()</>
 
   <!-- scroll down -->
-  <Mouse code=6>NetworkDown()</>
 

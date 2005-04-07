@@ -25,13 +25,10 @@
 
 #include "StdAfx.h"
 #include "DWDirectDraw.h"
-//#include "DWDirectDrawImage.h"
-
 #include "DWOSDWindows.h"
-
 #include "DWOSDData.h"
-
 #include "LogMessage.h"
+#include "ParseLine.h"
 #include <vector>
 
 class DWOnScreenDisplay : public LogMessageCaller
@@ -51,12 +48,15 @@ public:
 	DWDirectDraw* get_DirectDraw();
 	DWOSDWindow* Overlay();
 
+	HRESULT GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
+	HRESULT ExecuteCommand(ParseLine* command);
 
-	//Methods for controls to use
+	//Stuff for controls to use
 	DWOSDImage* GetImage(LPWSTR pName);
 	DWOSDData data;
 
 private:
+
 	DWOSDWindows windows;
 
 	long GetPanningPos(long tickCount, long span, double speed);

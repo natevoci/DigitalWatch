@@ -31,8 +31,9 @@
 #include "KeyMap.h"
 #include "DWGraph.h"
 #include "DWSource.h"
-#include <vector>
 #include "LogMessage.h"
+#include "ParseLine.h"
+#include <vector>
 
 #define TIMER_AUTO_HIDE_CURSOR			999
 #define TIMER_DISABLE_POWER_SAVING		998
@@ -83,7 +84,7 @@ public:
 	HRESULT Exit();
 	
 	HRESULT Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt);
-	HRESULT ExecuteCommand(LPCWSTR command);
+	HRESULT ExecuteCommands(LPCWSTR command);
 
 public:
 	BOOL ShowCursor(BOOL bAllowHide = TRUE);
@@ -94,7 +95,9 @@ public:
 	HRESULT OnTimer(int wParam);
 
 private:
-	KeyMap globalKeyMap;
+	HRESULT ExecuteGlobalCommand(ParseLine* command);
+
+	KeyMap m_globalKeyMap;
 
 	DWGraph *m_pFilterGraph;
 	DWSource *m_pActiveSource;

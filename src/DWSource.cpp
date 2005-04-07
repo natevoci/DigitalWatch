@@ -1,5 +1,5 @@
 /**
- *	ParseLine.h
+ *	DWSource.cpp
  *	Copyright (C) 2004 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,54 +20,9 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef PARSELINE_H
-#define PARSELINE_H
+#include "DWSource.h"
 
-#include "StdAfx.h"
-
-typedef struct PARSELINE_FUNCTION_tag
+HRESULT DWSource::GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
 {
-	LPWSTR Function;
-	LPWSTR FunctionName;
-	LPWSTR* Parameter;
-	long ParameterCount;
-} PARSELINE_FUNCTION;
-
-class ParseLine  
-{
-public:
-
-	ParseLine();
-	virtual ~ParseLine();
-
-	BOOL Parse(LPCWSTR line);
-
-	void IgnoreRHS();
-	BOOL HasRHS();
-	PARSELINE_FUNCTION LHS;
-	PARSELINE_FUNCTION RHS;
-
-	LPWSTR GetErrorMessage();
-	long GetErrorPosition();
-
-	long GetLength();
-
-private:
-	BOOL ParseFunction(LPWSTR &strStart, BOOL bRHS);
-	void AddParameter(PARSELINE_FUNCTION &LHS, LPCWSTR src, long length);
-
-	BOOL SetErrorMessage(LPCWSTR message, long position);
-
-	BOOL m_bHasRHS;
-	BOOL m_bIgnoreRHS;
-
-	LPWSTR m_strLine;
-	LPWSTR m_strCurr;
-
-	long m_cbLength;
-
-	LPWSTR m_strErrorMessage;
-	long m_nErrorPosition;
-};
-
-#endif
+	return m_sourceKeyMap.GetFunction(keycode, shift, ctrl, alt, function);
+}

@@ -94,11 +94,18 @@ public:
 	long bandwidth;
 	LPWSTR name;
 
-	DVBTChannels_Program* Program(int programNumber);
 	BOOL IsValidProgram(int programNumber);
+	DVBTChannels_Program* GetCurrentProgram();
+	long GetCurrentProgramId();
+	HRESULT SetCurrentProgramId(long nProgram);
+
+	long GetNextProgramId();
+	long GetPrevProgramId();
 
 private:
 	std::vector<DVBTChannels_Program *> programs;
+
+	long m_nCurrentProgram;
 };
 
 //Channels
@@ -110,17 +117,24 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	BOOL LoadChannels(LPWSTR filename);
-	BOOL SaveChannels(LPWSTR filename = NULL);
+	HRESULT LoadChannels(LPWSTR filename);
+	HRESULT SaveChannels(LPWSTR filename = NULL);
 
-	DVBTChannels_Network* Network(int networkNumber);
 	BOOL IsValidNetwork(int networkNumber);
+	DVBTChannels_Network* GetCurrentNetwork();
+	long GetCurrentNetworkId();
+	HRESULT SetCurrentNetworkId(long nNetwork);
+
+	long GetNextNetworkId();
+	long GetPrevNetworkId();
 
 private:
 	std::vector<DVBTChannels_Network *> networks;
 
 	long m_bandwidth;
 	LPWSTR m_filename;
+
+	long m_nCurrentNetwork;
 };
 
 #endif

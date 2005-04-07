@@ -24,7 +24,6 @@
 #include "Globals.h"
 #include "GlobalFunctions.h"
 #include "LogMessage.h"
-#include "ParseLine.h"
 
 #include "StreamFormats.h"
 #include <ks.h> // Must be included before ksmedia.h
@@ -38,6 +37,7 @@
 
 BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 {
+	m_pCurrentTuner = NULL;
 	m_pDWGraph = NULL;
 }
 
@@ -72,12 +72,17 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	(log << "Initialising BDA Source\n").Write();
 	LogMessageIndent indent(&log);
 
+	HRESULT hr;
 	m_pDWGraph = pFilterGraph;
 	
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Channels.xml", g_pData->application.appPath);
-	if (channels.LoadChannels((LPWSTR)&file) == FALSE)
+	if FAILED(channels.LoadChannels((LPWSTR)&file))
 		return E_FAIL;
+
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Keys.xml", g_pData->application.appPath);
+	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
+		return hr;
 
 	//Get list of BDA capture cards
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
@@ -114,40 +119,101 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::ExecuteCommand(LPWSTR command)
+HRESULT BDADVBTSource::Destroy()
 {
-	(log << "BDADVBTSource::ExecuteCommand - " << command << "\n").Write();
+	(log << "Destroying BDA Source\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+	if (m_pDWGraph)
+	{
+		if FAILED(hr = m_pDWGraph->Stop())
+			(log << "Failed to stop DWGraph\n").Write();
+
+		if FAILED(hr = UnloadTuner())
+			(log << "Failed to unload tuner\n").Write();
+
+		if FAILED(hr = m_pDWGraph->Cleanup())
+			(log << "Failed to cleanup DWGraph\n").Write();
+
+		std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
+		for ( ; it != m_Tuners.end() ; it++ )
+		{
+			BDADVBTSourceTuner *tuner = *it;
+			delete tuner;
+		}
+		m_Tuners.clear();
+	}
+
+	m_pDWGraph = NULL;
+
+	indent.Release();
+	(log << "Finished Destroying BDA Source\n").Write();
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
+{
+	(log << "BDADVBTSource::ExecuteCommand - " << command->LHS.Function << "\n").Write();
 	LogMessageIndent indent(&log);
 
 	int n1, n2, n3, n4;
-	LPWSTR pBuff = (LPWSTR)command;
-	LPWSTR pCurr;
-
-	ParseLine parseLine;
-	if (parseLine.Parse(pBuff) == FALSE)
-		return (log << "Parse error in function: " << command << "\n").Show(E_FAIL);
-
-	if (parseLine.HasRHS())
-		return (log << "Cannot have RHS for function.\n").Show(E_FAIL);
-
-	pCurr = parseLine.LHS.FunctionName;
+	LPWSTR pCurr = command->LHS.FunctionName;
 
 	if (_wcsicmp(pCurr, L"SetChannel") == 0)
 	{
-		if (parseLine.LHS.ParameterCount <= 0)
-			return (log << "Expecting 1 or 2 parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		if (parseLine.LHS.ParameterCount > 2)
-			return (log << "Too many parameters: " << parseLine.LHS.Function << "\n").Show(E_FAIL);
+		if (command->LHS.ParameterCount > 2)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(parseLine.LHS.Parameter[0]);
+		n1 = _wtoi(command->LHS.Parameter[0]);
 
 		n2 = 0;
-		if (parseLine.LHS.ParameterCount >= 2)
-			n2 = _wtoi(parseLine.LHS.Parameter[1]);
+		if (command->LHS.ParameterCount >= 2)
+			n2 = _wtoi(command->LHS.Parameter[1]);
 
 		return SetChannel(n1, n2);
 	}
+	else if (_wcsicmp(pCurr, L"NetworkUp") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return NetworkUp();
+	}
+	else if (_wcsicmp(pCurr, L"NetworkDown") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return NetworkDown();
+	}
+	else if (_wcsicmp(pCurr, L"ProgramUp") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return ProgramUp();
+	}
+	else if (_wcsicmp(pCurr, L"ProgramDown") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return ProgramDown();
+	}
+	else if (_wcsicmp(pCurr, L"LastChannel") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		//return LastChannel();
+	}
+
 
 	//Just referencing these variables to stop warnings.
 	n3 = 0;
@@ -169,93 +235,19 @@ HRESULT BDADVBTSource::Play()
 		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
 
 	//TODO: replace this with last selected channel, or menu depending on options.
-	if (channels.IsValidNetwork(1) && channels.Network(1)->IsValidProgram(1))
-		return SetChannel(1, 1);
+	if SUCCEEDED(hr = channels.SetCurrentNetworkId(1))
+	{
+		DVBTChannels_Network* network = channels.GetCurrentNetwork();
+		if SUCCEEDED(hr = network->SetCurrentProgramId(1))
+		{
+			return SetChannel(1, 1);
+		}
+	}
 
 	indent.Release();
 	(log << "Finished Playing BDA Source\n").Write();
 
 	return E_FAIL;
-}
-
-HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
-{
-	(log << "Setting Channel (" << nNetwork << ", " << nProgram << ")\n").Write();
-	LogMessageIndent indent(&log);
-
-	HRESULT hr;
-	//Check if recording
-
-	if (!channels.IsValidNetwork(nNetwork))
-		return (log << "Network number is not valid\n").Write(E_INVALIDARG);
-
-	if (nProgram == 0)
-		nProgram = 1;
-
-	if (!channels.Network(nNetwork)->IsValidProgram(nProgram))
-		return (log << "Program number is not valid\n").Write(E_INVALIDARG);
-
-	g_pOSD->data.SetItem(L"CurrentNetwork", channels.Network(nNetwork)->name);
-	g_pOSD->data.SetItem(L"CurrentProgram", channels.Network(nNetwork)->Program(nProgram)->name);
-	g_pTv->ShowOSDItem(L"Channel", 10);
-
-	//Check if already on this network
-	/*if (nNetwork == m_nCurrentNetwork)
-	{
-		if ((nProgram == channels.Network(nNetwork)
-	}*/
-
-	if FAILED(hr = m_pDWGraph->Stop())
-		(log << "Failed to stop DWGraph\n").Write();
-
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
-	for ( ; TRUE /*check for end of list done after graph is cleaned up*/ ; it++ )
-	{
-		hr = UnloadTuner();
-
-		if FAILED(hr = m_pDWGraph->Cleanup())
-			(log << "Failed to cleanup DWGraph\n").Write();
-
-		if (it == m_Tuners.end())
-			break;
-
-		m_pCurrentTuner = *it;
-
-		if FAILED(hr = LoadTuner())
-		{
-			(log << "Failed to load Source Tuner\n").Write();
-			continue;
-		}
-
-		if FAILED(hr = m_pCurrentTuner->LockChannel(channels.Network(nNetwork)->frequency, channels.Network(nNetwork)->bandwidth))
-		{
-			(log << "Failed to Lock Channel\n").Write();
-			continue;
-		}
-
-		if FAILED(hr = AddDemuxPins(channels.Network(nNetwork)->Program(nProgram)))
-		{
-			(log << "Failed to Add Demux Pins\n").Write();
-			continue;
-		}
-
-		if FAILED(hr = m_pDWGraph->Start())
-		{
-			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
-			continue;
-		}
-
-		//Move current tuner to back of list so that other cards will be used next
-		m_Tuners.erase(it);
-		m_Tuners.push_back(m_pCurrentTuner);
-		
-		indent.Release();
-		(log << "Finished Setting Channel\n").Write();
-
-		return S_OK;
-	}
-
-	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
 
 HRESULT BDADVBTSource::LoadTuner()
@@ -557,38 +549,144 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::Destroy()
+HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 {
-	(log << "Destroying BDA Source\n").Write();
+	(log << "Setting Channel (" << nNetwork << ", " << nProgram << ")\n").Write();
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
 
-	if (m_pDWGraph)
-	{
-		if FAILED(hr = m_pDWGraph->Stop())
-			(log << "Failed to stop DWGraph\n").Write();
+	//TODO: Check if recording
 
-		if FAILED(hr = UnloadTuner())
-			(log << "Failed to unload tuner\n").Write();
+	if FAILED(hr = channels.SetCurrentNetworkId(nNetwork))
+		return (log << "Network number is not valid\n").Write(hr);
+
+	DVBTChannels_Network* network = channels.GetCurrentNetwork();
+
+	if (nProgram == 0)
+		nProgram = network->GetCurrentProgramId();
+	//TODO: nProgram < 0 then move to next program
+
+	if FAILED(hr = network->SetCurrentProgramId(nProgram))
+		return (log << "Program number is not valid\n").Write(hr);
+
+	DVBTChannels_Program* program = network->GetCurrentProgram();
+
+	g_pOSD->data.SetItem(L"CurrentNetwork", network->name);
+	g_pOSD->data.SetItem(L"CurrentProgram", program->name);
+	g_pTv->ShowOSDItem(L"Channel", 10);
+
+	//Check if already on this network
+	/*if (nNetwork == m_nCurrentNetwork)
+	{
+		if ((nProgram == channels.Network(nNetwork)
+	}*/
+
+	if FAILED(hr = m_pDWGraph->Stop())
+		(log << "Failed to stop DWGraph\n").Write();
+
+	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
+	for ( ; TRUE /*check for end of list done after graph is cleaned up*/ ; it++ )
+	{
+		hr = UnloadTuner();
 
 		if FAILED(hr = m_pDWGraph->Cleanup())
 			(log << "Failed to cleanup DWGraph\n").Write();
 
-		std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
-		for ( ; it != m_Tuners.end() ; it++ )
+		if (it == m_Tuners.end())
+			break;
+
+		m_pCurrentTuner = *it;
+
+		if FAILED(hr = LoadTuner())
 		{
-			BDADVBTSourceTuner *tuner = *it;
-			delete tuner;
+			(log << "Failed to load Source Tuner\n").Write();
+			continue;
 		}
-		m_Tuners.clear();
+
+		if FAILED(hr = m_pCurrentTuner->LockChannel(network->frequency, network->bandwidth))
+		{
+			(log << "Failed to Lock Channel\n").Write();
+			continue;
+		}
+
+		if FAILED(hr = AddDemuxPins(program))
+		{
+			(log << "Failed to Add Demux Pins\n").Write();
+			continue;
+		}
+
+		if FAILED(hr = m_pDWGraph->Start())
+		{
+			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
+			continue;
+		}
+
+		//Move current tuner to back of list so that other cards will be used next
+		m_Tuners.erase(it);
+		m_Tuners.push_back(m_pCurrentTuner);
+		
+		indent.Release();
+		(log << "Finished Setting Channel\n").Write();
+
+		return S_OK;
 	}
 
-	m_pDWGraph = NULL;
-
-	indent.Release();
-	(log << "Finished Destroying BDA Source\n").Write();
-
-	return S_OK;
+	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
+
+HRESULT BDADVBTSource::NetworkUp()
+{
+	long nNetwork = channels.GetNextNetworkId();
+
+	if (nNetwork > 0)
+		return SetChannel(nNetwork, 0);
+	return E_FAIL;
+}
+
+HRESULT BDADVBTSource::NetworkDown()
+{
+	long nNetwork = channels.GetPrevNetworkId();
+
+	if (nNetwork > 0)
+		return SetChannel(nNetwork, 0);
+	return E_FAIL;
+}
+
+HRESULT BDADVBTSource::ProgramUp()
+{
+	DVBTChannels_Network* network = channels.GetCurrentNetwork();
+	if (network == NULL)
+	{
+		if FAILED(channels.SetCurrentNetworkId(1))
+			return E_FAIL;
+		network = channels.GetCurrentNetwork();
+	}
+
+	long nNetwork = channels.GetCurrentNetworkId();
+	long nProgram = network->GetNextProgramId();
+
+	if (nProgram > 0)
+		return SetChannel(nNetwork, nProgram);
+	return E_FAIL;
+}
+
+HRESULT BDADVBTSource::ProgramDown()
+{
+	DVBTChannels_Network* network = channels.GetCurrentNetwork();
+	if (network == NULL)
+	{
+		if FAILED(channels.SetCurrentNetworkId(1))
+			return E_FAIL;
+		network = channels.GetCurrentNetwork();
+	}
+
+	long nNetwork = channels.GetCurrentNetworkId();
+	long nProgram = network->GetPrevProgramId();
+
+	if (nProgram > 0)
+		return SetChannel(nNetwork, nProgram);
+	return E_FAIL;
+}
+
 

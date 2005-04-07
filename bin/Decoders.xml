@@ -53,6 +53,26 @@
     </>
 </Decoder>
 
+<Decoder name="DNTV Live! Audio c/ DC-DSP Filter">
+	<MediaType name="MPEG Audio" />
+	<MediaType name="MPEG2 Audio" />
+	<MediaType name="AC3 Audio" />
+	
+    <LoadFilter clsid="{9D82DFD0-03C9-11D9-9669-0800200C9A66}" name="DNTV Live! Audio" />
+    <LoadFilter clsid="{B38C58A0-1809-11D6-A458-EDAE78F1DF12}" name="DC-DSP Filter" />
+    <AudioRenderer name="Default DirectSound Device" />
+    
+    <InputFilter name="DNTV Live! Audio" pin="In" />
+    <Connect>
+    	<From name="DNTV Live! Audio" pin="Out" />
+    	<To name="DC-DSP Filter" />
+    </>
+    <Connect>
+    	<From name="DC-DSP Filter" />
+    	<To name="Default DirectSound Device" />
+    </>
+</Decoder>
+
 <Decoder name="AC3Filter Audio Decoder - Default DirectSound Device">
 	<MediaType name="AC3 Audio" />
 

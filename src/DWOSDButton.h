@@ -51,7 +51,8 @@ protected:
 	long m_nTextWeight;
 
 	DWOSDImage* m_pBackgroundImage;
-	RECT m_rectBackgroundPadding;
+	DWOSDImage* m_pHighlightImage;
+	//RECT m_rectBackgroundPadding;
 
 	//DC handling
 	void InitDC(HDC &hDC);

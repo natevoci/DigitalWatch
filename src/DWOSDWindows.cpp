@@ -21,6 +21,7 @@
  */
 
 #include "DWOSDWindows.h"
+#include "Globals.h"
 #include "GlobalFunctions.h"
 #include "DWOSDGroup.h"
 #include "DWOSDLabel.h"
@@ -33,6 +34,7 @@
 DWOSDWindow::DWOSDWindow()
 {
 	m_pName = NULL;
+	m_pHighlightedControl = NULL;
 }
 
 DWOSDWindow::~DWOSDWindow()
@@ -46,6 +48,17 @@ LPWSTR DWOSDWindow::Name()
 	return m_pName;
 }
 
+HRESULT DWOSDWindow::Render(long tickCount)
+{
+	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
+	for ( ; it < m_controls.end() ; it++ )
+	{
+		DWOSDControl *control = *it;
+		control->Render(tickCount);
+	}
+	return S_OK;
+}
+
 DWOSDControl* DWOSDWindow::GetControl(LPWSTR pName)
 {
 	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
@@ -56,6 +69,67 @@ DWOSDControl* DWOSDWindow::GetControl(LPWSTR pName)
 			return item;
 	}
 	return NULL;
+}
+
+HRESULT DWOSDWindow::GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
+{
+	return m_keyMap.GetFunction(keycode, shift, ctrl, alt, function);
+}
+
+HRESULT DWOSDWindow::OnUp()
+{
+	if (m_pHighlightedControl)
+	{
+		LPWSTR wszNextControl = m_pHighlightedControl->OnUp();
+		SetHighlightedControl(wszNextControl);
+	}
+	return S_FALSE;
+}
+
+HRESULT DWOSDWindow::OnDown()
+{
+	if (m_pHighlightedControl)
+	{
+		LPWSTR wszNextControl = m_pHighlightedControl->OnDown();
+		SetHighlightedControl(wszNextControl);
+	}
+	return S_FALSE;
+}
+
+HRESULT DWOSDWindow::OnLeft()
+{
+	if (m_pHighlightedControl)
+	{
+		LPWSTR wszNextControl = m_pHighlightedControl->OnLeft();
+		SetHighlightedControl(wszNextControl);
+	}
+	return S_FALSE;
+}
+
+HRESULT DWOSDWindow::OnRight()
+{
+	if (m_pHighlightedControl)
+	{
+		LPWSTR wszNextControl = m_pHighlightedControl->OnRight();
+		SetHighlightedControl(wszNextControl);
+	}
+	return S_FALSE;
+}
+
+HRESULT DWOSDWindow::OnSelect()
+{
+	if (m_pHighlightedControl)
+	{
+		LPWSTR command = m_pHighlightedControl->OnSelect();
+		if (command)
+		{
+			HRESULT hr = g_pTv->ExecuteCommands(command);
+			if FAILED(hr)
+				(log << "An error occured executing the command " << command << " on control " << m_pHighlightedControl->Name() << "\n").Write();
+			return S_OK;
+		}
+	}
+	return S_FALSE;
 }
 
 HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
@@ -75,47 +149,97 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 	for ( int item=0 ; item<elementCount ; item++ )
 	{
 		element = pElement->Elements.Item(item);
-		if (_wcsicmp(element->name, L"group") == 0)
+		DWOSDControl* control = NULL;
+
+		if (_wcsicmp(element->name, L"keys") == 0)
 		{
-			DWOSDGroup* group = new DWOSDGroup();
-			group->SetLogCallback(m_pLogCallback);
-			if FAILED(group->LoadFromXML(element))
-				delete group;
-			else
-				m_controls.push_back(group);
+			m_keyMap.LoadFromXML(&element->Elements);
+		}
+		else if (_wcsicmp(element->name, L"group") == 0)
+		{
+			control = new DWOSDGroup();
+			control->SetLogCallback(m_pLogCallback);
+			if FAILED(control->LoadFromXML(element))
+			{
+				delete control;
+				control = NULL;
+			}
 		}
 		else if (_wcsicmp(element->name, L"label") == 0)
 		{
-			DWOSDLabel* control = new DWOSDLabel();
+			control = new DWOSDLabel();
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
+			{
 				delete control;
-			else
-				m_controls.push_back(control);
+				control = NULL;
+			}
 		}
 		else if (_wcsicmp(element->name, L"button") == 0)
 		{
-			DWOSDButton* control = new DWOSDButton();
+			control = new DWOSDButton();
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
+			{
 				delete control;
-			else
-				m_controls.push_back(control);
+				control = NULL;
+			}
 		}
+
+		if (control)
+		{
+			attr = element->Attributes.Item(L"name");
+			if (attr)
+				control->SetName(attr->value);
+			m_controls.push_back(control);
+		}
+	}
+
+	DWOSDControl *firstSelectableControl = NULL;
+	BOOL bFound = FALSE;
+	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
+	for ( ; it < m_controls.end() ; it++ )
+	{
+		DWOSDControl *control = *it;
+		if (control->CanHighlight())
+		{
+			if (!bFound)
+			{
+				bFound = control->IsHighlighted();
+				if (bFound)
+					m_pHighlightedControl = control;
+			}
+			else
+				control->SetHighlight(FALSE);
+
+			if (!firstSelectableControl)
+				firstSelectableControl = control;
+		}		
+	}
+	if (!bFound && firstSelectableControl)
+	{
+		m_pHighlightedControl = firstSelectableControl;
+		firstSelectableControl->SetHighlight(TRUE);
 	}
 
 	return S_OK;
 }
 
-HRESULT DWOSDWindow::Render(long tickCount)
+HRESULT DWOSDWindow::SetHighlightedControl(LPWSTR wszNextControl)
 {
-	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
-	for ( ; it < m_controls.end() ; it++ )
+	if (wszNextControl)
 	{
-		DWOSDControl *control = *it;
-		control->Render(tickCount);
+		DWOSDControl* nextControl = GetControl(wszNextControl);
+		if (nextControl)
+		{
+			if (m_pHighlightedControl)
+				m_pHighlightedControl->SetHighlight(FALSE);
+			m_pHighlightedControl = nextControl;
+			m_pHighlightedControl->SetHighlight(TRUE);
+			return S_OK;
+		}
 	}
-	return S_OK;
+	return S_FALSE;
 }
 
 

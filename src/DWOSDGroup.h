@@ -1,6 +1,6 @@
 /**
- *	ParseLine.h
- *	Copyright (C) 2004 Nate
+ *	DWOSDGroup.h
+ *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,54 +20,27 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef PARSELINE_H
-#define PARSELINE_H
+#ifndef DWOSDGROUP_H
+#define DWOSDGROUP_H
 
 #include "StdAfx.h"
+#include "LogMessage.h"
+#include "XMLDocument.h"
+#include "DWOSDControl.h"
+#include <vector>
 
-typedef struct PARSELINE_FUNCTION_tag
-{
-	LPWSTR Function;
-	LPWSTR FunctionName;
-	LPWSTR* Parameter;
-	long ParameterCount;
-} PARSELINE_FUNCTION;
-
-class ParseLine  
+class DWOSDGroup : public DWOSDControl
 {
 public:
+	DWOSDGroup();
+	virtual ~DWOSDGroup();
 
-	ParseLine();
-	virtual ~ParseLine();
+	HRESULT LoadFromXML(XMLElement *pElement);
 
-	BOOL Parse(LPCWSTR line);
+protected:
+	virtual HRESULT Draw(long tickCount);
 
-	void IgnoreRHS();
-	BOOL HasRHS();
-	PARSELINE_FUNCTION LHS;
-	PARSELINE_FUNCTION RHS;
-
-	LPWSTR GetErrorMessage();
-	long GetErrorPosition();
-
-	long GetLength();
-
-private:
-	BOOL ParseFunction(LPWSTR &strStart, BOOL bRHS);
-	void AddParameter(PARSELINE_FUNCTION &LHS, LPCWSTR src, long length);
-
-	BOOL SetErrorMessage(LPCWSTR message, long position);
-
-	BOOL m_bHasRHS;
-	BOOL m_bIgnoreRHS;
-
-	LPWSTR m_strLine;
-	LPWSTR m_strCurr;
-
-	long m_cbLength;
-
-	LPWSTR m_strErrorMessage;
-	long m_nErrorPosition;
+	std::vector<DWOSDControl *> m_controls;
 };
 
 #endif
