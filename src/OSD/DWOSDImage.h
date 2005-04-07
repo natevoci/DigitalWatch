@@ -26,7 +26,7 @@
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "XMLDocument.h"
-#include "DWDirectDrawImage.h"
+#include "DirectDraw/DWDirectDrawImage.h"
 
 class DWOSDWindows;
 class DWOSDImage : public LogMessageCaller

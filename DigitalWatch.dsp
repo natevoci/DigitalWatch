@@ -71,7 +71,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /Fr /YX"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I ".\src" /I ".\src\OSD" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /Fr /YX"stdafx.h" /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0xc09 /d "_DEBUG"
@@ -286,27 +286,27 @@ SOURCE=.\src\SystemDeviceEnumerator.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\src\DWOSDData.cpp
+SOURCE=.\src\OSD\DWOSDData.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDData.h
+SOURCE=.\src\OSD\DWOSDData.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDDataItem.cpp
+SOURCE=.\src\OSD\DWOSDDataItem.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDDataItem.h
+SOURCE=.\src\OSD\DWOSDDataItem.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDDataList.cpp
+SOURCE=.\src\OSD\DWOSDDataList.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDDataList.h
+SOURCE=.\src\OSD\DWOSDDataList.h
 # End Source File
 # End Group
 # Begin Group "OSD Controls"
@@ -314,51 +314,51 @@ SOURCE=.\src\DWOSDDataList.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\src\DWOSDButton.cpp
+SOURCE=.\src\OSD\DWOSDButton.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDButton.h
+SOURCE=.\src\OSD\DWOSDButton.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDControl.cpp
+SOURCE=.\src\OSD\DWOSDControl.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDControl.h
+SOURCE=.\src\OSD\DWOSDControl.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDGroup.cpp
+SOURCE=.\src\OSD\DWOSDGroup.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDGroup.h
+SOURCE=.\src\OSD\DWOSDGroup.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDImage.cpp
+SOURCE=.\src\OSD\DWOSDImage.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDImage.h
+SOURCE=.\src\OSD\DWOSDImage.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDLabel.cpp
+SOURCE=.\src\OSD\DWOSDLabel.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDLabel.h
+SOURCE=.\src\OSD\DWOSDLabel.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDWindows.cpp
+SOURCE=.\src\OSD\DWOSDWindows.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOSDWindows.h
+SOURCE=.\src\OSD\DWOSDWindows.h
 # End Source File
 # End Group
 # Begin Group "DirectDraw"
@@ -366,28 +366,28 @@ SOURCE=.\src\DWOSDWindows.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\src\DWDirectDraw.cpp
+SOURCE=.\src\OSD\DirectDraw\DWDirectDraw.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWDirectDraw.h
+SOURCE=.\src\OSD\DirectDraw\DWDirectDraw.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWDirectDrawImage.cpp
+SOURCE=.\src\OSD\DirectDraw\DWDirectDrawImage.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWDirectDrawImage.h
+SOURCE=.\src\OSD\DirectDraw\DWDirectDrawImage.h
 # End Source File
 # End Group
 # Begin Source File
 
-SOURCE=.\src\DWOnScreenDisplay.cpp
+SOURCE=.\src\OSD\DWOnScreenDisplay.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\DWOnScreenDisplay.h
+SOURCE=.\src\OSD\DWOnScreenDisplay.h
 # End Source File
 # End Group
 # Begin Group "Data"

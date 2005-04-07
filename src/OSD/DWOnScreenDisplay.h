@@ -24,7 +24,7 @@
 #define DWOSD
 
 #include "StdAfx.h"
-#include "DWDirectDraw.h"
+#include "DirectDraw/DWDirectDraw.h"
 #include "DWOSDWindows.h"
 #include "DWOSDData.h"
 #include "LogMessage.h"
