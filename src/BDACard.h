@@ -50,6 +50,8 @@ public:
 
 	HRESULT RemoveFilters();
 
+	HRESULT GetSignalStatistics(BOOL &locked, BOOL &present, long &strength, long &quality);
+
 	BOOL bActive;
 	BOOL bNew;
 	BOOL bDetected;

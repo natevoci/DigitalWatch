@@ -285,19 +285,20 @@ void LogMessage::writef(LPWSTR sz,...)
 
 	Write(FALSE);
 }
-
-void LogMessage::showf(LPWSTR sz,...)
+*/
+void LogMessage::showf(LPSTR sz,...)
 {
     va_list va;
     va_start(va, sz);
 
-	int size = 10;//_vscwprintf(sz, va);
-	LPWSTR buf;
+	int size = 80;//_vscwprintf(sz, va);
+	LPSTR buf;
+	int length;
 	while (TRUE)
 	{
-		buf = new wchar_t[size+1];
-		int result = _vsnwprintf(buf, size, sz, va);
-		if (result >= 0)
+		buf = new char[size+1];
+		length = _vsnprintf(buf, size, sz, va);
+		if (length >= 0)
 			break;
 		delete[] buf;
 		size *= 2;
@@ -305,13 +306,23 @@ void LogMessage::showf(LPWSTR sz,...)
 
     va_end(va);
 
-	Require(size);
+	if (length >= m_lStrLength)
+	{
+		LPWSTR newStr = new wchar_t[length + 1];
+		ZeroMemory(newStr, (length+1)*sizeof(wchar_t));
+		memcpy(newStr, m_pStr, m_lStrLength);
+		m_lStrLength = length + 1;
+		delete[] m_pStr;
+		m_pStr = newStr;
+	}
 
-	_snwprintf(m_pStr, m_lStrLength, L"%s%s", m_pStr, buf);
+	_snwprintf(m_pStr, m_lStrLength, L"%s%S", m_pStr, buf);
+
+	delete[] buf;
 
 	Show(FALSE);
 }
-*/
+
 //Numbers
 LogMessage& LogMessage::operator<< (const int& val)
 {
@@ -370,6 +381,8 @@ LPWSTR LogMessage::GetBuffer()
 
 void LogMessage::_writef(LPWSTR sz,...)
 {
+	if (wcslen(sz) <= 0)
+		return;
     va_list va;
     va_start(va, sz);
 

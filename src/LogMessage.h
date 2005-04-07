@@ -76,7 +76,7 @@ public:
 	void LogVersionNumber();
 
 //	void writef(LPWSTR sz,...);
-//	void showf(LPWSTR sz,...);
+	void showf(LPSTR sz,...);
 
 	LogMessage& operator<< (const int& val);
 	LogMessage& operator<< (const double& val);

@@ -267,3 +267,67 @@ HRESULT BDACard::GetCapturePin(IPin** pCapturePin)
 	return S_OK;
 }
 
+HRESULT BDACard::GetSignalStatistics(BOOL &locked, BOOL &present, long &strength, long &quality)
+{
+	HRESULT hr;
+
+	//Get IID_IBDA_Topology
+	CComPtr <IBDA_Topology> bdaNetTop;
+	if (FAILED(hr = m_pBDATuner.QueryInterface(&bdaNetTop)))
+	{
+		return (log << "Cannot Find IID_IBDA_Topology\n").Show(hr);
+	}
+
+	ULONG NodeTypes;
+	ULONG NodeType[32];
+	//ULONG Interfaces;
+	//GUID Interface[32];
+	CComPtr <IUnknown> iNode;
+
+	long longVal;
+	longVal = strength = quality = 0;
+	BYTE byteVal;
+	byteVal = locked = present = 0;
+
+	if (FAILED(hr = bdaNetTop->GetNodeTypes(&NodeTypes, 32, NodeType)))
+	{
+		return (log << "Cannot get node types\n").Show(hr);
+	}
+
+	for ( int i=0 ; i<NodeTypes ; i++ )
+	{
+		hr = bdaNetTop->GetControlNode(0, 1, NodeType[i], &iNode);
+		if (hr == S_OK)
+		{
+			CComPtr <IBDA_SignalStatistics> pSigStats;
+
+			hr = iNode.QueryInterface(&pSigStats);
+			if (hr == S_OK)
+			{
+				longVal = 0;
+				if (SUCCEEDED(hr = pSigStats->get_SignalStrength(&longVal)))
+					strength = longVal;
+
+				longVal = 0;
+				if (SUCCEEDED(hr = pSigStats->get_SignalQuality(&longVal)))
+					quality = longVal;
+
+				byteVal = 0;
+				if (SUCCEEDED(hr = pSigStats->get_SignalLocked(&byteVal)))
+					locked = byteVal;
+
+				byteVal = 0;
+				if (SUCCEEDED(hr = pSigStats->get_SignalPresent(&byteVal)))
+					present = byteVal;
+
+				pSigStats.Release();
+			}
+			iNode.Release();
+		}
+	}
+	bdaNetTop.Release();
+
+	return S_OK;
+}
+
+
