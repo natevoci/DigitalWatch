@@ -50,7 +50,7 @@ LPWSTR DWOSDImage::Name()
 	return m_pwszName;
 }
 
-HRESULT DWOSDImage::Draw(long x, long y, long width, long height)
+HRESULT DWOSDImage::Draw(DWSurface *pSurface, long x, long y, long width, long height)
 {
 	USES_CONVERSION;
 	HRESULT hr;
@@ -59,10 +59,10 @@ HRESULT DWOSDImage::Draw(long x, long y, long width, long height)
 		
 	if (!m_pImage)
 	{
-		m_pImage = new DWDirectDrawImage(g_pOSD->get_DirectDraw());
+		m_pImage = new DWDirectDrawImage();
+		hr = m_pImage->LoadBitmap(W2T(m_pwszFilename));
 		if (m_bUseColorKey)
 			m_pImage->SetColorKey(m_dwColorKey & 0x00FFFFFF);
-		hr = m_pImage->LoadBitmap(W2T(m_pwszFilename));
 		if FAILED(hr)
 			return (log << "Failed to load image: " << hr << "\n").Write(hr);
 	}
@@ -82,55 +82,55 @@ HRESULT DWOSDImage::Draw(long x, long y, long width, long height)
 		//top left
 		SetRect(&rcSrc, 0, 0, m_rectStretchArea.left, m_rectStretchArea.top);
 		SetRect(&rcDest, x, y, leftoffset-x, topoffset-y);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 
 		//bottom left
 		SetRect(&rcSrc, 0, m_rectStretchArea.bottom, m_rectStretchArea.left, srcHeight);
 		SetRect(&rcDest, x, bottomoffset, leftoffset-x, y + height - bottomoffset);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 
 		//top right
 		SetRect(&rcSrc, m_rectStretchArea.right, 0, srcWidth, m_rectStretchArea.top);
 		SetRect(&rcDest, rightoffset, y, x + width - rightoffset, topoffset-y);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 		
 		//bottom right
 		SetRect(&rcSrc, m_rectStretchArea.right, m_rectStretchArea.bottom, srcWidth, srcHeight);
 		SetRect(&rcDest, rightoffset, bottomoffset, x + width - rightoffset, y + height - bottomoffset);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 
 		//middle left
 		SetRect(&rcSrc, 0, m_rectStretchArea.top, m_rectStretchArea.left, m_rectStretchArea.bottom-m_rectStretchArea.top);
 		SetRect(&rcDest, x, topoffset, leftoffset-x, bottomoffset-topoffset);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 
 		//middle right
 		SetRect(&rcSrc, m_rectStretchArea.right, m_rectStretchArea.top, srcWidth-m_rectStretchArea.right, m_rectStretchArea.bottom-m_rectStretchArea.top);
 		SetRect(&rcDest, rightoffset, topoffset, x + width - rightoffset, bottomoffset-topoffset);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 
 		//middle top
 		SetRect(&rcSrc, m_rectStretchArea.left, 0, m_rectStretchArea.right-m_rectStretchArea.left, m_rectStretchArea.top);
 		SetRect(&rcDest, leftoffset, y, rightoffset-leftoffset, topoffset-y);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 
 		//middle bottom
 		SetRect(&rcSrc, m_rectStretchArea.left, m_rectStretchArea.bottom, m_rectStretchArea.right-m_rectStretchArea.left, srcHeight-m_rectStretchArea.bottom);
 		SetRect(&rcDest, leftoffset, bottomoffset, rightoffset-leftoffset, y + height - bottomoffset);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 		
 		//centre
 		SetRect(&rcSrc, m_rectStretchArea.left, m_rectStretchArea.top, m_rectStretchArea.right-m_rectStretchArea.left, m_rectStretchArea.bottom-m_rectStretchArea.top);
 		SetRect(&rcDest, leftoffset, topoffset, rightoffset-leftoffset, bottomoffset-topoffset);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 	}
 	else if ((m_rectStretchArea.left >= 0) && (m_rectStretchArea.right >= 0))
@@ -142,25 +142,25 @@ HRESULT DWOSDImage::Draw(long x, long y, long width, long height)
 		//left
 		SetRect(&rcSrc, 0, 0, m_rectStretchArea.left, srcHeight);
 		SetRect(&rcDest, x, y, leftoffset-x, height);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 
 		//centre
 		SetRect(&rcSrc, m_rectStretchArea.left, 0, m_rectStretchArea.right-m_rectStretchArea.left, srcHeight);
 		SetRect(&rcDest, leftoffset, y, rightoffset-leftoffset, height);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 
 		//right
 		SetRect(&rcSrc, m_rectStretchArea.right, 0, srcWidth-m_rectStretchArea.right, srcHeight);
 		SetRect(&rcDest, rightoffset, y, x+width-rightoffset, height);
-		if FAILED(hr = m_pImage->Draw(&rcDest, &rcSrc))
+		if FAILED(hr = m_pImage->Blt(pSurface, &rcDest, &rcSrc))
 			return hr;
 	}
 	else
 	{
 		SetRect(&rcDest, x, y, width, height);
-		hr = m_pImage->Draw(&rcDest);
+		hr = m_pImage->Blt(pSurface, &rcDest);
 		if FAILED(hr)
 			return hr;
 	}

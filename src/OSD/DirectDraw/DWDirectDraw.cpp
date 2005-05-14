@@ -22,22 +22,22 @@
 
 #include "DWDirectDraw.h"
 #include "Globals.h"
+#include "GlobalFunctions.h"
+#include "DWOverlayCallback.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWDirectDraw
 //////////////////////////////////////////////////////////////////////
 
+static BOOL CALLBACK DirectDrawEnumCB(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, LPVOID lpContext, HMONITOR hm);
+
 DWDirectDraw::DWDirectDraw()
 {
 	m_hWnd = 0;
-	SetRect(&m_rectBackBuffer, 0, 0, 768, 576);
+	m_nBackBufferWidth = 768;
+	m_nBackBufferHeight = 576;
 	m_lTickCount = 0;
 	m_fFPS = 0;
-
-	m_piDDObject = NULL;
-	m_piFrontSurface = NULL;
-	m_piClipper = NULL;
-	m_piBackSurface = NULL;
 
 	m_pOverlayCallback = NULL;
 	m_bOverlayEnabled = FALSE;
@@ -52,81 +52,63 @@ DWDirectDraw::~DWDirectDraw()
 
 HRESULT DWDirectDraw::Init(HWND hWnd)
 {
-	HRESULT hr;
+	HRESULT hr = S_OK;
+
+	(log << "Initialising DirectDraw\n").Write();
+	LogMessageIndent indent(&log);
 
 	m_hWnd = hWnd;
-	
-	// Create the main DirectDraw object.
-	hr = DirectDrawCreateEx(NULL, (VOID**)&m_piDDObject, IID_IDirectDraw7, NULL);
-	if( hr != DD_OK )
-		return hr;
-
-	// Set DDSCL_NORMAL to use windowed mode
-	hr = m_piDDObject->SetCooperativeLevel(m_hWnd, DDSCL_NORMAL);
-	if FAILED(hr)
-		return hr;
-
-
-	// Create Primary Surface
-	DDSURFACEDESC2 ddsd;
-	ZeroMemory(&ddsd, sizeof(ddsd));
-	ddsd.dwSize = sizeof(ddsd);
-	ddsd.dwFlags = DDSD_CAPS;
-	ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
-	
-	hr = m_piDDObject->CreateSurface(&ddsd, &m_piFrontSurface, NULL);
-	if FAILED(hr)
-		return hr;
-
-	// Create Clipper
-    hr = m_piDDObject->CreateClipper( 0, &m_piClipper, NULL );
-    if FAILED(hr)
-        return hr;
-	
-    hr = m_piClipper->SetHWnd( 0, m_hWnd );
-    if FAILED(hr)
-        return hr;
-
-    hr = m_piFrontSurface->SetClipper(m_piClipper);
-    if FAILED(hr)
-        return hr;
-
-	// Create back buffer
-	ddsd.dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_CAPS;
-	ddsd.dwWidth = m_rectBackBuffer.right;
-	ddsd.dwHeight = m_rectBackBuffer.bottom;
-	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
-	
-	hr = m_piDDObject->CreateSurface(&ddsd, &m_piBackSurface, NULL);
-	if FAILED(hr)
-		return hr;
 
 	m_pOverlayCallback = new DWOverlayCallback(&hr);
+	if (FAILED(hr))
+		return (log << "Failed to create DWOverlayCallback : " << hr << "\n").Write(hr);
 
-	return S_OK;
+	hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
+	if (FAILED(hr))
+		return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
+
+	return hr;
+}
+
+static BOOL CALLBACK DirectDrawEnumCB(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, LPVOID lpContext, HMONITOR hm)
+{
+	HRESULT hr;
+	DWDirectDraw *pDWDirectDraw = (DWDirectDraw *)lpContext;
+
+	hr = pDWDirectDraw->Enum(lpGUID, lpDriverDescription, lpDriverName, hm);
+
+	return TRUE;
+}
+
+HRESULT DWDirectDraw::Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm)
+{
+    HRESULT hr;
+    
+	if (hm == 0)
+		return S_OK;
+
+	DWDirectDrawScreen* ddScreen = new DWDirectDrawScreen(m_hWnd, m_nBackBufferWidth, m_nBackBufferHeight);
+	ddScreen->SetLogCallback(m_pLogCallback);
+	hr = ddScreen->Create(lpGUID, lpDriverDescription, lpDriverName, hm);
+	if (FAILED(hr))
+		return (log << "Failed to create DWDirectDrawScreen : " << hr << "\n").Write(hr);
+
+	m_Screens.push_back(ddScreen);
+	
+	return hr;
 }
 
 HRESULT DWDirectDraw::Destroy()
 {
-	m_piBackSurface.Release();
-	m_piFrontSurface.Release();
-	m_piDDObject.Release();
+	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
+	for ( ; it < m_Screens.end() ; it++ )
+	{
+		DWDirectDrawScreen* screen = *it;
+		delete screen;
+	}
+	m_Screens.clear();
+
 	return S_OK;
-}
-
-IDirectDraw7* DWDirectDraw::get_Object()
-{
-	return m_piDDObject;
-}
-
-IDirectDrawSurface7* DWDirectDraw::get_FrontSurface()
-{
-	return m_piFrontSurface;
-}
-
-IDirectDrawSurface7* DWDirectDraw::get_BackSurface()
-{
-	return m_piBackSurface;
 }
 
 IDDrawExclModeVideoCallback* DWDirectDraw::get_OverlayCallbackInterface()
@@ -134,66 +116,36 @@ IDDrawExclModeVideoCallback* DWDirectDraw::get_OverlayCallbackInterface()
 	return m_pOverlayCallback;
 }
 
-HRESULT DWDirectDraw::CheckSurfaces()
-{
-	HRESULT hr;
-	if ((m_piFrontSurface) && (m_piFrontSurface->IsLost() == DDERR_SURFACELOST))
-	{
-		if FAILED(hr = m_piFrontSurface->Restore())
-			return hr;
-	}
-	if ((m_piBackSurface) && (m_piBackSurface->IsLost() == DDERR_SURFACELOST))
-	{
-		if FAILED(hr = m_piBackSurface->Restore())
-			return hr;
-	}
-	return S_OK;
-}
-
 HRESULT DWDirectDraw::Clear()
 {
 	HRESULT hr;
 
-	if FAILED(hr = CheckSurfaces())
-		return hr;
-	
-	DDBLTFX ddbfx;
-	ZeroMemory(&ddbfx, sizeof(ddbfx));
-	ddbfx.dwSize = sizeof( ddbfx );
-	ddbfx.dwFillColor = (DWORD)RGB(0, 0, 0);
-	hr = m_piBackSurface->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbfx);
-	if FAILED(hr)
-		return hr;
-
-	if (m_bOverlayEnabled)
+	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
+	for ( ; it < m_Screens.end() ; it++ )
 	{
-		ddbfx.dwFillColor = m_dwVideoKeyColor;
-
-		hr = m_piBackSurface->Blt(&m_OverlayPositionRect, NULL, NULL, DDBLT_COLORFILL | DDBLT_WAIT, &ddbfx);
-		//hr = m_piBackSurface->Blt(&m_rectBackBuffer, NULL, NULL, DDBLT_COLORFILL | DDBLT_WAIT, &ddbfx);
+		DWDirectDrawScreen* screen = *it;
+		hr = screen->Clear(m_bOverlayEnabled, &m_OverlayPositionRect, m_dwVideoKeyColor);
 		if FAILED(hr)
-			return hr;
+			return (log << "Failed clearing surfaces\n").Write(hr);
 	}
-	
+
 	return S_OK;
 }
 
 HRESULT DWDirectDraw::Flip()
 {
 	HRESULT hr;
-	RECT rcDest;
-	POINT p;
-	
-	// find out where on the primary surface our window lives
-	p.x = 0; p.y = 0;
-	::ClientToScreen(m_hWnd, &p);
-	::GetClientRect(m_hWnd, &rcDest);
-	OffsetRect(&rcDest, p.x, p.y);
-	hr = m_piFrontSurface->Blt(&rcDest, m_piBackSurface, NULL, DDBLT_WAIT, NULL);
-	if FAILED(hr)
-		return hr;
 
-	return hr;
+	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
+	for ( ; it < m_Screens.end() ; it++ )
+	{
+		DWDirectDrawScreen* screen = *it;
+		hr = screen->Flip();
+		if FAILED(hr)
+			return (log << "Failed flipping surfaces\n").Write(hr);
+	}
+
+	return S_OK;
 }
 
 long DWDirectDraw::GetTickCount()
@@ -204,7 +156,7 @@ long DWDirectDraw::GetTickCount()
 void DWDirectDraw::SetTickCount(long tickCount)
 {
 	static int multiplier = 1;
-	if (tickCount - m_lTickCount > 400)
+	if (tickCount - m_lTickCount > 500)
 	{
 		m_fFPS = multiplier * 1000.0 / (double)(tickCount - m_lTickCount);
 		m_lTickCount = tickCount;
@@ -243,10 +195,10 @@ void DWDirectDraw::SetOverlayPosition(const RECT* pRect)
 		RECT rcDest;
 		::GetClientRect(m_hWnd, &rcDest);
 
-		m_OverlayPositionRect.left = (m_rectBackBuffer.right * m_OverlayPositionRect.left / rcDest.right);
-		m_OverlayPositionRect.top = (m_rectBackBuffer.bottom * m_OverlayPositionRect.top / rcDest.bottom);
-		m_OverlayPositionRect.right = (m_rectBackBuffer.right * m_OverlayPositionRect.right / rcDest.right);
-		m_OverlayPositionRect.bottom = (m_rectBackBuffer.bottom * m_OverlayPositionRect.bottom / rcDest.bottom);
+		m_OverlayPositionRect.left = (m_nBackBufferWidth * m_OverlayPositionRect.left / rcDest.right);
+		m_OverlayPositionRect.top = (m_nBackBufferHeight * m_OverlayPositionRect.top / rcDest.bottom);
+		m_OverlayPositionRect.right = (m_nBackBufferWidth * m_OverlayPositionRect.right / rcDest.right);
+		m_OverlayPositionRect.bottom = (m_nBackBufferHeight * m_OverlayPositionRect.bottom / rcDest.bottom);
 	}
 }
 
@@ -255,80 +207,19 @@ void DWDirectDraw::SetOverlayColor(COLORREF color)
 	m_dwVideoKeyColor = color;
 }
 
-//////////////////////////////////////////////////////////////////////
-// DWOverlayCallback
-//////////////////////////////////////////////////////////////////////
-DWOverlayCallback::DWOverlayCallback(HRESULT *phr) :
-    CUnknown("Overlay Callback Object", NULL, phr)
+HRESULT DWDirectDraw::CheckSurfaces()
 {
-    AddRef();
+	HRESULT hr;
+
+	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
+	for ( ; it < m_Screens.end() ; it++ )
+	{
+		DWDirectDrawScreen* screen = *it;
+		hr = screen->CheckSurfaces();
+		if FAILED(hr)
+			return (log << "Failed checking surface\n").Write(hr);
+	}
+
+	return S_OK;
 }
-
-
-DWOverlayCallback::~DWOverlayCallback()
-{
-}
-
-HRESULT DWOverlayCallback::OnUpdateOverlay(BOOL bBefore, DWORD dwFlags, BOOL bOldVisible, const RECT *prcSrcOld, const RECT *prcDestOld, BOOL bNewVisible, const RECT *prcSrcNew, const RECT *prcDestNew)
-{
-    if (g_pOSD->get_DirectDraw() == NULL)
-    {
-        DbgLog((LOG_ERROR, 1, TEXT("ERROR: NULL DDraw object pointer was specified"))) ;
-        return E_POINTER ;
-    }
-
-    if (bBefore)  // overlay is going to be updated
-    {
-        DbgLog((LOG_TRACE, 5, TEXT("Just turn off color keying and return"))) ;
-        g_pOSD->get_DirectDraw()->SetOverlayEnabled(FALSE);
-        //g_pOSD->Render(GetTickCount());  // render the surface so that video doesn't show anymore
-        return S_OK ;
-    }
-
-    //
-    // After overlay has been updated. Turn on/off overlay color keying based on 
-    // flags and use new source/dest position etc.
-    //
-    if (dwFlags & (AM_OVERLAY_NOTIFY_VISIBLE_CHANGE |   // it's a valid flag
-                   AM_OVERLAY_NOTIFY_SOURCE_CHANGE  |
-                   AM_OVERLAY_NOTIFY_DEST_CHANGE))
-    {               
-        g_pOSD->get_DirectDraw()->SetOverlayEnabled(bNewVisible) ;  // paint/don't paint color key based on param
-    }        
-
-    if (dwFlags & AM_OVERLAY_NOTIFY_DEST_CHANGE)     // overlay destination rect change
-    {
-        ASSERT(prcDestOld);
-        ASSERT(prcDestNew);
-        g_pOSD->get_DirectDraw()->SetOverlayPosition(prcDestNew);
-    }
-
-    return S_OK ;
-}
-
-
-HRESULT DWOverlayCallback::OnUpdateColorKey(COLORKEY const *pKey,
-                                           DWORD dwColor)
-{
-    DbgLog((LOG_TRACE, 5, TEXT("DWOverlayCallback::OnUpdateColorKey(.., 0x%lx) entered"), dwColor)) ;
-
-	g_pOSD->get_DirectDraw()->SetOverlayColor(dwColor);
-    return S_OK ;
-}
-
-
-HRESULT DWOverlayCallback::OnUpdateSize(DWORD dwWidth,   DWORD dwHeight, 
-                                       DWORD dwARWidth, DWORD dwARHeight)
-{
-    DbgLog((LOG_TRACE, 5, TEXT("DWOverlayCallback::OnUpdateSize(%lu, %lu, %lu, %lu) entered"), 
-            dwWidth, dwHeight, dwARWidth, dwARHeight)) ;
-
-    //PostMessage(g_pData->hWnd, WM_SIZE_CHANGE, 0, 0) ;
-
-    return S_OK ;
-}
-
-
-
-
 

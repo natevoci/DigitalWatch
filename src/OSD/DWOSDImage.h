@@ -26,6 +26,7 @@
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "XMLDocument.h"
+#include "DWSurface.h"
 #include "DirectDraw/DWDirectDrawImage.h"
 
 class DWOSDWindows;
@@ -38,7 +39,7 @@ public:
 
 	LPWSTR Name();
 
-	HRESULT Draw(long x, long y, long width, long height);
+	HRESULT Draw(DWSurface *pSurface, long x, long y, long width, long height);
 
 private:
 	HRESULT LoadFromXML(XMLElement *pElement);

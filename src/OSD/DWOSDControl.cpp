@@ -28,9 +28,9 @@
 // DWOSDControl
 //////////////////////////////////////////////////////////////////////
 
-DWOSDControl::DWOSDControl()
+DWOSDControl::DWOSDControl(DWSurface* pSurface)
 {
-	m_piSurface = g_pOSD->get_DirectDraw()->get_BackSurface();
+	m_pSurface = pSurface;
 
 	m_bVisible = TRUE;
 	m_lTimeToHide = 0;
@@ -40,17 +40,26 @@ DWOSDControl::DWOSDControl()
 
 	m_bCanHighlight = FALSE;
 	m_bHighlighted = FALSE;
-	m_pControlUp = NULL;
-	m_pControlDown = NULL;
-	m_pControlLeft = NULL;
-	m_pControlRight = NULL;
-	m_pCommand = NULL;
+	m_pwcsControlUp = NULL;
+	m_pwcsControlDown = NULL;
+	m_pwcsControlLeft = NULL;
+	m_pwcsControlRight = NULL;
+	m_pwcsCommand = NULL;
 }
 
 DWOSDControl::~DWOSDControl()
 {
 	if (m_pName)
 		delete[] m_pName;
+}
+
+HRESULT DWOSDControl::LoadFromXML(XMLElement *pElement)
+{
+	XMLAttribute *attr;
+	attr = pElement->Attributes.Item(L"name");
+	if (attr)
+		strCopy(m_pName, attr->value);
+	return S_OK;
 }
 
 LPWSTR DWOSDControl::Name()
@@ -97,27 +106,27 @@ void DWOSDControl::Toggle()
 
 LPWSTR DWOSDControl::OnUp()
 {
-	return (m_pControlUp ? m_pControlUp : m_pControlLeft);
+	return (m_pwcsControlUp ? m_pwcsControlUp : m_pwcsControlLeft);
 }
 
 LPWSTR DWOSDControl::OnDown()
 {
-	return (m_pControlDown ? m_pControlDown : m_pControlRight);
+	return (m_pwcsControlDown ? m_pwcsControlDown : m_pwcsControlRight);
 }
 
 LPWSTR DWOSDControl::OnLeft()
 {
-	return (m_pControlLeft ? m_pControlLeft : m_pControlUp);
+	return (m_pwcsControlLeft ? m_pwcsControlLeft : m_pwcsControlUp);
 }
 
 LPWSTR DWOSDControl::OnRight()
 {
-	return (m_pControlRight ? m_pControlRight : m_pControlDown);
+	return (m_pwcsControlRight ? m_pwcsControlRight : m_pwcsControlDown);
 }
 
 LPWSTR DWOSDControl::OnSelect()
 {
-	return m_pCommand;
+	return m_pwcsCommand;
 }
 
 void DWOSDControl::SetHighlight(BOOL bHighlighted)
@@ -134,3 +143,4 @@ BOOL DWOSDControl::IsHighlighted()
 {
 	return m_bHighlighted;
 }
+

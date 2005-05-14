@@ -1,5 +1,5 @@
 /**
- *	DWOSDGroup.h
+ *	DWSurfaceText.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,27 +20,33 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSDGROUP_H
-#define DWOSDGROUP_H
+#ifndef DWSURFACETEXT_H
+#define DWSURFACETEXT_H
 
 #include "StdAfx.h"
 #include "LogMessage.h"
-#include "XMLDocument.h"
-#include "DWOSDControl.h"
-#include <vector>
 
-class DWOSDGroup : public DWOSDControl
+class DWSurfaceText : public LogMessageCaller
 {
 public:
-	DWOSDGroup(DWSurface* pSurface);
-	virtual ~DWOSDGroup();
+	DWSurfaceText();
+	virtual ~DWSurfaceText();
 
-	HRESULT LoadFromXML(XMLElement *pElement);
+	HRESULT GetTextExtent(SIZE *extent);
+	HRESULT InitDC(HDC &hDC);
+	HRESULT UninitDC(HDC &hDC);
 
-protected:
-	virtual HRESULT Draw(long tickCount);
+	COLORREF crTextColor;
+	COLORREF crTextBkColor;
+	BOOL bTextBkTransparent;
 
-	std::vector<DWOSDControl *> m_controls;
+	LOGFONT font;
+	LPWSTR text;
+
+private:
+	HFONT m_hFont;
+	HFONT m_hOldFont;
+
 };
 
 #endif

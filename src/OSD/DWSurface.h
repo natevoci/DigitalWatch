@@ -1,5 +1,5 @@
 /**
- *	DWOnScreenDisplay.h
+ *	DWSurface.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,54 +20,57 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSD
-#define DWOSD
+#ifndef DWSURFACE_H
+#define DWSURFACE_H
 
 #include "StdAfx.h"
-#include "DirectDraw/DWDirectDraw.h"
-#include "DWOSDWindows.h"
-#include "DWOSDData.h"
 #include "LogMessage.h"
-#include "ParseLine.h"
+#include "DWSurfaceText.h"
+#include "DirectDraw/DWDirectDrawScreen.h"
 #include <vector>
 
-class DWOnScreenDisplay : public LogMessageCaller
+class DWScreenSurface
 {
 public:
-	DWOnScreenDisplay();
-	virtual ~DWOnScreenDisplay();
+	IDirectDrawSurface7 *piDDSurface;
+	DWDirectDrawScreen *pDDScreen;
+};
 
-	void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT Initialise();
-	HRESULT Render(long tickCount);
+class DWSurface : public LogMessageCaller
+{
+public:
+	DWSurface();
+	virtual ~DWSurface();
 
-	HRESULT ShowMenu(LPWSTR szMenuName);
-	HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
+	HRESULT CreateFromDirectDrawBackSurface();
+	HRESULT Create(long width, long height);
+	HRESULT Destroy();
 
-	DWDirectDraw* get_DirectDraw();
-	DWOSDWindow* Overlay();
+	HRESULT Clear();
+	HRESULT SetColorKey(COLORREF dwColorKey);
 
-	DWSurface* get_BackSurface();
+	HRESULT Blt(DWSurface *targetSurface, RECT* lprcDest = NULL, RECT* lprcSrc = NULL);
 
-	HRESULT GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
-	HRESULT ExecuteCommand(ParseLine* command);
+	//HRESULT DrawImage()
 
-	//Stuff for controls to use
-	DWOSDImage* GetImage(LPWSTR pName);
-	DWOSDData data;
+	HRESULT DrawText(DWSurfaceText *text, int x, int y);
 
-private:
+	UINT Width();
+	UINT Height();
 
-	DWOSDWindows windows;
+protected:
+	void Restore();
 
-	DWSurface* m_pBackSurface;
+	void FixRects(RECT &rcSrc, RECT &rcDest, long destSurfaceWidth, long destSurfaceHeight);
 
-	DWDirectDraw* m_pDirectDraw;
-	DWOSDWindow* m_pOverlayWindow;
-	DWOSDWindow* m_pCurrentWindow;
-	std::vector <DWOSDWindow *> m_windowStack;
+	std::vector<DWScreenSurface *> m_Surfaces;
+
+	long m_Width;
+	long m_Height;
+	BOOL m_bColorKey;
+	COLORREF m_dwColorKey;
+
 };
 
 #endif
-

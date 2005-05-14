@@ -259,6 +259,14 @@ SOURCE=.\src\dsnetifc.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\OSD\DWOverlayCallback.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWOverlayCallback.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\FilterGraphTools.cpp
 # End Source File
 # Begin Source File
@@ -354,6 +362,14 @@ SOURCE=.\src\OSD\DWOSDLabel.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\OSD\DWOSDList.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWOSDList.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\OSD\DWOSDWindows.cpp
 # End Source File
 # Begin Source File
@@ -380,6 +396,14 @@ SOURCE=.\src\OSD\DirectDraw\DWDirectDrawImage.cpp
 
 SOURCE=.\src\OSD\DirectDraw\DWDirectDrawImage.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DirectDraw\DWDirectDrawScreen.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DirectDraw\DWDirectDrawScreen.h
+# End Source File
 # End Group
 # Begin Source File
 
@@ -388,6 +412,22 @@ SOURCE=.\src\OSD\DWOnScreenDisplay.cpp
 # Begin Source File
 
 SOURCE=.\src\OSD\DWOnScreenDisplay.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWSurface.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWSurface.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWSurfaceText.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWSurfaceText.h
 # End Source File
 # End Group
 # Begin Group "Data"

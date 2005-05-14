@@ -1,5 +1,5 @@
 /**
- *	DWOSDLabel.h
+ *	DWOSDList.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,38 +20,87 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSDLABEL_H
-#define DWOSDLABEL_H
+#ifndef DWOSDLIST_H
+#define DWOSDLIST_H
 
 #include "StdAfx.h"
 #include "DWOSDControl.h"
 #include "XMLDocument.h"
 #include "DWOSDImage.h"
+#include <vector>
 
-class DWOSDLabel : public DWOSDControl  
+class DWOSDList;
+class DWOSDListItem : public DWOSDControl
 {
+	friend DWOSDList;
 public:
-	DWOSDLabel(DWSurface* pSurface);
-	virtual ~DWOSDLabel();
+	DWOSDListItem(DWSurface* pSurface);
+	virtual ~DWOSDListItem();
 
 	HRESULT LoadFromXML(XMLElement *pElement);
+
+//	HRESULT Render(long tickCount, int x, int y, int width, int height);
+
+	void CopyTo(DWOSDListItem* target);
 
 protected:
 	virtual HRESULT Draw(long tickCount);
 
 	long m_nPosX;
 	long m_nPosY;
-	LPWSTR m_wszText;
-	LPWSTR m_wszFont;
-	COLORREF m_dwTextColor;
+	long m_nWidth;
 	long m_nHeight;
-	long m_nWeight;
+	long m_nGap;
+
 	unsigned int m_uAlignHorizontal;
 	unsigned int m_uAlignVertical;
 
-	DWOSDImage* m_pBackgroundImage;
-	RECT m_rectBackgroundPadding;
+	LPWSTR m_wszText;
+	LPWSTR m_wszFont;
+	COLORREF m_dwTextColor;
+	long m_nTextHeight;
+	long m_nTextWeight;
 
+	DWOSDImage* m_pBackgroundImage;
+	DWOSDImage* m_pHighlightImage;
+
+};
+
+// DWOSDList
+class DWOSDList : public DWOSDControl  
+{
+public:
+	DWOSDList(DWSurface* pSurface);
+	virtual ~DWOSDList();
+
+	HRESULT LoadFromXML(XMLElement *pElement);
+
+	virtual LPWSTR OnUp();
+	virtual LPWSTR OnDown();
+	virtual LPWSTR OnLeft();
+	virtual LPWSTR OnRight();
+	virtual LPWSTR OnSelect();
+
+protected:
+	virtual HRESULT Draw(long tickCount);
+
+	virtual void UpdateScrolling();
+
+	DWSurface* m_pListSurface;
+
+	long m_nPosX;
+	long m_nPosY;
+	long m_nWidth;
+	long m_nHeight;
+	long m_nYOffset;
+	long m_nLastTickCount;
+
+	BOOL m_bMoving;
+	long m_nMovingFinishesAtTickCount;
+	long m_nMovingStartedAtYOffset;
+	long m_nMovingToYOffset;
+
+	std::vector <DWOSDListItem *> m_items;
 };
 
 #endif

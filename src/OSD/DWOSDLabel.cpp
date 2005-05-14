@@ -28,7 +28,7 @@
 // DWOSDLabel
 //////////////////////////////////////////////////////////////////////
 
-DWOSDLabel::DWOSDLabel()
+DWOSDLabel::DWOSDLabel(DWSurface* pSurface) : DWOSDControl(pSurface)
 {
 	m_nPosX = 0;
 	m_nPosY = 0;
@@ -42,9 +42,6 @@ DWOSDLabel::DWOSDLabel()
 
 	m_pBackgroundImage = NULL;
 	SetRect(&m_rectBackgroundPadding, 0, 0, 0, 0);
-
-	m_hFont = 0;
-	m_hOldFont = 0;
 }
 
 DWOSDLabel::~DWOSDLabel()
@@ -52,13 +49,12 @@ DWOSDLabel::~DWOSDLabel()
 	if (m_wszText)
 		delete[] m_wszText;
 
-	if (m_hFont)
-		DeleteObject(m_hFont);
-
 }
 
 HRESULT DWOSDLabel::LoadFromXML(XMLElement *pElement)
 {
+	DWOSDControl::LoadFromXML(pElement);
+
 	XMLAttribute *attr;
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
@@ -176,20 +172,26 @@ HRESULT DWOSDLabel::Draw(long tickCount)
 	if (pStr[0] == '\0')
 		return S_OK;
 
-	HDC hDC;
+	DWSurfaceText text;
+	strCopy(text.text, pStr);
+
+	//Set Font
+	ZeroMemory(&text.font, sizeof(LOGFONT));
+	text.font.lfHeight = m_nHeight;
+	text.font.lfWeight = m_nWeight;
+	text.font.lfOutPrecision = OUT_OUTLINE_PRECIS; //OUT_DEVICE_PRECIS;
+	text.font.lfQuality = ANTIALIASED_QUALITY;
+	lstrcpy(text.font.lfFaceName, (m_wszFont) ? W2A(m_wszFont) : TEXT("Arial"));
+
+	text.crTextColor = m_dwTextColor;
 
 	long nPosX = m_nPosX;
 	long nPosY = m_nPosY;
 
 	if (m_pBackgroundImage || (m_uAlignHorizontal != TA_LEFT) || (m_uAlignVertical != TA_TOP))
 	{
-		hDC = CreateCompatibleDC(NULL);
-		InitDC(hDC);
-
 		SIZE extent;
-		::GetTextExtentPoint32(hDC, W2T(pStr), wcslen(pStr), &extent);
-		UninitDC(hDC);
-		DeleteDC(hDC);
+		hr = text.GetTextExtent(&extent);
 
 		if (m_uAlignHorizontal == TA_CENTER)
 			nPosX -= (extent.cx / 2);
@@ -203,62 +205,16 @@ HRESULT DWOSDLabel::Draw(long tickCount)
 
 		if (m_pBackgroundImage)
 		{
-			m_pBackgroundImage->Draw(nPosX - m_rectBackgroundPadding.left,
+			m_pBackgroundImage->Draw(m_pSurface,
+									 nPosX - m_rectBackgroundPadding.left,
 									 nPosY - m_rectBackgroundPadding.top,
 									 extent.cx + m_rectBackgroundPadding.left + m_rectBackgroundPadding.right,
 									 extent.cy + m_rectBackgroundPadding.top + m_rectBackgroundPadding.bottom);
 		}
 	}
 
-	hr = m_piSurface->GetDC(&hDC);
-	if FAILED(hr)
-		return hr;
-
-	InitDC(hDC);
-	TextOut(hDC, nPosX, nPosY, W2T(pStr), wcslen(pStr));
-	UninitDC(hDC);
-
-	hr = m_piSurface->ReleaseDC(hDC);
-	if FAILED(hr)
-		return hr;
+	m_pSurface->DrawText(&text, nPosX, nPosY);
 
 	return S_OK;
 }
 
-void DWOSDLabel::InitDC(HDC &hDC)
-{
-	USES_CONVERSION;
-
-	if (m_hFont == NULL)
-	{
-		//Load the Font now that we have all the required information
-		LOGFONT font;
-		ZeroMemory(&font, sizeof(LOGFONT));
-		font.lfHeight = m_nHeight;
-		font.lfWeight = m_nWeight;
-		font.lfOutPrecision = OUT_OUTLINE_PRECIS; //OUT_DEVICE_PRECIS;
-		font.lfQuality = ANTIALIASED_QUALITY;
-		lstrcpy(font.lfFaceName, (m_wszFont) ? W2A(m_wszFont) : TEXT("Arial"));
-
-		m_hFont = CreateFontIndirect(&font);
-		if (m_hFont == NULL)
-		{
-			(log << "Could not load font: " << ((m_wszFont) ? m_wszFont : L"Arial") << "\n").Write();
-		}
-	}
-
-	m_hOldFont = (HFONT)SelectObject(hDC, m_hFont);
-	SetBkMode(hDC, TRANSPARENT);
-	SetTextColor(hDC, m_dwTextColor & 0x00FFFFFF);
-
-/*	unsigned int align = m_uAlignHorizontal;
-	if (m_uAlignVertical != TA_CENTER)
-		align = align | m_uAlignVertical;
-	SetTextAlign(hDC, align);*/
-	SetTextAlign(hDC, TA_LEFT);
-}
-
-void DWOSDLabel::UninitDC(HDC &hDC)
-{
-	SelectObject(hDC, m_hOldFont);
-}

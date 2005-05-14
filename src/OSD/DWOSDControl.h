@@ -26,14 +26,15 @@
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "XMLDocument.h"
+#include "DWSurface.h"
 
 class DWOSDControl : public LogMessageCaller
 {
 public:
-	DWOSDControl();
+	DWOSDControl(DWSurface* pSurface);
 	virtual ~DWOSDControl();
 
-	virtual HRESULT LoadFromXML(XMLElement *pElement) = 0;
+	virtual HRESULT LoadFromXML(XMLElement *pElement);
 
 	LPWSTR Name();
 	void SetName(LPWSTR pName);
@@ -54,7 +55,7 @@ public:
 	BOOL CanHighlight();
 	BOOL IsHighlighted();
 
-	IDirectDrawSurface7* m_piSurface;
+	DWSurface* m_pSurface;
 
 protected:
 	virtual HRESULT Draw(long tickCount) = 0;
@@ -66,11 +67,11 @@ protected:
 
 	BOOL m_bCanHighlight;
 	BOOL m_bHighlighted;
-	LPWSTR m_pControlUp;
-	LPWSTR m_pControlDown;
-	LPWSTR m_pControlLeft;
-	LPWSTR m_pControlRight;
-	LPWSTR m_pCommand;
+	LPWSTR m_pwcsControlUp;
+	LPWSTR m_pwcsControlDown;
+	LPWSTR m_pwcsControlLeft;
+	LPWSTR m_pwcsControlRight;
+	LPWSTR m_pwcsCommand;
 };
 
 #endif

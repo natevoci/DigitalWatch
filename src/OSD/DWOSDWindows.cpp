@@ -26,6 +26,7 @@
 #include "DWOSDGroup.h"
 #include "DWOSDLabel.h"
 #include "DWOSDButton.h"
+#include "DWOSDList.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWOSDWindow
@@ -157,7 +158,7 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"group") == 0)
 		{
-			control = new DWOSDGroup();
+			control = new DWOSDGroup(g_pOSD->get_BackSurface());
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
@@ -167,7 +168,7 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"label") == 0)
 		{
-			control = new DWOSDLabel();
+			control = new DWOSDLabel(g_pOSD->get_BackSurface());
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
@@ -177,7 +178,17 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"button") == 0)
 		{
-			control = new DWOSDButton();
+			control = new DWOSDButton(g_pOSD->get_BackSurface());
+			control->SetLogCallback(m_pLogCallback);
+			if FAILED(control->LoadFromXML(element))
+			{
+				delete control;
+				control = NULL;
+			}
+		}
+		else if (_wcsicmp(element->name, L"list") == 0)
+		{
+			control = new DWOSDList(g_pOSD->get_BackSurface());
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
@@ -188,9 +199,6 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 
 		if (control)
 		{
-			attr = element->Attributes.Item(L"name");
-			if (attr)
-				control->SetName(attr->value);
 			m_controls.push_back(control);
 		}
 	}

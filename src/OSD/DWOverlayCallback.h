@@ -1,5 +1,5 @@
 /**
- *	DWOSDGroup.h
+ *	DWOverlayCallback.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,27 +20,28 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSDGROUP_H
-#define DWOSDGROUP_H
+#ifndef DWOVERLAYCALLBACK_H
+#define DWOVERLAYCALLBACK_H
 
 #include "StdAfx.h"
-#include "LogMessage.h"
-#include "XMLDocument.h"
-#include "DWOSDControl.h"
-#include <vector>
+//#include "LogMessage.h"
+//#include <ddraw.h>
+//#include <vector>
 
-class DWOSDGroup : public DWOSDControl
+class DWOverlayCallback : public CUnknown, public IDDrawExclModeVideoCallback
 {
 public:
-	DWOSDGroup(DWSurface* pSurface);
-	virtual ~DWOSDGroup();
+    DWOverlayCallback(HRESULT *phr) ;
+    ~DWOverlayCallback() ;
 
-	HRESULT LoadFromXML(XMLElement *pElement);
+    DECLARE_IUNKNOWN
 
-protected:
-	virtual HRESULT Draw(long tickCount);
-
-	std::vector<DWOSDControl *> m_controls;
+    // IDDrawExclModeVideoCallback interface methods
+    STDMETHODIMP OnUpdateOverlay(BOOL  bBefore, DWORD dwFlags, BOOL bOldVisible, const RECT *prcSrcOld, const RECT *prcDestOld, BOOL bNewVisible, const RECT *prcSrcNew, const RECT *prcDestNew);
+    STDMETHODIMP OnUpdateColorKey(COLORKEY const *pKey, DWORD dwColor);
+    STDMETHODIMP OnUpdateSize(DWORD dwWidth, DWORD dwHeight, DWORD dwARWidth, DWORD dwARHeight);
 };
 
+
 #endif
+

@@ -197,9 +197,60 @@ $(() - $(
 <window name="MainMenu">
 	<keys>
 		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
 		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
 		<Key code= 40>Down()</>
 	</keys>
+	<list name="MenuOptions">
+		<pos x=100 y=50 />
+		<size width=568 height=476 />
+		
+		<itemTemplate>
+			<height>60</height>
+			<gap>20</gap>
+			<font height=40 weight=700 color="#FFFFFF" />
+			<align horizontal="centre"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<text>Watch TV</text>
+			<onSelect>
+				SetSource(BDA)
+				ExitMenu(-1)
+			</onSelect>
+		</item>
+		<item>
+			<text>Exit</text>
+			<onSelect>Exit()</onSelect>
+		</item>
+		<item>
+			<text>A</text>
+		</item>
+		<item>
+			<text>B</text>
+		</item>
+		<item>
+			<text>C</text>
+		</item>
+		<item>
+			<text>D</text>
+		</item>
+		<item>
+			<text>E</text>
+		</item>
+		<item>
+			<text>F</text>
+		</item>
+		<item>
+			<text>G</text>
+		</item>
+	</list>
+	<!--
 	<label>
 		<pos x=384 y=40 />
 		<text>Main Menu</text>
@@ -241,29 +292,17 @@ $(() - $(
 			<onUp>WatchTV</onUp>
 		</highlight>
 	</button>
+	-->
 </window>
-
 <window name="TVMenu">
 	<keys>
-		<Key code=13>Select()</>
-		<Key code=37>Left()</>
-		<Key code=38>Up()</>
-		<Key code=39>Right()</>
-		<Key code=40>Down()</>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
 	</keys>
-	<!--
-	<label>
-		<pos x=384 y=40 />
-		<text>TV Menu</text>
-		<font height=40 weight=700 color="#FFFFFF" />
-		<align horizontal="centre"/>
-		<background>
-			<image>BrownBackground</image>
-			<padding left=250 right=250 top=20 bottom=470 />
-		</background>
-	</label>
-	-->
-	
+
 	<label>
 		<pos x=340 y=35 />
 		<text>Network</text>
@@ -337,6 +376,56 @@ $(() - $(
 		</highlight>
 	</button>
 </window>
+
+<!--
+<window name="ChannelList">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	
+	<list name="Networks">
+		<pos x=100 y=100 />
+		<size width=400 height=400 />
+		<background>
+			<image>BrownBackground</image>
+		</background>
+		
+		<itemTemplate>
+			<height>60</height>
+			<gap>20</gap>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+		
+		<item>
+			<text>Seven</text>
+			<onSelect>SetChannel(1) ExitMenu()</onSelect>
+		</item>
+		<item>
+			<text>Ten</text>
+			<onSelect>SetChannel(2) ExitMenu()</onSelect>
+		</item>
+		<item>
+			<text>Nine</text>
+			<onSelect>SetChannel(3) ExitMenu()</onSelect>
+		</item>
+		<item>
+			<text>ABC</text>
+			<onSelect>SetChannel(4) ExitMenu()</onSelect>
+		</item>
+		<item>
+			<text>SBS</text>
+			<onSelect>SetChannel(5) ExitMenu()</onSelect>
+		</item>
+	</list>
+</window>
+-->
 
 <window name="Messages">
 	<listbox>

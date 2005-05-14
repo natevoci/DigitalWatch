@@ -1,5 +1,5 @@
 /**
- *	DWDirectDraw.h
+ *	DWDirectDrawScreen.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,59 +20,51 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWDIRECTDRAW_H
-#define DWDIRECTDRAW_H
+#ifndef DWDIRECTDRAWSCREEN_H
+#define DWDIRECTDRAWSCREEN_H
 
 #include "StdAfx.h"
 #include "LogMessage.h"
-#include "DWSurface.h"
-#include "DWDirectDrawScreen.h"
 #include <ddraw.h>
 #include <vector>
 
-class DWDirectDraw : public LogMessageCaller
+class DWDirectDrawScreen : public LogMessageCaller
 {
-	friend DWSurface;
 public:
-	DWDirectDraw();
-	virtual ~DWDirectDraw();
+	DWDirectDrawScreen(HWND hWnd, long nBackBufferWidth, long nBackBufferHeight);
+	virtual ~DWDirectDrawScreen();
 
-	HRESULT Init(HWND hWnd);
-	HRESULT Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm);
+	HRESULT Create(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm);
 	HRESULT Destroy();
+	HRESULT CheckSurfaces();
 
-	IDDrawExclModeVideoCallback* get_OverlayCallbackInterface();
-
-	HRESULT Clear();
+	HRESULT Clear(BOOL bOverlayEnabled = FALSE, RECT *rectOverlayPosition = NULL, COLORREF dwVideoKeyColor = 0);
 	HRESULT Flip();
 
-	long GetTickCount();
-	void SetTickCount(long tickCount);
-	double GetFPS();
+	BOOL IsWindowOnScreen();
 
-	//Methods to be called by DWOverlayCallback
-	void SetOverlayEnabled(BOOL bEnabled);
-	void SetOverlayPosition(const RECT* pRect);
-	void SetOverlayColor(COLORREF color);
+	IDirectDrawSurface7* get_BackSurface();
+
+	HRESULT CreateSurface(long nWidth, long nHeight, IDirectDrawSurface7**	pSurface);
 
 private:
-	HRESULT CheckSurfaces();
+	LPWSTR m_pstrDescription;
+	LPWSTR m_pstrName;
+
+	CComPtr<IDirectDraw7>			m_piDDObject;
+	CComPtr<IDirectDrawClipper>		m_piClipper;
+	CComPtr<IDirectDrawSurface7>	m_piFrontSurface;
+	CComPtr<IDirectDrawSurface7>	m_piBackSurface;
 
 	HWND m_hWnd;
 	long m_nBackBufferWidth;
 	long m_nBackBufferHeight;
-	long m_lTickCount;
-	double m_fFPS;
 
-	std::vector<DWDirectDrawScreen*> m_Screens;
-	DWSurface *m_pDWSurface;
-
-	IDDrawExclModeVideoCallback *m_pOverlayCallback;
-	BOOL m_bOverlayEnabled;
-	RECT m_OverlayPositionRect;
-	COLORREF m_dwVideoKeyColor;
+	long m_nMonitorX;
+	long m_nMonitorY;
+	long m_nMonitorWidth;
+	long m_nMonitorHeight;
 };
-
 
 #endif
 

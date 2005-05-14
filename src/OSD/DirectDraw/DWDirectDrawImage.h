@@ -26,48 +26,21 @@
 #include <ddraw.h>
 #include "DWDirectDraw.h"
 
-struct SURFACE_SOURCE_INFO
-{
-	HINSTANCE	m_hInstance;
-	UINT		m_nResource;
-	int			m_iX;
-	int			m_iY;
-	int			m_iWidth;
-	int			m_iHeight;
-
-};
-
-class DWDirectDrawImage
+class DWDirectDrawImage : public DWSurface
 {
 public:
-	DWDirectDrawImage(DWDirectDraw* pDirectDraw);
+	DWDirectDrawImage();
 	virtual ~DWDirectDrawImage();
 
 	HRESULT LoadBitmap(HINSTANCE hInst, UINT nRes);
 	HRESULT LoadBitmap(LPCTSTR szBitmap);
-	void SetColorKey(COLORREF dwColorKey);
-
-	HRESULT Draw(RECT* lprcDest = NULL, RECT* lprcSrc = NULL);
-
-	UINT Width();
-	UINT Height();
-	LPDIRECTDRAWSURFACE7 GetSurface();
-
-	SURFACE_SOURCE_INFO m_srcInfo;
+	HRESULT LoadBitmap();
 
 protected:
-	HRESULT Create(long nWidth, long nHeight);
-	void Destroy();
-	void Restore();
-	void FixRects(RECT &rcSrc, RECT &rcDest, long destSurfaceWidth, long destSurfaceHeight);
+	HINSTANCE	m_hInstance;
+	UINT		m_nResource;
+	LPTSTR		m_szBitmap;
 
-
-	DWDirectDraw* m_pDirectDraw;
-
-	COLORREF m_dwColorKey;
-	long m_Height;
-	long m_Width;
-	LPDIRECTDRAWSURFACE7 m_pSurface;
 };
 
 #endif

@@ -31,7 +31,7 @@
 class DWOSDButton : public DWOSDControl  
 {
 public:
-	DWOSDButton();
+	DWOSDButton(DWSurface* pSurface);
 	virtual ~DWOSDButton();
 
 	HRESULT LoadFromXML(XMLElement *pElement);
@@ -52,12 +52,6 @@ protected:
 
 	DWOSDImage* m_pBackgroundImage;
 	DWOSDImage* m_pHighlightImage;
-	//RECT m_rectBackgroundPadding;
-
-	//DC handling
-	void InitDC(HDC &hDC);
-	void UninitDC(HDC &hDC);
-	HFONT m_hFont, m_hOldFont;
 
 };
 

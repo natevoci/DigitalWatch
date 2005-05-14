@@ -30,6 +30,7 @@
 
 DWOnScreenDisplay::DWOnScreenDisplay()
 {
+	m_pBackSurface = new DWSurface();
 	m_pDirectDraw = new DWDirectDraw();
 	m_pOverlayWindow = NULL;
 	m_pCurrentWindow = NULL;
@@ -46,14 +47,22 @@ void DWOnScreenDisplay::SetLogCallback(LogMessageCallback *callback)
 	LogMessageCaller::SetLogCallback(callback);
 
 	windows.SetLogCallback(callback);
+	m_pBackSurface->SetLogCallback(callback);
+	m_pDirectDraw->SetLogCallback(callback);
 }
 
 HRESULT DWOnScreenDisplay::Initialise()
 {
 	HRESULT hr;
+	m_pBackSurface->Destroy();
+
 	hr = m_pDirectDraw->Init(g_pData->hWnd);
 	if FAILED(hr)
 		return (log << "Failed to initialise DWDirectDraw: " << hr << "\n").Write(hr);
+
+	hr = m_pBackSurface->CreateFromDirectDrawBackSurface();
+	if (FAILED(hr))
+		return (log << "Failed to create DWSurface from directdraw back surface : " << hr << "\n").Write(hr);
 
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"OSD.xml");
@@ -64,19 +73,6 @@ HRESULT DWOnScreenDisplay::Initialise()
 	m_pCurrentWindow = m_pOverlayWindow;
 
 	return S_OK;
-}
-
-long DWOnScreenDisplay::GetPanningPos(long tickCount, long span, double speed)
-{
-	double distPerTick = 2*span/speed/1000.0;
-
-	long ticksPerSpan = 1000*speed;	
-
-	long result = (tickCount%ticksPerSpan);
-	if (result >= ticksPerSpan/2)
-		result = ticksPerSpan - result;
-
-	return result * distPerTick;
 }
 
 HRESULT DWOnScreenDisplay::Render(long tickCount)
@@ -95,20 +91,17 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 			m_pOverlayWindow->Render(tickCount);
 	}
 	m_pCurrentWindow->Render(tickCount);
-/*
+
 	//Display FPS
-	IDirectDrawSurface7* piSurface = m_pDirectDraw->get_BackSurface();
-	HDC hDC;
-	hr = piSurface->GetDC(&hDC);
+	DWSurfaceText text;
+	text.crTextColor = RGB(255, 255, 255);
 
-	SetBkColor(hDC, RGB(0, 0, 255));
-	SetTextColor(hDC, RGB(255, 255, 0));
-	TCHAR buffer[30];
-	sprintf(buffer, TEXT("FPS - %f"), m_pDirectDraw->GetFPS());
-	TextOut(hDC, 0, 560, buffer, lstrlen(buffer));
-
-	hr = piSurface->ReleaseDC(hDC);
-*/
+	wchar_t buffer[30];
+	swprintf((LPWSTR)&buffer, L"FPS - %f", m_pDirectDraw->GetFPS());
+	strCopy(text.text, buffer);
+	hr = m_pBackSurface->DrawText(&text, 0, 560);
+	hr = m_pBackSurface->DrawText(&text, 700, 560);
+	
 	//Flip
 	hr = m_pDirectDraw->Flip();
 	if FAILED(hr)
@@ -164,6 +157,11 @@ DWDirectDraw* DWOnScreenDisplay::get_DirectDraw()
 DWOSDWindow* DWOnScreenDisplay::Overlay()
 {
 	return m_pOverlayWindow;
+}
+
+DWSurface* DWOnScreenDisplay::get_BackSurface()
+{
+	return m_pBackSurface;
 }
 
 HRESULT DWOnScreenDisplay::GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)

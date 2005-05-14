@@ -24,12 +24,13 @@
 #include "GlobalFunctions.h"
 #include "DWOSDLabel.h"
 #include "DWOSDButton.h"
+#include "DWOSDList.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWOSDGroup
 //////////////////////////////////////////////////////////////////////
 
-DWOSDGroup::DWOSDGroup()
+DWOSDGroup::DWOSDGroup(DWSurface* pSurface) : DWOSDControl(pSurface)
 {
 	m_bVisible = FALSE;
 }
@@ -40,14 +41,7 @@ DWOSDGroup::~DWOSDGroup()
 
 HRESULT DWOSDGroup::LoadFromXML(XMLElement *pElement)
 {
-	XMLAttribute *attr;
-
-	attr = pElement->Attributes.Item(L"name");
-	if (attr == NULL)
-		return (log << "Cannot have a window without a name\n").Write();
-	if (attr->value[0] == '\0')
-		return (log << "Cannot have a blank window name\n").Write();
-	strCopy(m_pName, attr->value);
+	DWOSDControl::LoadFromXML(pElement);
 
 	XMLElement *element = NULL;
 
@@ -59,7 +53,7 @@ HRESULT DWOSDGroup::LoadFromXML(XMLElement *pElement)
 
 		if (_wcsicmp(element->name, L"label") == 0)
 		{
-			control = new DWOSDLabel();
+			control = new DWOSDLabel(m_pSurface);
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
@@ -69,7 +63,17 @@ HRESULT DWOSDGroup::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"button") == 0)
 		{
-			control = new DWOSDButton();
+			control = new DWOSDButton(m_pSurface);
+			control->SetLogCallback(m_pLogCallback);
+			if FAILED(control->LoadFromXML(element))
+			{
+				delete control;
+				control = NULL;
+			}
+		}
+		else if (_wcsicmp(element->name, L"list") == 0)
+		{
+			control = new DWOSDList(m_pSurface);
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
@@ -80,9 +84,6 @@ HRESULT DWOSDGroup::LoadFromXML(XMLElement *pElement)
 
 		if (control)
 		{
-			attr = element->Attributes.Item(L"name");
-			if (attr)
-				control->SetName(attr->value);
 			m_controls.push_back(control);
 		}
 	}
