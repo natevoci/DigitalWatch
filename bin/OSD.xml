@@ -132,6 +132,16 @@ $(() - $(
 				<padding left=10 top=0 right=10 bottom=3 />
 			</background>
 		</label>
+		<label>
+			<pos x=748 y=10 />
+			<text>$(CurrentDVBTCard)</text>
+			<font height=20 color="#FFFFFF" />
+			<align horizontal="right" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=3 />
+			</background>
+		</label>
 	</group>
 	<group name="Time">
 		<label>
@@ -208,7 +218,7 @@ $(() - $(
 		
 		<itemTemplate>
 			<height>60</height>
-			<gap>20</gap>
+			<gap>10</gap>
 			<font height=40 weight=700 color="#FFFFFF" />
 			<align horizontal="centre"/>
 			<background>
@@ -227,27 +237,6 @@ $(() - $(
 		<item>
 			<text>Exit</text>
 			<onSelect>Exit()</onSelect>
-		</item>
-		<item>
-			<text>A</text>
-		</item>
-		<item>
-			<text>B</text>
-		</item>
-		<item>
-			<text>C</text>
-		</item>
-		<item>
-			<text>D</text>
-		</item>
-		<item>
-			<text>E</text>
-		</item>
-		<item>
-			<text>F</text>
-		</item>
-		<item>
-			<text>G</text>
 		</item>
 	</list>
 	<!--
@@ -275,7 +264,7 @@ $(() - $(
 				SetSource(BDA)
 				ExitMenu(-1)
 			</onSelect>
-			<onDown>Exit</onDown>
+			<onDown>#Exit</onDown>
 		</highlight>
 	</button>
 	<button name="Exit">
@@ -289,7 +278,7 @@ $(() - $(
 		</background>
 		<highlight>
 			<onSelect>Exit()</onSelect>
-			<onUp>WatchTV</onUp>
+			<onUp>#WatchTV</onUp>
 		</highlight>
 	</button>
 	-->
@@ -319,8 +308,8 @@ $(() - $(
 		</background>
 		<highlight default=1>
 			<onSelect>NetworkDown() ExitMenu(-1)</onSelect>
-			<onRight>NetworkUp</onRight>
-			<onDown>ProgramDown</onDown>
+			<onRight>#NetworkUp</onRight>
+			<onDown>#ProgramDown</onDown>
 		</highlight>
 	</button>
 	<button name="NetworkUp">
@@ -334,12 +323,11 @@ $(() - $(
 		</background>
 		<highlight>
 			<onSelect>NetworkUp() ExitMenu(-1)</onSelect>
-			<onLeft>NetworkDown</onLeft>
-			<onDown>ProgramUp</onDown>
+			<onLeft>#NetworkDown</onLeft>
+			<onDown>#ProgramUp</onDown>
 		</highlight>
 	</button>
-	
-	
+		
 	<label>
 		<pos x=340 y=105 />
 		<text>Program</text>
@@ -356,8 +344,8 @@ $(() - $(
 		</background>
 		<highlight>
 			<onSelect>ProgramDown() ExitMenu(-1)</onSelect>
-			<onRight>ProgramUp</onRight>
-			<onUp>NetworkDown</onUp>
+			<onRight>#ProgramUp</onRight>
+			<onUp>#NetworkDown</onUp>
 		</highlight>
 	</button>
 	<button name="ProgramUp">
@@ -371,14 +359,14 @@ $(() - $(
 		</background>
 		<highlight>
 			<onSelect>ProgramUp() ExitMenu(-1)</onSelect>
-			<onLeft>ProgramDown</onLeft>
-			<onUp>NetworkUp</onUp>
+			<onLeft>#ProgramDown</onLeft>
+			<onUp>#NetworkUp</onUp>
 		</highlight>
 	</button>
 </window>
 
-<!--
-<window name="ChannelList">
+<window name="NetworkList">
+	<hideLowerWindows />
 	<keys>
 		<Key code= 13>Select()</>
 		<Key code= 37>Left()</>
@@ -388,44 +376,64 @@ $(() - $(
 	</keys>
 	
 	<list name="Networks">
-		<pos x=100 y=100 />
-		<size width=400 height=400 />
-		<background>
-			<image>BrownBackground</image>
-		</background>
+		<pos x=10 y=100 />
+		<size width=250 height=400 />
 		
 		<itemTemplate>
-			<height>60</height>
-			<gap>20</gap>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
 			<background>
 				<image>BrownButton</image>
 				<highlightImage>GreenButton</highlightImage>
 			</background>
 		</itemTemplate>
 		
-		<item>
-			<text>Seven</text>
-			<onSelect>SetChannel(1) ExitMenu()</onSelect>
-		</item>
-		<item>
-			<text>Ten</text>
-			<onSelect>SetChannel(2) ExitMenu()</onSelect>
-		</item>
-		<item>
-			<text>Nine</text>
-			<onSelect>SetChannel(3) ExitMenu()</onSelect>
-		</item>
-		<item>
-			<text>ABC</text>
-			<onSelect>SetChannel(4) ExitMenu()</onSelect>
-		</item>
-		<item>
-			<text>SBS</text>
-			<onSelect>SetChannel(5) ExitMenu()</onSelect>
+		<items>
+			<source>TVChannels.Networks</source>
+			<text>  $(TVChannels.Network.index). $(TVChannels.Network.name)</text>
+			<onSelect>SetChannel($(TVChannels.Network.index)) ExitMenu()</onSelect>
+			<!--<onRight>ExitMenu() ShowMenu("ProgramList($(TVChannels.Network.index))")</onRight>-->
+			<onRight>ShowMenu("ProgramList($(TVChannels.Network.index))")</onRight>
 		</item>
 	</list>
 </window>
--->
+
+<window name="ProgramList">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	
+	<list name="Programs">
+		<pos x=270 y=100 />
+		<size width=250 height=400 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+		
+		<items>
+			<source>TVChannels.Programs.$(window.ProgramList[0])</source>
+			<!--<text>  $(TVChannels.Program.index). $(TVChannels.Program.name)</text>-->
+			<text>$(TVChannels.Program.name)</text>
+			<onSelect>SetChannel($(window.ProgramList[0]), $(TVChannels.Program.index)) ExitMenu(2)</onSelect>
+			<!--<onLeft>ExitMenu() ShowMenu("NetworkList")</onLeft>-->
+			<onLeft>ExitMenu()</onLeft>
+		</item>
+	</list>
+</window>
 
 <window name="Messages">
 	<listbox>

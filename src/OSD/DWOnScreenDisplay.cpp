@@ -34,6 +34,8 @@ DWOnScreenDisplay::DWOnScreenDisplay()
 	m_pDirectDraw = new DWDirectDraw();
 	m_pOverlayWindow = NULL;
 	m_pCurrentWindow = NULL;
+	
+	m_pData = new DWOSDData(&windows);
 }
 
 DWOnScreenDisplay::~DWOnScreenDisplay()
@@ -87,10 +89,30 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 
 	if (m_pCurrentWindow != m_pOverlayWindow)
 	{
-		if (!m_pCurrentWindow->HideOverlay())
+		std::vector <DWOSDWindow *>::iterator it_begin = m_windowStack.begin();
+		std::vector <DWOSDWindow *>::iterator it_end = m_windowStack.end();
+		long it_count = m_windowStack.size();
+		std::vector <DWOSDWindow *>::iterator it = m_windowStack.end();
+		while (it && (it > m_windowStack.begin()))
+		{
+			it--;
+			if ((*it)->HideWindowsBehindThisOne())
+				break;
+		}
+
+		if ((it == NULL) || ((*it)->HideWindowsBehindThisOne() == FALSE))
 			m_pOverlayWindow->Render(tickCount);
+
+		for ( ; it < m_windowStack.end() ; it++ )
+		{
+			(*it)->Render(tickCount);
+		}
+		m_pCurrentWindow->Render(tickCount);
 	}
-	m_pCurrentWindow->Render(tickCount);
+	else
+	{
+		m_pCurrentWindow->Render(tickCount);
+	}
 
 	//Display FPS
 	DWSurfaceText text;
@@ -112,9 +134,25 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 
 HRESULT DWOnScreenDisplay::ShowMenu(LPWSTR szMenuName)
 {
-	DWOSDWindow *window = windows.GetWindow(szMenuName);
+	LPWSTR pCurr = NULL;
+	ParseLine parseLine;
+	parseLine.IgnoreRHS();
+	if (parseLine.Parse(szMenuName) == FALSE)
+	{
+		return (log << "Parse error in string: " << szMenuName << "\n").Write(E_FAIL);
+	}
+
+	pCurr = parseLine.LHS.FunctionName;
+
+	DWOSDWindow *window = windows.GetWindow(pCurr);
 	if (window)
 	{
+		window->ClearParameters();
+		for (int arg = 0 ; arg < parseLine.LHS.ParameterCount ; arg++ )
+		{
+			window->AddParameter(parseLine.LHS.Parameter[arg]);
+		}
+
 		if (m_pCurrentWindow != m_pOverlayWindow)
 			m_windowStack.push_back(m_pCurrentWindow);
 		m_pCurrentWindow = window;
@@ -226,5 +264,10 @@ HRESULT DWOnScreenDisplay::ExecuteCommand(ParseLine* command)
 DWOSDImage* DWOnScreenDisplay::GetImage(LPWSTR pName)
 {
 	return windows.GetImage(pName);
+}
+
+DWOSDData* DWOnScreenDisplay::Data()
+{
+	return m_pData;
 }
 

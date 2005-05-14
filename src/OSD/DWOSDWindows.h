@@ -52,18 +52,27 @@ public:
 	HRESULT OnRight();
 	HRESULT OnSelect();
 
-	BOOL HideOverlay() { return FALSE; }
+	BOOL HideWindowsBehindThisOne();
+
+	void ClearParameters();
+	void AddParameter(LPWSTR pwcsParameter);
+	LPWSTR GetParameter(long nIndex);
 
 private:
 	HRESULT LoadFromXML(XMLElement *pElement);
+
+	HRESULT OnKeyCommand(LPWSTR command);
 	HRESULT SetHighlightedControl(LPWSTR wszNextControl);
 
 	LPWSTR m_pName;
 	std::vector<DWOSDControl *> m_controls;
 
 	DWOSDControl *m_pHighlightedControl;
+	BOOL m_bHideWindowsBehindThisOne;
 
 	KeyMap m_keyMap;
+
+	std::vector<LPWSTR> m_parameters;
 };
 
 

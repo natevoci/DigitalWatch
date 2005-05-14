@@ -67,11 +67,11 @@ protected:
 
 	BOOL m_bCanHighlight;
 	BOOL m_bHighlighted;
-	LPWSTR m_pwcsControlUp;
-	LPWSTR m_pwcsControlDown;
-	LPWSTR m_pwcsControlLeft;
-	LPWSTR m_pwcsControlRight;
-	LPWSTR m_pwcsCommand;
+	LPWSTR m_pwcsOnUp;
+	LPWSTR m_pwcsOnDown;
+	LPWSTR m_pwcsOnLeft;
+	LPWSTR m_pwcsOnRight;
+	LPWSTR m_pwcsOnSelect;
 };
 
 #endif

@@ -24,25 +24,48 @@
 #define DWOSDDATA_H
 
 #include "DWOSDDataItem.h"
-#include "DWOSDDataList.h"
+#include "IDWOSDDataList.h"
+#include "DWOSDWindows.h"
 #include "LogMessage.h"
 
 class DWOSDData : public LogMessageCaller
 {
+private:
+	class DWOSDDataList
+	{
+	public:
+		DWOSDDataList()
+		{
+			name = NULL;
+			list = NULL;
+		}
+		virtual ~DWOSDDataList()
+		{
+			if (name)
+				delete[] name;
+		}
+
+		LPWSTR name;
+		IDWOSDDataList *list;
+	};
+
 public:
-	DWOSDData();
+	DWOSDData(DWOSDWindows *windows);
 	virtual ~DWOSDData();
 
 	void SetItem(LPWSTR name, LPWSTR value);
 	LPWSTR GetItem(LPWSTR name);
 
-	DWOSDDataList* GetList(LPWSTR pListName);
+	void AddList(LPWSTR pListName, IDWOSDDataList* list);
+	IDWOSDDataList* GetList(LPWSTR pListName);
 
-	HRESULT ReplaceTokens(LPWSTR pSource, LPWSTR &pResult);
+	HRESULT ReplaceTokens(LPWSTR pSource, LPWSTR &pResult, IDWOSDDataList* piDataList = NULL, long ixDataList = 0);
 
 private:
 	std::vector<DWOSDDataItem *> m_Items;
 	std::vector<DWOSDDataList *> m_Lists;
+
+	DWOSDWindows *m_pWindows;
 };
 
 #endif

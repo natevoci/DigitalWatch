@@ -36,6 +36,7 @@ DWOSDWindow::DWOSDWindow()
 {
 	m_pName = NULL;
 	m_pHighlightedControl = NULL;
+	m_bHideWindowsBehindThisOne = FALSE;
 }
 
 DWOSDWindow::~DWOSDWindow()
@@ -79,58 +80,91 @@ HRESULT DWOSDWindow::GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt
 
 HRESULT DWOSDWindow::OnUp()
 {
-	if (m_pHighlightedControl)
-	{
-		LPWSTR wszNextControl = m_pHighlightedControl->OnUp();
-		SetHighlightedControl(wszNextControl);
-	}
-	return S_FALSE;
+	if (m_pHighlightedControl == NULL)
+		return S_FALSE;
+
+	LPWSTR command = m_pHighlightedControl->OnUp();
+	return OnKeyCommand(command);
 }
 
 HRESULT DWOSDWindow::OnDown()
 {
-	if (m_pHighlightedControl)
-	{
-		LPWSTR wszNextControl = m_pHighlightedControl->OnDown();
-		SetHighlightedControl(wszNextControl);
-	}
-	return S_FALSE;
+	if (m_pHighlightedControl == NULL)
+		return S_FALSE;
+
+	LPWSTR command = m_pHighlightedControl->OnDown();
+	return OnKeyCommand(command);
 }
 
 HRESULT DWOSDWindow::OnLeft()
 {
-	if (m_pHighlightedControl)
-	{
-		LPWSTR wszNextControl = m_pHighlightedControl->OnLeft();
-		SetHighlightedControl(wszNextControl);
-	}
-	return S_FALSE;
+	if (m_pHighlightedControl == NULL)
+		return S_FALSE;
+
+	LPWSTR command = m_pHighlightedControl->OnLeft();
+	return OnKeyCommand(command);
 }
 
 HRESULT DWOSDWindow::OnRight()
 {
-	if (m_pHighlightedControl)
-	{
-		LPWSTR wszNextControl = m_pHighlightedControl->OnRight();
-		SetHighlightedControl(wszNextControl);
-	}
-	return S_FALSE;
+	if (m_pHighlightedControl == NULL)
+		return S_FALSE;
+
+	LPWSTR command = m_pHighlightedControl->OnRight();
+	return OnKeyCommand(command);
 }
 
 HRESULT DWOSDWindow::OnSelect()
 {
-	if (m_pHighlightedControl)
+	if (m_pHighlightedControl == NULL)
+		return S_FALSE;
+
+	LPWSTR command = m_pHighlightedControl->OnSelect();
+	return OnKeyCommand(command);
+}
+
+HRESULT DWOSDWindow::OnKeyCommand(LPWSTR command)
+{
+	if (command == NULL)
+		return S_FALSE;
+
+	if (command[0] == '#')
+		return SetHighlightedControl(command++);
+
+	HRESULT hr = g_pTv->ExecuteCommands(command);
+	if FAILED(hr)
+		(log << "An error occured executing the command " << command << " on control " << m_pHighlightedControl->Name() << "\n").Write();
+	return S_OK;
+}
+
+
+BOOL DWOSDWindow::HideWindowsBehindThisOne()
+{
+	return m_bHideWindowsBehindThisOne;
+}
+
+void DWOSDWindow::ClearParameters()
+{
+	std::vector<LPWSTR>::iterator it = m_parameters.begin();
+	for ( ; it < m_parameters.end() ; it++ )
 	{
-		LPWSTR command = m_pHighlightedControl->OnSelect();
-		if (command)
-		{
-			HRESULT hr = g_pTv->ExecuteCommands(command);
-			if FAILED(hr)
-				(log << "An error occured executing the command " << command << " on control " << m_pHighlightedControl->Name() << "\n").Write();
-			return S_OK;
-		}
+		delete[] (*it);
 	}
-	return S_FALSE;
+	m_parameters.clear();
+}
+
+void DWOSDWindow::AddParameter(LPWSTR pwcsParameter)
+{
+	LPWSTR newArg = NULL;
+	strCopy(newArg, pwcsParameter);
+	m_parameters.push_back(newArg);
+}
+
+LPWSTR DWOSDWindow::GetParameter(long nIndex)
+{
+	if ((nIndex < 0) || (nIndex >= m_parameters.size()))
+		return NULL;
+	return m_parameters.at(nIndex);
 }
 
 HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
@@ -155,6 +189,10 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		if (_wcsicmp(element->name, L"keys") == 0)
 		{
 			m_keyMap.LoadFromXML(&element->Elements);
+		}
+		else if (_wcsicmp(element->name, L"hidelowerwindows") == 0)
+		{
+			m_bHideWindowsBehindThisOne = TRUE;
 		}
 		else if (_wcsicmp(element->name, L"group") == 0)
 		{
@@ -247,9 +285,8 @@ HRESULT DWOSDWindow::SetHighlightedControl(LPWSTR wszNextControl)
 			return S_OK;
 		}
 	}
-	return S_FALSE;
+	return S_OK;
 }
-
 
 //////////////////////////////////////////////////////////////////////
 // DWOSDWindows

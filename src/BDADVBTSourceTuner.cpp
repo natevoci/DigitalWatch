@@ -367,3 +367,9 @@ BOOL BDADVBTSourceTuner::IsActive()
 {
 	return m_bActive;
 }
+
+LPWSTR BDADVBTSourceTuner::GetCardName()
+{
+	return m_pBDACard->tunerDevice.strFriendlyName;
+}
+

@@ -82,16 +82,29 @@ public:
 	virtual LPWSTR OnSelect();
 
 protected:
+	virtual void ClearItems();
 	virtual HRESULT Draw(long tickCount);
+	virtual HRESULT RefreshListItems();
 
 	virtual void UpdateScrolling();
 
 	DWSurface* m_pListSurface;
+	DWOSDListItem* m_pListItemTemplate;
 
 	long m_nPosX;
 	long m_nPosY;
 	long m_nWidth;
 	long m_nHeight;
+
+	long m_nHighlighedItem;
+
+	LPWSTR m_pItemsSource;
+	LPWSTR m_pItemsText;
+	LPWSTR m_pItemsOnSelect;
+	LPWSTR m_pItemsOnLeft;
+	LPWSTR m_pItemsOnRight;
+
+
 	long m_nYOffset;
 	long m_nLastTickCount;
 

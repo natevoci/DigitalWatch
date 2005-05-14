@@ -310,11 +310,7 @@ SOURCE=.\src\OSD\DWOSDDataItem.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\OSD\DWOSDDataList.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\OSD\DWOSDDataList.h
+SOURCE=.\src\OSD\IDWOSDDataList.h
 # End Source File
 # End Group
 # Begin Group "OSD Controls"

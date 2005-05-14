@@ -27,6 +27,7 @@
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "XMLDocument.h"
+#include "IDWOSDDataList.h"
 #include <vector>
 
 class DVBTChannels;
@@ -78,7 +79,7 @@ protected:
 };
 
 //Network
-class DVBTChannels_Network : public LogMessageCaller
+class DVBTChannels_Network : public LogMessageCaller, public IDWOSDDataList
 {
 	friend DVBTChannels;
 public:
@@ -102,14 +103,20 @@ public:
 	long GetNextProgramId();
 	long GetPrevProgramId();
 
+	//IDWOSDDataList Methods
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);
+	virtual long GetListSize();
+
 private:
 	std::vector<DVBTChannels_Program *> programs;
 
 	long m_nCurrentProgram;
+
+	LPWSTR m_dataListString;
 };
 
 //Channels
-class DVBTChannels : public LogMessageCaller
+class DVBTChannels : public LogMessageCaller, public IDWOSDDataList
 {
 public:
 	DVBTChannels();
@@ -128,6 +135,10 @@ public:
 	long GetNextNetworkId();
 	long GetPrevNetworkId();
 
+	//IDWOSDDataList Methods
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);
+	virtual long GetListSize();
+
 private:
 	std::vector<DVBTChannels_Network *> networks;
 
@@ -135,6 +146,8 @@ private:
 	LPWSTR m_filename;
 
 	long m_nCurrentNetwork;
+
+	LPWSTR m_dataListString;
 };
 
 #endif

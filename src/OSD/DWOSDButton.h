@@ -44,6 +44,9 @@ protected:
 	long m_nWidth;
 	long m_nHeight;
 
+	unsigned int m_uAlignHorizontal;
+	unsigned int m_uAlignVertical;
+
 	LPWSTR m_wszText;
 	LPWSTR m_wszFont;
 	COLORREF m_dwTextColor;

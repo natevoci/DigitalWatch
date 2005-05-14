@@ -34,6 +34,10 @@ DWOSDButton::DWOSDButton(DWSurface* pSurface) : DWOSDControl(pSurface)
 	m_nPosY = 0;
 	m_nWidth = 0;
 	m_nHeight = 0;
+
+	m_uAlignHorizontal = TA_CENTER;
+	m_uAlignVertical = TA_CENTER;
+
 	m_wszText = NULL;
 	m_wszFont = NULL;
 	m_dwTextColor = 0;
@@ -105,6 +109,33 @@ HRESULT DWOSDButton::LoadFromXML(XMLElement *pElement)
 			if (attr)
 				m_dwTextColor = wcsToColor(attr->value);
 		}
+		else if (_wcsicmp(element->name, L"align") == 0)
+		{
+			attr = element->Attributes.Item(L"horizontal");
+			if (attr)
+			{
+				if (_wcsicmp(attr->value, L"left") == 0)
+					m_uAlignHorizontal = TA_LEFT;
+				else if (_wcsicmp(attr->value, L"center") == 0)
+					m_uAlignHorizontal = TA_CENTER;
+				else if (_wcsicmp(attr->value, L"centre") == 0)
+					m_uAlignHorizontal = TA_CENTER;
+				else if (_wcsicmp(attr->value, L"right") == 0)
+					m_uAlignHorizontal = TA_RIGHT;
+			}
+			attr = element->Attributes.Item(L"vertical");
+			if (attr)
+			{
+				if (_wcsicmp(attr->value, L"top") == 0)
+					m_uAlignVertical = TA_TOP;
+				else if (_wcsicmp(attr->value, L"center") == 0)
+					m_uAlignVertical = TA_CENTER;
+				else if (_wcsicmp(attr->value, L"centre") == 0)
+					m_uAlignVertical = TA_CENTER;
+				else if (_wcsicmp(attr->value, L"bottom") == 0)
+					m_uAlignVertical = TA_BOTTOM;
+			}
+		}
 		else if (_wcsicmp(element->name, L"background") == 0)
 		{
 			int subElementCount = element->Elements.Count();
@@ -138,27 +169,27 @@ HRESULT DWOSDButton::LoadFromXML(XMLElement *pElement)
 				if (_wcsicmp(subelement->name, L"onSelect") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pwcsCommand, subelement->value);
+						strCopy(m_pwcsOnSelect, subelement->value);
 				}
 				else if (_wcsicmp(subelement->name, L"onUp") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pwcsControlUp, subelement->value);
+						strCopy(m_pwcsOnUp, subelement->value);
 				}
 				else if (_wcsicmp(subelement->name, L"onDown") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pwcsControlDown, subelement->value);
+						strCopy(m_pwcsOnDown, subelement->value);
 				}
 				else if (_wcsicmp(subelement->name, L"onLeft") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pwcsControlLeft, subelement->value);
+						strCopy(m_pwcsOnLeft, subelement->value);
 				}
 				else if (_wcsicmp(subelement->name, L"onRight") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pwcsControlRight, subelement->value);
+						strCopy(m_pwcsOnRight, subelement->value);
 				}
 			}
 		}
@@ -175,7 +206,7 @@ HRESULT DWOSDButton::Draw(long tickCount)
 
 	LPWSTR pStr = NULL;
 	//Replace Tokens
-	g_pOSD->data.ReplaceTokens(m_wszText, pStr);
+	g_pOSD->Data()->ReplaceTokens(m_wszText, pStr);
 
 	if (pStr[0] == '\0')
 		return S_OK;
@@ -212,11 +243,24 @@ HRESULT DWOSDButton::Draw(long tickCount)
 		}
 	}
 
-	SIZE extent;
-	hr = text.GetTextExtent(&extent);
+	long nPosX = m_nPosX;
+	long nPosY = m_nPosY;
 
-	long nPosX = m_nPosX + (m_nWidth / 2)  - (extent.cx / 2);
-	long nPosY = m_nPosY + (m_nHeight / 2) - (extent.cy / 2);
+	if ((m_uAlignHorizontal != TA_LEFT) || (m_uAlignVertical != TA_TOP))
+	{
+		SIZE extent;
+		hr = text.GetTextExtent(&extent);
+
+		if (m_uAlignHorizontal == TA_CENTER)
+			nPosX += (m_nWidth / 2) - (extent.cx / 2);
+		else if (m_uAlignHorizontal == TA_RIGHT)
+			nPosX += m_nWidth - extent.cx;
+		
+		if (m_uAlignVertical == TA_CENTER)
+			nPosY += (m_nHeight / 2) - (extent.cy / 2);
+		else if (m_uAlignVertical == TA_BOTTOM)
+			nPosY += m_nHeight - extent.cy;
+	}
 
 	m_pSurface->DrawText(&text, nPosX, nPosY);
 

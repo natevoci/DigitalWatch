@@ -1,6 +1,7 @@
 <!-- DigitalWatch BDA Source Keys -->
 
-  <Key code= 13>				ShowMenu(TVMenu)</>
+<!--  <Key code= 13>				ShowMenu("TVMenu")</>-->
+  <Key code= 13>				ShowMenu("NetworkList")</>
 
   <!-- keyboard numbers -->
   <Key code='0'>				SetChannel(10)</>

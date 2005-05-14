@@ -70,6 +70,8 @@ public:
 	//IBaseFilter*  m_piDWTSRedirect;
 	//DWTSRedirect* m_pfDWTSRedirect;
 
+	LPWSTR GetCardName();
+
 private:
 	BDACard *m_pBDACard;
 	DWGraph *m_pDWGraph;

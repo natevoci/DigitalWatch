@@ -426,7 +426,7 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 	}
 
 	HideOSDItem(L"UnknownKey");
-	g_pOSD->data.SetItem(L"LastKey", log.GetBuffer());
+	g_pOSD->Data()->SetItem(L"LastKey", log.GetBuffer());
 
 	log << "\n";
 	log.Write();
@@ -468,6 +468,9 @@ HRESULT TVControl::ExecuteCommands(LPCWSTR command)
 {
 	HRESULT hr = S_FALSE;
 	LPCWSTR pCurr = command;
+
+	if (command == NULL)
+		return hr;
 
 	while (wcslen(pCurr) > 0)
 	{

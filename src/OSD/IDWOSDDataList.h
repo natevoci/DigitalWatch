@@ -1,5 +1,5 @@
 /**
- *	DWOSDDataList.cpp
+ *	IDWOSDDataList.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,25 +20,16 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "DWOSDDataList.h"
+#ifndef IDWOSDDATALIST_H
+#define IDWOSDDATALIST_H
 
-//////////////////////////////////////////////////////////////////////
-// DWOSDDataList
-//////////////////////////////////////////////////////////////////////
+#include "StdAfx.h"
+#include <vector>
 
-DWOSDDataList::DWOSDDataList()
+interface IDWOSDDataList
 {
-	name = NULL;
-}
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex) = 0;
+	virtual long GetListSize() = 0;
+};
 
-DWOSDDataList::~DWOSDDataList()
-{
-	if (name)
-		delete[] name;
-	std::vector<LPWSTR>::iterator it = entries.begin();
-	for ( ; it < entries.end() ; it++ )
-	{
-		delete[] (*it);
-	}
-	entries.clear();
-}
+#endif

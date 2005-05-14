@@ -39,6 +39,8 @@ BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 {
 	m_pCurrentTuner = NULL;
 	m_pDWGraph = NULL;
+
+	g_pOSD->Data()->AddList(L"TVChannels.Networks", &channels);
 }
 
 BDADVBTSource::~BDADVBTSource()
@@ -572,8 +574,8 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 
 	DVBTChannels_Program* program = network->GetCurrentProgram();
 
-	g_pOSD->data.SetItem(L"CurrentNetwork", network->name);
-	g_pOSD->data.SetItem(L"CurrentProgram", program->name);
+	g_pOSD->Data()->SetItem(L"CurrentNetwork", network->name);
+	g_pOSD->Data()->SetItem(L"CurrentProgram", program->name);
 	g_pTv->ShowOSDItem(L"Channel", 10);
 
 	//Check if already on this network
@@ -626,6 +628,8 @@ HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
 		m_Tuners.erase(it);
 		m_Tuners.push_back(m_pCurrentTuner);
 		
+		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
+
 		indent.Release();
 		(log << "Finished Setting Channel\n").Write();
 

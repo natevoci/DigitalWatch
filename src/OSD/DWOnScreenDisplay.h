@@ -55,9 +55,10 @@ public:
 
 	//Stuff for controls to use
 	DWOSDImage* GetImage(LPWSTR pName);
-	DWOSDData data;
+	DWOSDData* Data();
 
 private:
+	DWOSDData* m_pData;
 
 	DWOSDWindows windows;
 

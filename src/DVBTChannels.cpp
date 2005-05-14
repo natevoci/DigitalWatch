@@ -23,6 +23,7 @@
 #include "DVBTChannels.h"
 #include "ParseLine.h"
 #include "GlobalFunctions.h"
+#include "Globals.h"
 
 //////////////////////////////////////////////////////////////////////
 // DVBTChannels_Program
@@ -209,6 +210,7 @@ DVBTChannels_Network::DVBTChannels_Network()
 	bandwidth = 0;
 	name = NULL;
 	m_nCurrentProgram = 1;
+	m_dataListString = NULL;
 }
 
 DVBTChannels_Network::~DVBTChannels_Network()
@@ -351,6 +353,34 @@ long DVBTChannels_Network::GetPrevProgramId()
 	return m_nCurrentProgram-1;
 }
 
+LPWSTR DVBTChannels_Network::GetListItem(LPWSTR name, long nIndex)
+{
+	if (!IsValidProgram(nIndex + 1))
+		return NULL;
+
+	DVBTChannels_Program *program = programs.at(nIndex);
+	if (_wcsicmp(name, L"TVChannels.Program.name") == 0)
+	{
+		return program->name;
+	}
+	else if (_wcsicmp(name, L"TVChannels.Program.index") == 0)
+	{
+		strCopy(m_dataListString, nIndex+1);
+		return m_dataListString;
+	}
+	else if (_wcsicmp(name, L"TVChannels.Program.ProgramNumber") == 0)
+	{
+		strCopy(m_dataListString, program->programNumber);
+		return m_dataListString;
+	}
+	return NULL;
+}
+
+long DVBTChannels_Network::GetListSize()
+{
+	return programs.size();
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // DVBTChannels
@@ -361,6 +391,7 @@ DVBTChannels::DVBTChannels()
 	m_bandwidth = 7;
 	m_filename = NULL;
 	m_nCurrentNetwork = 1;
+	m_dataListString = NULL;
 }
 
 DVBTChannels::~DVBTChannels()
@@ -419,7 +450,13 @@ HRESULT DVBTChannels::LoadChannels(LPWSTR filename)
 			DVBTChannels_Network *newNetwork = new DVBTChannels_Network();
 			newNetwork->bandwidth = m_bandwidth;
 			if (newNetwork->LoadFromXML(element) == S_OK)
+			{
 				networks.push_back(newNetwork);
+				LPWSTR listName = new wchar_t[1024];
+				swprintf(listName, L"TVChannels.Programs.%i", networks.size());
+				g_pOSD->Data()->AddList(listName, newNetwork);
+				delete[] listName;
+			}
 			else
 				delete newNetwork;
 			continue;
@@ -486,6 +523,9 @@ long DVBTChannels::GetCurrentNetworkId()
 
 HRESULT DVBTChannels::SetCurrentNetworkId(long nNetwork)
 {
+	if ((nNetwork == 0) && (m_nCurrentNetwork > 0))
+		return S_OK;
+
 	if (IsValidNetwork(nNetwork))
 	{
 		m_nCurrentNetwork = nNetwork;
@@ -518,4 +558,36 @@ long DVBTChannels::GetPrevNetworkId()
 	return m_nCurrentNetwork-1;
 }
 
+LPWSTR DVBTChannels::GetListItem(LPWSTR name, long nIndex)
+{
+	if (!IsValidNetwork(nIndex + 1))
+		return NULL;
+
+	DVBTChannels_Network *network = networks.at(nIndex);
+	if (_wcsicmp(name, L"TVChannels.Network.name") == 0)
+	{
+		return network->name;
+	}
+	else if (_wcsicmp(name, L"TVChannels.Network.index") == 0)
+	{
+		strCopy(m_dataListString, nIndex+1);
+		return m_dataListString;
+	}
+	else if (_wcsicmp(name, L"TVChannels.Network.frequency") == 0)
+	{
+		strCopy(m_dataListString, network->frequency);
+		return m_dataListString;
+	}
+	else if (_wcsicmp(name, L"TVChannels.Network.bandwidth") == 0)
+	{
+		strCopy(m_dataListString, network->bandwidth);
+		return m_dataListString;
+	}
+	return NULL;
+}
+
+long DVBTChannels::GetListSize()
+{
+	return networks.size();
+}
 

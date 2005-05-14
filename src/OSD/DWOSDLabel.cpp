@@ -167,7 +167,7 @@ HRESULT DWOSDLabel::Draw(long tickCount)
 
 	LPWSTR pStr = NULL;
 	//Replace Tokens
-	g_pOSD->data.ReplaceTokens(m_wszText, pStr);
+	g_pOSD->Data()->ReplaceTokens(m_wszText, pStr);
 
 	if (pStr[0] == '\0')
 		return S_OK;

@@ -29,9 +29,9 @@
 // DWOSDData
 //////////////////////////////////////////////////////////////////////
 
-DWOSDData::DWOSDData()
+DWOSDData::DWOSDData(DWOSDWindows *windows)
 {
-
+	m_pWindows = windows;
 }
 
 DWOSDData::~DWOSDData()
@@ -76,7 +76,15 @@ LPWSTR DWOSDData::GetItem(LPWSTR name)
 	return NULL;
 }
 
-DWOSDDataList* DWOSDData::GetList(LPWSTR pListName)
+void DWOSDData::AddList(LPWSTR pListName, IDWOSDDataList* list)
+{
+	DWOSDDataList* newList = new DWOSDDataList();
+	strCopy(newList->name, pListName);
+	newList->list = list;
+	m_Lists.push_back(newList);
+}
+
+IDWOSDDataList* DWOSDData::GetList(LPWSTR pListName)
 {
 	//look for existing list of same name
 	std::vector<DWOSDDataList *>::iterator it = m_Lists.begin();
@@ -85,17 +93,20 @@ DWOSDDataList* DWOSDData::GetList(LPWSTR pListName)
 		LPWSTR pName = (*it)->name;
 		if (_wcsicmp(pListName, pName) == 0)
 		{
-			return (*it);
+			return (*it)->list;
 		}
 	}
-	DWOSDDataList* newList = new DWOSDDataList();
-	strCopy(newList->name, pListName);
-	m_Lists.push_back(newList);
-	return newList;
+	return NULL;
 }
 
-HRESULT DWOSDData::ReplaceTokens(LPWSTR pSource, LPWSTR &pResult)
+HRESULT DWOSDData::ReplaceTokens(LPWSTR pSource, LPWSTR &pResult, IDWOSDDataList* piDataList, long ixDataList)
 {
+	if (pSource == NULL)
+	{
+		strCopy(pResult, L"");
+		return S_FALSE;
+	}
+
 	int dst = 0;
 	LPWSTR pBuff = NULL;
 	LPWSTR pCurr;
@@ -847,6 +858,35 @@ HRESULT DWOSDData::ReplaceTokens(LPWSTR pSource, LPWSTR &pResult)
 				}*/
 			}
 
+			else if (_wcsnicmp(pCurr, L"window.", 7) == 0)
+			{
+				pCurr += 7;
+				LPWSTR pParameter = wcschr(pCurr, '[');
+				if (pParameter)
+				{
+					LPWSTR pEnd = wcschr(pParameter, ']');
+					if (pEnd)
+					{
+						pParameter[0] = '\0';
+						pParameter++;
+						pEnd[0] = '\0';
+						long id = _wtoi(pParameter);
+
+						DWOSDWindow *window = m_pWindows->GetWindow(pCurr);
+						if (window)
+						{
+							LPWSTR data = window->GetParameter(id);
+							if (data)
+							{
+								if (_snwprintf(result, resultSize-dst, L"%s%s", result, data) < 0)
+									continue;
+							}
+						}
+					}
+				}
+				
+			}
+
 			else if (_wcsicmp(pCurr, L"ErrorMessage") == 0)
 			{
 				//if (_snwprintf(result, resultSize-dst, L"%s%s", result, g_pData->ErrorMessage.GetMessage()) < 0)
@@ -867,8 +907,17 @@ HRESULT DWOSDData::ReplaceTokens(LPWSTR pSource, LPWSTR &pResult)
 				}
 				else
 				{
-					//if (_snwprintf(result, resultSize-dst, L"%s$(%s)", result, pCurr) < 0)
-					//	continue;
+					data = piDataList->GetListItem(pCurr, ixDataList);
+					if (data)
+					{
+						if (_snwprintf(result, resultSize-dst, L"%s%s", result, data) < 0)
+							continue;
+					}
+					else
+					{
+						//if (_snwprintf(result, resultSize-dst, L"%s$(%s)", result, pCurr) < 0)
+						//	continue;
+					}
 				}
 			}
 			pSrc += wcslen(parseLine.LHS.Function);

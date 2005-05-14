@@ -40,11 +40,11 @@ DWOSDControl::DWOSDControl(DWSurface* pSurface)
 
 	m_bCanHighlight = FALSE;
 	m_bHighlighted = FALSE;
-	m_pwcsControlUp = NULL;
-	m_pwcsControlDown = NULL;
-	m_pwcsControlLeft = NULL;
-	m_pwcsControlRight = NULL;
-	m_pwcsCommand = NULL;
+	m_pwcsOnUp = NULL;
+	m_pwcsOnDown = NULL;
+	m_pwcsOnLeft = NULL;
+	m_pwcsOnRight = NULL;
+	m_pwcsOnSelect = NULL;
 }
 
 DWOSDControl::~DWOSDControl()
@@ -106,27 +106,27 @@ void DWOSDControl::Toggle()
 
 LPWSTR DWOSDControl::OnUp()
 {
-	return (m_pwcsControlUp ? m_pwcsControlUp : m_pwcsControlLeft);
+	return m_pwcsOnUp;
 }
 
 LPWSTR DWOSDControl::OnDown()
 {
-	return (m_pwcsControlDown ? m_pwcsControlDown : m_pwcsControlRight);
+	return m_pwcsOnDown;
 }
 
 LPWSTR DWOSDControl::OnLeft()
 {
-	return (m_pwcsControlLeft ? m_pwcsControlLeft : m_pwcsControlUp);
+	return m_pwcsOnLeft;
 }
 
 LPWSTR DWOSDControl::OnRight()
 {
-	return (m_pwcsControlRight ? m_pwcsControlRight : m_pwcsControlDown);
+	return m_pwcsOnRight;
 }
 
 LPWSTR DWOSDControl::OnSelect()
 {
-	return m_pwcsCommand;
+	return m_pwcsOnSelect;
 }
 
 void DWOSDControl::SetHighlight(BOOL bHighlighted)
