@@ -427,7 +427,7 @@ $(() - $(
 		<items>
 			<source>TVChannels.Programs.$(window.ProgramList[0])</source>
 			<!--<text>  $(TVChannels.Program.index). $(TVChannels.Program.name)</text>-->
-			<text>$(TVChannels.Program.name)</text>
+			<text>  $(TVChannels.Program.logicalChannelNumber). $(TVChannels.Program.name)</text>
 			<onSelect>SetChannel($(window.ProgramList[0]), $(TVChannels.Program.index)) ExitMenu(2)</onSelect>
 			<!--<onLeft>ExitMenu() ShowMenu("NetworkList")</onLeft>-->
 			<onLeft>ExitMenu()</onLeft>

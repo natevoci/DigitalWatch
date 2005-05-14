@@ -69,6 +69,7 @@ private:
 	CComPtr <IMediaControl> m_piMediaControl;
 
 	BOOL m_bInitialised;
+	BOOL m_bVideoRenderered;
 
 	DWORD m_rotEntry;
 

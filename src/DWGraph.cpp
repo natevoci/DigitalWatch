@@ -38,6 +38,7 @@ DWGraph::DWGraph()
 	m_piGraphBuilder = NULL;
 	m_piMediaControl = NULL;
 	m_bInitialised = FALSE;
+	m_bVideoRenderered = FALSE;
 	m_rotEntry = 0;
 }
 
@@ -152,41 +153,30 @@ HRESULT DWGraph::Start()
 
 	HRESULT hr;
 
-	//Set the video renderer to use our window.
-	CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
-	if (piVideoWindow)
+	if (m_bVideoRenderered)
 	{
-		if FAILED(hr = piVideoWindow->put_Owner((OAHWND)g_pData->hWnd))
-			return (log << "could not set IVideoWindow Window Handle: " << hr << "\n").Write(hr);
-
-		if FAILED(hr = piVideoWindow->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS))
-			return (log << "could not set IVideoWindow Window Style: " << hr << "\n").Write(hr);
-
-		if FAILED(hr = piVideoWindow->put_MessageDrain((OAHWND)g_pData->hWnd))
-			return (log << "could not set IVideoWindow Message Drain: " << hr << "\n").Write(hr);
-
-		//if FAILED(hr = piVideoWindow->put_AutoShow(OAFALSE))
-		//	return (log << "could not set IVideoWindow AutoShow: " << hr << "\n").Write(hr);
-	}
-
-	hr = InitialiseVideoPosition();
-	if FAILED(hr)
-		return (log << "Failed to refresh video posistion: " << hr << "\n").Write(hr);
-
-/*	IBaseFilter *pfOverlayMixer = NULL;
-	hr = GetOverlayMixer(m_piGraphBuilder, &pfOverlayMixer);
-	if (hr == S_OK)
-	{
-		IDDrawExclModeVideo* piDDrawExclModeVideo = NULL;
-		hr = pfOverlayMixer->QueryInterface(IID_IDDrawExclModeVideo, reinterpret_cast<void**>(piDDrawExclModeVideo));
-		if (hr == S_OK)
+		//Set the video renderer to use our window.
+		CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
+		if (piVideoWindow)
 		{
-			piDDrawExclModeVideo->SetCallbackInterface(m_pOverlayCallback, 0);
-			HelperRelease(piDDrawExclModeVideo);
+			if FAILED(hr = piVideoWindow->put_Owner((OAHWND)g_pData->hWnd))
+				return (log << "could not set IVideoWindow Window Handle: " << hr << "\n").Write(hr);
+
+			if FAILED(hr = piVideoWindow->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS))
+				return (log << "could not set IVideoWindow Window Style: " << hr << "\n").Write(hr);
+
+			if FAILED(hr = piVideoWindow->put_MessageDrain((OAHWND)g_pData->hWnd))
+				return (log << "could not set IVideoWindow Message Drain: " << hr << "\n").Write(hr);
+
+			//if FAILED(hr = piVideoWindow->put_AutoShow(OAFALSE))
+			//	return (log << "could not set IVideoWindow AutoShow: " << hr << "\n").Write(hr);
 		}
-		HelperRelease(pfOverlayMixer);
+
+		hr = InitialiseVideoPosition();
+		if FAILED(hr)
+			return (log << "Failed to refresh video posistion: " << hr << "\n").Write(hr);
 	}
-*/
+
 	hr = m_piMediaControl->Run();
 	if FAILED(hr)
 		return (log << "Failed to start graph: " << hr << "\n").Write(hr);
@@ -218,6 +208,9 @@ HRESULT DWGraph::Cleanup()
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
+
+	m_bVideoRenderered = FALSE;
+
 /*	CComQIPtr<IFilterChain> piFilterChain(m_piGraphBuilder);
 	if (piFilterChain == NULL)
 		return (log << "Failed to query IFilterChain\n").Write(E_NOINTERFACE);
@@ -264,7 +257,10 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 			continue;
 
 		if SUCCEEDED(hr = dwDecoder->AddFilters(m_piGraphBuilder, piPin))
+		{
+			m_bVideoRenderered = m_bVideoRenderered | dwDecoder->HasVideoRenderer();
 			break;
+		}
 
 		//hr = m_piGraphBuilder->Render(piPin);
 	}

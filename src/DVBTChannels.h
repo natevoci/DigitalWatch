@@ -70,6 +70,7 @@ public:
 	long GetStreamCount(DVBTChannels_Program_PID_Types streamtype);
 
 	long programNumber;
+	long logicalChannelNumber;
 	LPWSTR name;
 
 protected:

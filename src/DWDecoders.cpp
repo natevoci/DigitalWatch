@@ -46,6 +46,19 @@ LPWSTR DWDecoder::Name()
 	return L"";
 }
 
+BOOL DWDecoder::HasVideoRenderer()
+{
+	XMLElement *element = NULL;
+	int elementCount = m_pElement->Elements.Count();
+	for ( int item=0 ; item<elementCount ; item++ )
+	{
+		element = m_pElement->Elements.Item(item);
+		if (_wcsicmp(element->name, L"VideoRenderer") == 0)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 {
 	HRESULT hr;

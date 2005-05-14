@@ -38,6 +38,7 @@ public:
 	virtual ~DWDecoder();
 
 	LPWSTR Name();
+	BOOL HasVideoRenderer();
 
 	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin);
 

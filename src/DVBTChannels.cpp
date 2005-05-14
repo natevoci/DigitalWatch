@@ -32,6 +32,7 @@
 DVBTChannels_Program::DVBTChannels_Program()
 {
 	programNumber = 0;
+	logicalChannelNumber = 0;
 	name = NULL;
 	favoriteID = 0;
 	bManualUpdate = 0;
@@ -52,6 +53,10 @@ HRESULT DVBTChannels_Program::LoadFromXML(XMLElement *pElement)
 
 	attr = pElement->Attributes.Item(L"Name");
 	strCopy(name, (attr ? attr->value : L""));
+
+	attr = pElement->Attributes.Item(L"LCN");
+	if (attr)
+		logicalChannelNumber = _wtol(attr->value);
 
 	attr = pElement->Attributes.Item(L"FavoriteID");
 	if (attr)
@@ -103,15 +108,24 @@ HRESULT DVBTChannels_Program::SaveToXML(XMLElement *pElement)
 	strCopy(pValue, programNumber);
 	pElement->Attributes.Add(new XMLAttribute(L"ProgramNumber", pValue));
 	delete pValue;
+	pValue = NULL;
 
 	pElement->Attributes.Add(new XMLAttribute(L"Name", name));
 
+	if (logicalChannelNumber > 0)
+	{
+		strCopy(pValue, logicalChannelNumber);
+		pElement->Attributes.Add(new XMLAttribute(L"LCN", pValue));
+		delete pValue;
+		pValue = NULL;
+	}
+
 	if (favoriteID > 0)
 	{
-		pValue = NULL;
 		strCopy(pValue, favoriteID);
 		pElement->Attributes.Add(new XMLAttribute(L"FavoriteID", pValue));
 		delete pValue;
+		pValue = NULL;
 	}
 
 	if (bManualUpdate)
@@ -124,15 +138,15 @@ HRESULT DVBTChannels_Program::SaveToXML(XMLElement *pElement)
 
 		XMLElement *pStreamElement = new XMLElement(L"Stream");
 
-		pValue = NULL;
 		strCopy(pValue, pgStream.PID);
 		pStreamElement->Attributes.Add(new XMLAttribute(L"PID", pValue));
 		delete pValue;
-
 		pValue = NULL;
+
 		strCopy(pValue, pgStream.Type);
 		pStreamElement->Attributes.Add(new XMLAttribute(L"Type", pValue));
 		delete pValue;
+		pValue = NULL;
 
 		if (pgStream.bActive)
 			pStreamElement->Attributes.Add(new XMLAttribute(L"Active", L"1"));
@@ -274,11 +288,12 @@ HRESULT DVBTChannels_Network::SaveToXML(XMLElement *pElement)
 	strCopy(pValue, frequency);
 	pElement->Attributes.Add(new XMLAttribute(L"Frequency", pValue));
 	delete pValue;
-
 	pValue = NULL;
+
 	strCopy(pValue, bandwidth);
 	pElement->Attributes.Add(new XMLAttribute(L"Bandwidth", pValue));
 	delete pValue;
+	pValue = NULL;
 
 	pElement->Attributes.Add(new XMLAttribute(L"Name", name));
 
@@ -371,6 +386,11 @@ LPWSTR DVBTChannels_Network::GetListItem(LPWSTR name, long nIndex)
 	else if (_wcsicmp(name, L"TVChannels.Program.ProgramNumber") == 0)
 	{
 		strCopy(m_dataListString, program->programNumber);
+		return m_dataListString;
+	}
+	else if (_wcsicmp(name, L"TVChannels.Program.LogicalChannelNumber") == 0)
+	{
+		strCopy(m_dataListString, program->logicalChannelNumber);
 		return m_dataListString;
 	}
 	return NULL;
