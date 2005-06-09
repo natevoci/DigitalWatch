@@ -63,39 +63,53 @@ HRESULT DWDirectDraw::Init(HWND hWnd)
 	if (FAILED(hr))
 		return (log << "Failed to create DWOverlayCallback : " << hr << "\n").Write(hr);
 
-	hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
-	if (FAILED(hr))
-		return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
+	{
+		(log << "Enumerating DirectDraw devices\n").Write();
+		LogMessageIndent indent2(&log);
+		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
+		if (FAILED(hr))
+			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
+	}
+
+	/*if (m_Screens.size() > 1)
+	{
+		DWDirectDrawScreen* ddScreen = m_Screens.at(0);
+		if (ddScreen->
+		m_Screens.erase(m_Screens.begin());
+		delete ddScreen;
+	}*/
+
+	{
+		(log << "Creating DirectDraw screens\n").Write();
+		LogMessageIndent indent2(&log);
+		std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
+		for ( ; it < m_Screens.end() ; it++ )
+		{
+			DWDirectDrawScreen* ddScreen = *it;
+			hr = ddScreen->Create();
+			if (FAILED(hr))
+				return (log << "Failed to create DWDirectDrawScreen : " << hr << "\n").Write(hr);
+		}
+	}
 
 	return hr;
 }
 
 static BOOL CALLBACK DirectDrawEnumCB(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, LPVOID lpContext, HMONITOR hm)
 {
-	HRESULT hr;
 	DWDirectDraw *pDWDirectDraw = (DWDirectDraw *)lpContext;
-
-	hr = pDWDirectDraw->Enum(lpGUID, lpDriverDescription, lpDriverName, hm);
-
+	pDWDirectDraw->Enum(lpGUID, lpDriverDescription, lpDriverName, hm);
 	return TRUE;
 }
 
-HRESULT DWDirectDraw::Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm)
+void DWDirectDraw::Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm)
 {
-    HRESULT hr;
-    
-	if (hm == 0)
-		return S_OK;
+	(log << "Found device: " << (long)hm << " \"" << lpDriverName << "\" \"" << lpDriverDescription << "\"\n").Write();
+	LogMessageIndent indent(&log);
 
-	DWDirectDrawScreen* ddScreen = new DWDirectDrawScreen(m_hWnd, m_nBackBufferWidth, m_nBackBufferHeight);
+	DWDirectDrawScreen* ddScreen = new DWDirectDrawScreen(lpGUID, lpDriverDescription, lpDriverName, hm, m_hWnd, m_nBackBufferWidth, m_nBackBufferHeight);
 	ddScreen->SetLogCallback(m_pLogCallback);
-	hr = ddScreen->Create(lpGUID, lpDriverDescription, lpDriverName, hm);
-	if (FAILED(hr))
-		return (log << "Failed to create DWDirectDrawScreen : " << hr << "\n").Write(hr);
-
 	m_Screens.push_back(ddScreen);
-	
-	return hr;
 }
 
 HRESULT DWDirectDraw::Destroy()
@@ -103,8 +117,8 @@ HRESULT DWDirectDraw::Destroy()
 	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
 	for ( ; it < m_Screens.end() ; it++ )
 	{
-		DWDirectDrawScreen* screen = *it;
-		delete screen;
+		DWDirectDrawScreen* ddScreen = *it;
+		delete ddScreen;
 	}
 	m_Screens.clear();
 
@@ -123,8 +137,8 @@ HRESULT DWDirectDraw::Clear()
 	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
 	for ( ; it < m_Screens.end() ; it++ )
 	{
-		DWDirectDrawScreen* screen = *it;
-		hr = screen->Clear(m_bOverlayEnabled, &m_OverlayPositionRect, m_dwVideoKeyColor);
+		DWDirectDrawScreen* ddScreen = *it;
+		hr = ddScreen->Clear(m_bOverlayEnabled, &m_OverlayPositionRect, m_dwVideoKeyColor);
 		if FAILED(hr)
 			return (log << "Failed clearing surfaces\n").Write(hr);
 	}
@@ -139,8 +153,8 @@ HRESULT DWDirectDraw::Flip()
 	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
 	for ( ; it < m_Screens.end() ; it++ )
 	{
-		DWDirectDrawScreen* screen = *it;
-		hr = screen->Flip();
+		DWDirectDrawScreen* ddScreen = *it;
+		hr = ddScreen->Flip();
 		if FAILED(hr)
 			return (log << "Failed flipping surfaces\n").Write(hr);
 	}
@@ -214,8 +228,8 @@ HRESULT DWDirectDraw::CheckSurfaces()
 	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
 	for ( ; it < m_Screens.end() ; it++ )
 	{
-		DWDirectDrawScreen* screen = *it;
-		hr = screen->CheckSurfaces();
+		DWDirectDrawScreen* ddScreen = *it;
+		hr = ddScreen->CheckSurfaces();
 		if FAILED(hr)
 			return (log << "Failed checking surface\n").Write(hr);
 	}

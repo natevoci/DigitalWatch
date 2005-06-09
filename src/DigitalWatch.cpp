@@ -143,7 +143,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		//KillTimer(appData->hWnd, 998);
 	}
 
-
+	delete g_pOSD;
 	delete g_pDWWindow;
 	delete g_pTv;
 	delete g_pData;

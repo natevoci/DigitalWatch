@@ -31,10 +31,12 @@
 class DWDirectDrawScreen : public LogMessageCaller
 {
 public:
-	DWDirectDrawScreen(HWND hWnd, long nBackBufferWidth, long nBackBufferHeight);
+	DWDirectDrawScreen(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, 
+					   HMONITOR hm, HWND hWnd,
+					   long nBackBufferWidth, long nBackBufferHeight);
 	virtual ~DWDirectDrawScreen();
 
-	HRESULT Create(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm);
+	HRESULT Create();
 	HRESULT Destroy();
 	HRESULT CheckSurfaces();
 
@@ -45,17 +47,20 @@ public:
 
 	IDirectDrawSurface7* get_BackSurface();
 
-	HRESULT CreateSurface(long nWidth, long nHeight, IDirectDrawSurface7**	pSurface);
+	HRESULT CreateSurface(long nWidth, long nHeight, IDirectDrawSurface7** pSurface);
 
 private:
-	LPWSTR m_pstrDescription;
-	LPWSTR m_pstrName;
-
 	CComPtr<IDirectDraw7>			m_piDDObject;
 	CComPtr<IDirectDrawClipper>		m_piClipper;
 	CComPtr<IDirectDrawSurface7>	m_piFrontSurface;
 	CComPtr<IDirectDrawSurface7>	m_piBackSurface;
 
+	GUID *m_lpGUID;
+
+	LPWSTR m_pstrDescription;
+	LPWSTR m_pstrName;
+
+	HMONITOR m_hm;
 	HWND m_hWnd;
 	long m_nBackBufferWidth;
 	long m_nBackBufferHeight;

@@ -31,14 +31,27 @@
 // DWDirectDrawScreen
 //////////////////////////////////////////////////////////////////////
 
-DWDirectDrawScreen::DWDirectDrawScreen(HWND hWnd, long nBackBufferWidth, long nBackBufferHeight)
+DWDirectDrawScreen::DWDirectDrawScreen(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm, HWND hWnd, long nBackBufferWidth, long nBackBufferHeight)
 {
+	USES_CONVERSION;
+
+	m_lpGUID = NULL;
+	if (lpGUID)
+	{
+		m_lpGUID = new GUID();
+		memcpy(m_lpGUID, lpGUID, sizeof(GUID));
+	}
+
+	m_pstrDescription = NULL;
+	strCopy(m_pstrDescription, A2W(lpDriverDescription));
+
+	m_pstrName = NULL;
+	strCopy(m_pstrName, A2W(lpDriverName));
+
+	m_hm = hm;
 	m_hWnd = hWnd;
 	m_nBackBufferWidth = nBackBufferWidth;
 	m_nBackBufferHeight = nBackBufferHeight;
-
-	m_pstrDescription = NULL;
-	m_pstrName = NULL;
 
 	m_nMonitorX = 0;
 	m_nMonitorY = 0;
@@ -50,25 +63,42 @@ DWDirectDrawScreen::~DWDirectDrawScreen()
 {
 	Destroy();
 
+	if (m_lpGUID)
+		delete m_lpGUID;
 	if (m_pstrDescription)
 		delete[] m_pstrDescription;
 	if (m_pstrName)
 		delete[] m_pstrName;
 }
 
-HRESULT DWDirectDrawScreen::Create(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm)
+HRESULT DWDirectDrawScreen::Create()
 {
 	HRESULT hr;
 
-	USES_CONVERSION;
+	MONITORINFO monInfo;
+	ZeroMemory(&monInfo, sizeof(MONITORINFO));
+	monInfo.cbSize = sizeof(MONITORINFO);
+	GetMonitorInfo(m_hm, &monInfo);
 
-	strCopy(m_pstrDescription, A2W(lpDriverDescription));
-	strCopy(m_pstrName, A2W(lpDriverName));
-
-	(log << "Creating DirectDrawScreen: " << lpDriverName << " " << lpDriverDescription << "\n").Write();
+	(log << "Creating DirectDrawScreen: " << (long)m_hm << " \"" << m_pstrName << "\" \"" << m_pstrDescription << "\"  ").Write();
+	(log << "monitor(" 
+		 << monInfo.rcMonitor.left << ", "
+		 << monInfo.rcMonitor.right << ", "
+		 << monInfo.rcMonitor.top << ", "
+		 << monInfo.rcMonitor.bottom << ")  "
+		 << "work("
+		 << monInfo.rcWork.left << ", "
+		 << monInfo.rcWork.right << ", "
+		 << monInfo.rcWork.top << ", "
+		 << monInfo.rcWork.bottom << ")\n").Write();
 	LogMessageIndent indent(&log);
 
-	hr = DirectDrawCreateEx(lpGUID, (void**)&m_piDDObject, IID_IDirectDraw7, NULL);
+	m_nMonitorX = monInfo.rcMonitor.left;
+	m_nMonitorY = monInfo.rcMonitor.top;
+	m_nMonitorWidth = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
+	m_nMonitorHeight = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
+
+	hr = DirectDrawCreateEx(m_lpGUID, (void**)&m_piDDObject, IID_IDirectDraw7, NULL);
 	if (hr != DD_OK)
 		return (log << "DirectDrawCreateEx Failed : " << hr << "\n").Write(hr);
 
@@ -111,15 +141,6 @@ HRESULT DWDirectDrawScreen::Create(GUID FAR *lpGUID, LPSTR lpDriverDescription, 
 	hr = m_piDDObject->CreateSurface(&ddsd, &m_piBackSurface, NULL);
 	if FAILED(hr)
 		return (log << "Failed to create back surface : " << hr << "\n").Write(hr);
-
-	MONITORINFO monInfo;
-	ZeroMemory(&monInfo, sizeof(MONITORINFO));
-	monInfo.cbSize = sizeof(MONITORINFO);
-	GetMonitorInfo(hm, &monInfo);
-	m_nMonitorX = monInfo.rcMonitor.left;
-	m_nMonitorY = monInfo.rcMonitor.top;
-	m_nMonitorWidth = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
-	m_nMonitorHeight = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
 
 	return S_OK;
 }

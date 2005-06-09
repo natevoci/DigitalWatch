@@ -38,8 +38,9 @@ public:
 	virtual ~DWDirectDraw();
 
 	HRESULT Init(HWND hWnd);
-	HRESULT Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm);
 	HRESULT Destroy();
+
+	void Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm);
 
 	IDDrawExclModeVideoCallback* get_OverlayCallbackInterface();
 
