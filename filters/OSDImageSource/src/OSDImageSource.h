@@ -35,12 +35,14 @@
 
 class COSDImageSourcePin : public CSourceStream
 {
+	friend class COSDImageSourceFilter;
 public:
     COSDImageSourcePin(HRESULT *phr, CSource *pFilter);
     ~COSDImageSourcePin();
 
     // Override the version that offers exactly one media type
     HRESULT DecideBufferSize(IMemAllocator *pAlloc, ALLOCATOR_PROPERTIES *pRequest);
+	HRESULT DoBufferProcessingLoop();
     HRESULT FillBuffer(IMediaSample *pSample);
     
     // Set the agreed media type and set up the necessary parameters
@@ -49,6 +51,9 @@ public:
     // Support multiple display formats
     HRESULT CheckMediaType(const CMediaType *pMediaType);
     HRESULT GetMediaType(int iPosition, CMediaType *pmt);
+
+    HRESULT Run();
+
 
     // Quality control
 	// Not implemented because we aren't going in real time.
@@ -60,26 +65,29 @@ public:
     }
 
 protected:
-	HRESULT CopyDCToBitmap(LPRECT lpRect, BYTE *pData, BITMAPINFO *pHeader);
+	HRESULT Paint();
+	HRESULT CopyDCToBitmap(BYTE *pData, BITMAPINFO *pHeader);
+	HRESULT GetVideoSize(long &nWidth, long &nHeight);
+	HRESULT GetReferenceClock(IReferenceClock **pClock);
 
-    int m_FramesWritten;				// To track where we are in the file
-    BOOL m_bZeroMemory;                 // Do we need to clear the buffer?
-    CRefTime m_rtSampleTime;	        // The time stamp for each sample
+	REFERENCE_TIME m_rtStartTime;
 
     int m_iFrameNumber;
-    const REFERENCE_TIME m_rtFrameLength;
-
-    RECT m_rScreen;                     // Rect containing entire screen coordinates
-
     int m_iImageHeight;                 // The current image height
     int m_iImageWidth;                  // And current image width
-    int m_iRepeatTime;                  // Time in msec between frames
-    int m_nCurrentBitDepth;             // Screen bit depth
+	BOOL m_bImageFlipped;
+	BOOL m_bImageUpdated;
 
-    CMediaType m_MediaType;
-    CCritSec m_cSharedState;            // Protects our internal state
-    CImageDisplay m_Display;            // Figures out our media type for us
+	//CMediaType m_MediaType;
+    CCritSec m_Lock;
 
+    HDC m_hScrDC;
+	HDC m_hMemDC;
+    HBITMAP m_hBitmap;
+	HBITMAP m_hOldBitmap;
+
+	BOOL m_bTestPattern;
+	LPWSTR m_pstrDisplay;
 };
 
 /**********************************************
@@ -102,7 +110,13 @@ public:
 	STDMETHODIMP GetPages(CAUUID *pPages);
 
 	//IOSDImageSource
-	STDMETHODIMP DoStuff();
+	STDMETHODIMP get_TestPattern(BOOL *bTestPattern);
+	STDMETHODIMP set_TestPattern(BOOL  bTestPattern);
+
+	STDMETHODIMP GetDC(HDC* phdc);
+	STDMETHODIMP ReleaseDC();
+	STDMETHODIMP EraseBackground();
+	STDMETHODIMP GetWindowRect(LPRECT lpRect);
 
 private:
     COSDImageSourceFilter(IUnknown *pUnk, HRESULT *phr);

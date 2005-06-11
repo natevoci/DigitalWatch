@@ -30,8 +30,13 @@ DEFINE_GUID(IID_IOSDImageSource,
 
 interface IOSDImageSource : public IUnknown
 {
-	//HRESULT __stdcall GetDC(void *phdc) = 0;
-	virtual STDMETHODIMP DoStuff() = 0;
+	virtual STDMETHODIMP get_TestPattern(BOOL *bTestPattern) = 0;
+	virtual STDMETHODIMP set_TestPattern(BOOL  bTestPattern) = 0;
+
+	virtual STDMETHODIMP GetDC(HDC* phdc) = 0;
+	virtual STDMETHODIMP ReleaseDC() = 0;
+	virtual STDMETHODIMP EraseBackground() = 0;
+	virtual STDMETHODIMP GetWindowRect(LPRECT lpRect) = 0;
 };
 
 #endif

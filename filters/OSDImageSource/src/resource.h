@@ -10,6 +10,8 @@
 #define IDD_PROPPAGE                    107
 #define IDC_EDIT_DISPLAYTEXT            1000
 #define IDC_BUTTON_UPDATE               1001
+#define IDC_BUTTON_CLEAR                1002
+#define IDC_CHECK_TESTPATTERN           1004
 #define VERSION_RES_LANGUAGE            0x409
 #define VERSION_RES_CHARSET             1252
 #define IDC_STATIC                      -1
@@ -21,7 +23,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        101
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1002
+#define _APS_NEXT_CONTROL_VALUE         1005
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
