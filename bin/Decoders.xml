@@ -1,224 +1,29 @@
 <!--
   -- Video Decoders
   -->
-<Decoder name="GPL MPEG-1/2 Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{CE1B27BE-851B-45DD-AB26-44389A8F71B4}" name="GPL MPEG-1/2 Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
-
-    <InputFilter name="GPL MPEG-1/2 Decoder" pin="Video" />
-    <Connect>
-    	<From name="GPL MPEG-1/2 Decoder" pin="Output" />
-    	<To name="Overlay Mixer" />
-   	</>
-</Decoder>
-
-<Decoder name="GPL MPEG-1/2 Decoder - VMR9">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{CE1B27BE-851B-45DD-AB26-44389A8F71B4}" name="GPL MPEG-1/2 Decoder" />
-    <VideoRenderer name="VMR9" />
-
-    <InputFilter name="GPL MPEG-1/2 Decoder" pin="Video" />
-    <Connect>
-    	<From name="GPL MPEG-1/2 Decoder" pin="Output" />
-    	<To name="VMR9" />
-   	</>
-</Decoder>
-
-<Decoder name="CyberLink PowerDTV Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{DD1C057A-FE99-477C-835F-3A89EF577C6F}" name="Cyberlink DTV Video Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
-
-    <InputFilter name="Cyberlink DTV Video Decoder" pin="Video In" />
-    <Connect>
-    	<From name="Cyberlink DTV Video Decoder" pin="Video Out" />
-    	<To name="Overlay Mixer" />
-   	</>
-</Decoder>
-
-<Decoder name="CyberLink PowerDTV Decoder - VMR9">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{DD1C057A-FE99-477C-835F-3A89EF577C6F}" name="Cyberlink DTV Video Decoder" />
-    <VideoRenderer name="VMR9" />
-
-    <InputFilter name="Cyberlink DTV Video Decoder" pin="Video In" />
-    <Connect>
-    	<From name="Cyberlink DTV Video Decoder" pin="Video Out" />
-    	<To name="VMR9" />
-   	</>
-</Decoder>
-
-<Decoder name="DNTV Live Video Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{CA61C7F0-03B5-11D9-9669-0800200C9A66}" name="DNTV Live Video Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
-
-    <InputFilter name="DNTV Live Video Decoder" pin="Video" />
-    <Connect>
-    	<From name="DNTV Live Video Decoder" pin="Output" />
-    	<To name="Overlay Mixer" />
-   	</>
-</Decoder>
-
-<Decoder name="DNTV Live Video Decoder - VMR9">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{CA61C7F0-03B5-11D9-9669-0800200C9A66}" name="DNTV Live Video Decoder" />
-    <VideoRenderer name="VMR9" />
-
-    <InputFilter name="DNTV Live Video Decoder" pin="Video" />
-    <Connect>
-    	<From name="DNTV Live Video Decoder" pin="Output" />
-    	<To name="VMR9" />
-   	</>
-</Decoder>
-
-<Decoder name="Cyberlink6 Video Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{9BB7C73D-EC42-4288-8006-D5D8350B1DF3}" name="Cyberlink6 Video Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
-
-    <InputFilter name="Cyberlink6 Video Decoder" pin="Video In" />
-    <Connect>
-    	<From name="Cyberlink6 Video Decoder" pin="Video Out" />
-    	<To name="Overlay Mixer" />
-   	</>
-</Decoder>
-
-<Decoder name="Cyberlink6 Video Decoder - VMR9">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{9BB7C73D-EC42-4288-8006-D5D8350B1DF3}" name="Cyberlink6 Video Decoder" />
-    <VideoRenderer name="VMR9" />
-
-    <InputFilter name="Cyberlink6 Video Decoder" pin="Video In" />
-    <Connect>
-    	<From name="Cyberlink6 Video Decoder" pin="Video Out" />
-    	<To name="VMR9" />
-   	</>
-</Decoder>
-
-<Decoder name="CyberLink PowerDVD Video Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{9BC1B781-85E3-11D2-98D0-0080C84E9C39}" name="Cyberlink Video/SP Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
-
-    <InputFilter name="Cyberlink Video/SP Decoder" pin="Video In" />
-    <Connect>
-    	<From name="Cyberlink Video/SP Decoder" pin="Video Out" />
-    	<To name="Overlay Mixer" />
-   	</>
-</Decoder>
-
-<Decoder name="CyberLink PowerDVD Video Decoder - VMR9">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{9BC1B781-85E3-11D2-98D0-0080C84E9C39}" name="Cyberlink Video/SP Decoder" />
-    <VideoRenderer name="VMR9" />
-
-    <InputFilter name="Cyberlink Video/SP Decoder" pin="Video In" />
-    <Connect>
-    	<From name="Cyberlink Video/SP Decoder" pin="Video Out" />
-    	<To name="VMR9" />
-   	</>
-</Decoder>
-
-<Decoder name="Intervideo Video Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{0246CA20-776D-11D2-8010-00104B9B8592}" name="Intervideo Video Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
-
-    <InputFilter name="Intervideo Video Decoder" pin="Video Input" />
-    <Connect>
-    	<From name="Intervideo Video Decoder" pin="Video Output" />
-    	<To name="Overlay Mixer" />
-   	</>
-</Decoder>
-
-<Decoder name="Intervideo Video Decoder - VMR9">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{0246CA20-776D-11D2-8010-00104B9B8592}" name="Intervideo Video Decoder" />
-    <VideoRenderer name="VMR9" />
-
-    <InputFilter name="Intervideo Video Decoder" pin="Video Input" />
-    <Connect>
-    	<From name="Intervideo Video Decoder" pin="Video Output" />
-    	<To name="VMR9" />
-   	</>
-</Decoder>
-
-<Decoder name="Elecard Video Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{F50B3F13-19C4-11CF-AA9A-02608C9BABA2}" name="Elecard Video Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
-
-    <InputFilter name="Elecard Video Decoder" pin="MPEG In" />
-    <Connect>
-    	<From name="Elecard Video Decoder" pin="Video Out" />
-    	<To name="Overlay Mixer" />
-   	</>
-</Decoder>
-
-<Decoder name="Elecard Video Decoder - VMR9">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{F50B3F13-19C4-11CF-AA9A-02608C9BABA2}" name="Elecard Video Decoder" />
-    <VideoRenderer name="VMR9" />
-
-    <InputFilter name="Elecard Video Decoder" pin="MPEG In" />
-    <Connect>
-    	<From name="Elecard Video Decoder" pin="Video Out" />
-    	<To name="VMR9" />
-   	</>
-</Decoder>
-
-<Decoder name="NVIDIA Video Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{71E4616A-DB5E-452B-8CA5-71D9CC7805E9}" name="NVIDIA Video Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
-
-    <InputFilter name="NVIDIA Video Decoder" pin="Video Input" />
-    <Connect>
-    	<From name="NVIDIA Video Decoder" pin="Video Output" />
-    	<To name="Overlay Mixer" />
-   	</>
-</Decoder>
-
-<Decoder name="NVIDIA Video Decoder - VMR9">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{71E4616A-DB5E-452B-8CA5-71D9CC7805E9}" name="NVIDIA Video Decoder" />
-    <VideoRenderer name="VMR9" />
-
-    <InputFilter name="NVIDIA Video Decoder" pin="Video Input" />
-    <Connect>
-    	<From name="NVIDIA Video Decoder" pin="Video Output" />
-    	<To name="VMR9" />
-   	</>
-</Decoder>
-
 <Decoder name="Mpeg2Dec Video Decoder">
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" pin="Video" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
-    	<From name="Mpeg2Dec Video Decoder" pin="Output" />
+    	<From name="Mpeg2Dec Video Decoder" />
     	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="Mpeg2Dec Video Decoder - VMR7">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <VideoRenderer name="VMR7" />
+
+    <InputFilter name="Mpeg2Dec Video Decoder" />
+    <Connect>
+    	<From name="Mpeg2Dec Video Decoder" />
+    	<To name="VMR7" />
    	</>
 </Decoder>
 
@@ -228,9 +33,9 @@
     <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" pin="Video" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
-    	<From name="Mpeg2Dec Video Decoder" pin="Output" />
+    	<From name="Mpeg2Dec Video Decoder" />
     	<To name="VMR9" />
    	</>
 </Decoder>
@@ -242,14 +47,222 @@
     <LoadFilter clsid="{0B390488-D80F-4A68-8408-48DC199F0E97}" name="ffdshow" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" pin="Video" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
-    	<From name="Mpeg2Dec Video Decoder" pin="Output" />
+    	<From name="Mpeg2Dec Video Decoder" />
     	<To name="ffdshow" />
     </>
     <Connect>
     	<From name="ffdshow" />
     	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="GPL MPEG-1/2 Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{CE1B27BE-851B-45DD-AB26-44389A8F71B4}" name="GPL MPEG-1/2 Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="GPL MPEG-1/2 Decoder" />
+    <Connect>
+    	<From name="GPL MPEG-1/2 Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="GPL MPEG-1/2 Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{CE1B27BE-851B-45DD-AB26-44389A8F71B4}" name="GPL MPEG-1/2 Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="GPL MPEG-1/2 Decoder" />
+    <Connect>
+    	<From name="GPL MPEG-1/2 Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
+<Decoder name="CyberLink PowerDTV Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{DD1C057A-FE99-477C-835F-3A89EF577C6F}" name="Cyberlink DTV Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="Cyberlink DTV Video Decoder" />
+    <Connect>
+    	<From name="Cyberlink DTV Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="CyberLink PowerDTV Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{DD1C057A-FE99-477C-835F-3A89EF577C6F}" name="Cyberlink DTV Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="Cyberlink DTV Video Decoder" />
+    <Connect>
+    	<From name="Cyberlink DTV Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
+<Decoder name="DNTV Live Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{CA61C7F0-03B5-11D9-9669-0800200C9A66}" name="DNTV Live Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="DNTV Live Video Decoder" />
+    <Connect>
+    	<From name="DNTV Live Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="DNTV Live Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{CA61C7F0-03B5-11D9-9669-0800200C9A66}" name="DNTV Live Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="DNTV Live Video Decoder" />
+    <Connect>
+    	<From name="DNTV Live Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
+<Decoder name="Cyberlink6 Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{9BB7C73D-EC42-4288-8006-D5D8350B1DF3}" name="Cyberlink6 Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="Cyberlink6 Video Decoder" />
+    <Connect>
+    	<From name="Cyberlink6 Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="Cyberlink6 Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{9BB7C73D-EC42-4288-8006-D5D8350B1DF3}" name="Cyberlink6 Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="Cyberlink6 Video Decoder" />
+    <Connect>
+    	<From name="Cyberlink6 Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
+<Decoder name="CyberLink PowerDVD Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{9BC1B781-85E3-11D2-98D0-0080C84E9C39}" name="Cyberlink Video/SP Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="Cyberlink Video/SP Decoder" />
+    <Connect>
+    	<From name="Cyberlink Video/SP Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="CyberLink PowerDVD Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{9BC1B781-85E3-11D2-98D0-0080C84E9C39}" name="Cyberlink Video/SP Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="Cyberlink Video/SP Decoder" />
+    <Connect>
+    	<From name="Cyberlink Video/SP Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
+<Decoder name="Intervideo Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{0246CA20-776D-11D2-8010-00104B9B8592}" name="Intervideo Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="Intervideo Video Decoder" />
+    <Connect>
+    	<From name="Intervideo Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="Intervideo Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{0246CA20-776D-11D2-8010-00104B9B8592}" name="Intervideo Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="Intervideo Video Decoder" />
+    <Connect>
+    	<From name="Intervideo Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
+<Decoder name="Elecard Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{F50B3F13-19C4-11CF-AA9A-02608C9BABA2}" name="Elecard Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="Elecard Video Decoder" />
+    <Connect>
+    	<From name="Elecard Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="Elecard Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{F50B3F13-19C4-11CF-AA9A-02608C9BABA2}" name="Elecard Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="Elecard Video Decoder" />
+    <Connect>
+    	<From name="Elecard Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
+<Decoder name="NVIDIA Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{71E4616A-DB5E-452B-8CA5-71D9CC7805E9}" name="NVIDIA Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="NVIDIA Video Decoder" />
+    <Connect>
+    	<From name="NVIDIA Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="NVIDIA Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{71E4616A-DB5E-452B-8CA5-71D9CC7805E9}" name="NVIDIA Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="NVIDIA Video Decoder" />
+    <Connect>
+    	<From name="NVIDIA Video Decoder" />
+    	<To name="VMR9" />
    	</>
 </Decoder>
 
@@ -265,9 +278,9 @@
     <LoadFilter clsid="{4A2286E0-7BEF-11CE-9BD9-0000E202599C}" name="MPEG Audio Decoder" />
     <AudioRenderer name="Default DirectSound Device" />
     
-    <InputFilter name="MPEG Audio Decoder" pin="XForm In" />
+    <InputFilter name="MPEG Audio Decoder" />
     <Connect>
-    	<From name="MPEG Audio Decoder" pin="XForm Out" />
+    	<From name="MPEG Audio Decoder" />
     	<To name="Default DirectSound Device" />
     </>
 </Decoder>
@@ -280,9 +293,9 @@
     <LoadFilter clsid="{9D82DFD0-03C9-11D9-9669-0800200C9A66}" name="DNTV Live! Audio" />
     <AudioRenderer name="Default DirectSound Device" />
     
-    <InputFilter name="DNTV Live! Audio" pin="In" />
+    <InputFilter name="DNTV Live! Audio" />
     <Connect>
-    	<From name="DNTV Live! Audio" pin="Out" />
+    	<From name="DNTV Live! Audio" />
     	<To name="Default DirectSound Device" />
     </>
 </Decoder>
@@ -295,7 +308,7 @@
     <LoadFilter clsid="{0246CA20-776D-11D2-8010-00104B9B8592}" name="InterVideo Audio Decoder" />
     <AudioRenderer name="Default DirectSound Device" />
     
-    <InputFilter name="InterVideo Audio Decoder" pin="XForm In" />
+    <InputFilter name="InterVideo Audio Decoder" />
     <Connect>
     	<From name="InterVideo Audio Decoder" />
     	<To name="Default DirectSound Device" />
@@ -308,9 +321,9 @@
     <LoadFilter clsid="{A753A1EC-973E-4718-AF8E-A3F554D45C44}" name="AC3Filter" />
     <AudioRenderer name="Default DirectSound Device" />
 
-   	<InputFilter name="AC3Filter" pin="In" />
+   	<InputFilter name="AC3Filter" />
     <Connect>
-    	<From name="AC3Filter" pin="Out" />
+    	<From name="AC3Filter" />
     	<To name="Default DirectSound Device" />
     </>
 </Decoder>
@@ -323,9 +336,9 @@
     <LoadFilter clsid="{B38C58A0-1809-11D6-A458-EDAE78F1DF12}" name="DC-DSP Filter" />
     <AudioRenderer name="Default DirectSound Device" />
     
-    <InputFilter name="MPEG Audio Decoder" pin="XForm In" />
+    <InputFilter name="MPEG Audio Decoder" />
     <Connect>
-    	<From name="MPEG Audio Decoder" pin="XForm Out" />
+    	<From name="MPEG Audio Decoder" />
     	<To name="DC-DSP Filter" />
     </>
     <Connect>
@@ -343,9 +356,9 @@
     <LoadFilter clsid="{B38C58A0-1809-11D6-A458-EDAE78F1DF12}" name="DC-DSP Filter" />
     <AudioRenderer name="Default DirectSound Device" />
     
-    <InputFilter name="DNTV Live! Audio" pin="In" />
+    <InputFilter name="DNTV Live! Audio" />
     <Connect>
-    	<From name="DNTV Live! Audio" pin="Out" />
+    	<From name="DNTV Live! Audio" />
     	<To name="DC-DSP Filter" />
     </>
     <Connect>
@@ -366,15 +379,30 @@
     <LoadFilter clsid="{56CEFDAD-FDF1-4C89-9082-4F3A7424AD81}" name="DVBTeletextSubtitles" />
     <LoadFilter clsid="{1643E180-90F5-11CE-97D5-00AA0055595A}" name="Color Space Converter" />
 
-    <InputFilter name="DVBTeletextSubtitles" pin="Teletext PID Input" />
+    <InputFilter name="DVBTeletextSubtitles" />
     <Connect>
-    	<From name="DVBTeletextSubtitles" pin="Teletext Video Output" />
+    	<From name="DVBTeletextSubtitles" />
     	<To name="Color Space Converter" />
     </>
     <Connect>
     	<From name="Color Space Converter" pin="XForm Out" />
     	<To name="Overlay Mixer" />
     </>
-
 </Decoder>
 
+<Decoder name="DVBTeletextSubtitles - VMR9">
+	<MediaType name="Teletext" />
+	
+    <LoadFilter clsid="{56CEFDAD-FDF1-4C89-9082-4F3A7424AD81}" name="DVBTeletextSubtitles" />
+    <LoadFilter clsid="{1643E180-90F5-11CE-97D5-00AA0055595A}" name="Color Space Converter" />
+
+    <InputFilter name="DVBTeletextSubtitles" />
+    <Connect>
+    	<From name="DVBTeletextSubtitles" />
+    	<To name="Color Space Converter" />
+    </>
+    <Connect>
+    	<From name="Color Space Converter" pin="XForm Out" />
+    	<To name="VMR9" />
+    </>
+</Decoder>
