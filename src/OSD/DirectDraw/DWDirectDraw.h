@@ -65,6 +65,8 @@ private:
 	long m_lTickCount;
 	double m_fFPS;
 
+	BOOL m_bAddEnumeratedDevices;
+
 	std::vector<DWDirectDrawScreen*> m_Screens;
 	DWSurface *m_pDWSurface;
 

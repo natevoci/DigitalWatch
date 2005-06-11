@@ -39,6 +39,8 @@ DWDirectDraw::DWDirectDraw()
 	m_lTickCount = 0;
 	m_fFPS = 0;
 
+	m_bAddEnumeratedDevices = FALSE;
+
 	m_pOverlayCallback = NULL;
 	m_bOverlayEnabled = FALSE;
 	SetRect(&m_OverlayPositionRect, 0, 0, 1, 1);
@@ -63,7 +65,31 @@ HRESULT DWDirectDraw::Init(HWND hWnd)
 	if (FAILED(hr))
 		return (log << "Failed to create DWOverlayCallback : " << hr << "\n").Write(hr);
 
+	m_bAddEnumeratedDevices = FALSE;
 	{
+		(log << "Enumerating Primary DirectDraw devices\n").Write();
+		LogMessageIndent indent2(&log);
+		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, NULL);
+		if (FAILED(hr))
+			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
+	}
+	{
+		(log << "Enumerating Attached DirectDraw devices\n").Write();
+		LogMessageIndent indent2(&log);
+		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
+		if (FAILED(hr))
+			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
+	}
+	{
+		(log << "Enumerating Detached DirectDraw devices\n").Write();
+		LogMessageIndent indent2(&log);
+		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_DETACHEDSECONDARYDEVICES);
+		if (FAILED(hr))
+			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
+	}
+	
+	m_bAddEnumeratedDevices = TRUE;
+	{	
 		(log << "Enumerating DirectDraw devices\n").Write();
 		LogMessageIndent indent2(&log);
 		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
@@ -71,13 +97,12 @@ HRESULT DWDirectDraw::Init(HWND hWnd)
 			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
 	}
 
-	/*if (m_Screens.size() > 1)
+	if (m_Screens.size() > 1)
 	{
 		DWDirectDrawScreen* ddScreen = m_Screens.at(0);
-		if (ddScreen->
 		m_Screens.erase(m_Screens.begin());
 		delete ddScreen;
-	}*/
+	}
 
 	{
 		(log << "Creating DirectDraw screens\n").Write();
@@ -107,9 +132,12 @@ void DWDirectDraw::Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDri
 	(log << "Found device: " << (long)hm << " \"" << lpDriverName << "\" \"" << lpDriverDescription << "\"\n").Write();
 	LogMessageIndent indent(&log);
 
-	DWDirectDrawScreen* ddScreen = new DWDirectDrawScreen(lpGUID, lpDriverDescription, lpDriverName, hm, m_hWnd, m_nBackBufferWidth, m_nBackBufferHeight);
-	ddScreen->SetLogCallback(m_pLogCallback);
-	m_Screens.push_back(ddScreen);
+	if (m_bAddEnumeratedDevices)
+	{
+		DWDirectDrawScreen* ddScreen = new DWDirectDrawScreen(lpGUID, lpDriverDescription, lpDriverName, hm, m_hWnd, m_nBackBufferWidth, m_nBackBufferHeight);
+		ddScreen->SetLogCallback(m_pLogCallback);
+		m_Screens.push_back(ddScreen);
+	}
 }
 
 HRESULT DWDirectDraw::Destroy()

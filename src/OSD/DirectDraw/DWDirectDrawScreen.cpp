@@ -75,28 +75,32 @@ HRESULT DWDirectDrawScreen::Create()
 {
 	HRESULT hr;
 
-	MONITORINFO monInfo;
-	ZeroMemory(&monInfo, sizeof(MONITORINFO));
-	monInfo.cbSize = sizeof(MONITORINFO);
-	GetMonitorInfo(m_hm, &monInfo);
+	if (m_hm != 0)
+	{
+		MONITORINFO monInfo;
+		ZeroMemory(&monInfo, sizeof(MONITORINFO));
+		monInfo.cbSize = sizeof(MONITORINFO);
+		GetMonitorInfo(m_hm, &monInfo);
+
+		m_nMonitorX = monInfo.rcMonitor.left;
+		m_nMonitorY = monInfo.rcMonitor.top;
+		m_nMonitorWidth = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
+		m_nMonitorHeight = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
+	}
+	else
+	{
+		m_nMonitorWidth = GetSystemMetrics(SM_CXSCREEN);
+		m_nMonitorHeight = GetSystemMetrics(SM_CYSCREEN);
+	}
 
 	(log << "Creating DirectDrawScreen: " << (long)m_hm << " \"" << m_pstrName << "\" \"" << m_pstrDescription << "\"  ").Write();
 	(log << "monitor(" 
-		 << monInfo.rcMonitor.left << ", "
-		 << monInfo.rcMonitor.right << ", "
-		 << monInfo.rcMonitor.top << ", "
-		 << monInfo.rcMonitor.bottom << ")  "
-		 << "work("
-		 << monInfo.rcWork.left << ", "
-		 << monInfo.rcWork.right << ", "
-		 << monInfo.rcWork.top << ", "
-		 << monInfo.rcWork.bottom << ")\n").Write();
-	LogMessageIndent indent(&log);
+		 << m_nMonitorX << ", "
+		 << m_nMonitorY << ", "
+		 << m_nMonitorWidth << ", "
+		 << m_nMonitorHeight << ")\n").Write();
 
-	m_nMonitorX = monInfo.rcMonitor.left;
-	m_nMonitorY = monInfo.rcMonitor.top;
-	m_nMonitorWidth = monInfo.rcMonitor.right - monInfo.rcMonitor.left;
-	m_nMonitorHeight = monInfo.rcMonitor.bottom - monInfo.rcMonitor.top;
+	LogMessageIndent indent(&log);
 
 	hr = DirectDrawCreateEx(m_lpGUID, (void**)&m_piDDObject, IID_IDirectDraw7, NULL);
 	if (hr != DD_OK)
