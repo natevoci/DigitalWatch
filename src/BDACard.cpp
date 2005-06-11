@@ -36,7 +36,7 @@ BDACard::BDACard()
 {
 	bActive = FALSE;
 	bNew = FALSE;
-	bDetected = FALSE;
+	nDetected = 0;
 }
 
 BDACard::~BDACard()
@@ -61,6 +61,9 @@ HRESULT BDACard::LoadFromXML(XMLElement *pElement)
 	XMLAttribute *attr;
 	attr = pElement->Attributes.Item(L"active");
 	bActive = (attr) && (attr->value[0] == '1');
+
+	attr = pElement->Attributes.Item(L"detected");
+	nDetected = ((attr) && (attr->value[0] == '1')) ? 3 : 2;	// These values get overriden to 1 and 0 if the card is detected.
 
 	XMLElement *device;
 	device = pElement->Elements.Item(L"Tuner");
@@ -109,7 +112,7 @@ HRESULT BDACard::LoadFromXML(XMLElement *pElement)
 HRESULT BDACard::SaveToXML(XMLElement *pElement)
 {
 	pElement->Attributes.Add(new XMLAttribute(L"active", (bActive ? L"1" : L"0")));
-	pElement->Attributes.Add(new XMLAttribute(L"detected", (bDetected ? L"1" : L"0")));
+	pElement->Attributes.Add(new XMLAttribute(L"detected", (nDetected ? L"1" : L"0")));
 
 	if (tunerDevice.bValid)
 	{

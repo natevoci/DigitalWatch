@@ -190,7 +190,12 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 		if (bdaCard)
 		{
 			(log << "This tuner was loaded from file\n").Write();
-			bdaCard->bDetected = TRUE;
+
+			// If the card was not detected last time DW ran then we'll activate it.
+			if (bdaCard->nDetected == 2)
+				bdaCard->bActive = TRUE;
+
+			bdaCard->nDetected = 1;
 			//TODO: maybe?? verify tuner can connect to the capture filter.
 		}
 		else
@@ -205,7 +210,7 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 
 				bdaCard->bActive = TRUE;
 				bdaCard->bNew = TRUE;
-				bdaCard->bDetected = TRUE;
+				bdaCard->nDetected = 1;
 
 				bdaCard->tunerDevice = *pTunerDevice;
 				if (pDemodDevice)
@@ -233,6 +238,21 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 
 	if (cards.size() == 0)
 		return (log << "No cards found\n").Show(FALSE);
+
+
+	// Deactivate cards that were detected last time but not this time.
+	std::vector<BDACard *>::iterator it = cards.begin();
+	for ( ; it != cards.end() ; it++ )
+	{
+		BDACard *card = *it;
+		if (card->nDetected == 3)
+		{
+			card->bActive = FALSE;
+			card->nDetected = 0;
+		}
+		if (card->nDetected == 2)
+			card->nDetected = 0;
+	}
 
 	indent.Release();
 	(log << "Finished Checking for new BDA DVB-T Cards\n").Write();

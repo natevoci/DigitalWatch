@@ -54,7 +54,7 @@ public:
 
 	BOOL bActive;
 	BOOL bNew;
-	BOOL bDetected;
+	long nDetected;
 
 private:
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
