@@ -39,6 +39,7 @@ DWGraph::DWGraph()
 	m_piMediaControl = NULL;
 	m_bInitialised = FALSE;
 	m_bVideoRenderered = FALSE;
+	m_renderMethod = RENDER_METHOD_DEFAULT;
 	m_rotEntry = 0;
 }
 
@@ -181,6 +182,9 @@ HRESULT DWGraph::Start()
 	if FAILED(hr)
 		return (log << "Failed to start graph: " << hr << "\n").Write(hr);
 
+	//Set renderer method
+	g_pOSD->SetRenderMethod(m_renderMethod);
+
 	indent.Release();
 	(log << "Stopping DW Graph\n").Write();
 
@@ -195,6 +199,10 @@ HRESULT DWGraph::Stop()
 	HRESULT hr = m_piMediaControl->Stop();
 	if FAILED(hr)
 		return (log << "Failed to stop graph: " << hr << "\n").Write(hr);
+
+	//Reset renderer method
+	m_renderMethod = RENDER_METHOD_DEFAULT;
+	g_pOSD->SetRenderMethod(m_renderMethod);
 
 	indent.Release();
 	(log << "Finished Stopping DW Graph\n").Write();
@@ -237,6 +245,7 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 		return E_INVALIDARG;
 
 	HRESULT hr;
+	RENDER_METHOD renderMethod;
 
 	CComPtr <IEnumMediaTypes> piMediaTypes;
 	if FAILED(hr = piPin->EnumMediaTypes(&piMediaTypes))
@@ -256,13 +265,17 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 		if (dwDecoder == NULL)
 			continue;
 
-		if SUCCEEDED(hr = dwDecoder->AddFilters(m_piGraphBuilder, piPin))
+		(log << "Rendering stream of type \"" << dwMediaType->name << "\" with decoder \"" << dwDecoder->Name() << "\"\n").Write();
+
+		if SUCCEEDED(hr = dwDecoder->AddFilters(m_piGraphBuilder, piPin, renderMethod))
 		{
-			m_bVideoRenderered = m_bVideoRenderered | dwDecoder->HasVideoRenderer();
+			if (renderMethod != RENDER_METHOD_DEFAULT)
+			{
+				m_bVideoRenderered = TRUE;
+				m_renderMethod = renderMethod;
+			}
 			break;
 		}
-
-		//hr = m_piGraphBuilder->Render(piPin);
 	}
 	piMediaTypes.Release();
 

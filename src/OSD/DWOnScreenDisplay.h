@@ -31,6 +31,14 @@
 #include "ParseLine.h"
 #include <vector>
 
+enum RENDER_METHOD
+{
+	RENDER_METHOD_NONE,
+	RENDER_METHOD_DEFAULT,
+	RENDER_METHOD_DIRECTDRAW,
+	RENDER_METHOD_DIRECT3D
+};
+
 class DWOnScreenDisplay : public LogMessageCaller
 {
 public:
@@ -40,6 +48,8 @@ public:
 	void SetLogCallback(LogMessageCallback *callback);
 
 	HRESULT Initialise();
+
+	void SetRenderMethod(RENDER_METHOD renderMethod);
 	HRESULT Render(long tickCount);
 
 	HRESULT ShowMenu(LPWSTR szMenuName);
@@ -53,11 +63,15 @@ public:
 	HRESULT GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
 	HRESULT ExecuteCommand(ParseLine* command);
 
+
 	//Stuff for controls to use
 	DWOSDImage* GetImage(LPWSTR pName);
 	DWOSDData* Data();
 
 private:
+	HRESULT RenderDirectDraw(long tickCount);
+	HRESULT RenderDirect3D(long tickCount);
+
 	DWOSDData* m_pData;
 
 	DWOSDWindows windows;
@@ -68,6 +82,8 @@ private:
 	DWOSDWindow* m_pOverlayWindow;
 	DWOSDWindow* m_pCurrentWindow;
 	std::vector <DWOSDWindow *> m_windowStack;
+
+	RENDER_METHOD m_renderMethod;
 };
 
 #endif

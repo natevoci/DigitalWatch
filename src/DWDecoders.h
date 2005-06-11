@@ -27,6 +27,7 @@
 #include "LogMessage.h"
 #include "XMLDocument.h"
 #include "FilterGraphTools.h"
+#include "DWOnScreenDisplay.h"
 #include <vector>
 
 class DWDecoders;
@@ -37,10 +38,11 @@ public:
 	DWDecoder();
 	virtual ~DWDecoder();
 
-	LPWSTR Name();
-	BOOL HasVideoRenderer();
+	void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin);
+	LPWSTR Name();
+
+	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, RENDER_METHOD &renderMethod);
 
 private:
 	XMLElement *m_pElement;

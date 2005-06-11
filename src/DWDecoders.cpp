@@ -36,6 +36,13 @@ DWDecoder::~DWDecoder()
 {
 }
 
+void DWDecoder::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	graphTools.SetLogCallback(callback);
+}
+
 LPWSTR DWDecoder::Name()
 {
 	XMLAttribute *attr = m_pElement->Attributes.Item(L"name");
@@ -46,22 +53,14 @@ LPWSTR DWDecoder::Name()
 	return L"";
 }
 
-BOOL DWDecoder::HasVideoRenderer()
-{
-	XMLElement *element = NULL;
-	int elementCount = m_pElement->Elements.Count();
-	for ( int item=0 ; item<elementCount ; item++ )
-	{
-		element = m_pElement->Elements.Item(item);
-		if (_wcsicmp(element->name, L"VideoRenderer") == 0)
-			return TRUE;
-	}
-	return FALSE;
-}
-
-HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
+HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, RENDER_METHOD &renderMethod)
 {
 	HRESULT hr;
+
+	// Note: Every video renderer must set renderMethod to something
+	//       other than RENDER_METHOD_DEFAULT. If it doesn't then
+	//       the renderer's window won't get owned by DW.
+	renderMethod = RENDER_METHOD_DEFAULT;
 
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
@@ -125,6 +124,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				if (hr != S_OK)
 					return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
 				
+				renderMethod = RENDER_METHOD_DIRECTDRAW;
 			}
 			else if (_wcsicmp(pName, L"VMR7") == 0)
 			{
@@ -132,6 +132,8 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer, &piVMR7Filter, L"VMR7");
 				if (hr != S_OK)
 					return (log << "Error: Can't Add VMR7: " << hr << "\n").Show(hr);
+
+				renderMethod = RENDER_METHOD_NONE;
 			}
 			else if (_wcsicmp(pName, L"VMR9") == 0)
 			{
@@ -139,6 +141,8 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, L"VMR9");
 				if (hr != S_OK)
 					return (log << "Error: Can't Add VMR9: " << hr << "\n").Show(hr);
+
+				renderMethod = RENDER_METHOD_DIRECT3D;
 			}
 			else
 			{

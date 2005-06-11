@@ -36,6 +36,8 @@ DWOnScreenDisplay::DWOnScreenDisplay()
 	m_pCurrentWindow = NULL;
 	
 	m_pData = new DWOSDData(&windows);
+
+	m_renderMethod = RENDER_METHOD_DEFAULT;
 }
 
 DWOnScreenDisplay::~DWOnScreenDisplay()
@@ -77,59 +79,32 @@ HRESULT DWOnScreenDisplay::Initialise()
 	return S_OK;
 }
 
+void DWOnScreenDisplay::SetRenderMethod(RENDER_METHOD renderMethod)
+{
+	m_renderMethod = renderMethod;
+}
+
 HRESULT DWOnScreenDisplay::Render(long tickCount)
 {
-	HRESULT hr;
+	HRESULT hr = S_OK;
 
-	m_pDirectDraw->SetTickCount(tickCount);
-
-	hr = m_pDirectDraw->Clear();
-	if FAILED(hr)
-		return (log << "Failed to clear directdraw: " << hr << "\n").Write(hr);
-
-	if (m_pCurrentWindow != m_pOverlayWindow)
+	switch (m_renderMethod)
 	{
-		std::vector <DWOSDWindow *>::iterator it_begin = m_windowStack.begin();
-		std::vector <DWOSDWindow *>::iterator it_end = m_windowStack.end();
-		long it_count = m_windowStack.size();
-		std::vector <DWOSDWindow *>::iterator it = m_windowStack.end();
-		while (it && (it > m_windowStack.begin()))
-		{
-			it--;
-			if ((*it)->HideWindowsBehindThisOne())
-				break;
-		}
+	case RENDER_METHOD_NONE:
+		break;
 
-		if ((it == NULL) || ((*it)->HideWindowsBehindThisOne() == FALSE))
-			m_pOverlayWindow->Render(tickCount);
+	case RENDER_METHOD_DEFAULT:
+	case RENDER_METHOD_DIRECTDRAW:
+		hr = RenderDirectDraw(tickCount);
+		break;
 
-		for ( ; it < m_windowStack.end() ; it++ )
-		{
-			(*it)->Render(tickCount);
-		}
-		m_pCurrentWindow->Render(tickCount);
-	}
-	else
-	{
-		m_pCurrentWindow->Render(tickCount);
-	}
+	case RENDER_METHOD_DIRECT3D:
+		hr = RenderDirect3D(tickCount);
+		break;
 
-	//Display FPS
-	DWSurfaceText text;
-	text.crTextColor = RGB(255, 255, 255);
+	};
 
-	wchar_t buffer[30];
-	swprintf((LPWSTR)&buffer, L"FPS - %f", m_pDirectDraw->GetFPS());
-	strCopy(text.text, buffer);
-	hr = m_pBackSurface->DrawText(&text, 0, 560);
-	hr = m_pBackSurface->DrawText(&text, 700, 560);
-	
-	//Flip
-	hr = m_pDirectDraw->Flip();
-	if FAILED(hr)
-		return (log << "Failed to flip directdraw: " << hr << "\n").Write(hr);
-
-	return S_OK;
+	return hr;
 }
 
 HRESULT DWOnScreenDisplay::ShowMenu(LPWSTR szMenuName)
@@ -270,4 +245,69 @@ DWOSDData* DWOnScreenDisplay::Data()
 {
 	return m_pData;
 }
+
+
+/////////////////////
+// Private methods //
+/////////////////////
+HRESULT DWOnScreenDisplay::RenderDirectDraw(long tickCount)
+{
+	HRESULT hr;
+
+	m_pDirectDraw->SetTickCount(tickCount);
+
+	hr = m_pDirectDraw->Clear();
+	if FAILED(hr)
+		return (log << "Failed to clear directdraw: " << hr << "\n").Write(hr);
+
+	if (m_pCurrentWindow != m_pOverlayWindow)
+	{
+		std::vector <DWOSDWindow *>::iterator it_begin = m_windowStack.begin();
+		std::vector <DWOSDWindow *>::iterator it_end = m_windowStack.end();
+		long it_count = m_windowStack.size();
+		std::vector <DWOSDWindow *>::iterator it = m_windowStack.end();
+		while (it && (it > m_windowStack.begin()))
+		{
+			it--;
+			if ((*it)->HideWindowsBehindThisOne())
+				break;
+		}
+
+		if ((it == NULL) || ((*it)->HideWindowsBehindThisOne() == FALSE))
+			m_pOverlayWindow->Render(tickCount);
+
+		for ( ; it < m_windowStack.end() ; it++ )
+		{
+			(*it)->Render(tickCount);
+		}
+		m_pCurrentWindow->Render(tickCount);
+	}
+	else
+	{
+		m_pCurrentWindow->Render(tickCount);
+	}
+
+	//Display FPS
+	DWSurfaceText text;
+	text.crTextColor = RGB(255, 255, 255);
+
+	wchar_t buffer[30];
+	swprintf((LPWSTR)&buffer, L"FPS - %f", m_pDirectDraw->GetFPS());
+	strCopy(text.text, buffer);
+	hr = m_pBackSurface->DrawText(&text, 0, 560);
+	hr = m_pBackSurface->DrawText(&text, 700, 560);
+	
+	//Flip
+	hr = m_pDirectDraw->Flip();
+	if FAILED(hr)
+		return (log << "Failed to flip directdraw: " << hr << "\n").Write(hr);
+
+	return S_OK;
+}
+
+HRESULT DWOnScreenDisplay::RenderDirect3D(long tickCount)
+{
+	return S_OK;
+}
+
 

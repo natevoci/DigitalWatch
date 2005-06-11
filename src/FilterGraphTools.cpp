@@ -35,8 +35,8 @@ HRESULT FilterGraphTools::AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rcls
 	{
 		if (!bSilent)
 		{
-			if (hr == 0x80040154)
-				(log << "Failed to load filter: " << pName << "  error number " << hr << "\n\nThe filter is not registered.\n").Write();
+			if (hr == REGDB_E_CLASSNOTREG)
+				(log << "Failed to load filter: " << pName << "  error number " << hr << "  The filter is not registered.\n").Write();
 			else
 				(log << "Failed to load filter: " << pName << "  error number " << hr << "\n").Write();
 		}

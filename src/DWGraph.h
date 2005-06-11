@@ -28,6 +28,7 @@
 #include "DWMediaTypes.h"
 #include "DWDecoders.h"
 #include "FilterGraphTools.h"
+#include "DWOnScreenDisplay.h"
 
 class DWGraph : public LogMessageCaller
 {
@@ -70,6 +71,8 @@ private:
 
 	BOOL m_bInitialised;
 	BOOL m_bVideoRenderered;
+
+	RENDER_METHOD m_renderMethod;
 
 	DWORD m_rotEntry;
 
