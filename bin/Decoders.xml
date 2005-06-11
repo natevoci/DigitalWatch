@@ -235,6 +235,23 @@
    	</>
 </Decoder>
 
+<Decoder name="Mpeg2Dec Video Decoder c/ ffdshow">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <LoadFilter clsid="{0B390488-D80F-4A68-8408-48DC199F0E97}" name="ffdshow" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="Mpeg2Dec Video Decoder" pin="Video" />
+    <Connect>
+    	<From name="Mpeg2Dec Video Decoder" pin="Output" />
+    	<To name="ffdshow" />
+    </>
+    <Connect>
+    	<From name="ffdshow" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
 
 
 
