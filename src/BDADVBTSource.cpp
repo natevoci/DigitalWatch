@@ -270,6 +270,8 @@ HRESULT BDADVBTSource::LoadTuner()
 	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
+	m_piBDAMpeg2Demux.QueryInterface(&m_piMpeg2Demux);
+
 	CComPtr <IPin> piDemuxPin;
 	if FAILED(hr = graphTools.FindFirstFreePin(m_piBDAMpeg2Demux, &piDemuxPin, PINDIR_INPUT))
 		return (log << "Failed to get input pin on DW Demux: " << hr << "\n").Write(hr);
@@ -292,6 +294,8 @@ HRESULT BDADVBTSource::UnloadTuner()
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
+
+	m_piMpeg2Demux.Release();
 
 	if (m_piBDAMpeg2Demux)
 	{
@@ -319,236 +323,153 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 
 	HRESULT hr;
 
-	CComQIPtr <IMpeg2Demultiplexer> piMpeg2Demux(m_piBDAMpeg2Demux);
-	if (!piMpeg2Demux)
-	{
-		return (log << "Failed to QI demux filter for IMpeg2Demultiplexer\n").Write(E_FAIL);
-	}
+	long videoStreamsRendered;
+	long audioStreamsRendered;
 
-	CComPtr <IMPEG2PIDMap> piPidMap;
-	CComPtr <IPin> piPin;
-	ULONG Pid;
+	// render video
+	hr = AddDemuxPinsVideo(program, &videoStreamsRendered);
 
-	long unkCount = (program->GetStreamCount(unknown)  > 1) ? 1 : 0;
-	long vidCount = (program->GetStreamCount(video)    > 1) ? 1 : 0;
-	long mp2Count = (program->GetStreamCount(mp2)      > 1) ? 1 : 0;
-	long ac3Count = (program->GetStreamCount(ac3)      > 1) ? 1 : 0;
-	long txtCount = (program->GetStreamCount(teletext) > 1) ? 1 : 0;
+	// render teletext if video was rendered
+	if (videoStreamsRendered > 0)
+		hr = AddDemuxPinsTeletext(program);
 
-	BOOL bAudioRendered = FALSE;
+	// render mp2 audio
+	hr = AddDemuxPinsMp2(program, &audioStreamsRendered);
 
-	long count = program->GetStreamCount();
-	for (int i=0 ; i<count ; i++ )
-	{
-		DVBTChannels_Program_PID_Types type = program->GetStreamType(i);
-		Pid = program->GetStreamPID(i);
-
-		switch (type)
-		{
-		case unknown:
-			{
-				if (unkCount > 0)
-					unkCount++;
-			}
-			break;
-		case video:
-			{
-				wchar_t text[10];
-				if (vidCount > 0)
-					swprintf((wchar_t*)&text, L"Video %i", vidCount);
-				else
-				{
-					swprintf((wchar_t*)&text, L"Video");
-					vidCount = 1;
-				}
-
-				AM_MEDIA_TYPE mediaType;
-				ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-				mediaType.majortype = KSDATAFORMAT_TYPE_VIDEO;
-				mediaType.subtype = MEDIASUBTYPE_MPEG2_VIDEO;
-				mediaType.bFixedSizeSamples = TRUE;
-				mediaType.bTemporalCompression = 0;
-				mediaType.lSampleSize = 1;
-				mediaType.formattype = FORMAT_MPEG2Video;
-				mediaType.pUnk = NULL;
-				mediaType.cbFormat = sizeof(g_Mpeg2ProgramVideo);
-				mediaType.pbFormat = g_Mpeg2ProgramVideo;
-
-				hr = piMpeg2Demux->CreateOutputPin(&mediaType, (wchar_t*)&text, &piPin);
-				if (hr != S_OK) return FALSE;
-
-				// Map the PID.
-				if SUCCEEDED(hr = piPin.QueryInterface(&piPidMap))
-				{
-					hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM);
-					piPidMap.Release();
-				}
-
-				if (vidCount == 1)
-				{
-					if FAILED(hr = m_pDWGraph->RenderPin(piPin))
-						(log << "Failed to render video stream\n").Write();
-				}
-
-				piPin.Release();
-
-				vidCount++;
-			}
-			break;
-		case mp2:
-			{
-				wchar_t text[10];
-				if (mp2Count > 0)
-					swprintf((wchar_t*)&text, L"Audio %i", mp2Count);
-				else
-				{
-					swprintf((wchar_t*)&text, L"Audio");
-					mp2Count = 1;
-				}
-
-				AM_MEDIA_TYPE mediaType;
-				ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-				//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
-				mediaType.majortype = MEDIATYPE_Audio;
-				//mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
-				mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
-				mediaType.bFixedSizeSamples = TRUE;
-				mediaType.bTemporalCompression = 0;
-				mediaType.lSampleSize = 1;
-				mediaType.formattype = FORMAT_WaveFormatEx;
-				mediaType.pUnk = NULL;
-				mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
-				mediaType.pbFormat = g_MPEG1AudioFormat;
-
-				hr = piMpeg2Demux->CreateOutputPin(&mediaType, (wchar_t*)&text, &piPin);
-				if (hr != S_OK) return FALSE;
-
-				// Map the PID.
-				if SUCCEEDED(hr = piPin.QueryInterface(&piPidMap))
-				{
-					hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM);
-					piPidMap.Release();
-				}
-
-				if (!bAudioRendered)
-				{
-					if SUCCEEDED(hr = m_pDWGraph->RenderPin(piPin))
-					{
-						bAudioRendered = TRUE;
-					}
-					else
-					{
-						(log << "Failed to render audio stream\n").Write();
-					}
-				}
-
-				piPin.Release();
-
-				mp2Count++;
-			}
-			break;
-		case ac3:
-			{
-				wchar_t text[10];
-				if (ac3Count > 0)
-					swprintf((wchar_t*)&text, L"AC3 %i", ac3Count);
-				else
-				{
-					swprintf((wchar_t*)&text, L"AC3");
-					ac3Count = 1;
-				}
-
-				AM_MEDIA_TYPE mediaType;
-				ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-				//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
-				mediaType.majortype = MEDIATYPE_Audio;
-				mediaType.subtype = MEDIASUBTYPE_DOLBY_AC3;
-				mediaType.bFixedSizeSamples = TRUE;
-				mediaType.bTemporalCompression = 0;
-				mediaType.lSampleSize = 1;
-				mediaType.formattype = FORMAT_WaveFormatEx;
-				mediaType.pUnk = NULL;
-				mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
-				mediaType.pbFormat = g_MPEG1AudioFormat;
-
-				hr = piMpeg2Demux->CreateOutputPin(&mediaType, (wchar_t*)&text, &piPin);
-				if (hr != S_OK) return FALSE;
-
-				// Map the PID.
-				if SUCCEEDED(hr = piPin.QueryInterface(&piPidMap))
-				{
-					hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM);
-					piPidMap.Release();
-				}
-
-				if (!bAudioRendered)
-				{
-					if SUCCEEDED(hr = m_pDWGraph->RenderPin(piPin))
-					{
-						bAudioRendered = TRUE;
-					}
-					else
-					{
-						(log << "Failed to render AC3 stream\n").Write();
-					}
-				}
-
-				piPin.Release();
-
-				ac3Count++;
-			}
-			break;
-		case teletext:
-			{
-				wchar_t text[10];
-				if (txtCount > 0)
-					swprintf((wchar_t*)&text, L"Teletext %i", txtCount);
-				else
-				{
-					swprintf((wchar_t*)&text, L"Teletext");
-					txtCount = 1;
-				}
-
-				AM_MEDIA_TYPE mediaType;
-				ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-				mediaType.majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
-				mediaType.subtype = KSDATAFORMAT_SUBTYPE_NONE;
-				mediaType.formattype = KSDATAFORMAT_SPECIFIER_NONE;
-
-				hr = piMpeg2Demux->CreateOutputPin(&mediaType, (wchar_t*)&text, &piPin);
-				if (hr != S_OK) return FALSE;
-
-				// Map the PID.
-				if SUCCEEDED(hr = piPin.QueryInterface(&piPidMap))
-				{
-					hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM);
-					piPidMap.Release();
-				}
-
-				if (txtCount == 1)
-				{
-					if FAILED(hr = m_pDWGraph->RenderPin(piPin))
-						(log << "Failed to render teletext stream\n").Write();
-				}
-
-				piPin.Release();
-
-				txtCount++;
-			}
-			break;
-		default:
-			break;
-		}
-	}
+	// render ac3 audio if no mp2 was rendered
+	if (audioStreamsRendered == 0)
+		hr = AddDemuxPinsAC3(program, &audioStreamsRendered);
 
 	indent.Release();
 	(log << "Finished Adding Demux Pins\n").Write();
 
 	return S_OK;
+}
+
+HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program, DVBTChannels_Program_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered)
+{
+	HRESULT hr = S_OK;
+
+	long count = program->GetStreamCount(streamType);
+	long renderedStreams = 0;
+	BOOL bMultipleStreams = (program->GetStreamCount(streamType) > 1) ? 1 : 0;
+
+	for ( long currentStream=0 ; currentStream<count ; currentStream++ )
+	{
+		wchar_t text[16];
+		swprintf((wchar_t*)&text, pPinName);
+		if (bMultipleStreams)
+			swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
+
+		// Create the Pin
+		CComPtr <IPin> piPin;
+		if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+		{
+			(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+			continue;
+		}
+
+		// Map the PID.
+		CComPtr <IMPEG2PIDMap> piPidMap;
+		if FAILED(hr = piPin.QueryInterface(&piPidMap))
+		{
+			(log << "Failed to query demux " << pPinName << " pin : " << hr << "\n").Write();
+			continue;	//it's safe to not piPin.Release() because it'll go out of scope
+		}
+
+		ULONG Pid = program->GetStreamPID(streamType, currentStream);
+		if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
+		{
+			(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+			continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+		}
+
+		if (renderedStreams != 0)
+			continue;
+
+		if FAILED(hr = m_pDWGraph->RenderPin(piPin))
+		{
+			(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
+			continue;
+		}
+
+		renderedStreams++;
+	}
+
+	if (streamsRendered)
+		*streamsRendered = renderedStreams;
+
+	return hr;
+}
+
+
+HRESULT BDADVBTSource::AddDemuxPinsVideo(DVBTChannels_Program* program, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+
+	mediaType.majortype = KSDATAFORMAT_TYPE_VIDEO;
+	mediaType.subtype = MEDIASUBTYPE_MPEG2_VIDEO;
+	mediaType.bFixedSizeSamples = TRUE;
+	mediaType.bTemporalCompression = 0;
+	mediaType.lSampleSize = 1;
+	mediaType.formattype = FORMAT_MPEG2Video;
+	mediaType.pUnk = NULL;
+	mediaType.cbFormat = sizeof(g_Mpeg2ProgramVideo);
+	mediaType.pbFormat = g_Mpeg2ProgramVideo;
+
+	return AddDemuxPins(program, video, L"Video", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Program* program, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+
+	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
+	mediaType.majortype = MEDIATYPE_Audio;
+	//mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
+	mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
+	mediaType.bFixedSizeSamples = TRUE;
+	mediaType.bTemporalCompression = 0;
+	mediaType.lSampleSize = 1;
+	mediaType.formattype = FORMAT_WaveFormatEx;
+	mediaType.pUnk = NULL;
+	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
+	mediaType.pbFormat = g_MPEG1AudioFormat;
+
+	return AddDemuxPins(program, mp2, L"Audio", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTSource::AddDemuxPinsAC3(DVBTChannels_Program* program, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+
+	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
+	mediaType.majortype = MEDIATYPE_Audio;
+	mediaType.subtype = MEDIASUBTYPE_DOLBY_AC3;
+	mediaType.bFixedSizeSamples = TRUE;
+	mediaType.bTemporalCompression = 0;
+	mediaType.lSampleSize = 1;
+	mediaType.formattype = FORMAT_WaveFormatEx;
+	mediaType.pUnk = NULL;
+	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
+	mediaType.pbFormat = g_MPEG1AudioFormat;
+
+	return AddDemuxPins(program, ac3, L"AC3", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Program* program, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+
+	mediaType.majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
+	mediaType.subtype = KSDATAFORMAT_SUBTYPE_NONE;
+	mediaType.formattype = KSDATAFORMAT_SPECIFIER_NONE;
+
+	return AddDemuxPins(program, teletext, L"Teletext", &mediaType, streamsRendered);
 }
 
 HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)

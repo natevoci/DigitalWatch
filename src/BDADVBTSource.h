@@ -52,7 +52,16 @@ public:
 protected:
 	HRESULT LoadTuner();
 	HRESULT UnloadTuner();
+
 	HRESULT AddDemuxPins(DVBTChannels_Program* program);
+
+	HRESULT AddDemuxPins(DVBTChannels_Program* program, DVBTChannels_Program_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
+		
+	HRESULT AddDemuxPinsVideo(DVBTChannels_Program* program, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsMp2(DVBTChannels_Program* program, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsAC3(DVBTChannels_Program* program, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsTeletext(DVBTChannels_Program* program, long *streamsRendered = NULL);
+
 
 	virtual HRESULT SetChannel(int network, int program);
 	virtual HRESULT NetworkUp();
@@ -73,6 +82,7 @@ private:
 	DWGraph *m_pDWGraph;
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
+	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
 
 	FilterGraphTools graphTools;
 };
