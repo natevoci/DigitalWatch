@@ -356,10 +356,15 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program, DVBTChannels_
 
 	for ( long currentStream=0 ; currentStream<count ; currentStream++ )
 	{
+		ULONG Pid = program->GetStreamPID(streamType, currentStream);
+
 		wchar_t text[16];
 		swprintf((wchar_t*)&text, pPinName);
 		if (bMultipleStreams)
 			swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
+
+		(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
+		LogMessageIndent indent(&log);
 
 		// Create the Pin
 		CComPtr <IPin> piPin;
@@ -377,7 +382,6 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program, DVBTChannels_
 			continue;	//it's safe to not piPin.Release() because it'll go out of scope
 		}
 
-		ULONG Pid = program->GetStreamPID(streamType, currentStream);
 		if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 		{
 			(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();

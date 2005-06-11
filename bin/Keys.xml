@@ -28,8 +28,8 @@
   <Key code='K'>				ZoomMode(-1)</>
 
   <!-- - and = -->
-  <Key code=189 shift>			ZoomIn(5)</>
-  <Key code=187 shift>			ZoomOut(5)</>
+  <Key code=189 shift>			ZoomOut(5)</>
+  <Key code=187 shift>			ZoomIn(5)</>
   <Key code=189>				VolumeDown(5)</>
   <Key code=187>				VolumeUp(5)</>
   <!-- Mute on VP remote -->
