@@ -1,26 +1,20 @@
 DigitalWatch Readme
 ```````````````````
 Author: Nate
-email: nate@bigblue.net.au
-webpage: http://home.bigblue.net.au/mulin77/DigitalWatch/
+webpage: http://nate.dynalias.net/DigitalWatch/
 
 Description
 ```````````
   DigitalWatch is a free open source DTV watching and recording program
-  to for the VisionPlus DVB-T. There are other options available, such as
-  WinDTV/VisionDTV and Digibox/DigiVision, but I was unhappy with the lack
-  of ability to customize many aspects of the tv watching experience, so i
-  created DigitalWatch
+  originally written for the VisionPlus DVB-T tuner, There were other
+  options available, but I was unhappy with the lack of ability to
+  customize many aspects of the tv watching experience, so i created
+  DigitalWatch. Since then the code base has been re-written to support
+  DVB-T tuners with BDA drivers.
 
-  DigitalWatch is mostly oriented towards watching rather than recording
-  although it does have recording capabilities. If you are more intereted
-  in recording then try WebScheduler http://www.digtv.ws/html/dvb/index.php
-
-  There is also a modified CaptureEngine.dll for WebScheduler that will allow
-  WebScheduler to use DigitalWatch to record if DigitalWatch is running.
-  It will also automatically close VisionDTV and DigiVision if the are
-  running before it tries to record.
-  http://home.bigblue.net.au/mulin77/DigitalWatch/#WSM
+  DigitalWatch is mostly oriented towards watching rather than recording.
+  If you are more intereted in recording then try
+  WebScheduler http://dvb-ws.sourceforge.net/
 
   DigitalWatch is not aimed at the novice user. Maybe it will be in the
   future, but for now i'm not going out of my way to make it easy for anyone
