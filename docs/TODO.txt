@@ -2,92 +2,73 @@
 DigitalWatch TODO
 -----------------
 
-- Command queue
-
-- figure out how to handle key mapping for different windows.
-
-- separate demux pin adding from rendering and fix the order of renderer.
-  ie. video, then audio, then teletext, then other.
-
-- channel scanning
+- Channel scanning
   - Store all programs and notify when they change
 
-- osd
+- OSD
+  - Direct3D OSD renderer
+  - Figure out how to handle OSD.xml files for different sources.
+  - Position slider/percentage bar. seeking/timeshifting/volume
+  - Bold text in OSD?
+  - OSD item for Mute, always on top
+  - Mouse actions to operate buttons, lists, etc...
 
-- Separate tuner graph from main playback graph.
-- timeshifting
+- Add File source
+  - Perhaps a generic file playback will do since TSFileSource can be registered to be a default source for .ts files.
+  or
+  - Add a FileTypes.xml file to map different file types to different sources
 
-- Incorperate Josh's BDA NaN code
-  - add Now and Next info to options for CaptureFileName mask.
-
-
-
-- get dsnetwork sender and reciever working.
+- Add DSNetwork source.
   - class DSNetworkSink built into , and class DSNetworkSource : DWSource
       Will need to add more stuff to DVBInput like BOOL CanLock() and BOOL CanSetPids()
+
+- VMR9 Renderless mode
+  - Custom Allocator Presenter?
+  - VMR9 deinterlacing
+
+- Command queue
+  - This way commands run in a separate thread so that the OSD still get's updated.
+
+- Timeshifting
+  - Separate tuner graph from main playback graph.
+
+- Now and Next
+  - Incorperate Josh's BDA NaN code
+    - add Now and Next info to options for CaptureFileName mask.
+
+- Recording
+  - Use the new FileWriter that does 100Mb blocks
+
+- Startup
+  - Startup.xml functions that happen on startup
+  - Command-line parameters
+    - If i filename is 
+
+
+
+- SetLCN()
+- Menu to list filters being used and bring up properties dialog
+- Menu to choose decoders for media types.
+  - Add a Save() option so that changes can be made temporarily.
+- Menu to change audio stream.
+  - This should be persistent per program.
+- Make ShowMenu("NetworkList") select the current network to start with
+
 
 
 
 Documentation
-- LoadAudioRenderer
-- OSD
-
-
-
-Major Upgrades
-
-- OSD
-  - OSD filter
-    - VMR9 direct to screen. IVMRMixerBitmap9::SetAlphaBitmap
-    - VMR9 deinterlacing
-	- Custom Allocator Presenter?
-
-  - Make a Menu mode.
-    - Menu for channels, video decoders, audio decoders, resolutions, timeshifting, filters, ...
-    - menu background bitmaps.
-    - Settings page for Global settings such as AR, Auto Fullscreen, etc...
-
-- Recording
-  - Modify DWDump more. Remove the need for DWDumpFilter.
-
-
-- Revamp channel management
-  - dynamic data sizes (channels, osd text, decoders, control bar buttons, keys, resolutions)
+- Everything
 
 
 Enhancements
 - Set title bar to DigitalWatch - $(NaNProgram)
-- Bold text in OSD?
-
-- Init.ini functions that happen on startup
-
-- option to make ProgramUp move to next or last network
-
-- Timeshifting position slider
-
-- KeepWindowAR(0/1/2) 0=unlock, 1=lock, 2=toggle
-- KeepWindowAR(x, y) lock to x:y AR.
-
-- Command-line parameters
-    as a hack only perform 1 command each time it's run?
-    Need to make sure commands are run at the appropriate time
-    ie. before SetChannel() / is SetChannel() / after SetChannel()
 
 - Still Image Capture
 
 - Timer to put the computer to sleep.
 - Timer to shutdown the computer.
     These need to not happen if currently recording.
-
-OSD
-  - osd entry background bitmaps. For those who don't want transparency, but want more than the plain black background.
-
-  - Channel info
-    - video info. res, fps, interlaced vs progressive.
-    - audio info. mpa vs ac3, 2.0, 5.1.
-
-- Change zoom method to get AR working with clone mode.
-    Tried: Don't think it's possible. Maybe with VMR9?
 
 -----------------
  DigitalWatch KB

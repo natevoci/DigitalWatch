@@ -146,8 +146,11 @@ HRESULT DWGraph::QueryMediaControl(IMediaControl** piMediaControl)
 	
 HRESULT DWGraph::Start()
 {
-	(log << "Stopping DW Graph\n").Write();
+	(log << "Starting DW Graph\n").Write();
 	LogMessageIndent indent(&log);
+
+	if (m_piGraphBuilder == NULL)
+		return (log << "Graph Builder interface is NULL\n").Write(E_POINTER);
 
 	if (m_piMediaControl == NULL)
 		return (log << "Media Control interface is NULL\n").Write(E_POINTER);
@@ -178,6 +181,7 @@ HRESULT DWGraph::Start()
 			return (log << "Failed to refresh video posistion: " << hr << "\n").Write(hr);
 	}
 
+	//Start the graph
 	hr = m_piMediaControl->Run();
 	if FAILED(hr)
 		return (log << "Failed to start graph: " << hr << "\n").Write(hr);
@@ -185,8 +189,45 @@ HRESULT DWGraph::Start()
 	//Set renderer method
 	g_pOSD->SetRenderMethod(m_renderMethod);
 
+	//Log the reference clock
+	do
+	{
+		CComPtr<IReferenceClock> piRefClock;
+		CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
+		if (!piMediaFilter)
+		{
+			(log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write();
+			break;
+		}
+
+		if FAILED(hr = piMediaFilter->GetSyncSource(&piRefClock))
+		{
+			(log << "Failed to get reference clock: " << hr << "\n").Write();
+			break;
+		}
+
+		if (!piRefClock)
+		{
+			(log << "Reference Clock is not set\n").Write();
+			break;
+		}
+		
+		CComQIPtr<IBaseFilter> piFilter(piRefClock);
+		if (!piFilter)
+		{
+			(log << "Failed to get IBaseFilter interface from reference clock\n").Write();
+			break;
+		}
+
+		FILTER_INFO filterInfo;
+		if SUCCEEDED(hr = piFilter->QueryFilterInfo(&filterInfo))
+			(log << "Reference Clock is \"" << filterInfo.achName << "\"\n").Write();
+		else
+			(log << "Failed to get filter info: " << hr << "\n").Write();
+	} while (FALSE);
+
 	indent.Release();
-	(log << "Stopping DW Graph\n").Write();
+	(log << "Finished Starting DW Graph\n").Write();
 
 	return hr;
 }

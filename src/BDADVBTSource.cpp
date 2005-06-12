@@ -279,6 +279,18 @@ HRESULT BDADVBTSource::LoadTuner()
 	if FAILED(hr = m_piGraphBuilder->ConnectDirect(piTSPin, piDemuxPin, NULL))
 		return (log << "Failed to connect TS Pin to DW Demux: " << hr << "\n").Write(hr);
 
+	//Set reference clock
+	CComQIPtr<IReferenceClock> piRefClock(m_piBDAMpeg2Demux);
+	if (!piRefClock)
+		return (log << "Failed to get reference clock interface on demux filter: " << hr << "\n").Write(hr);
+
+	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
+	if (!piMediaFilter)
+		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
+		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
+
 	piDemuxPin.Release();
 	piTSPin.Release();
 
