@@ -243,7 +243,8 @@ HRESULT DWGraph::Stop()
 
 	//Reset renderer method
 	m_renderMethod = RENDER_METHOD_DEFAULT;
-	g_pOSD->SetRenderMethod(m_renderMethod);
+	if (g_pOSD)
+		g_pOSD->SetRenderMethod(m_renderMethod);
 
 	indent.Release();
 	(log << "Finished Stopping DW Graph\n").Write();

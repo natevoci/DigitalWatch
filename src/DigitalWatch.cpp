@@ -144,9 +144,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	}
 
 	delete g_pOSD;
+	g_pOSD = NULL;
 	delete g_pDWWindow;
+	g_pDWWindow = NULL;
 	delete g_pTv;
+	g_pTv = NULL;
 	delete g_pData;
+	g_pData = NULL;
 
 	CoUninitialize();
 
