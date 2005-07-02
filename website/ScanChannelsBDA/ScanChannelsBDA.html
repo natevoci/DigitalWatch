@@ -1,0 +1,185 @@
+<html>
+	<head>
+		<title>ScanChannelsBDA</title>
+		<link href="../theme.css" rel="stylesheet" type="text/css" />
+	</head>
+	<body>
+
+		<!--                   ScanChannelsBDA                   -->
+		<div id=header>
+			<a name="DW" /><h1>ScanChannelsBDA</h1>
+
+			<div id=linklist>
+				<a href="#Description">Description</font></a><br>
+				<a href="#Downloads">Downloads</font></a><br>
+				<a href="#History">History</font></a><br>
+			</div>
+		</div>
+
+		<!-- Description -->
+		<div id=section>
+			<a name="Description" /><h2>Description</h2>
+
+			<div id=text>
+				ScanChannelsBDA is a free open source console application for scanning
+				DVB-T channels with BDA compatible digital tv tuners.<br>
+			</div>
+		</div>
+
+		<!-- Downloads -->
+		<div id=section>
+			<a name="Downloads" /><h2>Downloads</h2>
+			
+			<div id=text>
+				<table class=downloads>
+					<tr>
+						<td>ScanChannelsBDA 2.0.0.6
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.6.zip">Zip File</a> (80kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.6-src.zip">Source Code</a> (94kb)
+						<td><a href="#SC2006">History</a>
+					</tr>
+					<tr>
+						<td>ScanChannelsBDA 2.0.0.5
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.5.zip">Zip File</a> (80kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.5-src.zip">Source Code</a> (94kb)
+						<td><a href="#SC2005">History</a>
+					</tr>
+					<tr>
+						<td>ScanChannelsBDA 2.0.0.4
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.4.zip">Zip File</a> (118kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.4-src.zip">Source Code</a> (141kb)
+						<td><a href="#SC2004">History</a>
+					</tr>
+					<tr>
+						<td>ScanChannelsBDA 2.0.0.2
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.2.zip">Zip File</a> (82kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.2-src.zip">Source Code</a> (56kb)
+						<td><a href="#SC2002">History</a>
+					</tr>
+					<tr>
+						<td>ScanChannelsBDA 2.0.0.1
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.1.zip">Zip File</a> (80kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.1-src.zip">Source Code</a> (94kb)
+						<td><a href="#SC2001">History</a>
+					</tr>
+					<tr>
+						<td>ScanChannelsBDA 2.0.0.0
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.0.zip">Zip File</a> (80kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/ScanChannelsBDA/ScanChannelsBDA-2.0.0.0-src.zip">Source Code</a> (94kb)
+						<td><a href="#SC2000">History</a>
+					</tr>
+				</table>
+			</div>
+		</div>
+
+		<!-- History -->
+		<div id=section>
+			<a name="History" /><h2>History</h2>
+	
+			<div id=text>
+				<h4><a name="SC2006">ScanChannelsBDA 2.0.0.6</h4>
+				<div id=indent>
+					Changes:<br>
+					<ul>
+						<li>Added a new option to allow lock detection to be Quality > 0 rather
+							than SignalLocked != 0. This should allow people with cards that don't
+							return signal locked properly (DVICO?) to use the scan all frequencies
+							option.<br>
+					</ul>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="SC2005">ScanChannelsBDA 2.0.0.5</h4>
+				<div id=indent>
+					Changes:<br>
+					<ul>
+						<li>Updated reading of signal statistics.<br>
+							It now ignores Signal Present and Signal Locked and just checks for a quality
+							greater than zero. I don't like it, but the bda drivers for some cards always
+							return true for locked and present, so i don't see any other way around it at
+							the moment. Hopefully they'll wise up and fix the drivers.<br>
+						<li>Fixed all frequency scanning. (i hope)<br>
+						<li>Added more logging to the log file.<br>
+						<li>I don't release the Network Provider to avoid the exception.<br>
+					</ul>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="SC2004">ScanChannelsBDA 2.0.0.4</h4>
+				<div id=indent>
+					Basically i've done a mass import of some code i've been working on for DW2,
+					so there are lots of code changes.<br>
+					<br>
+					Practically the only difference to end users should be that it detects bda
+					cards that only have a tuner filter. It's all theoretical though since i
+					don't have one of these to test with, so i'm interested to hear if it works.<br>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="SC2002">ScanChannelsBDA 2.0.0.2</h4>
+				<div id=indent>
+					Changes:<br>
+					<ul>
+						<li>Fixed problem multiple ServiceChanged event problem.<br>
+						<li>Improved reliability. Joey's timeout mod<br>
+						<li>Joey's tuning loop signal statistics mod<br>
+						<li>Updated BDACardCollection to support Tuner device with no capture device.<br>
+						<li>Moved graph creation and destruction into BDAChannelScan so that the graph only
+							exists when scanning. Should stop the crash when closing using the X rather than 10.<br>
+						<li>Changed project to output to obj/Release and obj/Debug to try and stop weird
+							build sizes. Havn't tested to see if it makes any difference yet.<br>
+					</ul>
+					<br>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="SC2001">ScanChannelsBDA 2.0.0.1</h4>
+				<div id=indent>
+					Changes:<br>
+					<ul>
+						<li>Added detection of a demod device between tuner and capture device<br>
+						<li>Changed DisplayName in FilterGraphTools to DevicePath to save some
+							confusion between DisplayName and FriendlyName<br>
+						<li>Joey's mod to pick up ONID<br>
+						<li>Joey's try catch mod<br>
+						<li>Joey's signal stats mod<br>
+						<li>Put a mutex in ServiceChanged to stop multiple events causing two
+							scans to run side by side.<br>
+						<li>replaced linked lists with vectors<br>
+						<li>Included Teletext PIDs after the channel number<br>
+						<li>Implemented a list of transponders so that the correct transponder is
+							used for nit entries. This should fix the problem where people are
+							getting the wrong frequency displayed.<br>
+						<li>Added output of alternate frequencies to the channel.ini format if
+							they exists. Creates an extra Network_x line that's commented out<br>
+					</ul>
+					<br>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="SC2000">ScanChannelsBDA 2.0.0.0</h4>
+				<div id=indent>
+					Changes:<br>
+					<ul>
+						<li>Theoretically supports any BDA device.<br>
+						<ul>
+							<li>If you have more than 1 BDA device installed then it will ask you
+								which one to use.<br>
+						</ul><li>Outputs DigitalWatch channels.ini format<br>
+						<li>Has a verbose mode that spits out a heap more information about what's
+							being broadcast in the service information tables. This will mostly be
+							of interest to developers wondering what information they can get.<br>
+						<li>Puts the Logical Channel Number in a comment after each program.<br>
+					</ul>
+					<br>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+

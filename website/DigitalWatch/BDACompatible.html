@@ -1,0 +1,191 @@
+<html>
+	<head>
+		<title>DigitalWatch</title>
+		<link href="../theme.css" rel="stylesheet" type="text/css" />
+	</head>
+	<body>
+
+		<!--                   BDA Compatible DigitalWatch                   -->
+		<div id=header>
+			<a name="DW" /><h1>BDA Compatible DigitalWatch</h1>
+			
+			<div id=linklist>
+				<a href="#Description">Description</a><br>
+				<a href="#Downloads">Downloads</a><br>
+				<a href="#History">History</a><br>
+			</div>
+		</div>
+
+		<!-- Description -->
+		<div id=section>
+			<a name="Description" /><h2>Description</h2></a>
+		
+			<div id=text>
+				After DigitalWatch 0.701 I added expermental support for BDA cards
+				to DigitalWatch. After doing this I decided that to implement all
+				the existing features of DigitalWatch with BDA i needed to
+				redevelop DigitalWatch from scratch with a different architecture.
+				Since the BDA version of DigitalWatch was missing a few features
+				available in the standard DigitalWatch i decided not to release it
+				officially.<br>
+				<br>
+				This page lists the different versions and what has been
+				implemented in them.<br>
+				<br>
+				Martin S has continued on the work by adding support for<br>
+				- Now & Next (EPG)<br>
+				- Smooth Font Rendering<br>
+				- DVR-MS Recording<br>
+				- Many more BDA compatible cards<br>
+				
+				For more information see the
+				<a href="http://forums.dvbowners.com/index.php?showtopic=3154">DigitalWatch 0.7.2.6 Experimental</a>
+				thread.<br>
+			</div>
+		</div>
+
+		<!-- Downloads -->
+		<div id=section>
+			<a name="Downloads" /><h2>Downloads</h2></a>
+			
+			<div id=text>
+				<table class=downloads>
+					<tr>
+						<td id=1>DigitalWatch 0.725
+						<td id=2><a href="http://nate.dynalias.net/DigitalWatch/files/DW0725.exe">Installer</a> (298kb)
+						<td id=3>
+						<td id=4><a href="#DW0725">History</a>
+					</tr>
+					<tr>
+						<td id=1>DigitalWatch 0.724
+						<td id=2><a href="http://nate.dynalias.net/DigitalWatch/files/DigitalWatchBDA0724.zip">Executable</a> (114kb)
+						<td id=3><a href="http://nate.dynalias.net/DigitalWatch/files/DigitalWatch0724src.zip">Source Code</a> (433kb)
+						<td id=4><a href="#DW0724">History</a>
+					</tr>
+					<tr>
+						<td id=1>DigitalWatch 0.722
+						<td id=2><a href="http://nate.dynalias.net/DigitalWatch/files/DigitalWatchBDA0722.zip">Executable</a> (92kb)
+						<td id=3><a href="http://nate.dynalias.net/DigitalWatch/files/DigitalWatch0722src.zip">Source Code</a> (409kb)
+						<td id=4><a href="#DW0722">History</a>
+					</tr>
+					<tr>
+						<td id=1>DigitalWatch 0.721
+						<td id=2><a href="http://nate.dynalias.net/DigitalWatch/files/DigitalWatchBDA0721.zip">Executable</a> (91kb)
+						<td id=3>
+						<td id=4><a href="#DW0721">History</a>
+					</tr>
+					<tr>
+						<td id=1>DigitalWatch 0.720
+						<td id=2><a href="http://nate.dynalias.net/DigitalWatch/files/DigitalWatchBDA0720.zip">Executable</a> (85kb)
+						<td id=3>
+						<td id=4><a href="#DW0720">History</a>
+					</tr>
+				</table>
+			</div>
+		</div>
+
+		<!-- History -->
+		<div id=section>
+			<a name="History" /><h2>History</h2>
+
+			<div id=text>
+				<h4><a name="DW0725">DigitalWatch 0.725</h4>
+				<div id=indent>
+					Added a DNTV Live DVBInput mode.<br>
+					<br>
+					Updated the installer.<br>
+				</div>
+			</div>
+
+			<div id=text>
+				<h4><a name="DW0724">DigitalWatch 0.724</h4>
+				<div id=indent>
+					From <a href="http://forums.dvbowners.com/index.php?showtopic=1838&view=findpost&p=17364">this post</a><br>
+					<br>
+					Added a DVICO DVBInput mode.<br>
+					<br>
+					To use with the spectrums THDTV drivers set DVBInput=5 in settings.ini<br>
+					To use with the DVICO BDA drivers set DVBInput=6 in settings.ini<br>
+					<br>
+					Now and Next, and Timeshifting are not implemented.<br>
+					<br>
+					TS Mux Recording is implemented, but in the limited testing i did the
+					resulting file was often corrupt. I use WS for all my recordings so i'm
+					not spending any more time on recording in this version of DW.<br>
+					<br>
+					In both DVBInput 5 and 6 modules i've re-enabled the reading of signal
+					quality and strength. It seems to be working for the VP, but I'm not
+					sure what it does for the DVICO.<br>
+					<br>
+					This exe should still work with the twinhan drivers in
+					DVBInput 1, 2, and 4 modes, but i havn't tested it.<br>
+					<br>
+					For those with a DVICO that have never used DW before you'll need to
+					create yourself a channels.ini file. The scanchannels.exe program that
+					comes with DW0.701 will not work with the DVICO card so you'll have to
+					do it manually. There's information about the file format in the docs,
+					and there are a few threads on here where people have posted example
+					channels.ini files.<br>
+					<br>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="DW0722">DigitalWatch 0.722</h4>
+				<div id=indent>
+					From <a href="http://forums.dvbowners.com/index.php?showtopic=1140&view=findpost&p=12704">this post</a><br>
+					<br>
+					Just an update that will work with the new names in spectrum's new 1.5.0.0 BDA drivers.<br>
+					I make no guarantees that anything will work properly, I'm half way
+					through fixing a few things. Recording won't work, and i havn't re-enabled
+					signal stats yet. The only testing i've done is that i checked that sd channels played.<br>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="DW0721">DigitalWatch 0.721</h4>
+				<div id=indent>
+					From <a href="http://forums.dvbowners.com/index.php?showtopic=1140&view=findpost&p=11787">this post</a><br>
+					<br>
+					As before this zip file only contains a new DigitalWatch.exe file<br>
+					To install just replace the DigitalWatch.exe from 0.701 and set DVBInput=5 in settings.ini<br>
+					<br>
+					Not implemented yet:<br>
+					- Now and Next<br>
+					- Timeshifting<br>
+					<br>
+					Changes:<br>
+					<ul>
+						<li>Disabled the signal strength and quality polling. This is only temporary until spectrum resolves any driver issues in this area.<br>
+						<li>Implemented recording for BDA. It relies on the Cyblerlink MPEG Muxer (mpgmux.ax) so you have to have it registered for it to work.<br>
+						<li>Added the ability to pause the recording. (more details in post)<br>
+						<li>Added LoadAudioRenderer function for AudioDecoders.ini (more details in post)<br>
+					</ul>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="DW0720">DigitalWatch 0.720</h4>
+				<div id=indent>
+					From <a href="http://forums.dvbowners.com/index.php?showtopic=1140&view=findpost&p=11674">this post</a><br>
+					<br>
+					This zip file only contains a new DigitalWatch.exe file<br>
+					To install just replace the DigitalWatch.exe from 0.701 and set
+					DVBInput=5 in settings.ini<br>
+					That should be it.<br>
+					<br>
+					Not implemented yet:<br>
+					- Recording<br>
+					- Now and Next<br>
+					- Timeshifting<br>
+					<br>
+					This exe should still work with the twinhan drivers in
+					DVBInput 1, 2, and 4 modes, but i havn't tested it.<br>
+					<br>
+					This isn't an official release. I'm just making it available for testing.<br>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+

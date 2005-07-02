@@ -1,0 +1,201 @@
+<html>
+	<head>
+		<title>DigitalWatch</title>
+		<link href="../theme.css" rel="stylesheet" type="text/css" />
+	</head>
+	<body>
+
+		<!--                   DigitalWatch 2.x                   -->
+		<div id=header>
+			<a name="DW" /><h1>DigitalWatch 2.x</h1>
+
+			<div id=linklist>
+				<a href="#Description">Description</a><br>
+				<a href="#Features">Features</a><br>
+				<a href="#Downloads">Downloads</a><br>
+				<a href="#History">History</a><br>
+			</div>
+		</div>
+
+		<!-- Description -->
+		<div id=section>
+			<a name="Description" /><h2>Description</h2>
+
+			<div id=text>
+				DigitalWatch is a free open source project for watching DVB-T digital
+				television. I started this project because I was unhappy with all the
+				other applcations that were available at the time. They all lacked in
+				their ability to customize many aspects of the tv watching experience,
+				so i created DigitalWatch<br>
+				<br>
+				DigitalWatch is mostly oriented towards watching rather than recording
+				although some versions do have recording capabilities. If you are intereted
+				in scheduling your recordings then use
+				<a href="http://dvb-ws.sourceforge.net/">DVB Web Scheduler</a>.<br>
+				<br>
+				DigitalWatch is not aimed at the extreme novice user. Maybe it will be
+				in the future, but for now i'm not going out of my way to make it easy
+				for anyone who doesn't like to tinker. That said, if you have any
+				questions then ask on the
+				<a href="http://forums.dvbowners.com/index.php">DVB Owners Forum</a>
+				and someone will probabaly help you out.<br>
+				<br>
+			    DigitalWatch 2 is still in development so not all the features from
+			    the 0.xxx versions of DigitalWatch have been implemented yet.<br>
+			</div>
+		</div>
+
+		<!-- Features -->
+		<div id=section>
+			<a name="Features"><h2>Features</h2>
+			
+			<div id=text>
+				DigitalWatch 2.x has been totally redeveloped from the DigitalWatch 0.x series with
+				an entirely different architecture. As a result, not all of the features available
+				in 0.x versions have been implemented in 2.x versions. I plan to add most of them
+				back in as time permits but for the moment i'm focussing on the big things like
+				channel scanning and the epg.<br>
+				<br>
+				<h4>What does it do?</h4>
+				<ul>
+					<li>Nice and simple interface, just the video window, and all information comes up as an On Screen Display. No pesky right click menu.<br>
+					<li>OSD items are configurable (font, colour, location on screen, size)<br>
+					<li>Operational from the keyboard to make using a remote easy.<br>
+					<li>Configurable key assignments.<br>
+						The default key assignments are VisionPlus remote friendly.<br>
+					<li>Single key channel selection. Channels are organised by network rather than having a great long list of duplicate channels.<br>
+					<li>Fast channel changing.<br>
+					<li>Choose which video and audio decoders get used and access filter properties dialogs.<br>
+					<li>Volume control that doesn't tamper with the windows mixer.<br>
+					<li>Some of the Options
+					<ul>
+						<li>Always On Top<br>
+						<li>Disable Screensaver<br>
+						<li>Zoom (For watching 4:3 material without the black border)
+					</ul>
+					<li>Supports HD and AC3, but depends on which video and audio decoders you choose and what their settings are.<br>
+					<li>SPDIF passthrough depending on Audio decoder, Audio decoder settings, and hardware.<br>
+					<br>
+					New since 0.xxx versions<br>
+					<li>Supports any BDA compatible DVB-T digital tv tuner.<br>
+					<li>Supports multiple tuners<br>
+					<li>Tuners are automatically detected. No configuration required unless you want to disable one<br>
+					<li>Much nicer OSD (only works for the Overlay Mixer at the moment. VMR9 is to come)<br>
+					<li>Detailed logging to diagnose problems<br>
+				</ul>
+				<br>
+				<h4>What doesn't it do? (Yet)</h4>
+				<ul>
+					<li>Channel scanning.<br>
+					<li>Time Shifting (for VisionPlus cards with WDM drivers only at the moment)<br>
+					<li>Now and Next information displayed on OSD<br>
+					<li>Play back recorded files.<br>
+					<li>Start on last channel (like a normal tv)<br>
+					<li>Start in fullscreen<br>
+					<li>Set Aspect Ratio<br>
+				</ul>
+			</div>
+		</div>
+	
+		<!-- Downloads -->
+		<div id=section>
+			<a name="Downloads"><h2>Downloads</h2>
+			
+			<div id=text>
+				<table class=downloads>
+					<tr>
+						<td>DigitalWatch 2.0.0.5
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW2005.zip">Zip File</a> (179kb)
+						<td>
+						<td><a href="#DW2005">History</a>
+					</tr>
+					<tr>
+						<td>DigitalWatch 2.0.0.3
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW2003.zip">Zip File</a> (177kb)
+						<td>
+						<td><a href="#DW2003">History</a>
+					</tr>
+					<tr>
+						<td>DigitalWatch 2.0.0.1
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW2001.zip">Zip File</a> (177kb)
+						<td>
+						<td><a href="#DW2001">History</a>
+					</tr>
+				</table>
+			</div>
+		</div>
+	
+		<!-- History -->
+		<div id=section>
+			<a name="History"><h2>History</h2>
+	
+			<div id=text>
+				<h4><a name="DW2005">DigitalWatch 2.0.0.5</h4>
+				<div id=indent>
+					Changes:<br>
+					<ul>
+						<li>Changed card detection so that newly added and removed cards get automatically actived and deactivated.<br>
+						<li>Changed DVB-T source rendering so that the pin types are done in order<br>
+						<ul>
+							<li>teletext is only done if video renders ok.<br>
+							<li>ac3 is only rendered if mp2 doesn't render ok. (there'll be a preference for this in the future)<br>
+						</ul><li>Added lots of decoders (thanks to bear for doing most of the work)<br>
+						<li>Fixed resolution problem is only the primary directdraw device is found.<br>
+						<li>Added code to switch OSD render method depending on the video renderer being used.<br>
+							This means that the VMR7 and VMR9 can now be used without flickering, but there's no OSD while using them.<br>
+						<li>Added extra logging for enumerations of directdraw devices and pin creation and rendering.<br>
+					</ul>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="DW2003">DigitalWatch 2.0.0.3</h4>
+				<div id=indent>
+					I've modified the directdraw enumeration a bit so it should work. If it doesn't
+					then it will at least give more details in the log that i can use.<br>
+					<br>
+					The only file changed in the zip from 2.0.0.1 is DigitalWatch.exe<br>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="DW2001">DigitalWatch 2.0.0.1</h4>
+				<div id=indent>
+					Lots of stuff still isn't implemented so don't expect too much.<br>
+					<br>
+					To get up and running:<br>
+					<ul>
+						<li>Unless you're using Mt. Dandenong in Melbourne then you'll have to edit
+							the BDA_DVB-T\Channels.xml file. Once i get scanning done editing this
+							file shouldn't be necessary anymore.<br>
+							The stream types are 0 unknown, 1 video, 2 mpeg audio, 3 ac3 audio, 4 teletext.<br>
+							<a href="http://mediapix-australia.com/htpc/Channels.zip">Brisbane Channels</a>
+							thanks to bear.<br>
+						<li>Currently it's set up to use the GPL MPEG-1/2 video decoder and the
+							DNTV Live! Audio decoder. If you don't have these installed then you'll
+							need to either install them, or<br>
+							Use an existing, or add a new, decoder entry in the Decoders.xml file
+							and edit the MediaTypes.xml file to use that different decoder.<br>
+							I think you should be able to figure out once you see the files.<br>
+							Only the Overlay Mixer video renderer works properly at the moment.<br>
+						<li>Enter, Esc, and the arrow keys are your friends. See the Keys.xml files
+							(there's one in the BDA_DVB-T folder too) to know what other keys are
+							available. Most of the things i've implemented use the same key as
+							previous DW's, like 0-9 for network selection,
+							[ and ] for 100% and 133% zoom etc...<br>
+						<li>The FPS reading at the bottom is the rate which the directdraw overlay
+							is drawing. It has nothing to do with the fps of the video stream.<br>
+						<li>I added 10 example items to the main menu just to show off the fancy
+							scrolling menu<br>
+						<li>If it's not working look in the DigitalWatch.log file<br>
+						<li>If you have more than 1 tuner, then each time you change channels the
+							next card will be used. If you have trouble with a particular card then
+							you can disable it in BDA_DVB-T\Cards.xml<br>
+					</ul>
+					<br>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
+

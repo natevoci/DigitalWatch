@@ -1,0 +1,114 @@
+html {
+	margin				: 0px;
+	padding				: 0px;
+}
+
+body {
+	margin				: 0px;
+	padding				: 0px;
+	background-color	: #E5E9ED;
+	color				: #000;
+	font-size			: 12px;
+	font-family			: Helvetica, Verdana, sans-serif;
+}
+
+a {
+	text-decoration		: none;
+}
+
+a:link {
+	color				: #47617b;
+	background-color	: transparent;
+	font-weight			: bold;
+}
+
+a:visited {
+	color				: #47617b;
+	background-color	: transparent;
+	font-weight			: bold;
+}
+
+a:hover {
+	color				: #6395c8;
+	background-color	: transparent;
+	text-decoration		: none;
+}
+
+h1 {
+	/*color				: #40A0FF;*/
+	margin				: 0px 5px;
+}
+
+h2 {
+	margin				: 0px 5px;
+	padding				: 0px;
+	font-size			: 200%;
+}
+
+h3 {
+	margin				: 5px 5px;
+}
+
+h4 {
+	margin				: 5px 5px;
+}
+
+ul {
+	margin				: 0px 30px;
+}
+
+div#text, div#header {
+   	border				: 1px solid #ccc;
+   	margin				: 10px;
+   	padding				: 4px;
+   	background-color	: #d6dee6;
+   	color				: #000000;
+	font-size			: 12px;
+}
+
+div#section {
+   	border				: 1px solid #ccc;
+   	margin				: 10px;
+   	padding				: 4px;
+   	margin-bottom		: 30px;
+   	background-color	: #e0e0e0;
+   	color				: #000000;
+	font-size			: 12px;
+}
+
+div#linklist {
+   	margin				: 0px 20px;
+   	padding				: 4px;
+   	margin-bottom		: 0px;
+   	color				: #000000;
+	font-size			: 150%;
+	line-height			: 1.5em;
+}
+
+
+#indent {
+	margin				: 0px 20px;
+}
+
+table {
+	font-size			: 12px;
+}
+
+/*
+table.menu {
+   	border				: 1px solid #000;
+}
+*/
+
+table.menu td {
+	text-align			: center;
+	font-size			: 20px;
+   	border				: 1px solid #777;
+   	padding				: 0px 10px;
+	color				: #47617b;
+	font-weight			: bold;
+}
+
+table.downloads td {
+	padding : 0px 50px 0px 0px;
+}
