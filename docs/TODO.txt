@@ -4,32 +4,22 @@ DigitalWatch TODO
 
 
 - Channels
+  - Favorites
   - Scanning
     - Need to add an OSD log of some sort so we can display changes to services
   - Will need to create a new way to store state information about channels
     - Last channel
     - current service for each network
-  - Favorites
-  - TV Menu, (don't call it setup)
-    - Channel Setup
-	  - Add Network
-	    - Scan All
-		- 177500
-		- ...
-	  - Reorder (future)
-	  - Network 1
-	    - Services
-		  - Reorder (future)
-		  - ServiceName 1
-		  - ServiceName 2
-		  - ...
-		  > Shift Up/Down to reorder
-		  > 1-9 to set as favorite
-		- Auto Update On/Off
-	    - Delete
-
-	  - Network 2
+  - TV Menu
+    - Still need a Scan All option
+	- Services Menu
+	  - ServiceName 1
+	  - ServiceName 2
 	  - ...
+	  > Left/Right to reorder
+	  > 1-9 to set as favorite
+	- How to turn Auto Update On/Off
+	- Delete?
 
 - Data item
   - output to an xml file so we don't have to document it, and so other apps can read it.
@@ -54,9 +44,6 @@ DigitalWatch TODO
 - VMR9 Renderless mode
   - Custom Allocator Presenter?
   - VMR9 deinterlacing
-
-- Command queue
-  - This way commands run in a separate thread so that the OSD still get's updated.
 
 - Timeshifting
   - Separate tuner graph from main playback graph.
@@ -92,12 +79,14 @@ Documentation
 
 Enhancements
 - Set title bar to DigitalWatch - $(NaNProgram)
+  I think i'll make this configurable
 
-- Still Image Capture
+- Still Image Capture (I doubt this will happen)
 
 - Timer to put the computer to sleep.
 - Timer to shutdown the computer.
     These need to not happen if currently recording.
+- Stop graph and make screen black. Kinda like a power button that doesn't turn the pc off.
 
 -----------------
  DigitalWatch KB

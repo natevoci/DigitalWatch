@@ -591,6 +591,8 @@ void DVBMpeg2DataParser::StartScanThread()
 
 		(log << "\nStarting Scan...\n").Write();
 
+		BOOL bFirstScan = TRUE;
+
 		while (m_piMpeg2Data)
 		{
 			// Make sure the filter is running
@@ -600,8 +602,12 @@ void DVBMpeg2DataParser::StartScanThread()
 				continue;
 			}
 
-			g_pOSD->Data()->SetItem(L"Scanning", L"Scanning");
-			g_pTv->ShowOSDItem(L"Scanning");
+			if (bFirstScan)
+			{
+				g_pOSD->Data()->SetItem(L"Scanning", L"Scanning");
+				g_pTv->ShowOSDItem(L"Scanning");
+				bFirstScan = FALSE;
+			}
 
 
 			// Initial tables to scan
@@ -646,7 +652,7 @@ void DVBMpeg2DataParser::StartScanThread()
 				g_pOSD->Data()->SetItem(L"Scanning", L"");
 			}
 
-			DWORD dwWait = WaitForSingleObject(m_hScanningStopEvent[0], 10000);
+			DWORD dwWait = WaitForSingleObject(m_hScanningStopEvent[0], 1000);
 			if (dwWait != WAIT_TIMEOUT)
 				break;
 		}

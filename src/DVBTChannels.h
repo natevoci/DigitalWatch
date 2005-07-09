@@ -173,6 +173,9 @@ public:
 	//Update Methods
 	BOOL UpdateNetwork(DVBTChannels_Network *pNewNetwork);
 
+	HRESULT MoveNetworkUp(long transportStreamId);
+	HRESULT MoveNetworkDown(long transportStreamId);
+
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);
 	virtual long GetListSize();

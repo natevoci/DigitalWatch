@@ -1,7 +1,10 @@
 <!-- DigitalWatch BDA Source Keys -->
 
-<!--  <Key code= 13>				ShowMenu("TVMenu")</>-->
   <Key code= 13>				ShowMenu("NetworkList")</>
+
+  <!-- F2 and Preview button on VP remote -->
+  <Key code=113>				ShowMenu("TVMenu")</>
+  <Key code='K'>				ShowMenu("TVMenu")</>
 
   <!-- keyboard numbers -->
   <Key code='0'>				SetChannel(10)</>

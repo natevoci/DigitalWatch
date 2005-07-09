@@ -41,6 +41,7 @@ BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 	m_pDWGraph = NULL;
 
 	g_pOSD->Data()->AddList(L"TVChannels.Networks", &channels);
+	g_pOSD->Data()->AddList(L"FrequencyList", &frequencyList);
 }
 
 BDADVBTSource::~BDADVBTSource()
@@ -54,6 +55,7 @@ void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 
 	graphTools.SetLogCallback(callback);
 	channels.SetLogCallback(callback);
+	frequencyList.SetLogCallback(callback);
 	cardList.SetLogCallback(callback);
 
 	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
@@ -78,9 +80,12 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	m_pDWGraph = pFilterGraph;
 	
 	wchar_t file[MAX_PATH];
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Channels.xml", g_pData->application.appPath);
 
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Channels.xml", g_pData->application.appPath);
 	hr = channels.LoadChannels((LPWSTR)&file);
+
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\FrequencyList.xml", g_pData->application.appPath);
+	hr = frequencyList.LoadFrequencyList((LPWSTR)&file);
 
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Keys.xml", g_pData->application.appPath);
 	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
@@ -238,6 +243,42 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 
 		return UpdateChannels();
 	}
+	else if (_wcsicmp(pCurr, L"ChangeFrequencySelectionOffset") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 1)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(command->LHS.Parameter[0]);
+
+		return ChangeFrequencySelectionOffset(n1);
+	}
+	else if (_wcsicmp(pCurr, L"MoveNetworkUp") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 1)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(command->LHS.Parameter[0]);
+
+		return MoveNetworkUp(n1);
+	}
+	else if (_wcsicmp(pCurr, L"MoveNetworkDown") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 1)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(command->LHS.Parameter[0]);
+
+		return MoveNetworkDown(n1);
+	}
 
 	//Just referencing these variables to stop warnings.
 	n3 = 0;
@@ -268,6 +309,7 @@ HRESULT BDADVBTSource::Play()
 			return RenderChannel(pNetwork, pService);
 		}
 	}
+	g_pTv->ShowMenu(L"TVMenu");
 
 	indent.Release();
 	(log << "Finished Playing BDA Source\n").Write();
@@ -454,8 +496,6 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 	// Do data stuff
 	UpdateData(frequency, bandwidth);
-
-	g_pTv->ShowOSDItem(L"Channel", 10);
 	// End data stuff
 
 	if FAILED(hr = m_pDWGraph->Stop())
@@ -817,6 +857,11 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 	}
 
 	delete[] str;
+
+	if (m_pCurrentNetwork)
+		g_pTv->ShowOSDItem(L"Channel", 10);
+	else
+		g_pTv->ShowOSDItem(L"Channel", 300);
 }
 
 HRESULT BDADVBTSource::UpdateChannels()
@@ -849,5 +894,20 @@ HRESULT BDADVBTSource::UpdateChannels()
 		UpdateData();
 	}
 	return S_OK;
+}
+
+HRESULT BDADVBTSource::ChangeFrequencySelectionOffset(long change)
+{
+	return frequencyList.ChangeOffset(change);
+}
+
+HRESULT BDADVBTSource::MoveNetworkUp(long transportStreamId)
+{
+	return channels.MoveNetworkUp(transportStreamId);
+}
+
+HRESULT BDADVBTSource::MoveNetworkDown(long transportStreamId)
+{
+	return channels.MoveNetworkDown(transportStreamId);
 }
 

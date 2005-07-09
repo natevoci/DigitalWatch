@@ -41,7 +41,7 @@ DWOverlayCallback::~DWOverlayCallback()
 
 HRESULT DWOverlayCallback::OnUpdateOverlay(BOOL bBefore, DWORD dwFlags, BOOL bOldVisible, const RECT *prcSrcOld, const RECT *prcDestOld, BOOL bNewVisible, const RECT *prcSrcNew, const RECT *prcDestNew)
 {
-    if (g_pOSD->get_DirectDraw() == NULL)
+    if ((g_pOSD == NULL) || (g_pOSD->get_DirectDraw() == NULL))
     {
         DbgLog((LOG_ERROR, 1, TEXT("ERROR: NULL DDraw object pointer was specified"))) ;
         return E_POINTER ;

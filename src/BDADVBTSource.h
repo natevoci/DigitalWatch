@@ -29,6 +29,7 @@
 #include "BDACardCollection.h"
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
+#include "DVBTFrequencyList.h"
 #include <vector>
 
 class BDADVBTSource : public DWSource
@@ -78,6 +79,11 @@ protected:
 	void UpdateData(long frequency = 0, long bandwidth = 0);
 	HRESULT UpdateChannels();
 
+	HRESULT ChangeFrequencySelectionOffset(long change);
+
+	HRESULT MoveNetworkUp(long transportStreamId);
+	HRESULT MoveNetworkDown(long transportStreamId);
+
 private:
 	const LPWSTR m_strSourceType;
 
@@ -94,6 +100,8 @@ private:
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
+
+	DVBTFrequencyList frequencyList;
 
 	FilterGraphTools graphTools;
 };

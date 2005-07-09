@@ -1049,13 +1049,56 @@ BOOL DVBTChannels::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 		pNetwork->SetLogCallback(m_pLogCallback);
 		m_networks.push_back(pNetwork);
 		LPWSTR listName = new wchar_t[1024];
-		swprintf(listName, L"TVChannels.Services.%i", pNetwork->transportStreamId);
+		swprintf(listName, L"TVChannels.Services.%i", pNewNetwork->transportStreamId);
 		g_pOSD->Data()->AddList(listName, pNetwork);
 		delete[] listName;
 	}
 	return pNetwork->UpdateNetwork(pNewNetwork);
 }
 
+HRESULT DVBTChannels::MoveNetworkUp(long transportStreamId)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->transportStreamId == transportStreamId)
+		{
+			if (it > m_networks.begin())
+			{
+				m_networks.erase(it);
+				it--;
+				m_networks.insert(it, pNetwork);
+				return S_OK;
+			}
+		}
+	}
+	return S_FALSE;
+}
+
+HRESULT DVBTChannels::MoveNetworkDown(long transportStreamId)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->transportStreamId == transportStreamId)
+		{
+			if (it < m_networks.end()-1)
+			{
+				m_networks.erase(it);
+				it++;
+				m_networks.insert(it, pNetwork);
+				return S_OK;
+			}
+		}
+	}
+	return S_FALSE;
+}
 
 // IDWOSDDataList Methods
 LPWSTR DVBTChannels::GetListItem(LPWSTR name, long nIndex)

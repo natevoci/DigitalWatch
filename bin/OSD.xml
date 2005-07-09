@@ -113,7 +113,7 @@ $(() - $(
 	</group>
 	<group name="Channel">
 		<label>
-			<pos x=748 y=514 />
+			<pos x=750 y=515 />
 			<text>$(CurrentService)</text>
 			<font height=40 color="#FFFFFF" />
 			<align horizontal="right" vertical="bottom" />
@@ -123,7 +123,7 @@ $(() - $(
 			</background>
 		</label>
 		<label>
-			<pos x=748 y=560 />
+			<pos x=750 y=560 />
 			<text>$(CurrentNetwork)</text>
 			<font height=40 color="#FFFFFF" />
 			<align horizontal="right" vertical="bottom" />
@@ -133,7 +133,7 @@ $(() - $(
 			</background>
 		</label>
 		<label>
-			<pos x=748 y=10 />
+			<pos x=750 y=10 />
 			<text>$(CurrentDVBTCard)</text>
 			<font height=20 color="#FFFFFF" />
 			<align horizontal="right" />
@@ -145,8 +145,8 @@ $(() - $(
 	</group>
 	<group name="Scanning">
 		<label>
-			<pos x=748 y=40 />
-			<text>Scanning</text>
+			<pos x=750 y=40 />
+			<!--<text>Scanning</text>-->
 			<font height=20 color="#FFFFFF" />
 			<align horizontal="right" />
 			<background>
@@ -158,7 +158,7 @@ $(() - $(
 	<group name="Time">
 		<label>
 			<pos x=20 y=526 />
-			<text>$(Hour24) - $(Minute) - $(Second)$(ap)</text>
+			<text>$(Hour24):$(Minute):$(Second) $(AMPM)</text>
 			<font height=20 weight=700 color="#FFFFFF" />
 			<background>
 				<image>BrownButton</image>
@@ -224,10 +224,22 @@ $(() - $(
 		<Key code= 39>Right()</>
 		<Key code= 40>Down()</>
 	</keys>
+	<label>
+		<pos x=384 y=40 />
+		<text>Main Menu</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+		<!--
+		<background>
+			<image>BrownBackground</image>
+			<padding left=250 right=250 top=20 bottom=470 />
+		</background>
+		-->
+	</label>
 	<list name="MenuOptions">
-		<pos x=100 y=50 />
-		<size width=568 height=476 />
-		
+		<pos x=100 y=100 />
+		<size width=568 height=426 />
+
 		<itemTemplate>
 			<height>60</height>
 			<gap>10</gap>
@@ -242,8 +254,8 @@ $(() - $(
 		<item>
 			<text>Watch TV</text>
 			<onSelect>
-				SetSource(BDA)
 				ExitMenu(-1)
+				SetSource(BDA)
 			</onSelect>
 		</item>
 		<item>
@@ -251,51 +263,183 @@ $(() - $(
 			<onSelect>Exit()</onSelect>
 		</item>
 	</list>
-	<!--
+</window>
+
+<window name="TVMenu">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
 	<label>
 		<pos x=384 y=40 />
-		<text>Main Menu</text>
+		<text>TV Menu</text>
 		<font height=40 weight=700 color="#FFFFFF" />
 		<align horizontal="centre"/>
-		<background>
-			<image>BrownBackground</image>
-			<padding left=250 right=250 top=20 bottom=470 />
-		</background>
 	</label>
-	<button name="WatchTV">
-		<pos x=184 y=120 />
-		<size width=400 height=60 />
-		<text>Watch TV</text>
-		<font height=40 weight=700 color="#FFFFFF" />
-		<background>
-			<image>BrownButton</image>
-			<highlightImage>GreenButton</highlightImage>
-		</background>
-		<highlight default=1>
+	<list name="MenuOptions">
+		<pos x=100 y=100 />
+		<size width=568 height=426 />
+
+		<itemTemplate>
+			<height>60</height>
+			<gap>10</gap>
+			<font height=40 weight=700 color="#FFFFFF" />
+			<align horizontal="centre"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<text>Channel Setup</text>
 			<onSelect>
-				SetSource(BDA)
+				ExitMenu(-1)
+				ShowMenu(TVChannelSetup)
+			</onSelect>
+		</item>
+		<item>
+			<text>Main Menu</text>
+			<onSelect>
+				ExitMenu(-1)
+				ShowMenu("MainMenu")
+			</onSelect>
+		</item>
+	</list>
+</window>
+
+<window name="TVChannelSetup">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	<label>
+		<pos x=384 y=40 />
+		<text>TV Channel Setup</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+	<list name="MenuOptions">
+		<pos x=100 y=100 />
+		<size width=568 height=376 />
+
+		<itemTemplate>
+			<height>50</height>
+			<gap>10</gap>
+			<font height=40 weight=700 color="#FFFFFF" />
+			<align horizontal="centre"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>60</height>
+			<gap>40</gap>
+			<font height=40 weight=700 color="#FFFFFF" />
+			<text>Add Network</text>
+			<onSelect>
+				ExitMenu(-1)
+				ShowMenu(TVAddNetwork)
+			</onSelect>
+		</item>
+		<!--
+		<item>
+			<text>Reorder</text>
+			<onSelect>
 				ExitMenu(-1)
 			</onSelect>
-			<onDown>#Exit</onDown>
-		</highlight>
-	</button>
-	<button name="Exit">
-		<pos x=184 y=200 />
-		<size width=400 height=60 />
-		<text>Exit</text>
+		</item>
+		-->
+		<itemList>
+			<source>TVChannels.Networks</source>
+			<text>$(TVChannels.Network.name)</text>
+			<onSelect>SetChannel($(TVChannels.Network.transportStreamId)) ExitMenu()</onSelect>
+			<onLeft>
+				MoveNetworkUp($(TVChannels.Network.transportStreamId))
+				Up()
+			</onLeft>
+			<onRight>
+				MoveNetworkDown($(TVChannels.Network.transportStreamId))
+				Down()
+			</onRight>
+		</itemList>
+	</list>
+	<label>
+		<pos x=384 y=500 />
+		<text>use left and right arrows to change network order</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+</window>
+
+<window name="TVAddNetwork">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	<label>
+		<pos x=50 y=40 />
+		<text>TV Add Network</text>
 		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="left"/>
+	</label>
+	<list name="MenuOptions">
+		<pos x=50 y=100 />
+		<size width=168 height=376 />
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+			<onRight>ChangeFrequencySelectionOffset(1)</onRight>
+			<onLeft>ChangeFrequencySelectionOffset(-1)</onLeft>
+		</itemTemplate>
+
+		<itemList>
+			<source>FrequencyList</source>
+			<text>   $(FrequencyList.frequency)  ($(FrequencyList.bandwidth))</text>
+			<onSelect>
+				SetFrequency($(FrequencyList.frequency), $(FrequencyList.bandwidth))
+			</onSelect>
+		</itemList>
+	</list>
+	<label>
+		<pos x=50 y=500 />
+		<text>use left and right arrows to change offset</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="left"/>
+	</label>
+	<label>
+		<pos x=750 y=470 />
+		<text>$(Scanning)</text>
+		<font height=40 color="#FFFFFF" />
+		<align horizontal="right" vertical="bottom" />
 		<background>
 			<image>BrownButton</image>
-			<highlightImage>GreenButton</highlightImage>
+			<padding left=10 top=0 right=10 bottom=3 />
 		</background>
-		<highlight>
-			<onSelect>Exit()</onSelect>
-			<onUp>#WatchTV</onUp>
-		</highlight>
-	</button>
-	-->
+	</label>
 </window>
-<window name="TVMenu">
+
+
+
+<window name="ChannelSelect">
 	<keys>
 		<Key code= 13>Select()</>
 		<Key code= 37>Left()</>
@@ -378,7 +522,9 @@ $(() - $(
 </window>
 
 <window name="NetworkList">
+	<!--
 	<hideLowerWindows />
+	-->
 	<keys>
 		<Key code= 13>Select()</>
 		<Key code= 37>Left()</>
@@ -402,12 +548,12 @@ $(() - $(
 			</background>
 		</itemTemplate>
 		
-		<items>
+		<itemList>
 			<source>TVChannels.Networks</source>
 			<text>  $(TVChannels.Network.name)</text>
 			<onSelect>SetChannel($(TVChannels.Network.transportStreamId)) ExitMenu()</onSelect>
 			<onRight>ShowMenu("ServiceList($(TVChannels.Network.transportStreamId))")</onRight>
-		</item>
+		</itemList>
 	</list>
 </window>
 
@@ -435,13 +581,13 @@ $(() - $(
 			</background>
 		</itemTemplate>
 		
-		<items>
+		<itemList>
 			<source>TVChannels.Services.$(window.ServiceList[0])</source>
 		<!--<text>  $(TVChannels.Service.ServiceId). $(TVChannels.Service.Name)</text>-->
 			<text>  $(TVChannels.Service.LogicalChannelNumber). $(TVChannels.Service.Name)</text>
 			<onSelect>SetChannel($(window.ServiceList[0]), $(TVChannels.Service.ServiceId)) ExitMenu(2)</onSelect>
 			<onLeft>ExitMenu()</onLeft>
-		</item>
+		</itemList>
 	</list>
 </window>
 
@@ -450,7 +596,7 @@ $(() - $(
 		<pos x=10 y=10 />
 		<size width=500 height=500 />
 		
-		<items>#messages</items>
+		<itemList>#messages</itemList>
 		
 		<textColor>#FFFFFF</textColor>
 		<backColor>#505050</backColor>

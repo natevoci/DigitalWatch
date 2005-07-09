@@ -30,7 +30,31 @@
 #include <vector>
 
 class DWOSDList;
-class DWOSDListItem : public DWOSDControl
+
+// DWOSDListEntry
+class DWOSDListEntry
+{
+public:
+	DWOSDListEntry();
+	virtual ~DWOSDListEntry();
+};
+
+// DWOSDListItemList
+class DWOSDListItemList : public DWOSDListEntry
+{
+public:
+	DWOSDListItemList();
+	virtual ~DWOSDListItemList();
+
+	LPWSTR m_pSource;
+	LPWSTR m_pText;
+	LPWSTR m_pOnSelect;
+	LPWSTR m_pOnLeft;
+	LPWSTR m_pOnRight;
+};
+
+// DWOSDListItem
+class DWOSDListItem : public DWOSDListEntry, public DWOSDControl
 {
 	friend DWOSDList;
 public:
@@ -83,6 +107,8 @@ public:
 
 protected:
 	virtual void ClearItems();
+	virtual void ClearItemsToRender();
+
 	virtual HRESULT Draw(long tickCount);
 	virtual HRESULT RefreshListItems();
 
@@ -98,11 +124,6 @@ protected:
 
 	long m_nHighlighedItem;
 
-	LPWSTR m_pItemsSource;
-	LPWSTR m_pItemsText;
-	LPWSTR m_pItemsOnSelect;
-	LPWSTR m_pItemsOnLeft;
-	LPWSTR m_pItemsOnRight;
 
 
 	long m_nYOffset;
@@ -113,7 +134,8 @@ protected:
 	long m_nMovingStartedAtYOffset;
 	long m_nMovingToYOffset;
 
-	std::vector <DWOSDListItem *> m_items;
+	std::vector <DWOSDListEntry *> m_items;
+	std::vector <DWOSDListItem *> m_itemsToRender;
 };
 
 #endif

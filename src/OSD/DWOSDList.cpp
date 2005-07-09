@@ -26,6 +26,45 @@
 #include "GlobalFunctions.h"
 
 //////////////////////////////////////////////////////////////////////
+// DWOSDListEntry
+//////////////////////////////////////////////////////////////////////
+
+DWOSDListEntry::DWOSDListEntry()
+{
+}
+
+DWOSDListEntry::~DWOSDListEntry()
+{
+}
+
+//////////////////////////////////////////////////////////////////////
+// DWOSDListItemList
+//////////////////////////////////////////////////////////////////////
+
+DWOSDListItemList::DWOSDListItemList()
+{
+	m_pSource = NULL;
+	m_pText = NULL;
+	m_pOnSelect = NULL;
+	m_pOnLeft = NULL;
+	m_pOnRight = NULL;
+}
+
+DWOSDListItemList::~DWOSDListItemList()
+{
+	if (m_pSource)
+		delete[] m_pSource;
+	if (m_pText)
+		delete[] m_pText;
+	if (m_pOnSelect)
+		delete[] m_pOnSelect;
+	if (m_pOnLeft)
+		delete[] m_pOnLeft;
+	if (m_pOnRight)
+		delete[] m_pOnRight;
+}
+
+//////////////////////////////////////////////////////////////////////
 // DWOSDListItem
 //////////////////////////////////////////////////////////////////////
 
@@ -76,6 +115,16 @@ HRESULT DWOSDListItem::LoadFromXML(XMLElement *pElement)
 		{
 			if (element->value)
 				strCopy(m_pwcsOnSelect, element->value);
+		}
+		else if (_wcsicmp(element->name, L"onLeft") == 0)
+		{
+			if (element->value)
+				strCopy(m_pwcsOnLeft, element->value);
+		}
+		else if (_wcsicmp(element->name, L"onRight") == 0)
+		{
+			if (element->value)
+				strCopy(m_pwcsOnRight, element->value);
 		}
 		else if (_wcsicmp(element->name, L"height") == 0)
 		{
@@ -166,8 +215,22 @@ void DWOSDListItem::CopyTo(DWOSDListItem* target)
 
 	if (m_wszText)
 		strCopy(target->m_wszText, m_wszText);
+	if (m_pwcsOnSelect)
+		strCopy(target->m_pwcsOnSelect, m_pwcsOnSelect);
 	if (m_wszFont)
 		strCopy(target->m_wszFont, m_wszFont);
+	if (m_pwcsOnSelect)
+		strCopy(target->m_pwcsOnSelect, m_pwcsOnSelect);
+	if (m_pwcsOnUp)
+		strCopy(target->m_pwcsOnUp, m_pwcsOnUp);
+	if (m_pwcsOnDown)
+		strCopy(target->m_pwcsOnDown, m_pwcsOnDown);
+	if (m_pwcsOnLeft)
+		strCopy(target->m_pwcsOnLeft, m_pwcsOnLeft);
+	if (m_pwcsOnRight)
+		strCopy(target->m_pwcsOnRight, m_pwcsOnRight);
+
+
 	target->m_dwTextColor = m_dwTextColor;
 	target->m_nTextHeight = m_nTextHeight;
 	target->m_nTextWeight = m_nTextWeight;
@@ -258,12 +321,6 @@ DWOSDList::DWOSDList(DWSurface* pSurface) : DWOSDControl(pSurface)
 
 	m_nHighlighedItem = 0;
 
-	m_pItemsSource = NULL;
-	m_pItemsText = NULL;
-	m_pItemsOnSelect = NULL;
-	m_pItemsOnLeft = NULL;
-	m_pItemsOnRight = NULL;
-
 	m_nYOffset = 0;
 	m_nLastTickCount = 0;
 
@@ -277,26 +334,19 @@ DWOSDList::DWOSDList(DWSurface* pSurface) : DWOSDControl(pSurface)
 
 DWOSDList::~DWOSDList()
 {
-	if (m_pItemsSource)
-		delete[] m_pItemsSource;
-	if (m_pItemsText)
-		delete[] m_pItemsText;
-	if (m_pItemsOnSelect)
-		delete[] m_pItemsOnSelect;
-
 	ClearItems();
+	ClearItemsToRender();
 }
-
-
 
 HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 {
+	DWOSDControl::LoadFromXML(pElement);
+
 	XMLAttribute *attr;
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
 
 	ClearItems();
-
 
 	int elementCount = pElement->Elements.Count();
 	for ( int item=0 ; item<elementCount ; item++ )
@@ -346,13 +396,15 @@ HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 			}
 			else
 			{
-				if (m_items.size() == m_nHighlighedItem)
-					listItem->SetHighlight(TRUE);
+				//if (m_items.size() == m_nHighlighedItem)
+				//	listItem->SetHighlight(TRUE);
 				m_items.push_back(listItem);
 			}
 		}
-		else if (_wcsicmp(element->name, L"items") == 0)
+		else if (_wcsicmp(element->name, L"itemList") == 0)
 		{
+			DWOSDListItemList* listItemList = new DWOSDListItemList();
+
 			int subElementCount = element->Elements.Count();
 			for ( int subitem=0 ; subitem<subElementCount ; subitem++ )
 			{
@@ -360,29 +412,30 @@ HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 				if (_wcsicmp(subelement->name, L"source") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pItemsSource, subelement->value);
+						strCopy(listItemList->m_pSource, subelement->value);
 				}
 				else if (_wcsicmp(subelement->name, L"text") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pItemsText, subelement->value);
+						strCopy(listItemList->m_pText, subelement->value);
 				}
 				else if (_wcsicmp(subelement->name, L"onSelect") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pItemsOnSelect, subelement->value);
+						strCopy(listItemList->m_pOnSelect, subelement->value);
 				}
 				else if (_wcsicmp(subelement->name, L"onLeft") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pItemsOnLeft, subelement->value);
+						strCopy(listItemList->m_pOnLeft, subelement->value);
 				}
 				else if (_wcsicmp(subelement->name, L"onRight") == 0)
 				{
 					if (subelement->value)
-						strCopy(m_pItemsOnRight, subelement->value);
+						strCopy(listItemList->m_pOnRight, subelement->value);
 				}
 			}
+			m_items.push_back(listItemList);
 		}
 	}
 
@@ -391,14 +444,14 @@ HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 
 LPWSTR DWOSDList::OnUp()
 {
-	std::vector<DWOSDListItem *>::iterator it = m_items.begin();
-	for ( ; it < m_items.end() ; it++ )
+	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
+	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
 		DWOSDListItem* item = *it;
 		if (item->IsHighlighted())
 		{
 			it--;
-			if (it < m_items.begin())
+			if (it < m_itemsToRender.begin())
 				return DWOSDControl::OnUp();
 
 			DWOSDListItem* lastItem = *it;
@@ -417,14 +470,14 @@ LPWSTR DWOSDList::OnUp()
 
 LPWSTR DWOSDList::OnDown()
 {
-	std::vector<DWOSDListItem *>::iterator it = m_items.begin();
-	for ( ; it < m_items.end() ; it++ )
+	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
+	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
 		DWOSDListItem* item = *it;
 		if (item->IsHighlighted())
 		{
 			it++;
-			if (it >= m_items.end())
+			if (it >= m_itemsToRender.end())
 				return DWOSDControl::OnDown();
 
 			DWOSDListItem* nextItem = *it;
@@ -443,24 +496,24 @@ LPWSTR DWOSDList::OnDown()
 
 LPWSTR DWOSDList::OnLeft()
 {
-	if (m_items.size() <= 0)
+	if (m_itemsToRender.size() <= 0)
 		return NULL;
-	DWOSDListItem* item = m_items.at(m_nHighlighedItem);
+	DWOSDListItem* item = m_itemsToRender.at(m_nHighlighedItem);
 	return item->OnLeft();
 }
 
 LPWSTR DWOSDList::OnRight()
 {
-	if (m_items.size() <= 0)
+	if (m_itemsToRender.size() <= 0)
 		return NULL;
-	DWOSDListItem* item = m_items.at(m_nHighlighedItem);
+	DWOSDListItem* item = m_itemsToRender.at(m_nHighlighedItem);
 	return item->OnRight();
 }
 
 LPWSTR DWOSDList::OnSelect()
 {
-	std::vector<DWOSDListItem *>::iterator it = m_items.begin();
-	for ( ; it < m_items.end() ; it++ )
+	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
+	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
 		DWOSDListItem* item = *it;
 		if (item->IsHighlighted())
@@ -474,13 +527,22 @@ LPWSTR DWOSDList::OnSelect()
 
 void DWOSDList::ClearItems()
 {
-	std::vector<DWOSDListItem *>::iterator it = m_items.begin();
+	std::vector<DWOSDListEntry *>::iterator it = m_items.begin();
 	for ( ; it < m_items.end() ; it++ )
 	{
-		DWOSDListItem* item = *it;
-		delete item;
+		delete (*it);
 	}
 	m_items.clear();
+}
+
+void DWOSDList::ClearItemsToRender()
+{
+	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
+	for ( ; it < m_itemsToRender.end() ; it++ )
+	{
+		delete (*it);
+	}
+	m_itemsToRender.clear();
 }
 
 HRESULT DWOSDList::Draw(long tickCount)
@@ -516,14 +578,17 @@ HRESULT DWOSDList::Draw(long tickCount)
 
 	m_pListSurface->Clear();
 
-	std::vector<DWOSDListItem *>::iterator it = m_items.begin();
-	for ( ; it < m_items.end() ; it++ )
+	int i=0;
+	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
+	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
 		DWOSDListItem* item = *it;
 		item->m_nPosY = nYOffset;
 		item->m_nWidth = m_nWidth;
-		item->Render(tickCount);
+		if ((nYOffset < m_nHeight) && (nYOffset > -item->m_nHeight))
+			item->Render(tickCount);
 		nYOffset += item->m_nHeight + item->m_nGap;
+		i++;
 	}
 	
 	RECT rcDest, rcSrc;
@@ -539,44 +604,69 @@ HRESULT DWOSDList::Draw(long tickCount)
 
 HRESULT DWOSDList::RefreshListItems()
 {
-	if (m_pItemsSource)
+	ClearItemsToRender();
+
+	std::vector<DWOSDListEntry *>::iterator it = m_items.begin();
+	for ( ; it < m_items.end() ; it++ )
 	{
-		LPWSTR pStr = NULL;
-		g_pOSD->Data()->ReplaceTokens(m_pItemsSource, pStr);
-		IDWOSDDataList* list = g_pOSD->Data()->GetList(pStr);
-		if (list)
+		DWOSDListEntry* entry = *it;
+
+		DWOSDListItem* item = dynamic_cast<DWOSDListItem*>(entry);
+		if (item)
 		{
-			ClearItems();
 
-			long listSize = list->GetListSize();
+			DWOSDListItem* listItem = new DWOSDListItem(m_pListSurface);
+			listItem->SetLogCallback(m_pLogCallback);
+			item->CopyTo(listItem);
+			if (m_itemsToRender.size() == m_nHighlighedItem)
+				listItem->SetHighlight(TRUE);
+			m_itemsToRender.push_back(listItem);
+			continue;
+		}
 
-			for (int i=0 ; i<listSize ; i++ )
+		DWOSDListItemList* itemList = dynamic_cast<DWOSDListItemList*>(entry);
+		if (itemList && itemList->m_pSource)
+		{
+			LPWSTR pStr = NULL;
+			g_pOSD->Data()->ReplaceTokens(itemList->m_pSource, pStr);
+			IDWOSDDataList* list = g_pOSD->Data()->GetList(pStr);
+			if (list)
 			{
-				DWOSDListItem* listItem = new DWOSDListItem(m_pListSurface);
-				listItem->SetLogCallback(m_pLogCallback);
+				long listSize = list->GetListSize();
 
-				m_pListItemTemplate->CopyTo(listItem);
+				for (int i=0 ; i<listSize ; i++ )
+				{
+					DWOSDListItem* listItem = new DWOSDListItem(m_pListSurface);
+					listItem->SetLogCallback(m_pLogCallback);
 
-				g_pOSD->Data()->ReplaceTokens(m_pItemsText, pStr, list, i);
-				strCopy(listItem->m_wszText, pStr);
+					m_pListItemTemplate->CopyTo(listItem);
 
-				g_pOSD->Data()->ReplaceTokens(m_pItemsOnSelect, pStr, list, i);
-				strCopy(listItem->m_pwcsOnSelect, pStr);
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pText, pStr, list, i);
+					if (pStr[0] != '\0')
+						strCopy(listItem->m_wszText, pStr);
 
-				g_pOSD->Data()->ReplaceTokens(m_pItemsOnLeft, pStr, list, i);
-				strCopy(listItem->m_pwcsOnLeft, pStr);
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnSelect, pStr, list, i);
+					if (pStr[0] != '\0')
+						strCopy(listItem->m_pwcsOnSelect, pStr);
 
-				g_pOSD->Data()->ReplaceTokens(m_pItemsOnRight, pStr, list, i);
-				strCopy(listItem->m_pwcsOnRight, pStr);
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnLeft, pStr, list, i);
+					if (pStr[0] != '\0')
+						strCopy(listItem->m_pwcsOnLeft, pStr);
 
-				if (m_items.size() == m_nHighlighedItem)
-					listItem->SetHighlight(TRUE);
-				m_items.push_back(listItem);
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnRight, pStr, list, i);
+					if (pStr[0] != '\0')
+						strCopy(listItem->m_pwcsOnRight, pStr);
+
+					if (m_itemsToRender.size() == m_nHighlighedItem)
+						listItem->SetHighlight(TRUE);
+					m_itemsToRender.push_back(listItem);
+				}
 			}
-			if (m_nHighlighedItem >= listSize)
-				m_nHighlighedItem = listSize-1;
 		}
 	}
+	if (m_nHighlighedItem >= m_itemsToRender.size())
+		m_nHighlighedItem = m_itemsToRender.size()-1;
+
 	return S_OK;
 }
 
@@ -594,8 +684,8 @@ void DWOSDList::UpdateScrolling()
 
 	long nLastItemHeight = 0;
 
-	std::vector<DWOSDListItem *>::iterator it = m_items.begin();
-	for ( ; it < m_items.end() ; it++ )
+	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
+	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
 		DWOSDListItem* item = *it;
 
@@ -620,7 +710,7 @@ void DWOSDList::UpdateScrolling()
 			}
 
 			it++;
-			if (it < m_items.end())
+			if (it < m_itemsToRender.end())
 			{
 				item = *it;
 				nMaximumOffset += item->m_nHeight;
