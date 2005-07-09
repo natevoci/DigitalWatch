@@ -184,7 +184,7 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
 			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
 
-			g_pTv->Key(wParam, bShiftDown, bCtrlDown, bAltDown);
+			g_pTv->OnKey(wParam, bShiftDown, bCtrlDown, bAltDown);
 		}
 		break;
 	case WM_SIZING:
@@ -204,7 +204,7 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 			BOOL bShiftDown = ((GetKeyState(VK_SHIFT) & 0x80) != 0);
 			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
 			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
-			g_pTv->Key(MOUSE_LDBLCLICK, bShiftDown, bCtrlDown, bAltDown);
+			g_pTv->OnKey(MOUSE_LDBLCLICK, bShiftDown, bCtrlDown, bAltDown);
 		}
 		break;
 	case WM_RBUTTONDOWN:
@@ -213,7 +213,7 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 			BOOL bShiftDown = ((GetKeyState(VK_SHIFT) & 0x80) != 0);
 			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
 			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
-			g_pTv->Key(MOUSE_RCLICK, bShiftDown, bCtrlDown, bAltDown);
+			g_pTv->OnKey(MOUSE_RCLICK, bShiftDown, bCtrlDown, bAltDown);
 		}
 		break;
 	case WM_MBUTTONDOWN:
@@ -222,7 +222,7 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 			BOOL bShiftDown = ((GetKeyState(VK_SHIFT) & 0x80) != 0);
 			BOOL bCtrlDown = ((GetKeyState(VK_CONTROL) & 0x80) != 0);
 			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
-			g_pTv->Key(MOUSE_MCLICK, bShiftDown, bCtrlDown, bAltDown);
+			g_pTv->OnKey(MOUSE_MCLICK, bShiftDown, bCtrlDown, bAltDown);
 		}
 		break;
 	case WM_MOUSEWHEEL:
@@ -233,9 +233,9 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 			BOOL bAltDown = ((GetKeyState(VK_MENU) & 0x80) != 0);
 			wheelMovement = (short)HIWORD(wParam);
 			if (wheelMovement > 0)
-				g_pTv->Key(MOUSE_SCROLL_UP  , bShiftDown, bCtrlDown, bAltDown);
+				g_pTv->OnKey(MOUSE_SCROLL_UP  , bShiftDown, bCtrlDown, bAltDown);
 			if (wheelMovement < 0)
-				g_pTv->Key(MOUSE_SCROLL_DOWN, bShiftDown, bCtrlDown, bAltDown);
+				g_pTv->OnKey(MOUSE_SCROLL_DOWN, bShiftDown, bCtrlDown, bAltDown);
 		}
 		break;
 

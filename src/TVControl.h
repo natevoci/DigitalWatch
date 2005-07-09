@@ -34,6 +34,7 @@
 #include "LogMessage.h"
 #include "ParseLine.h"
 #include <vector>
+#include <deque>
 
 #define TIMER_AUTO_HIDE_CURSOR			999
 #define TIMER_DISABLE_POWER_SAVING		998
@@ -82,9 +83,12 @@ public:
 	HRESULT ToggleOSDItem(LPWSTR szName);
 
 	HRESULT Exit();
-	
+
 	HRESULT Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt);
-	HRESULT ExecuteCommands(LPCWSTR command);
+	
+	//The difference between Key and OnKey is that OnKey puts the key in the queue
+	//whereas Key executes straight away. We want to use OnKey from DigitalWatchWindow::WndProc
+	HRESULT OnKey(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt);
 
 public:
 	BOOL ShowCursor(BOOL bAllowHide = TRUE);
@@ -94,14 +98,24 @@ public:
 	HRESULT OnSize();
 	HRESULT OnTimer(int wParam);
 
+	HRESULT ExecuteCommandsImmediate(LPCWSTR command);
+	void ExecuteCommandsQueue(LPCWSTR command);
+	void StartCommandQueueThread();
+
 private:
 	HRESULT ExecuteGlobalCommand(ParseLine* command);
+
+	DWORD m_mainThreadId;
 
 	KeyMap m_globalKeyMap;
 
 	DWGraph *m_pFilterGraph;
 	DWSource *m_pActiveSource;
 	std::vector<DWSource *> m_sources;
+
+	std::deque<LPWSTR> m_commandQueue;
+	HANDLE m_hCommandProcessingDoneEvent;
+	HANDLE m_hCommandProcessingStopEvent;
 };
 
 /*

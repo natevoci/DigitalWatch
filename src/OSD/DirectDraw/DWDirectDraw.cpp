@@ -224,10 +224,7 @@ void DWDirectDraw::SetOverlayPosition(const RECT* pRect)
 {
 	if (pRect)
 	{
-		m_OverlayPositionRect.left   = pRect->left;
-		m_OverlayPositionRect.top    = pRect->top;
-		m_OverlayPositionRect.right  = pRect->right;
-		m_OverlayPositionRect.bottom = pRect->bottom;
+		CopyRect(&m_OverlayPositionRect, pRect);
 
 		POINT p;
 		p.x = 0; p.y = 0;
@@ -237,10 +234,13 @@ void DWDirectDraw::SetOverlayPosition(const RECT* pRect)
 		RECT rcDest;
 		::GetClientRect(m_hWnd, &rcDest);
 
-		m_OverlayPositionRect.left = (m_nBackBufferWidth * m_OverlayPositionRect.left / rcDest.right);
-		m_OverlayPositionRect.top = (m_nBackBufferHeight * m_OverlayPositionRect.top / rcDest.bottom);
-		m_OverlayPositionRect.right = (m_nBackBufferWidth * m_OverlayPositionRect.right / rcDest.right);
-		m_OverlayPositionRect.bottom = (m_nBackBufferHeight * m_OverlayPositionRect.bottom / rcDest.bottom);
+		RECT rcIntersect;
+		IntersectRect(&rcIntersect, &m_OverlayPositionRect, &rcDest);
+
+		m_OverlayPositionRect.left = (m_nBackBufferWidth * rcIntersect.left / rcDest.right);
+		m_OverlayPositionRect.top = (m_nBackBufferHeight * rcIntersect.top / rcDest.bottom);
+		m_OverlayPositionRect.right = (m_nBackBufferWidth * rcIntersect.right / rcDest.right);
+		m_OverlayPositionRect.bottom = (m_nBackBufferHeight * rcIntersect.bottom / rcDest.bottom);
 	}
 }
 

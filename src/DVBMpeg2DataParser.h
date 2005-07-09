@@ -25,6 +25,7 @@
 #define DVBMPEG2DATAPARSER_H
 
 #include "LogMessage.h"
+#include "LogMessageWriter.h"
 #include "DVBTChannels.h"
 #include <mpeg2data.h>
 #include <mpeg2bits.h>
@@ -32,111 +33,190 @@
 
 enum running_mode
 {
+	RM_UNDEFINED   = 0x00,
 	RM_NOT_RUNNING = 0x01,
 	RM_STARTS_SOON = 0x02,
 	RM_PAUSING     = 0x03,
 	RM_RUNNING     = 0x04
 };
 
+class DVBTransponder;
+class DVBMpeg2DataParser;
+
 class DVBSection
 {
 public:
 	DVBSection();
 	virtual ~DVBSection();
-	void Setup(long pid, long table_id, long segmented, int timeout);
+	void Setup(long pid, long tableId, long segmented, int timeout);
+
+	DVBSection *CreateNewSegment(long tableIdExtention, long versionNumber);
+	DVBSection *FindSegment(long tableIdExtention);
+
+	BOOL IsSectionDone(long sectionNumber);
+	void SetSectionDone(long sectionNumber);
+	void ResetSectionDone();
+
+	long pid;
+	long tableId;
 
 	//unsigned long run_once : 1;
 	unsigned long segmented : 1;
 	long fd;
-	long pid;
-	long table_id;
-	long table_id_ext;
-	long section_version_number;
-	__int8 section_done[32];
-	long sectionfilter_done;
-	LPWSTR buf;
+	long tableIdExt;
+	long sectionVersionNumber;
+	long sectionFilterDone;
 
 	time_t timeout;
-	time_t start_time;
-	time_t running_time;
-	DVBSection *next_segment;
+	time_t startTime;
+	time_t runningTime;
+	DVBSection *nextSegment;
+
+protected:
+	__int8 m_sectionDone[32];
+
 };
 
-class DVBServiceAudio
+
+class DVBStream : public DVBTChannels_Stream
 {
 public:
-	long pid;
-	char land[4];
+	DVBStream();
+	virtual ~DVBStream();
+
+	long MpegStreamType;
+/*
+	enum audioTypes
+	{
+		AT_DEFAULT          = 0x00,
+		AT_CLEAN_EFFECTS    = 0x01,
+		AT_HEADING_IMPARED  = 0x02,
+		AT_VISUALLY_IMPARED = 0x03
+	} audioType;
+*/
 };
 
-class DVBService
+class DVBService : public DVBTChannels_Service
 {
+	friend DVBTransponder;
+	friend DVBMpeg2DataParser;
+
 public:
-	long transport_stream_id;
-	long service_id;
-	LPWSTR provider_name;
-	LPWSTR service_name;
-	long pmt_pid;
-	long pcr_pid;
-	long video_pid;
-	std::vector<DVBServiceAudio> audio_pids;
-	std::vector<long> ca_id;
-	long teletext_pid;
-	long subtitling_pid;
+	DVBService();
+	virtual ~DVBService();
+
+	void ParseSDTDescriptors(unsigned char *buf, int remainingLength);
+
+private:
+	void ParseServiceDescriptor(unsigned char *buf);
+
+public:
+	long transportStreamId;
+	LPWSTR providerName;
+	long pmtPid;
+	long pcrPid;
 	unsigned char type;
 	unsigned char scrambled : 1;
 	enum running_mode running;
 	DVBSection *section; //priv
-	long channel_num;
 };
 
-class DVBTransponder
+class DVBTransponder : public DVBTChannels_Network
 {
 public:
-	std::vector<DVBService *> services;
-	long network_id;
-	long transport_stream_id;
-	long original_network_id;
-	// only for DVB-S
-	//enum fe_type type;
-	//enum polarisation polarisation;
-	//long orbital_pos;
-	//unsigned long we_flag : 1;
+	DVBTransponder();
+	virtual ~DVBTransponder();
+
+	void SetLogCallback(LogMessageCallback *callback);
+
+	DVBService *CreateService(long serviceId);
+
+	void ParseNITDescriptors(unsigned char *buf, int remainingLength);
+
+private:
+	void ParseTerrestrialDeliverySystemDescriptor(unsigned char *buf);
+	void ParseFrequencyListDescriptor(unsigned char *buf);
+	void ParseTerrestrialChannelNumberDescriptor(unsigned char *buf);
+
+public:
+	long networkId;
+	long originalNetworkId;
 	
-	//unsigned char scan_done : 1;
-	unsigned char last_tuning_failed : 1;
-	unsigned char other_frequency_flag : 1;
-	std::vector<long> other_frequencys;
-	LPWSTR network_name;
-	long frequency;
-	long bandwidth;
+	unsigned char otherFrequencyFlag : 1;
+	std::vector<long> otherFrequencys;
+
 };
 
-class DVBMpeg2DataParser : public LogMessageCaller
+class DVBTransponderList : public LogMessageCaller
+{
+public:
+	DVBTransponderList();
+	virtual ~DVBTransponderList();
+
+	void SetLogCallback(LogMessageCallback *callback);
+
+	DVBTransponder *FindTransponder(long transportStreamId);
+	DVBTransponder *CreateTransponder(long transportStreamId);
+
+	//void UpdateChannels(DVBTChannels *pDVBTChannels);
+private:
+	vector<DVBTransponder *> m_transponders;
+
+};
+
+class DVBMpeg2DataParser
 {
 public:
 	DVBMpeg2DataParser();
 	virtual ~DVBMpeg2DataParser();
 
-	void SetDVBTChannels(DVBTChannels *pChannels);
+	void SetDVBTChannels(DVBTChannels *pNetwork);
+	void SetFrequency(long frequency);
 	void SetFilter(CComPtr <IBaseFilter> pBDASecTab);
 	void ReleaseFilter();
 
 	HRESULT StartScan();
+	DWORD WaitForThreadToFinish();
+
 	void StartScanThread();
 
 private:
+	HRESULT ReadSection(DVBSection *pSection);
+	void ParseSection(DVBSection *pSection, unsigned char *pBuffer);
+
+	void ParsePAT(unsigned char *buf, int sectionLength, int transportStreamId);
+	void ParsePMT(unsigned char *buf, int sectionLength, int serviceId);
+	void ParseNIT(unsigned char *buf, int sectionLength, int networkId);
+	void ParseSDT(unsigned char *buf, int sectionLength, int transportStreamId);
+
+	void UpdateInformation();
+
+	BOOL IsFilterRunning();
+
+	// Methods that could be static
+	int FindDescriptor(__int8 tag, unsigned char *buf, int remainingLength, const unsigned char **desc, int *descLen);
+	//void ParseLangDescriptor(unsigned char *buf, int remainingLength, DVBServiceAudio &audio);
 
 private:
-
 	DVBTChannels *m_pDVBTChannels;
+	long m_frequency;
 	CComPtr <IMpeg2Data> m_piMpeg2Data;
+
+	HANDLE m_hScanningStopEvent[2];
 	HANDLE m_hScanningDoneEvent;
 
 	BOOL m_bThreadStarted;
 
-	vector<DVBSection *> waiting_filters;
+	vector<DVBSection *> m_waitingFilters;
 
+	DVBTransponderList m_transponders;
+	DVBTransponder *m_currentTransponder;
+
+	const int m_cBufferSize;
+	unsigned char *m_pDataBuffer;
+
+	LogMessage log;
+	LogMessageWriter m_logWriter;
 };
 
 #endif

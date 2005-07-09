@@ -907,16 +907,19 @@ HRESULT DWOSDData::ReplaceTokens(LPWSTR pSource, LPWSTR &pResult, IDWOSDDataList
 				}
 				else
 				{
-					data = piDataList->GetListItem(pCurr, ixDataList);
-					if (data)
+					if (piDataList)
 					{
-						if (_snwprintf(result, resultSize-dst, L"%s%s", result, data) < 0)
-							continue;
-					}
-					else
-					{
-						//if (_snwprintf(result, resultSize-dst, L"%s$(%s)", result, pCurr) < 0)
-						//	continue;
+						data = piDataList->GetListItem(pCurr, ixDataList);
+						if (data)
+						{
+							if (_snwprintf(result, resultSize-dst, L"%s%s", result, data) < 0)
+								continue;
+						}
+						else
+						{
+							//if (_snwprintf(result, resultSize-dst, L"%s$(%s)", result, pCurr) < 0)
+							//	continue;
+						}
 					}
 				}
 			}

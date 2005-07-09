@@ -131,9 +131,8 @@ HRESULT DWOSDWindow::OnKeyCommand(LPWSTR command)
 	if (command[0] == '#')
 		return SetHighlightedControl(command++);
 
-	HRESULT hr = g_pTv->ExecuteCommands(command);
-	if FAILED(hr)
-		(log << "An error occured executing the command " << command << " on control " << m_pHighlightedControl->Name() << "\n").Write();
+	g_pTv->ExecuteCommandsImmediate(command);
+
 	return S_OK;
 }
 

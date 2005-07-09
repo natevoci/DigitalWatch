@@ -29,11 +29,13 @@
 #include "DWGraph.h"
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
+#include "DVBMpeg2DataParser.h"
 
+class BDADVBTSource;
 class BDADVBTSourceTuner : public LogMessageCaller
 {
 public:
-	BDADVBTSourceTuner(BDACard *pBDACard);
+	BDADVBTSourceTuner(BDADVBTSource *pBDADVBTSource, BDACard *pBDACard);
 	virtual ~BDADVBTSourceTuner();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
@@ -49,6 +51,8 @@ public:
 	HRESULT LockChannel(long frequency, long bandwidth);
 	long GetCurrentFrequency();
 
+	HRESULT StartScanning();
+	
 	HRESULT GetSignalStats(BOOL &locked, long &strength, long &quality);
 
 	BOOL IsActive();
@@ -73,6 +77,8 @@ public:
 	LPWSTR GetCardName();
 
 private:
+	BDADVBTSource *m_pBDADVBTSource;
+
 	BDACard *m_pBDACard;
 	DWGraph *m_pDWGraph;
 
@@ -84,18 +90,14 @@ private:
 
 	//BOOL m_bRecording;
 
-	//VARIANT m_pTuningSpaceIndex;
-
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IMediaControl> m_piMediaControl;
 
 	CComPtr <IBaseFilter> m_piBDANetworkProvider;
-//	CComPtr <IBaseFilter> m_piBDATuner;
-//	CComPtr <IBaseFilter> m_piBDACapture;
+	CComPtr <IBaseFilter> m_piInfinitePinTee;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 	CComPtr <IBaseFilter> m_piBDATIF;
 	CComPtr <IBaseFilter> m_piBDASecTab;
-	CComPtr <IBaseFilter> m_piInfinitePinTee;
 	//CComPtr <IBaseFilter> m_piDSNetworkSink;
 
 	CComPtr <ITuningSpace> m_piTuningSpace;
@@ -104,6 +106,7 @@ private:
 	CComPtr <IGuideData> m_piGuideData;
 	DWGuideDataEvent* m_poGuideDataEvent;
 	*/
+	DVBMpeg2DataParser *m_pMpeg2DataParser;
 
 	DWORD m_rotEntry;
 

@@ -29,13 +29,31 @@
 #include "DWSource.h"
 #include "BDADVBTSource.h"
 
+#include <process.h>
+#include <math.h>
+
+void CommandQueueThread(void *pParam)
+{
+	TVControl *tv;
+	tv = (TVControl *)pParam;
+	tv->StartCommandQueueThread();
+}
+
+//////////////////////////////////////////////////////////////////////
+// TVControl
+//////////////////////////////////////////////////////////////////////
 TVControl::TVControl()
 {
+	m_mainThreadId = GetCurrentThreadId();
+	m_hCommandProcessingStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	m_hCommandProcessingDoneEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_pFilterGraph = NULL;
 }
 TVControl::~TVControl(void)
 {
 	Destroy();
+	CloseHandle(m_hCommandProcessingStopEvent);
+	CloseHandle(m_hCommandProcessingDoneEvent);
 }
 
 void TVControl::SetLogCallback(LogMessageCallback *callback)
@@ -61,6 +79,7 @@ HRESULT TVControl::Initialise()
 
 	SetTimer(g_pData->hWnd, TIMER_DISABLE_POWER_SAVING, 30000, NULL);
 	SetTimer(g_pData->hWnd, TIMER_RECORDING_TIMELEFT, 1000, NULL);
+	
 	//SetTimer(g_pData->hWnd, 996, 100, NULL);
 	//SetTimer(g_pData->hWnd, 997, 1000, NULL);
 
@@ -87,6 +106,18 @@ HRESULT TVControl::Initialise()
 //	m_sources.push_back(source);
 //	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
 
+	ShowMenu(L"MainMenu");
+
+	(log << "Starting command processing thread\n").Write();
+	ResetEvent(m_hCommandProcessingStopEvent);
+	ResetEvent(m_hCommandProcessingDoneEvent);
+	unsigned long result = _beginthread(CommandQueueThread, 0, (void *) this);
+	if (result == -1L)
+	{
+		(log << "  Thread failed to start.\n").Write();
+		return E_FAIL;
+	}
+
 	indent.Release();
 	(log << "Finished Initialising TVControl\n").Write();
 
@@ -95,6 +126,19 @@ HRESULT TVControl::Initialise()
 
 HRESULT TVControl::Destroy()
 {
+	// Stop command queue processing thread
+	SetEvent(m_hCommandProcessingStopEvent);
+	DWORD result;
+	do
+	{
+		result = WaitForSingleObject(m_hCommandProcessingDoneEvent, 1000);
+	} while (result == WAIT_TIMEOUT);
+	if (result != WAIT_OBJECT_0)
+	{
+		DWORD err = GetLastError();
+		(log << "WaitForSingleObject error: " << (int)err << "\n").Write();
+	}
+
 	std::vector<DWSource *>::iterator it = m_sources.begin();
 	for ( ; it != m_sources.end() ; it++ )
 	{
@@ -391,7 +435,19 @@ HRESULT TVControl::Exit()
 	}
 */
 //	KillTimer(g_pData->hWnd, 996);
-	return (DestroyWindow(g_pData->hWnd) ? S_OK : E_FAIL);
+
+	// We can't call DestroyWindow from a different thread so we set send a WM_QUIT
+	// message to the main thread instead
+	return (PostThreadMessage(m_mainThreadId, WM_QUIT, 0, 0) ? S_OK : E_FAIL);
+}
+
+HRESULT TVControl::OnKey(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
+{
+	LPWSTR command = new wchar_t[100];
+	swprintf(command, L"Key(%i, %i, %i, %i)", nKeycode, bShift, bCtrl, bAlt);
+	ExecuteCommandsQueue(command);
+	delete[] command;
+	return S_OK;
 }
 
 HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
@@ -451,9 +507,9 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 
 	if SUCCEEDED(hr)
 	{
-		hr = ExecuteCommands(command);
+		ExecuteCommandsImmediate(command);
 		delete command;
-		return hr;
+		return S_OK;
 	}
 
 	ShowOSDItem(L"UnknownKey", 5);
@@ -464,7 +520,7 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 	return S_FALSE;
 }
 
-HRESULT TVControl::ExecuteCommands(LPCWSTR command)
+HRESULT TVControl::ExecuteCommandsImmediate(LPCWSTR command)
 {
 	HRESULT hr = S_FALSE;
 	LPCWSTR pCurr = command;
@@ -477,7 +533,7 @@ HRESULT TVControl::ExecuteCommands(LPCWSTR command)
 		ParseLine parseLine;
 		parseLine.IgnoreRHS();
 		if (parseLine.Parse(pCurr) == FALSE)
-			return (log << "TVControl::ExecuteCommand - Parse error in function: " << command << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteCommandImmediate - Parse error in function: " << command << "\n").Show(E_FAIL);
 
 		hr = ExecuteGlobalCommand(&parseLine);
 		if (hr == S_FALSE)	//S_FALSE if the ExecuteFunction didn't handle the function
@@ -512,15 +568,15 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	if (_wcsicmp(pCurr, L"Exit") == 0)
 	{
 		if (command->LHS.ParameterCount > 0)
-			return (log << "TVControl::ExecuteCommand - Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 		return Exit();
 	}
 	else if (_wcsicmp(pCurr, L"Key") == 0)
 	{
 		if (command->LHS.ParameterCount < 1)
-			return (log << "TVControl::ExecuteCommand - Keycode parameter expected: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Keycode parameter expected: " << command->LHS.Function << "\n").Show(E_FAIL);
 		if (command->LHS.ParameterCount > 4)
-			return (log << "TVControl::ExecuteCommand - Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		if ((command->LHS.Parameter[0][0] == '\'') && (command->LHS.Parameter[0][2] == '\''))
 			n1 = command->LHS.Parameter[0][1];
@@ -544,7 +600,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	if (_wcsicmp(pCurr, L"AlwaysOnTop") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return AlwaysOnTop(n1);
@@ -552,7 +608,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"Fullscreen") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return Fullscreen(n1);
@@ -560,14 +616,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetSource") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		return SetSource(command->LHS.Parameter[0]);
 	}
 	else if (_wcsicmp(pCurr, L"VolumeUp") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return VolumeUp(n1);
@@ -575,7 +631,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"VolumeDown") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return VolumeDown(n1);
@@ -583,7 +639,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetVolume") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return SetVolume(n1);
@@ -591,7 +647,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"Mute") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return Mute(n1);
@@ -599,7 +655,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetColorControls") == 0)
 	{
 		if (command->LHS.ParameterCount != 5)
-			return (log << "TVControl::ExecuteCommand - Expecting 5 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 5 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		n2 = _wtoi(command->LHS.Parameter[1]);
@@ -611,7 +667,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"Zoom") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return Zoom(n1);
@@ -619,7 +675,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"ZoomIn") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return ZoomIn(n1);
@@ -627,7 +683,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"ZoomOut") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return ZoomOut(n1);
@@ -635,7 +691,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"ZoomMode") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		return ZoomMode(n1);
@@ -643,7 +699,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"AspectRatio") == 0)
 	{
 		if (command->LHS.ParameterCount != 2)
-			return (log << "TVControl::ExecuteCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = _wtoi(command->LHS.Parameter[0]);
 		n2 = _wtoi(command->LHS.Parameter[1]);
@@ -652,14 +708,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"ShowMenu") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		return ShowMenu(command->LHS.Parameter[0]);
 	}
 	else if (_wcsicmp(pCurr, L"ExitMenu") == 0)
 	{
 		if ((command->LHS.ParameterCount != 0) && (command->LHS.ParameterCount != 1))
-			return (log << "TVControl::ExecuteCommand - Expecting 0 or 1 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 0 or 1 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		if (command->LHS.ParameterCount == 0)
 		{
@@ -674,7 +730,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"ShowOSDItem") == 0)
 	{
 		if ((command->LHS.ParameterCount != 1) && (command->LHS.ParameterCount != 2))
-			return (log << "TVControl::ExecuteCommand - Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		if (command->LHS.ParameterCount == 1)
 		{
@@ -689,14 +745,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"HideOSDItem") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		return HideOSDItem(command->LHS.Parameter[0]);
 	}
 	else if (_wcsicmp(pCurr, L"ToggleOSDItem") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		return ToggleOSDItem(command->LHS.Parameter[0]);
 	}
@@ -1573,5 +1629,62 @@ HRESULT TVControl::OnTimer(int wParam)
 		return S_OK;
 	}
 	return S_FALSE;
+}
+
+
+
+// We use this method to add commands to a queue to be processed by
+// a separate thread so that our main message loop doesn't stall for
+// long operations like changing channels. This should make the app
+// seem more responsive and will mean that the OSD continues to
+// update also.
+void TVControl::ExecuteCommandsQueue(LPCWSTR command)
+{
+	LPWSTR newCommand = NULL;
+	strCopy(newCommand, command);
+	m_commandQueue.push_back(newCommand);
+}
+
+void TVControl::StartCommandQueueThread()
+{
+	if FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED))
+	{
+		(log << "Failed to initialize COM in the command queue thread\n").Write();
+		return;
+	}
+
+	DWORD result = 0;
+	MSG msg;
+	msg.wParam = 0;
+	BOOL bGotMsg;
+
+	do
+	{
+		bGotMsg = (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE) != 0);
+
+		if (bGotMsg)
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		else
+		{
+			if (m_commandQueue.size() > 0)
+			{
+				LPWSTR command = m_commandQueue.front();
+				ExecuteCommandsImmediate(command);
+				m_commandQueue.pop_front();
+				delete[] command;
+			}
+		}
+		result = WaitForSingleObject(m_hCommandProcessingStopEvent, 10);
+	} while (result == WAIT_TIMEOUT);
+	if (result != WAIT_OBJECT_0)
+	{
+		DWORD err = GetLastError();
+		(log << "Thread's WaitForSingleObject error: " << (int)err << "\n").Write();
+	}
+	
+	SetEvent(m_hCommandProcessingDoneEvent);
 }
 

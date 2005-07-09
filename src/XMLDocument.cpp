@@ -396,7 +396,8 @@ HRESULT XMLDocument::ParseElement(XMLElement *pElement)
 
 		case tokenTagEnd:
 			m_pCurr = pToken+1;
-			ParseElementData(pElement);
+			if FAILED(hr = ParseElementData(pElement))
+				return hr;
 			pToken = m_pCurr;
 			bLoop = FALSE;
 			return S_OK;
@@ -624,7 +625,7 @@ HRESULT XMLDocument::ParseElementData(XMLElement *pElement)
 			if FAILED(hr = ReadLine())
 				return hr;
 			if (hr == S_FALSE)
-				break;
+				return (log << "Unexpected end of file\n").Write(E_FAIL);
 			m_pCurr = m_pLine;
 			pToken = m_pCurr;
 			pStart = pToken;
@@ -781,7 +782,9 @@ HRESULT XMLDocument::Save(LPWSTR filename)
 	{
 		for ( int item=0 ; item < Elements.Count() ; item++ )
 		{
-			SaveElement(Elements.Item(item), 0);
+			hr = SaveElement(Elements.Item(item), 0);
+			if FAILED(hr)
+				(log << "Error saving element: " << hr << "\n").Write();
 		}
 	}
 	catch (LPWSTR str)
@@ -813,12 +816,27 @@ HRESULT XMLDocument::SaveElement(XMLElement *pElement, int depth)
 		{
 			SaveElement(pElement->Elements.Item(i), depth+1);
 		}
-		m_writer << "</>" << m_writer.EOL;
+
+		if (pElement->value)
+		{
+			m_writer << pElement->value;
+		}
+
+		for ( i=0 ; i<depth ; i++ )
+			m_writer << "\t";
+		m_writer << "</" << pElement->name << ">" << m_writer.EOL;
+	}
+	else if (pElement->value)
+	{
+		m_writer << ">" << pElement->value << "</" << pElement->name << ">" << m_writer.EOL;
 	}
 	else
 	{
 		m_writer << " />" << m_writer.EOL;
 	}
+
+	if (depth == 0)
+		m_writer << m_writer.EOL;
 
 	return S_OK;
 }

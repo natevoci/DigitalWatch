@@ -2,12 +2,41 @@
 DigitalWatch TODO
 -----------------
 
-- Channel scanning
-  - Store all programs and notify when they change
+
+- Channels
+  - Scanning
+    - Need to add an OSD log of some sort so we can display changes to services
+  - Will need to create a new way to store state information about channels
+    - Last channel
+    - current service for each network
+  - Favorites
+  - TV Menu, (don't call it setup)
+    - Channel Setup
+	  - Add Network
+	    - Scan All
+		- 177500
+		- ...
+	  - Reorder (future)
+	  - Network 1
+	    - Services
+		  - Reorder (future)
+		  - ServiceName 1
+		  - ServiceName 2
+		  - ...
+		  > Shift Up/Down to reorder
+		  > 1-9 to set as favorite
+		- Auto Update On/Off
+	    - Delete
+
+	  - Network 2
+	  - ...
+
+- Data item
+  - output to an xml file so we don't have to document it, and so other apps can read it.
 
 - OSD
   - Direct3D OSD renderer
-  - Figure out how to handle OSD.xml files for different sources.
+  - Figure out how to handle OSD.xml files for different sources. *
   - Position slider/percentage bar. seeking/timeshifting/volume
   - Bold text in OSD?
   - OSD item for Mute, always on top

@@ -31,13 +31,13 @@
 #include "bdamedia.h"
 
 //////////////////////////////////////////////////////////////////////
-// Construction/Destruction
+// BDADVBTSource
 //////////////////////////////////////////////////////////////////////
-
 
 BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 {
 	m_pCurrentTuner = NULL;
+	m_pCurrentService = NULL;
 	m_pDWGraph = NULL;
 
 	g_pOSD->Data()->AddList(L"TVChannels.Networks", &channels);
@@ -79,8 +79,8 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Channels.xml", g_pData->application.appPath);
-	if FAILED(channels.LoadChannels((LPWSTR)&file))
-		return E_FAIL;
+
+	hr = channels.LoadChannels((LPWSTR)&file);
 
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Keys.xml", g_pData->application.appPath);
 	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
@@ -99,7 +99,7 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		BDACard *tmpCard = *it;
 		if (tmpCard->bActive)
 		{
-			m_pCurrentTuner = new BDADVBTSourceTuner(tmpCard);
+			m_pCurrentTuner = new BDADVBTSourceTuner(this, tmpCard);
 			m_pCurrentTuner->SetLogCallback(m_pLogCallback);
 			if SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph))
 			{
@@ -215,7 +215,29 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 
 		//return LastChannel();
 	}
+	else if (_wcsicmp(pCurr, L"SetFrequency") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
+		if (command->LHS.ParameterCount > 2)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = _wtoi(command->LHS.Parameter[0]);
+
+		n2 = 0;
+		if (command->LHS.ParameterCount >= 2)
+			n2 = _wtoi(command->LHS.Parameter[1]);
+
+		return SetFrequency(n1, n2);
+	}
+	else if (_wcsicmp(pCurr, L"UpdateChannels") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return UpdateChannels();
+	}
 
 	//Just referencing these variables to stop warnings.
 	n3 = 0;
@@ -237,12 +259,13 @@ HRESULT BDADVBTSource::Play()
 		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
 
 	//TODO: replace this with last selected channel, or menu depending on options.
-	if SUCCEEDED(hr = channels.SetCurrentNetworkId(1))
+	DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
+	if (pNetwork)
 	{
-		DVBTChannels_Network* network = channels.GetCurrentNetwork();
-		if SUCCEEDED(hr = network->SetCurrentProgramId(1))
+		DVBTChannels_Service* pService = pNetwork->FindDefaultService();
+		if (pService)
 		{
-			return SetChannel(1, 1);
+			return RenderChannel(pNetwork, pService);
 		}
 	}
 
@@ -250,6 +273,254 @@ HRESULT BDADVBTSource::Play()
 	(log << "Finished Playing BDA Source\n").Write();
 
 	return E_FAIL;
+}
+
+DVBTChannels *BDADVBTSource::get_Channels()
+{
+	return &channels;
+}
+
+
+HRESULT BDADVBTSource::SetChannel(long transportStreamId, long serviceId)
+{
+	(log << "Setting Channel (" << transportStreamId << ", " << serviceId << ")\n").Write();
+	LogMessageIndent indent(&log);
+
+	//TODO: Check if recording
+
+	DVBTChannels_Network* pNetwork = channels.FindNetworkByTransportStreamId(transportStreamId);
+
+	if (!pNetwork)
+		return (log << "Network with transport stream id " << transportStreamId << " not found\n").Write(E_POINTER);
+
+	//TODO: nProgram < 0 then move to next program
+	DVBTChannels_Service* pService;
+	if (serviceId == 0)
+	{
+		pService = pNetwork->FindDefaultService();
+		if (!pService)
+			return (log << "There are no services for the transport stream " << transportStreamId << "\n").Write(E_POINTER);
+	}
+	else
+	{
+		pService = pNetwork->FindServiceByServiceId(serviceId);
+		if (!pService)
+			return (log << "Service with service id " << serviceId << " not found\n").Write(E_POINTER);
+	}
+
+	return RenderChannel(pNetwork, pService);
+}
+
+HRESULT BDADVBTSource::SetFrequency(long frequency, long bandwidth)
+{
+	(log << "Setting Frequency (" << frequency << ", " << bandwidth << ")\n").Write();
+	LogMessageIndent indent(&log);
+
+	//TODO: Check if recording
+
+	m_pCurrentNetwork = NULL;
+	m_pCurrentService = NULL;
+
+	m_pCurrentNetwork = channels.FindNetworkByFrequency(frequency);
+	if (m_pCurrentNetwork)
+	{
+		if (bandwidth == 0)
+		{
+			(log << "Using bandwidth " << m_pCurrentNetwork->bandwidth
+				 << " from the channels file network with frequency "
+				 << frequency << "\n").Write();
+			bandwidth = m_pCurrentNetwork->bandwidth;
+		}
+		else
+		{
+			if (m_pCurrentNetwork->bandwidth != bandwidth)
+				(log << "Changing the bandwidth from "
+					 << m_pCurrentNetwork->bandwidth << " to "
+					 << bandwidth << " for the network on frequency "
+					 << frequency << "\n").Write();
+			m_pCurrentNetwork->bandwidth = bandwidth;
+		}
+
+		m_pCurrentService = m_pCurrentNetwork->FindDefaultService();
+		if (m_pCurrentService)
+		{
+			return RenderChannel(m_pCurrentNetwork, m_pCurrentService);
+		}
+	}
+	else
+	{
+		if (bandwidth == 0)
+			bandwidth = channels.get_DefaultBandwidth();
+	}
+
+	return RenderChannel(frequency, bandwidth);
+}
+
+HRESULT BDADVBTSource::NetworkUp()
+{
+	if (channels.GetListSize() <= 0)
+		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
+
+	long frequency = m_pCurrentTuner->GetCurrentFrequency();
+	DVBTChannels_Network* pNetwork = channels.FindNextNetworkByFrequency(frequency);
+	if (!pNetwork)
+		return (log << "Currently tuned frequency (" << frequency << ") is not in the channels file\n").Write(E_POINTER);
+
+	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
+	if (!pService)
+			return (log << "There are no services for the transport stream " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
+
+	return RenderChannel(pNetwork, pService);
+}
+
+HRESULT BDADVBTSource::NetworkDown()
+{
+	if (channels.GetListSize() <= 0)
+		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
+
+	long frequency = m_pCurrentTuner->GetCurrentFrequency();
+	DVBTChannels_Network* pNetwork = channels.FindPrevNetworkByFrequency(frequency);
+	if (!pNetwork)
+		return (log << "Currently tuned frequency (" << frequency << ") is not in the channels file\n").Write(E_POINTER);
+
+	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
+	if (!pService)
+			return (log << "There are no services for the transport stream " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
+
+	return RenderChannel(pNetwork, pService);
+}
+
+HRESULT BDADVBTSource::ProgramUp()
+{
+	if (channels.GetListSize() <= 0)
+		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
+
+	long frequency = m_pCurrentTuner->GetCurrentFrequency();
+	DVBTChannels_Network* pNetwork = channels.FindNetworkByFrequency(frequency);
+	if (!pNetwork)
+		return (log << "Currently tuned frequency (" << frequency << ") is not in the channels file\n").Write(E_POINTER);
+
+	if (pNetwork->GetListSize() <= 0)
+		return (log << "There are no services in the channels file for the network on frequency " << frequency << "\n").Write(E_POINTER);
+
+	DVBTChannels_Service* pService = pNetwork->FindNextServiceByServiceId(m_pCurrentService->serviceId);
+	if (!pService)
+			return (log << "Current service is not in the channels file\n").Write(E_POINTER);
+
+	return RenderChannel(pNetwork, pService);
+}
+
+HRESULT BDADVBTSource::ProgramDown()
+{
+	if (channels.GetListSize() <= 0)
+		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
+
+	long frequency = m_pCurrentTuner->GetCurrentFrequency();
+	DVBTChannels_Network* pNetwork = channels.FindNetworkByFrequency(frequency);
+	if (!pNetwork)
+		return (log << "Currently tuned frequency (" << frequency << ") is not in the channels file\n").Write(E_POINTER);
+
+	if (pNetwork->GetListSize() <= 0)
+		return (log << "There are no services in the channels file for the network on frequency " << frequency << "\n").Write(E_POINTER);
+
+	DVBTChannels_Service* pService = pNetwork->FindPrevServiceByServiceId(m_pCurrentService->serviceId);
+	if (!pService)
+			return (log << "Current service is not in the channels file\n").Write(E_POINTER);
+
+	return RenderChannel(pNetwork, pService);
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// graph building methods
+//////////////////////////////////////////////////////////////////////
+
+HRESULT BDADVBTSource::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService)
+{
+	m_pCurrentNetwork = pNetwork;
+	m_pCurrentService = pService;
+
+	return RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
+}
+
+HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
+{
+	(log << "Building Graph (" << frequency << ", " << bandwidth << ")\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+	//TODO: Check if recording
+
+	// Do data stuff
+	UpdateData(frequency, bandwidth);
+
+	g_pTv->ShowOSDItem(L"Channel", 10);
+	// End data stuff
+
+	if FAILED(hr = m_pDWGraph->Stop())
+		(log << "Failed to stop DWGraph\n").Write();
+
+	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
+	for ( ; TRUE /*check for end of list done after graph is cleaned up*/ ; it++ )
+	{
+		hr = UnloadTuner();
+
+		if FAILED(hr = m_pDWGraph->Cleanup())
+			(log << "Failed to cleanup DWGraph\n").Write();
+
+		// check for end of list done here
+		if (it == m_Tuners.end())
+			break;
+
+		m_pCurrentTuner = *it;
+
+		if FAILED(hr = LoadTuner())
+		{
+			(log << "Failed to load Source Tuner\n").Write();
+			continue;
+		}
+
+		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+		{
+			(log << "Failed to Lock Channel\n").Write();
+			continue;
+		}
+
+		if (m_pCurrentService)
+		{
+			if FAILED(hr = AddDemuxPins(m_pCurrentService))
+			{
+				(log << "Failed to Add Demux Pins\n").Write();
+				continue;
+			}
+		}
+
+		if FAILED(hr = m_pDWGraph->Start())
+		{
+			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
+			continue;
+		}
+
+		if FAILED(hr = m_pCurrentTuner->StartScanning())
+		{
+			(log << "Failed to start channel scanning\n").Write();
+			continue;
+		}
+
+		//Move current tuner to back of list so that other cards will be used next
+		m_Tuners.erase(it);
+		m_Tuners.push_back(m_pCurrentTuner);
+		
+		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
+
+		indent.Release();
+		(log << "Finished Setting Channel\n").Write();
+
+		return S_OK;
+	}
+
+	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
 
 HRESULT BDADVBTSource::LoadTuner()
@@ -328,8 +599,14 @@ HRESULT BDADVBTSource::UnloadTuner()
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
+HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService)
 {
+	if (pService == NULL)
+	{
+		(log << "Skipping Demux Pins. No service passed.\n").Write();
+		return E_INVALIDARG;
+	}
+
 	(log << "Adding Demux Pins\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -339,18 +616,18 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 	long audioStreamsRendered;
 
 	// render video
-	hr = AddDemuxPinsVideo(program, &videoStreamsRendered);
+	hr = AddDemuxPinsVideo(pService, &videoStreamsRendered);
 
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
-		hr = AddDemuxPinsTeletext(program);
+		hr = AddDemuxPinsTeletext(pService);
 
 	// render mp2 audio
-	hr = AddDemuxPinsMp2(program, &audioStreamsRendered);
+	hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
 
 	// render ac3 audio if no mp2 was rendered
 	if (audioStreamsRendered == 0)
-		hr = AddDemuxPinsAC3(program, &audioStreamsRendered);
+		hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
 
 	indent.Release();
 	(log << "Finished Adding Demux Pins\n").Write();
@@ -358,17 +635,20 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program)
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program, DVBTChannels_Program_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered)
+HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered)
 {
+	if (pService == NULL)
+		return E_INVALIDARG;
+
 	HRESULT hr = S_OK;
 
-	long count = program->GetStreamCount(streamType);
+	long count = pService->GetStreamCount(streamType);
 	long renderedStreams = 0;
-	BOOL bMultipleStreams = (program->GetStreamCount(streamType) > 1) ? 1 : 0;
+	BOOL bMultipleStreams = (pService->GetStreamCount(streamType) > 1) ? 1 : 0;
 
 	for ( long currentStream=0 ; currentStream<count ; currentStream++ )
 	{
-		ULONG Pid = program->GetStreamPID(streamType, currentStream);
+		ULONG Pid = pService->GetStreamPID(streamType, currentStream);
 
 		wchar_t text[16];
 		swprintf((wchar_t*)&text, pPinName);
@@ -419,7 +699,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Program* program, DVBTChannels_
 }
 
 
-HRESULT BDADVBTSource::AddDemuxPinsVideo(DVBTChannels_Program* program, long *streamsRendered)
+HRESULT BDADVBTSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
@@ -434,10 +714,10 @@ HRESULT BDADVBTSource::AddDemuxPinsVideo(DVBTChannels_Program* program, long *st
 	mediaType.cbFormat = sizeof(g_Mpeg2ProgramVideo);
 	mediaType.pbFormat = g_Mpeg2ProgramVideo;
 
-	return AddDemuxPins(program, video, L"Video", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, video, L"Video", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Program* program, long *streamsRendered)
+HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
@@ -454,10 +734,10 @@ HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Program* program, long *stre
 	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
 	mediaType.pbFormat = g_MPEG1AudioFormat;
 
-	return AddDemuxPins(program, mp2, L"Audio", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTSource::AddDemuxPinsAC3(DVBTChannels_Program* program, long *streamsRendered)
+HRESULT BDADVBTSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
@@ -473,10 +753,10 @@ HRESULT BDADVBTSource::AddDemuxPinsAC3(DVBTChannels_Program* program, long *stre
 	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
 	mediaType.pbFormat = g_MPEG1AudioFormat;
 
-	return AddDemuxPins(program, ac3, L"AC3", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Program* program, long *streamsRendered)
+HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
@@ -485,149 +765,89 @@ HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Program* program, long 
 	mediaType.subtype = KSDATAFORMAT_SUBTYPE_NONE;
 	mediaType.formattype = KSDATAFORMAT_SPECIFIER_NONE;
 
-	return AddDemuxPins(program, teletext, L"Teletext", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTSource::SetChannel(int nNetwork, int nProgram)
+void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 {
-	(log << "Setting Channel (" << nNetwork << ", " << nProgram << ")\n").Write();
+	LPWSTR str = NULL;
+	strCopy(str, L"");
+
+	// Set CurrentBandwidth
+	if (bandwidth != 0)
+	{
+		strCopy(str, bandwidth);
+		g_pOSD->Data()->SetItem(L"CurrentBandwidth", str);
+	}
+	else
+	{
+		g_pOSD->Data()->SetItem(L"CurrentBandwidth", L"");
+	}
+
+	// Set CurrentFrequency
+	if (frequency != 0)
+	{
+		strCopy(str, frequency);
+		g_pOSD->Data()->SetItem(L"CurrentFrequency", str);
+	}
+	else
+	{
+		g_pOSD->Data()->SetItem(L"CurrentFrequency", L"");
+	}
+
+	// Set CurrentNetwork
+	if (m_pCurrentNetwork && m_pCurrentNetwork->networkName)
+		g_pOSD->Data()->SetItem(L"CurrentNetwork", m_pCurrentNetwork->networkName);
+	else
+		g_pOSD->Data()->SetItem(L"CurrentNetwork", str); // str should be whatever CurrentFrequency is
+
+	// Set CurrentService
+	if (m_pCurrentService && m_pCurrentService->serviceName)
+	{
+		g_pOSD->Data()->SetItem(L"CurrentService", m_pCurrentService->serviceName);
+	}
+	else if (m_pCurrentService && m_pCurrentService->serviceId != 0)
+	{
+		strCopy(str, m_pCurrentService->serviceId);
+		g_pOSD->Data()->SetItem(L"CurrentService", str);
+	}
+	else
+	{
+		g_pOSD->Data()->SetItem(L"CurrentService", L"");
+	}
+
+	delete[] str;
+}
+
+HRESULT BDADVBTSource::UpdateChannels()
+{
+	if (channels.GetListSize() <= 0)
+		return S_OK;
+
+	(log << "UpdateChannels()\n").Write();
 	LogMessageIndent indent(&log);
 
-	HRESULT hr;
-
-	//TODO: Check if recording
-
-	if FAILED(hr = channels.SetCurrentNetworkId(nNetwork))
-		return (log << "Network number is not valid\n").Write(hr);
-
-	DVBTChannels_Network* network = channels.GetCurrentNetwork();
-
-	if (nProgram == 0)
-		nProgram = network->GetCurrentProgramId();
-	//TODO: nProgram < 0 then move to next program
-
-	if FAILED(hr = network->SetCurrentProgramId(nProgram))
-		return (log << "Program number is not valid\n").Write(hr);
-
-	DVBTChannels_Program* program = network->GetCurrentProgram();
-
-	g_pOSD->Data()->SetItem(L"CurrentNetwork", network->name);
-	g_pOSD->Data()->SetItem(L"CurrentProgram", program->name);
-	g_pTv->ShowOSDItem(L"Channel", 10);
-
-	//Check if already on this network
-	/*if (nNetwork == m_nCurrentNetwork)
+	if (!m_pCurrentNetwork)
 	{
-		if ((nProgram == channels.Network(nNetwork)
-	}*/
+		long frequency = m_pCurrentTuner->GetCurrentFrequency();
+		DVBTChannels_Network* pNetwork = channels.FindNetworkByFrequency(frequency);
+		if (!pNetwork)
+			return (log << "Currently tuned frequency (" << frequency << ") is not in the channels file\n").Write(E_POINTER);
 
-	if FAILED(hr = m_pDWGraph->Stop())
-		(log << "Failed to stop DWGraph\n").Write();
+		DVBTChannels_Service* pService = pNetwork->FindDefaultService();
+		if (!pService)
+			return (log << "There are no services for the transport stream " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
-	for ( ; TRUE /*check for end of list done after graph is cleaned up*/ ; it++ )
-	{
-		hr = UnloadTuner();
-
-		if FAILED(hr = m_pDWGraph->Cleanup())
-			(log << "Failed to cleanup DWGraph\n").Write();
-
-		if (it == m_Tuners.end())
-			break;
-
-		m_pCurrentTuner = *it;
-
-		if FAILED(hr = LoadTuner())
-		{
-			(log << "Failed to load Source Tuner\n").Write();
-			continue;
-		}
-
-		if FAILED(hr = m_pCurrentTuner->LockChannel(network->frequency, network->bandwidth))
-		{
-			(log << "Failed to Lock Channel\n").Write();
-			continue;
-		}
-
-		if FAILED(hr = AddDemuxPins(program))
-		{
-			(log << "Failed to Add Demux Pins\n").Write();
-			continue;
-		}
-
-		if FAILED(hr = m_pDWGraph->Start())
-		{
-			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
-			continue;
-		}
-
-		//Move current tuner to back of list so that other cards will be used next
-		m_Tuners.erase(it);
-		m_Tuners.push_back(m_pCurrentTuner);
-		
-		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
-
-		indent.Release();
-		(log << "Finished Setting Channel\n").Write();
-
-		return S_OK;
+		return RenderChannel(pNetwork, pService);
 	}
-
-	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
-}
-
-HRESULT BDADVBTSource::NetworkUp()
-{
-	long nNetwork = channels.GetNextNetworkId();
-
-	if (nNetwork > 0)
-		return SetChannel(nNetwork, 0);
-	return E_FAIL;
-}
-
-HRESULT BDADVBTSource::NetworkDown()
-{
-	long nNetwork = channels.GetPrevNetworkId();
-
-	if (nNetwork > 0)
-		return SetChannel(nNetwork, 0);
-	return E_FAIL;
-}
-
-HRESULT BDADVBTSource::ProgramUp()
-{
-	DVBTChannels_Network* network = channels.GetCurrentNetwork();
-	if (network == NULL)
+	else
 	{
-		if FAILED(channels.SetCurrentNetworkId(1))
-			return E_FAIL;
-		network = channels.GetCurrentNetwork();
+		// TODO: Check if the streams in a service we're using were changed.
+		//       A difficulty with this is that if the service was deleted then
+		//       m_pCurrentService won't be valid any more so we'll need to clone it.
+
+		UpdateData();
 	}
-
-	long nNetwork = channels.GetCurrentNetworkId();
-	long nProgram = network->GetNextProgramId();
-
-	if (nProgram > 0)
-		return SetChannel(nNetwork, nProgram);
-	return E_FAIL;
+	return S_OK;
 }
-
-HRESULT BDADVBTSource::ProgramDown()
-{
-	DVBTChannels_Network* network = channels.GetCurrentNetwork();
-	if (network == NULL)
-	{
-		if FAILED(channels.SetCurrentNetworkId(1))
-			return E_FAIL;
-		network = channels.GetCurrentNetwork();
-	}
-
-	long nNetwork = channels.GetCurrentNetworkId();
-	long nProgram = network->GetPrevProgramId();
-
-	if (nProgram > 0)
-		return SetChannel(nNetwork, nProgram);
-	return E_FAIL;
-}
-
 

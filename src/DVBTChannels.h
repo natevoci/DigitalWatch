@@ -33,48 +33,77 @@
 class DVBTChannels;
 class DVBTChannels_Network;
 
-enum DVBTChannels_Program_PID_Types
+enum DVBTChannels_Service_PID_Types
 {
 	unknown,
 	video,
 	mp2,
 	ac3,
-	teletext
+	teletext,
+	DVBTChannels_Service_PID_Types_Count
+};
+
+static const LPWSTR DVBTChannels_Service_PID_Types_String[] =
+{
+	L"Unknown",
+	L"Video",
+	L"MPEG-2 Audio",
+	L"AC3 Audio",
+	L"Teletext"
 };
 
 //Stream
-struct DVBTChannels_Program_Stream
+class DVBTChannels_Stream : public LogMessageCaller
 {
+public:
+	DVBTChannels_Stream();
+	virtual ~DVBTChannels_Stream();
+
+	void UpdateStream(DVBTChannels_Stream *pNewStream);
+	void PrintStreamDetails();
+
 	long PID;
-	DVBTChannels_Program_PID_Types Type;	//video, mp2, ac3, data
+	DVBTChannels_Service_PID_Types Type;
+	//char Lang[4];
+	LPWSTR Language;
 	BOOL bActive;
+	BOOL bDetected;
 };
 
-//Program
-class DVBTChannels_Program : public LogMessageCaller
+//Service
+class DVBTChannels_Service : public LogMessageCaller
 {
 	friend DVBTChannels;
 public:
-	DVBTChannels_Program();
-	virtual ~DVBTChannels_Program();
+	DVBTChannels_Service();
+	virtual ~DVBTChannels_Service();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	HRESULT LoadFromXML(XMLElement *pElement);
 	HRESULT SaveToXML(XMLElement *pElement);
 
-	DVBTChannels_Program_PID_Types GetStreamType(int index);
+	DVBTChannels_Service_PID_Types GetStreamType(int index);
 	long GetStreamPID(int index);
-	long GetStreamPID(DVBTChannels_Program_PID_Types streamtype, int index);
-
+	long GetStreamPID(DVBTChannels_Service_PID_Types streamtype, int index);
 
 	long GetStreamCount();
-	long GetStreamCount(DVBTChannels_Program_PID_Types streamtype);
+	long GetStreamCount(DVBTChannels_Service_PID_Types streamtype);
 
-	long programNumber;
+	BOOL UpdateService(DVBTChannels_Service *pNewService);
+	BOOL UpdateStreams(DVBTChannels_Service *pNewService);
+	void PrintServiceDetails();
+
+	DVBTChannels_Stream *FindStreamByPID(long PID);
+
+public:
+	long serviceId;
 	long logicalChannelNumber;
-	LPWSTR name;
+	LPWSTR serviceName;
 
 protected:
-	std::vector<DVBTChannels_Program_Stream> streams;
+	std::vector<DVBTChannels_Stream *> m_streams;
+	CCritSec  m_streamsLock;
 	long favoriteID;
 	BOOL bManualUpdate;
 };
@@ -84,7 +113,7 @@ class DVBTChannels_Network : public LogMessageCaller, public IDWOSDDataList
 {
 	friend DVBTChannels;
 public:
-	DVBTChannels_Network();
+	DVBTChannels_Network(DVBTChannels *pChannels);
 	virtual ~DVBTChannels_Network();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
@@ -92,27 +121,30 @@ public:
 	HRESULT LoadFromXML(XMLElement *pElement);
 	HRESULT SaveToXML(XMLElement *pElement);
 
-	long frequency;
-	long bandwidth;
-	LPWSTR name;
+	DVBTChannels_Service *FindDefaultService();
+	DVBTChannels_Service *FindServiceByServiceId(long serviceId);
+	DVBTChannels_Service *FindNextServiceByServiceId(long serviceId);
+	DVBTChannels_Service *FindPrevServiceByServiceId(long serviceId);
 
-	BOOL IsValidProgram(int programNumber);
-	DVBTChannels_Program* GetCurrentProgram();
-	long GetCurrentProgramId();
-	HRESULT SetCurrentProgramId(long nProgram);
-
-	long GetNextProgramId();
-	long GetPrevProgramId();
+	BOOL UpdateNetwork(DVBTChannels_Network *pNewNetwork);
+	void PrintNetworkDetails();
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);
 	virtual long GetListSize();
 
-private:
-	std::vector<DVBTChannels_Program *> programs;
+public:
+	long transportStreamId;
+	long frequency;
+	long frequencyInStream;
+	long bandwidth;
+	LPWSTR networkName;
 
-	long m_nCurrentProgram;
+protected:
+	DVBTChannels *m_pChannels;
 
+	std::vector<DVBTChannels_Service *> m_services;
+	CCritSec  m_servicesLock;
 	LPWSTR m_dataListString;
 };
 
@@ -128,26 +160,28 @@ public:
 	HRESULT LoadChannels(LPWSTR filename);
 	HRESULT SaveChannels(LPWSTR filename = NULL);
 
-	BOOL IsValidNetwork(int networkNumber);
-	DVBTChannels_Network* GetCurrentNetwork();
-	long GetCurrentNetworkId();
-	HRESULT SetCurrentNetworkId(long nNetwork);
+	long get_DefaultBandwidth();
 
-	long GetNextNetworkId();
-	long GetPrevNetworkId();
+	DVBTChannels_Network *FindDefaultNetwork();
+	DVBTChannels_Network *FindNetworkByTransportStreamId(long transportStreamId);
+	DVBTChannels_Network *FindNetworkByFrequency(long frequency);
+	DVBTChannels_Network *FindNextNetworkByTransportStreamId(long oldTransportStreamId);
+	DVBTChannels_Network *FindPrevNetworkByTransportStreamId(long oldTransportStreamId);
+	DVBTChannels_Network *FindNextNetworkByFrequency(long oldFrequency);
+	DVBTChannels_Network *FindPrevNetworkByFrequency(long oldFrequency);
+
+	//Update Methods
+	BOOL UpdateNetwork(DVBTChannels_Network *pNewNetwork);
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);
 	virtual long GetListSize();
 
-private:
-	std::vector<DVBTChannels_Network *> networks;
-
+protected:
+	std::vector<DVBTChannels_Network *> m_networks;
+	CCritSec  m_networksLock;
 	long m_bandwidth;
 	LPWSTR m_filename;
-
-	long m_nCurrentNetwork;
-
 	LPWSTR m_dataListString;
 };
 

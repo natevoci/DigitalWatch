@@ -58,6 +58,45 @@
    	</>
 </Decoder>
 
+<Decoder name="DScaler Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{F8904F1F-0371-4471-8866-90E6281ABDB6}" name="DScaler Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="DScaler Video Decoder" />
+    <Connect>
+    	<From name="DScaler Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="DScaler Video Decoder - VMR7">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{F8904F1F-0371-4471-8866-90E6281ABDB6}" name="DScaler Video Decoder" />
+    <VideoRenderer name="VMR7" />
+
+    <InputFilter name="DScaler Video Decoder" />
+    <Connect>
+    	<From name="DScaler Video Decoder" />
+    	<To name="VMR7" />
+   	</>
+</Decoder>
+
+<Decoder name="DScaler Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{F8904F1F-0371-4471-8866-90E6281ABDB6}" name="DScaler Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="DScaler Video Decoder" />
+    <Connect>
+    	<From name="DScaler Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
 <Decoder name="GPL MPEG-1/2 Decoder">
 	<MediaType name="MPEG2 Video" />
 	

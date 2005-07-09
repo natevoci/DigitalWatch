@@ -112,6 +112,7 @@ HRESULT DWOnScreenDisplay::ShowMenu(LPWSTR szMenuName)
 	LPWSTR pCurr = NULL;
 	ParseLine parseLine;
 	parseLine.IgnoreRHS();
+
 	if (parseLine.Parse(szMenuName) == FALSE)
 	{
 		return (log << "Parse error in string: " << szMenuName << "\n").Write(E_FAIL);
@@ -288,6 +289,7 @@ HRESULT DWOnScreenDisplay::RenderDirectDraw(long tickCount)
 	}
 
 	//Display FPS
+/*
 	DWSurfaceText text;
 	text.crTextColor = RGB(255, 255, 255);
 
@@ -296,7 +298,7 @@ HRESULT DWOnScreenDisplay::RenderDirectDraw(long tickCount)
 	strCopy(text.text, buffer);
 	hr = m_pBackSurface->DrawText(&text, 0, 560);
 	hr = m_pBackSurface->DrawText(&text, 700, 560);
-	
+*/
 	//Flip
 	hr = m_pDirectDraw->Flip();
 	if FAILED(hr)

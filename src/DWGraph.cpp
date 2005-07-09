@@ -143,7 +143,7 @@ HRESULT DWGraph::QueryMediaControl(IMediaControl** piMediaControl)
 	(*piMediaControl)->AddRef();
 	return S_OK;
 }
-	
+
 HRESULT DWGraph::Start()
 {
 	(log << "Starting DW Graph\n").Write();
@@ -221,7 +221,11 @@ HRESULT DWGraph::Start()
 
 		FILTER_INFO filterInfo;
 		if SUCCEEDED(hr = piFilter->QueryFilterInfo(&filterInfo))
+		{
 			(log << "Reference Clock is \"" << filterInfo.achName << "\"\n").Write();
+			if (filterInfo.pGraph)
+				filterInfo.pGraph->Release();
+		}
 		else
 			(log << "Failed to get filter info: " << hr << "\n").Write();
 	} while (FALSE);

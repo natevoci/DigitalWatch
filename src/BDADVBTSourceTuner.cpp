@@ -22,6 +22,7 @@
 
 
 #include "BDADVBTSourceTuner.h"
+#include "BDADVBTSource.h"
 #include "Globals.h"
 #include "LogMessage.h"
 
@@ -37,9 +38,10 @@
 // BDADVBTSourceTuner
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTSourceTuner::BDADVBTSourceTuner(BDACard *pBDACard)
+BDADVBTSourceTuner::BDADVBTSourceTuner(BDADVBTSource *pBDADVBTSource, BDACard *pBDACard) :
+	m_pBDADVBTSource(pBDADVBTSource),
+	m_pBDACard(pBDACard)
 {
-	m_pBDACard = pBDACard;
 	m_pDWGraph = NULL;
 
 	m_bInitialised = 0;
@@ -48,24 +50,21 @@ BDADVBTSourceTuner::BDADVBTSourceTuner(BDACard *pBDACard)
 	m_lFrequency = -1;
 	m_lBandwidth = -1;
 
-	m_piGraphBuilder = NULL;
-	m_piMediaControl = NULL;
+	m_pMpeg2DataParser = new DVBMpeg2DataParser();
+	m_pMpeg2DataParser->SetDVBTChannels(m_pBDADVBTSource->get_Channels());
 
-	m_piBDANetworkProvider = NULL;
-//	m_piBDATuner = NULL;
-//	m_piBDACapture = NULL;
-	m_piBDAMpeg2Demux = NULL;
-	m_piBDATIF = NULL;
-	m_piBDASecTab = NULL;
-	m_piInfinitePinTee = NULL;
-//	m_piDSNetworkSink = NULL;
-
-	m_piTuningSpace = NULL;
+	m_rotEntry = 0;
 }
 
 BDADVBTSourceTuner::~BDADVBTSourceTuner()
 {
 	DestroyAll();
+	if (m_pMpeg2DataParser)
+	{
+		m_pMpeg2DataParser->ReleaseFilter();
+		delete m_pMpeg2DataParser;
+		m_pMpeg2DataParser = NULL;
+	}
 }
 
 void BDADVBTSourceTuner::SetLogCallback(LogMessageCallback *callback)
@@ -265,6 +264,7 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 		return (log << "Failed to set multicast group for Sink filter: " << hr << "\n").Write(hr);
 	piMulticastConfig->Release();
 */
+
 	m_bActive = TRUE;
 	return S_OK;
 }
@@ -272,6 +272,9 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 {
 	m_bActive = FALSE;
+
+	m_pMpeg2DataParser->ReleaseFilter();
+
 	if (m_piBDASecTab)
 	{
 		m_piGraphBuilder->RemoveFilter(m_piBDASecTab);
@@ -357,6 +360,14 @@ long BDADVBTSourceTuner::GetCurrentFrequency()
 {
 	return m_lFrequency;
 }
+
+HRESULT BDADVBTSourceTuner::StartScanning()
+{
+	m_pMpeg2DataParser->SetFrequency(m_lFrequency);
+	m_pMpeg2DataParser->SetFilter(m_piBDASecTab);
+	return m_pMpeg2DataParser->StartScan();
+}
+
 
 HRESULT BDADVBTSourceTuner::GetSignalStats(BOOL &locked, long &strength, long &quality)
 {

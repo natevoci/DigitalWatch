@@ -159,19 +159,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 LRESULT MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HWND hWndDW;
+	HWND hWndDW = g_pData->hWnd;
 
 	switch (message) 
 	{
 	case WM_DESTROY:
-		hWndDW = g_pData->hWnd;
 		if (hWnd == hWndDW)
 			g_pDWWindow->WndProc(hWnd, message, wParam, lParam);
 
 		PostQuitMessage(0);
 		break;
 	default:
-		hWndDW = g_pData->hWnd;
 		if (hWnd == hWndDW)
 			return g_pDWWindow->WndProc(hWnd, message, wParam, lParam);
 

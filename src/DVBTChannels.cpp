@@ -25,34 +25,129 @@
 #include "GlobalFunctions.h"
 #include "Globals.h"
 
+
 //////////////////////////////////////////////////////////////////////
-// DVBTChannels_Program
+// DVBTChannels_Stream
 //////////////////////////////////////////////////////////////////////
 
-DVBTChannels_Program::DVBTChannels_Program()
+DVBTChannels_Stream::DVBTChannels_Stream()
 {
-	programNumber = 0;
+	PID = 0;
+	Type = unknown;
+	Language = NULL;
+	bActive = TRUE;
+}
+
+DVBTChannels_Stream::~DVBTChannels_Stream()
+{
+}
+
+void DVBTChannels_Stream::UpdateStream(DVBTChannels_Stream *pNewStream)
+{
+	if ((PID != pNewStream->PID) ||
+		(Type != pNewStream->Type) ||
+		(Language == NULL) ||
+		(pNewStream->Language && (_wcsicmp(Language, pNewStream->Language) != 0))
+	   )
+	{
+		BOOL bExistingData = (PID != 0) || (Type != unknown) || (Language != NULL);
+
+		if (bExistingData)
+			(log << "Updating Stream Information\n").Write();
+		else
+			(log << "New Stream Information\n").Write();
+		
+		LogMessageIndent indent1(&log);
+
+		if (bExistingData)
+		{
+			(log << "Original Values\n").Write();
+			LogMessageIndent indent2(&log);
+			PrintStreamDetails();
+		}
+
+		PID = pNewStream->PID;
+		Type = pNewStream->Type;
+		strCopy(Language, pNewStream->Language);
+
+		if (bExistingData)
+		{
+			(log << "New Values\n").Write();
+			LogMessageIndent indent2(&log);
+			PrintStreamDetails();
+		}
+		else
+		{
+			PrintStreamDetails();
+		}
+	}
+}
+
+void DVBTChannels_Stream::PrintStreamDetails()
+{
+	(log << "PID      : " << PID << "\n").Write();
+	(log << "Type     : " << DVBTChannels_Service_PID_Types_String[(int)Type] << "\n").Write();
+	(log << "Language : " << (Language ? Language : L"<not set>") << "\n").Write();
+}
+
+//////////////////////////////////////////////////////////////////////
+// DVBTChannels_Service
+//////////////////////////////////////////////////////////////////////
+
+DVBTChannels_Service::DVBTChannels_Service()
+{
+	serviceId = 0;
 	logicalChannelNumber = 0;
-	name = NULL;
+	serviceName = NULL;
 	favoriteID = 0;
 	bManualUpdate = 0;
 }
 
-DVBTChannels_Program::~DVBTChannels_Program()
+DVBTChannels_Service::~DVBTChannels_Service()
 {
-	streams.clear();
+	CAutoLock lock(&m_streamsLock);
+
+	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
+	for ( ; it != m_streams.end() ; it++ )
+	{
+		delete *it;
+	}
+	m_streams.clear();
+
+	if (serviceName)
+		delete[] serviceName;
 }
 
-HRESULT DVBTChannels_Program::LoadFromXML(XMLElement *pElement)
+void DVBTChannels_Service::SetLogCallback(LogMessageCallback *callback)
 {
+	LogMessageCaller::SetLogCallback(callback);
+
+	CAutoLock lock(&m_streamsLock);
+
+	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
+	for ( ; it != m_streams.end() ; it++ )
+	{
+		DVBTChannels_Stream *pStream = *it;
+		pStream->SetLogCallback(callback);
+	}
+}
+
+HRESULT DVBTChannels_Service::LoadFromXML(XMLElement *pElement)
+{
+	CAutoLock lock(&m_streamsLock);
+
 	XMLAttribute *attr;
-	attr = pElement->Attributes.Item(L"ProgramNumber");
+	attr = pElement->Attributes.Item(L"serviceId");
 	if (attr == NULL)
-		return (log << "program id must be supplied in a program definition").Write(E_FAIL);
-	programNumber = _wtol(attr->value);
+	{
+		attr = pElement->Attributes.Item(L"ProgramNumber");
+		if (attr == NULL)
+			return (log << "serviceId must be supplied in a service definition").Write(E_FAIL);
+	}
+	serviceId = _wtol(attr->value);
 
 	attr = pElement->Attributes.Item(L"Name");
-	strCopy(name, (attr ? attr->value : L""));
+	strCopy(serviceName, (attr ? attr->value : L""));
 
 	attr = pElement->Attributes.Item(L"LCN");
 	if (attr)
@@ -74,27 +169,43 @@ HRESULT DVBTChannels_Program::LoadFromXML(XMLElement *pElement)
 		XMLElement *element = pElement->Elements.Item(item);
 		if (_wcsicmp(element->name, L"Stream") == 0)
 		{
-			DVBTChannels_Program_Stream newStream;
+			DVBTChannels_Stream *pNewStream = new DVBTChannels_Stream();
+			pNewStream->SetLogCallback(m_pLogCallback);
 
 			attr = element->Attributes.Item(L"PID");
 			if (attr == NULL)
 				continue;
 
-			newStream.PID = _wtol(attr->value);
+			pNewStream->PID = _wtol(attr->value);
 
 			attr = element->Attributes.Item(L"Type");
 			if (attr == NULL)
 				continue;
 
-			newStream.Type = (DVBTChannels_Program_PID_Types)_wtol(attr->value);
+			pNewStream->Type = unknown;
+			if ((attr->value[0]-'0' >= 0) && (attr->value[0]-'0' < DVBTChannels_Service_PID_Types_Count))
+			{
+				pNewStream->Type = (DVBTChannels_Service_PID_Types)_wtol(attr->value);
+			}
+			else
+			{
+				for (int i=0 ; i<DVBTChannels_Service_PID_Types_Count ; i++ )
+				{
+					if (_wcsicmp(attr->value, DVBTChannels_Service_PID_Types_String[i]) == 0)
+					{
+						pNewStream->Type = (DVBTChannels_Service_PID_Types)i;
+						break;
+					}
+				}
+			}
 
 			attr = element->Attributes.Item(L"Active");
 			if (attr == NULL)
-				newStream.bActive = FALSE;
+				pNewStream->bActive = FALSE;
 			else
-				newStream.bActive = (attr->value[0] != 0);
+				pNewStream->bActive = (attr->value[0] != 0);
 
-			streams.push_back(newStream);
+			m_streams.push_back(pNewStream);
 			continue;
 		}
 	}
@@ -102,15 +213,17 @@ HRESULT DVBTChannels_Program::LoadFromXML(XMLElement *pElement)
 	return S_OK;
 }
 
-HRESULT DVBTChannels_Program::SaveToXML(XMLElement *pElement)
+HRESULT DVBTChannels_Service::SaveToXML(XMLElement *pElement)
 {
+	CAutoLock lock(&m_streamsLock);
+
 	LPWSTR pValue = NULL;
-	strCopy(pValue, programNumber);
-	pElement->Attributes.Add(new XMLAttribute(L"ProgramNumber", pValue));
+	strCopy(pValue, serviceId);
+	pElement->Attributes.Add(new XMLAttribute(L"serviceId", pValue));
 	delete pValue;
 	pValue = NULL;
 
-	pElement->Attributes.Add(new XMLAttribute(L"Name", name));
+	pElement->Attributes.Add(new XMLAttribute(L"name", (serviceName ? serviceName : L"")));
 
 	if (logicalChannelNumber > 0)
 	{
@@ -131,81 +244,87 @@ HRESULT DVBTChannels_Program::SaveToXML(XMLElement *pElement)
 	if (bManualUpdate)
 		pElement->Attributes.Add(new XMLAttribute(L"ManualUpdate", L"1"));
 
-	std::vector<DVBTChannels_Program_Stream>::iterator it = streams.begin();
-	for ( ; it != streams.end() ; it++ )
+	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
+	for ( ; it != m_streams.end() ; it++ )
 	{
-		DVBTChannels_Program_Stream pgStream = *it;
+		DVBTChannels_Stream *pStream = *it;
 
 		XMLElement *pStreamElement = new XMLElement(L"Stream");
 
-		strCopy(pValue, pgStream.PID);
+		strCopy(pValue, pStream->PID);
 		pStreamElement->Attributes.Add(new XMLAttribute(L"PID", pValue));
 		delete pValue;
 		pValue = NULL;
 
-		strCopy(pValue, pgStream.Type);
-		pStreamElement->Attributes.Add(new XMLAttribute(L"Type", pValue));
+		pStreamElement->Attributes.Add(new XMLAttribute(L"Active", (pStream->bActive ? L"1" : L"0")));
+
+		pStreamElement->Attributes.Add(new XMLAttribute(L"Type", DVBTChannels_Service_PID_Types_String[(int)pStream->Type]));
 		delete pValue;
 		pValue = NULL;
-
-		if (pgStream.bActive)
-			pStreamElement->Attributes.Add(new XMLAttribute(L"Active", L"1"));
 
 		pElement->Elements.Add(pStreamElement);
 	}
 	return S_OK;
 }
 
-DVBTChannels_Program_PID_Types DVBTChannels_Program::GetStreamType(int index)
+DVBTChannels_Service_PID_Types DVBTChannels_Service::GetStreamType(int index)
 {
-	if ((index >= 0) && (index < streams.size()))
+	CAutoLock lock(&m_streamsLock);
+
+	if ((index >= 0) && (index < m_streams.size()))
 	{
-		DVBTChannels_Program_Stream pgStream = streams.at(index);
-		return pgStream.Type;
+		DVBTChannels_Stream *pStream = m_streams.at(index);
+		return pStream->Type;
 	}
 	return unknown;
 }
 
-long DVBTChannels_Program::GetStreamPID(int index)
+long DVBTChannels_Service::GetStreamPID(int index)
 {
-	if ((index >= 0) && (index < streams.size()))
+	CAutoLock lock(&m_streamsLock);
+
+	if ((index >= 0) && (index < m_streams.size()))
 	{
-		DVBTChannels_Program_Stream pgStream = streams.at(index);
-		return pgStream.PID;
+		DVBTChannels_Stream *pStream = m_streams.at(index);
+		return pStream->PID;
 	}
 	return 0;
 }
 
-long DVBTChannels_Program::GetStreamCount()
+long DVBTChannels_Service::GetStreamCount()
 {
-	return streams.size();
+	return m_streams.size();
 }
 
-long DVBTChannels_Program::GetStreamPID(DVBTChannels_Program_PID_Types streamtype, int index)
+long DVBTChannels_Service::GetStreamPID(DVBTChannels_Service_PID_Types streamtype, int index)
 {
+	CAutoLock lock(&m_streamsLock);
+
 	int found = 0;
-	std::vector<DVBTChannels_Program_Stream>::iterator it = streams.begin();
-	for ( ; it != streams.end() ; it++ )
+	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
+	for ( ; it != m_streams.end() ; it++ )
 	{
-		DVBTChannels_Program_Stream pgStream = *it;
-		if ((pgStream.Type == streamtype) && pgStream.bActive)
+		DVBTChannels_Stream *pStream = *it;
+		if ((pStream->Type == streamtype) && pStream->bActive)
 		{
 			if (found == index)
-				return pgStream.PID;
+				return pStream->PID;
 			found++;
 		}
 	}
 	return 0;
 }
 
-long DVBTChannels_Program::GetStreamCount(DVBTChannels_Program_PID_Types streamtype)
+long DVBTChannels_Service::GetStreamCount(DVBTChannels_Service_PID_Types streamtype)
 {
+	CAutoLock lock(&m_streamsLock);
+
 	int found = 0;
-	std::vector<DVBTChannels_Program_Stream>::iterator it = streams.begin();
-	for ( ; it != streams.end() ; it++ )
+	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
+	for ( ; it != m_streams.end() ; it++ )
 	{
-		DVBTChannels_Program_Stream pgStream = *it;
-		if ((pgStream.Type == streamtype) && pgStream.bActive)
+		DVBTChannels_Stream *pStream = *it;
+		if ((pStream->Type == streamtype) && pStream->bActive)
 		{
 			found++;
 		}
@@ -213,68 +332,236 @@ long DVBTChannels_Program::GetStreamCount(DVBTChannels_Program_PID_Types streamt
 	return found;
 }
 
+BOOL DVBTChannels_Service::UpdateService(DVBTChannels_Service *pNewService)
+{
+	if (bManualUpdate)
+		return FALSE;
+
+	BOOL bChange =  (serviceId != pNewService->serviceId) ||						// serviceId changed or
+					(logicalChannelNumber != pNewService->logicalChannelNumber) ||	// lcn changed or
+					(serviceName == NULL) ||										// current name isn't set yet or
+					((pNewService->serviceName) &&									//  new name is set and
+					 (_wcsicmp(pNewService->serviceName, L"") != 0) &&				//  new name isn't blank and
+					 (_wcsicmp(serviceName, pNewService->serviceName) != 0));		//  new name has changed
+
+	if (bChange)
+	{
+		BOOL bExistingData = (serviceId != 0) || (logicalChannelNumber != 0) || (serviceName != NULL);
+
+		if (bExistingData)
+			(log << "Updating Service Information\n").Write();
+		else
+			(log << "New Service Information\n").Write();
+		LogMessageIndent indent1(&log);
+
+		if (bExistingData)
+		{
+			(log << "Original Values\n").Write();
+			LogMessageIndent indent2(&log);
+			PrintServiceDetails();
+		}
+
+		serviceId = pNewService->serviceId;
+		strCopy(serviceName, pNewService->serviceName);
+		if (pNewService->logicalChannelNumber != 0)
+			logicalChannelNumber = pNewService->logicalChannelNumber;
+
+		if (bExistingData)
+		{
+			(log << "New Values\n").Write();
+			LogMessageIndent indent2(&log);
+			PrintServiceDetails();
+		}
+		else
+		{
+			PrintServiceDetails();
+		}
+	}
+
+	bChange |= UpdateStreams(pNewService);
+
+	return bChange;
+}
+
+BOOL DVBTChannels_Service::UpdateStreams(DVBTChannels_Service *pNewService)
+{
+	CAutoLock lock(&m_streamsLock);
+
+	BOOL bChange = FALSE;
+
+	// First we mark all streams as not detected
+	std::vector<DVBTChannels_Stream *>::iterator it;
+	for ( it=m_streams.begin() ; it != m_streams.end() ; it++ )
+	{
+		(*it)->bDetected = FALSE;
+	}
+	for ( it=pNewService->m_streams.begin() ; it != pNewService->m_streams.end() ; it++ )
+	{
+		(*it)->bDetected = FALSE;
+	}
+
+	// Second we find matching streams and mark them as detected
+	for ( it=pNewService->m_streams.begin() ; it != pNewService->m_streams.end() ; it++ )
+	{
+		DVBTChannels_Stream *pNewStream = FindStreamByPID((*it)->PID);
+		if (pNewStream)
+		{
+			(*it)->bDetected = TRUE;
+			pNewStream->bDetected = TRUE;
+
+			(*it)->UpdateStream(pNewStream);
+		}
+	}
+
+	// All old streams not marked detected don't exist anymore so they can be removed.
+	for ( it=m_streams.begin() ; it != m_streams.end() ; it++ )
+	{
+		if ((*it)->bDetected == FALSE)
+		{
+			(log << "Removing a stream\n").Write();
+			LogMessageIndent indent(&log);
+
+			(log << "Service : " << serviceId << ", " << (serviceName ? serviceName : L"<name not set>") << "\n").Write();
+			(log << "Stream Information\n").Write();
+			LogMessageIndent indent2(&log);
+			(*it)->PrintStreamDetails();
+
+			m_streams.erase(it);
+			it=m_streams.begin();
+
+			bChange = TRUE;
+		}
+	}
+
+	// All new streams not marked as detected need to be added.
+	for ( it=pNewService->m_streams.begin() ; it != pNewService->m_streams.end() ; it++ )
+	{
+		if ((*it)->bDetected == FALSE)
+		{
+			(log << "Adding a stream\n").Write();
+			LogMessageIndent indent(&log);
+
+			(log << "Service : " << serviceId << ", " << (serviceName ? serviceName : L"<name not set>") << "\n").Write();
+
+			DVBTChannels_Stream *pNewStream = new DVBTChannels_Stream();
+			pNewStream->SetLogCallback(m_pLogCallback);
+			pNewStream->UpdateStream(*it);
+			m_streams.push_back(pNewStream);
+
+			bChange = TRUE;
+		}
+	}
+
+	return bChange;
+}
+
+void DVBTChannels_Service::PrintServiceDetails()
+{
+	(log << "Service Id             : " << serviceId << "\n").Write();
+	(log << "Service Name           : " << (serviceName ? serviceName : L"<not set>") << "\n").Write();
+	(log << "Logical channel number : " << logicalChannelNumber << "\n").Write();
+}
+
+DVBTChannels_Stream *DVBTChannels_Service::FindStreamByPID(long PID)
+{
+	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
+	for (; it < m_streams.end(); it++)
+	{
+		DVBTChannels_Stream *pStream = *it;
+		if (pStream->PID == PID)
+			return pStream;
+	}
+	return NULL;
+}
 
 //////////////////////////////////////////////////////////////////////
 // DVBTChannels_Network
 //////////////////////////////////////////////////////////////////////
 
-DVBTChannels_Network::DVBTChannels_Network()
+DVBTChannels_Network::DVBTChannels_Network(DVBTChannels *pChannels) :
+	m_pChannels(pChannels)
 {
+	transportStreamId = 0;
 	frequency = 0;
 	bandwidth = 0;
-	name = NULL;
-	m_nCurrentProgram = 1;
+	networkName = NULL;
 	m_dataListString = NULL;
 }
 
 DVBTChannels_Network::~DVBTChannels_Network()
 {
-	std::vector<DVBTChannels_Program *>::iterator it = programs.begin();
-	for ( ; it != programs.end() ; it++ )
+	CAutoLock lock(&m_servicesLock);
+
+	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
+	for ( ; it != m_services.end() ; it++ )
 	{
 		delete *it;
 	}
-	programs.clear();
+	m_services.clear();
+
+	if (networkName)
+		delete[] networkName;
 }
 
 void DVBTChannels_Network::SetLogCallback(LogMessageCallback *callback)
 {
 	LogMessageCaller::SetLogCallback(callback);
 
-	std::vector<DVBTChannels_Program *>::iterator it = programs.begin();
-	for ( ; it != programs.end() ; it++ )
+	CAutoLock lock(&m_servicesLock);
+
+	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
+	for ( ; it != m_services.end() ; it++ )
 	{
-		DVBTChannels_Program *program = *it;
-		program->SetLogCallback(callback);
+		DVBTChannels_Service *pService = *it;
+		pService->SetLogCallback(callback);
 	}
 }
 
 HRESULT DVBTChannels_Network::LoadFromXML(XMLElement *pElement)
 {
+	CAutoLock lock(&m_servicesLock);
+
 	XMLAttribute *attr;
+
 	attr = pElement->Attributes.Item(L"Frequency");
 	if (attr == NULL)
-		return (log << "Frequency must be supplied in a network definition").Write(E_FAIL);
+		return (log << "Frequency must be supplied in a network definition\n").Write(E_FAIL);
 	frequency = _wtol(attr->value);
 
 	attr = pElement->Attributes.Item(L"Bandwidth");
 	if (attr)
 		bandwidth = _wtol(attr->value);
 
+	attr = pElement->Attributes.Item(L"TransportStreamId");
+	if (attr != NULL)
+		transportStreamId = _wtol(attr->value);
+
 	attr = pElement->Attributes.Item(L"Name");
-	strCopy(name, (attr ? attr->value : L""));
+	if (attr != NULL)
+		strCopy(networkName, (attr ? attr->value : L""));
 
 	int elementCount = pElement->Elements.Count();
 	for ( int item=0 ; item<elementCount ; item++ )
 	{
 		XMLElement *element = pElement->Elements.Item(item);
-		if (_wcsicmp(element->name, L"Program") == 0)
+		if (_wcsicmp(element->name, L"Service") == 0)
 		{
-			DVBTChannels_Program *newProgram = new DVBTChannels_Program();
-			if (newProgram->LoadFromXML(element) == S_OK)
-				programs.push_back(newProgram);
+			DVBTChannels_Service *pService = new DVBTChannels_Service();
+			pService->SetLogCallback(m_pLogCallback);
+			if (pService->LoadFromXML(element) == S_OK)
+				m_services.push_back(pService);
 			else
-				delete newProgram;
+				delete pService;
+			continue;
+		}
+		else if (_wcsicmp(element->name, L"Program") == 0)
+		{
+			DVBTChannels_Service *pService = new DVBTChannels_Service();
+			pService->SetLogCallback(m_pLogCallback);
+			if (pService->LoadFromXML(element) == S_OK)
+				m_services.push_back(pService);
+			else
+				delete pService;
 			continue;
 		}
 	}
@@ -284,7 +571,10 @@ HRESULT DVBTChannels_Network::LoadFromXML(XMLElement *pElement)
 
 HRESULT DVBTChannels_Network::SaveToXML(XMLElement *pElement)
 {
+	CAutoLock lock(&m_servicesLock);
+
 	LPWSTR pValue = NULL;
+
 	strCopy(pValue, frequency);
 	pElement->Attributes.Add(new XMLAttribute(L"Frequency", pValue));
 	delete pValue;
@@ -295,14 +585,19 @@ HRESULT DVBTChannels_Network::SaveToXML(XMLElement *pElement)
 	delete pValue;
 	pValue = NULL;
 
-	pElement->Attributes.Add(new XMLAttribute(L"Name", name));
+	strCopy(pValue, transportStreamId);
+	pElement->Attributes.Add(new XMLAttribute(L"TransportStreamId", pValue));
+	delete pValue;
+	pValue = NULL;
 
-	std::vector<DVBTChannels_Program *>::iterator it = programs.begin();
-	for ( ; it != programs.end() ; it++ )
+	pElement->Attributes.Add(new XMLAttribute(L"Name", (networkName ? networkName : L"")));
+
+	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
+	for ( ; it != m_services.end() ; it++ )
 	{
-		DVBTChannels_Program *program = *it;
-		XMLElement *pProgElement = new XMLElement(L"Program");
-		if (program->SaveToXML(pProgElement) == S_OK)
+		DVBTChannels_Service *pService = *it;
+		XMLElement *pProgElement = new XMLElement(L"Service");
+		if (pService->SaveToXML(pProgElement) == S_OK)
 			pElement->Elements.Add(pProgElement);
 		else
 			delete pProgElement;
@@ -311,86 +606,177 @@ HRESULT DVBTChannels_Network::SaveToXML(XMLElement *pElement)
 	return S_OK;
 }
 
-BOOL DVBTChannels_Network::IsValidProgram(int programNumber)
+DVBTChannels_Service* DVBTChannels_Network::FindDefaultService()
 {
-	if (programNumber < 1)
-		return FALSE;
-	if (programNumber > programs.size())
-		return FALSE;
-	return TRUE;
-}
+	CAutoLock lock(&m_servicesLock);
 
-DVBTChannels_Program* DVBTChannels_Network::GetCurrentProgram()
-{
-	if (IsValidProgram(m_nCurrentProgram))
-		return programs.at(m_nCurrentProgram-1);
+	if (m_services.size() > 0)
+	{
+		// TODO: add an attribute to services to set them as default.
+		return m_services.at(0);
+	}
 	return NULL;
 }
 
-long DVBTChannels_Network::GetCurrentProgramId()
+DVBTChannels_Service *DVBTChannels_Network::FindServiceByServiceId(long serviceId)
 {
-	if (IsValidProgram(m_nCurrentProgram))
-		return m_nCurrentProgram;
-	return -1;
-}
+	CAutoLock lock(&m_servicesLock);
 
-HRESULT DVBTChannels_Network::SetCurrentProgramId(long nProgram)
-{
-	if (IsValidProgram(nProgram))
+	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
+	for (; it < m_services.end(); it++)
 	{
-		m_nCurrentProgram = nProgram;
-		return S_OK;
+		DVBTChannels_Service *pService = *it;
+		if (pService->serviceId == serviceId)
+			return pService;
 	}
-	return E_INVALIDARG;
+	return NULL;
 }
 
-long DVBTChannels_Network::GetNextProgramId()
+DVBTChannels_Service *DVBTChannels_Network::FindNextServiceByServiceId(long serviceId)
 {
-	long programCount = programs.size();
-	if (programCount == 0)
-		return -1;
-	if (!IsValidProgram(m_nCurrentProgram))
-		return 1;
-	if (!IsValidProgram(m_nCurrentProgram+1))
-		return 1;
-	return m_nCurrentProgram+1;
+	CAutoLock lock(&m_servicesLock);
+
+	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
+	for (; it < m_services.end(); it++)
+	{
+		DVBTChannels_Service *pService = *it;
+		if (pService->serviceId == serviceId)
+		{
+			it++;
+			if (it < m_services.end())
+				return *it;
+			return m_services.front();
+		}
+	}
+	return NULL;
 }
 
-long DVBTChannels_Network::GetPrevProgramId()
+DVBTChannels_Service *DVBTChannels_Network::FindPrevServiceByServiceId(long serviceId)
 {
-	long programCount = programs.size();
-	if (programCount == 0)
-		return -1;
-	if (!IsValidProgram(m_nCurrentProgram))
-		return programCount;
-	if (!IsValidProgram(m_nCurrentProgram-1))
-		return programCount;
-	return m_nCurrentProgram-1;
+	CAutoLock lock(&m_servicesLock);
+
+	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
+	for (; it < m_services.end(); it++)
+	{
+		DVBTChannels_Service *pService = *it;
+		if (pService->serviceId == serviceId)
+		{
+			it--;
+			if (it >= m_services.begin())
+				return *it;
+			return m_services.back();
+		}
+	}
+	return NULL;
+}
+
+BOOL DVBTChannels_Network::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
+{
+	BOOL bChange =
+		(transportStreamId != pNewNetwork->transportStreamId) ||		// tsid has changed or
+		((frequency == 0) && (frequency != pNewNetwork->frequency)) ||	// frequency isn't set yet and has changed or
+		((bandwidth == 0) && (bandwidth != pNewNetwork->bandwidth)) ||	// bandwidth isn't set yet and has changed or
+		(networkName == NULL) ||										// name isn't set yet or
+		((pNewNetwork->networkName) &&									//  new name is set and
+		 (_wcsicmp(pNewNetwork->networkName, L"") != 0) &&				//  new name isn't blank and
+		 (_wcsicmp(pNewNetwork->networkName, networkName) != 0));		//  new name has changed
+
+	if (bChange)
+	{
+		BOOL bExistingData = (transportStreamId != 0) || (frequency != 0) || (bandwidth != 0) || (networkName != NULL);
+
+		if (bExistingData)
+			(log << "Updating Network Information\n").Write();
+		else
+			(log << "New Network Information\n").Write();
+		LogMessageIndent indent1(&log);
+
+		if (bExistingData)
+		{
+			(log << "Original Values\n").Write();
+			LogMessageIndent indent2(&log);
+			PrintNetworkDetails();
+		}
+
+		transportStreamId = pNewNetwork->transportStreamId;
+		frequency = pNewNetwork->frequency;
+		bandwidth = pNewNetwork->bandwidth;
+		strCopy(networkName, pNewNetwork->networkName);
+
+		if (bExistingData)
+		{
+			(log << "New Values\n").Write();
+			LogMessageIndent indent2(&log);
+			PrintNetworkDetails();
+		}
+		else
+		{
+			PrintNetworkDetails();
+		}
+	}
+
+	//TODO: Remove services from the channels file that no longer exist.
+	//      or just set a disabled flag or something.
+
+	{
+		CAutoLock lock(&m_servicesLock);
+
+		std::vector<DVBTChannels_Service *>::iterator it = pNewNetwork->m_services.begin();
+		for ( ; it != pNewNetwork->m_services.end() ; it++ )
+		{
+			DVBTChannels_Service *pNewService = *it;
+			DVBTChannels_Service *pService = FindServiceByServiceId(pNewService->serviceId);
+
+			if (!pService)
+			{
+				(log << "Adding a service\n").Write();
+				LogMessageIndent indent(&log);
+				pService = new DVBTChannels_Service();
+				pService->SetLogCallback(m_pLogCallback);
+				m_services.push_back(pService);
+			}
+			bChange |= pService->UpdateService(pNewService);
+		}
+	}
+
+	if (bChange)
+	{
+		if (m_pChannels)
+			m_pChannels->SaveChannels();
+
+		g_pTv->ExecuteCommandsQueue(L"UpdateChannels()");
+	}
+	return bChange;
+}
+
+void DVBTChannels_Network::PrintNetworkDetails()
+{
+	(log << "Transport stream id : " << transportStreamId << "\n").Write();
+	(log << "Frequency           : " << frequency << "\n").Write();
+	(log << "Bandwidth           : " << bandwidth << "\n").Write();
+	(log << "Network Name        : " << (networkName ? networkName : L"<not set>") << "\n").Write();
 }
 
 LPWSTR DVBTChannels_Network::GetListItem(LPWSTR name, long nIndex)
 {
-	if (!IsValidProgram(nIndex + 1))
+	CAutoLock lock(&m_servicesLock);
+
+	if (nIndex >= m_services.size())
 		return NULL;
 
-	DVBTChannels_Program *program = programs.at(nIndex);
-	if (_wcsicmp(name, L"TVChannels.Program.name") == 0)
+	DVBTChannels_Service *pService = m_services.at(nIndex);
+	if (_wcsicmp(name, L"TVChannels.Service.Name") == 0)
 	{
-		return program->name;
+		return pService->serviceName;
 	}
-	else if (_wcsicmp(name, L"TVChannels.Program.index") == 0)
+	else if (_wcsicmp(name, L"TVChannels.Service.ServiceId") == 0)
 	{
-		strCopy(m_dataListString, nIndex+1);
+		strCopy(m_dataListString, pService->serviceId);
 		return m_dataListString;
 	}
-	else if (_wcsicmp(name, L"TVChannels.Program.ProgramNumber") == 0)
+	else if (_wcsicmp(name, L"TVChannels.Service.LogicalChannelNumber") == 0)
 	{
-		strCopy(m_dataListString, program->programNumber);
-		return m_dataListString;
-	}
-	else if (_wcsicmp(name, L"TVChannels.Program.LogicalChannelNumber") == 0)
-	{
-		strCopy(m_dataListString, program->logicalChannelNumber);
+		strCopy(m_dataListString, pService->logicalChannelNumber);
 		return m_dataListString;
 	}
 	return NULL;
@@ -398,7 +784,7 @@ LPWSTR DVBTChannels_Network::GetListItem(LPWSTR name, long nIndex)
 
 long DVBTChannels_Network::GetListSize()
 {
-	return programs.size();
+	return m_services.size();
 }
 
 
@@ -410,37 +796,42 @@ DVBTChannels::DVBTChannels()
 {
 	m_bandwidth = 7;
 	m_filename = NULL;
-	m_nCurrentNetwork = 1;
 	m_dataListString = NULL;
 }
 
 DVBTChannels::~DVBTChannels()
 {
+	CAutoLock lock(&m_networksLock);
+
 	if (m_filename)
 		delete m_filename;
 
-	std::vector<DVBTChannels_Network *>::iterator it = networks.begin();
-	for ( ; it != networks.end() ; it++ )
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for ( ; it != m_networks.end() ; it++ )
 	{
 		delete *it;
 	}
-	networks.clear();
+	m_networks.clear();
 }
 
 void DVBTChannels::SetLogCallback(LogMessageCallback *callback)
 {
 	LogMessageCaller::SetLogCallback(callback);
 
-	std::vector<DVBTChannels_Network *>::iterator it = networks.begin();
-	for ( ; it != networks.end() ; it++ )
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for ( ; it != m_networks.end() ; it++ )
 	{
-		DVBTChannels_Network *network = *it;
-		network->SetLogCallback(callback);
+		DVBTChannels_Network *pNetwork = *it;
+		pNetwork->SetLogCallback(callback);
 	}
 }
 
 HRESULT DVBTChannels::LoadChannels(LPWSTR filename)
 {
+	CAutoLock lock(&m_networksLock);
+
 	(log << "Loading DVBT Channels file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -467,23 +858,24 @@ HRESULT DVBTChannels::LoadChannels(LPWSTR filename)
 
 		if (_wcsicmp(element->name, L"Network") == 0)
 		{
-			DVBTChannels_Network *newNetwork = new DVBTChannels_Network();
-			newNetwork->bandwidth = m_bandwidth;
-			if (newNetwork->LoadFromXML(element) == S_OK)
+			DVBTChannels_Network *pNewNetwork = new DVBTChannels_Network(this);
+			pNewNetwork->SetLogCallback(m_pLogCallback);
+			pNewNetwork->bandwidth = m_bandwidth;
+			if (pNewNetwork->LoadFromXML(element) == S_OK)
 			{
-				networks.push_back(newNetwork);
+				m_networks.push_back(pNewNetwork);
 				LPWSTR listName = new wchar_t[1024];
-				swprintf(listName, L"TVChannels.Programs.%i", networks.size());
-				g_pOSD->Data()->AddList(listName, newNetwork);
+				swprintf(listName, L"TVChannels.Services.%i", pNewNetwork->transportStreamId);
+				g_pOSD->Data()->AddList(listName, pNewNetwork);
 				delete[] listName;
 			}
 			else
-				delete newNetwork;
+				delete pNewNetwork;
 			continue;
 		}
 	}
 
-	if (networks.size() == 0)
+	if (m_networks.size() == 0)
 		return (log << "You need to specify at least one network in your channels file\n").Show(E_FAIL);
 
 	indent.Release();
@@ -494,6 +886,8 @@ HRESULT DVBTChannels::LoadChannels(LPWSTR filename)
 
 HRESULT DVBTChannels::SaveChannels(LPWSTR filename)
 {
+	CAutoLock lock(&m_networksLock);
+
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);
 
@@ -501,12 +895,12 @@ HRESULT DVBTChannels::SaveChannels(LPWSTR filename)
 	strCopy(pElement->value, m_bandwidth);
 	file.Elements.Add(pElement);
 
-	std::vector<DVBTChannels_Network *>::iterator it = networks.begin();
-	for ( ; it < networks.end() ; it++ )
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for ( ; it < m_networks.end() ; it++ )
 	{
 		pElement = new XMLElement(L"Network");
-		DVBTChannels_Network *network = *it;
-		network->SaveToXML(pElement);
+		DVBTChannels_Network *pNetwork = *it;
+		pNetwork->SaveToXML(pElement);
 		file.Elements.Add(pElement);
 	}
 
@@ -518,89 +912,177 @@ HRESULT DVBTChannels::SaveChannels(LPWSTR filename)
 	return S_OK;
 }
 
-BOOL DVBTChannels::IsValidNetwork(int networkNumber)
+long DVBTChannels::get_DefaultBandwidth()
 {
-	if (networkNumber < 1)
-		return FALSE;
-	if (networkNumber > networks.size())
-		return FALSE;
-	return TRUE;
+	return m_bandwidth;
 }
 
-DVBTChannels_Network* DVBTChannels::GetCurrentNetwork()
+DVBTChannels_Network* DVBTChannels::FindDefaultNetwork()
 {
-	if (IsValidNetwork(m_nCurrentNetwork))
-		return networks.at(m_nCurrentNetwork-1);
+	if (m_networks.size() > 0)
+	{
+		return m_networks.at(0);
+	}
 	return NULL;
 }
 
-long DVBTChannels::GetCurrentNetworkId()
+DVBTChannels_Network *DVBTChannels::FindNetworkByTransportStreamId(long transportStreamId)
 {
-	if (IsValidNetwork(m_nCurrentNetwork))
-		return m_nCurrentNetwork;
-	return -1;
-}
+	CAutoLock lock(&m_networksLock);
 
-HRESULT DVBTChannels::SetCurrentNetworkId(long nNetwork)
-{
-	if ((nNetwork == 0) && (m_nCurrentNetwork > 0))
-		return S_OK;
-
-	if (IsValidNetwork(nNetwork))
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
 	{
-		m_nCurrentNetwork = nNetwork;
-		return S_OK;
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->transportStreamId == transportStreamId)
+			return pNetwork;
 	}
-	return E_INVALIDARG;
+	return NULL;
 }
 
-long DVBTChannels::GetNextNetworkId()
+DVBTChannels_Network *DVBTChannels::FindNetworkByFrequency(long frequency)
 {
-	long networkCount = networks.size();
-	if (networkCount == 0)
-		return -1;
-	if (!IsValidNetwork(m_nCurrentNetwork))
-		return 1;
-	if (!IsValidNetwork(m_nCurrentNetwork+1))
-		return 1;
-	return m_nCurrentNetwork+1;
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->frequency == frequency)
+			return pNetwork;
+	}
+	return NULL;
 }
 
-long DVBTChannels::GetPrevNetworkId()
+DVBTChannels_Network *DVBTChannels::FindNextNetworkByTransportStreamId(long oldTransportStreamId)
 {
-	long networkCount = networks.size();
-	if (networkCount == 0)
-		return -1;
-	if (!IsValidNetwork(m_nCurrentNetwork))
-		return networkCount;
-	if (!IsValidNetwork(m_nCurrentNetwork-1))
-		return networkCount;
-	return m_nCurrentNetwork-1;
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->transportStreamId == oldTransportStreamId)
+		{
+			it++;
+			if (it < m_networks.end())
+				return *it;
+			return m_networks.front();
+		}
+	}
+	return NULL;
 }
 
+DVBTChannels_Network *DVBTChannels::FindPrevNetworkByTransportStreamId(long oldTransportStreamId)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->transportStreamId == oldTransportStreamId)
+		{
+			it--;
+			if (it >= m_networks.begin())
+				return *it;
+			return m_networks.back();
+		}
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels::FindNextNetworkByFrequency(long oldFrequency)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->frequency == oldFrequency)
+		{
+			it++;
+			if (it < m_networks.end())
+				return *it;
+			return m_networks.front();
+		}
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels::FindPrevNetworkByFrequency(long oldFrequency)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->frequency == oldFrequency)
+		{
+			it--;
+			if (it >= m_networks.begin())
+				return *it;
+			return m_networks.back();
+		}
+	}
+	return NULL;
+}
+
+
+// Update Method
+BOOL DVBTChannels::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
+{
+	DVBTChannels_Network *pNetwork = FindNetworkByTransportStreamId(pNewNetwork->transportStreamId);
+
+	if (!pNetwork)
+		pNetwork = FindNetworkByFrequency(pNewNetwork->frequency);
+
+	if (!pNetwork)
+	{
+		CAutoLock lock(&m_networksLock);
+
+		(log << "Adding a network\n").Write();
+		LogMessageIndent indent(&log);
+		pNetwork = new DVBTChannels_Network(this);
+		pNetwork->SetLogCallback(m_pLogCallback);
+		m_networks.push_back(pNetwork);
+		LPWSTR listName = new wchar_t[1024];
+		swprintf(listName, L"TVChannels.Services.%i", pNetwork->transportStreamId);
+		g_pOSD->Data()->AddList(listName, pNetwork);
+		delete[] listName;
+	}
+	return pNetwork->UpdateNetwork(pNewNetwork);
+}
+
+
+// IDWOSDDataList Methods
 LPWSTR DVBTChannels::GetListItem(LPWSTR name, long nIndex)
 {
-	if (!IsValidNetwork(nIndex + 1))
+	CAutoLock lock(&m_networksLock);
+
+	if (nIndex >= m_networks.size())
 		return NULL;
 
-	DVBTChannels_Network *network = networks.at(nIndex);
+	DVBTChannels_Network *pNetwork = m_networks.at(nIndex);
 	if (_wcsicmp(name, L"TVChannels.Network.name") == 0)
 	{
-		return network->name;
+		return pNetwork->networkName;
 	}
-	else if (_wcsicmp(name, L"TVChannels.Network.index") == 0)
+	else if (_wcsicmp(name, L"TVChannels.Network.transportStreamId") == 0)
 	{
-		strCopy(m_dataListString, nIndex+1);
+		strCopy(m_dataListString, pNetwork->transportStreamId);
 		return m_dataListString;
 	}
 	else if (_wcsicmp(name, L"TVChannels.Network.frequency") == 0)
 	{
-		strCopy(m_dataListString, network->frequency);
+		strCopy(m_dataListString, pNetwork->frequency);
 		return m_dataListString;
 	}
 	else if (_wcsicmp(name, L"TVChannels.Network.bandwidth") == 0)
 	{
-		strCopy(m_dataListString, network->bandwidth);
+		strCopy(m_dataListString, pNetwork->bandwidth);
 		return m_dataListString;
 	}
 	return NULL;
@@ -608,6 +1090,7 @@ LPWSTR DVBTChannels::GetListItem(LPWSTR name, long nIndex)
 
 long DVBTChannels::GetListSize()
 {
-	return networks.size();
+	return m_networks.size();
 }
+
 

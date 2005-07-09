@@ -210,6 +210,9 @@ void strCopy(LPSTR &dest, LPCSTR src, long length)
 {
 	if (dest)
 		delete[] dest;
+	dest = NULL;
+	if (!src)
+		return;
 	if (length < 0)
 		length = strlen(src);
 	dest = new char[length + 1];
@@ -221,6 +224,9 @@ void strCopy(LPWSTR &dest, LPCWSTR src, long length)
 {
 	if (dest)
 		delete[] dest;
+	dest = NULL;
+	if (!src)
+		return;
 	if (length < 0)
 		length = wcslen(src);
 	dest = new wchar_t[length + 1];
@@ -232,6 +238,9 @@ void strCopyA2W(LPWSTR &dest, LPCSTR src, long length)
 {
 	if (dest)
 		delete[] dest;
+	dest = NULL;
+	if (!src)
+		return;
 	if (length < 0)
 		length = strlen(src);
 	dest = new wchar_t[length + 1];
@@ -243,6 +252,9 @@ void strCopyW2A(LPSTR &dest, LPCWSTR src, long length)
 {
 	if (dest)
 		delete[] dest;
+	dest = NULL;
+	if (!src)
+		return;
 	if (length < 0)
 		length = wcslen(src);
 	dest = new char[length + 1];

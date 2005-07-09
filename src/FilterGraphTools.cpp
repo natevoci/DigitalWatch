@@ -384,6 +384,8 @@ HRESULT FilterGraphTools::FindFilter(IGraphBuilder* piGraphBuilder, LPCWSTR Id, 
 		{
 			FILTER_INFO filterInfo;
 			hr = piFilter->QueryFilterInfo(&filterInfo);
+			if (filterInfo.pGraph)
+				filterInfo.pGraph->Release();
 
 			if (wcscmp(Id, filterInfo.achName) == 0)
 			{

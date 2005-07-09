@@ -49,25 +49,34 @@ public:
 
 	virtual HRESULT Play();
 
+	DVBTChannels *get_Channels();
+
 protected:
-	HRESULT LoadTuner();
-	HRESULT UnloadTuner();
-
-	HRESULT AddDemuxPins(DVBTChannels_Program* program);
-
-	HRESULT AddDemuxPins(DVBTChannels_Program* program, DVBTChannels_Program_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
-		
-	HRESULT AddDemuxPinsVideo(DVBTChannels_Program* program, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsMp2(DVBTChannels_Program* program, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsAC3(DVBTChannels_Program* program, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsTeletext(DVBTChannels_Program* program, long *streamsRendered = NULL);
-
-
-	virtual HRESULT SetChannel(int network, int program);
+	virtual HRESULT SetChannel(long transportStreamId, long serviceId);
+	virtual HRESULT SetFrequency(long frequency, long bandwidth = 0);
 	virtual HRESULT NetworkUp();
 	virtual HRESULT NetworkDown();
 	virtual HRESULT ProgramUp();
 	virtual HRESULT ProgramDown();
+
+	// graph building methods
+	HRESULT RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService);
+	virtual HRESULT RenderChannel(int frequency, int bandwidth);
+
+	HRESULT LoadTuner();
+	HRESULT UnloadTuner();
+
+	HRESULT AddDemuxPins(DVBTChannels_Service* pService);
+
+	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
+		
+	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+
+	void UpdateData(long frequency = 0, long bandwidth = 0);
+	HRESULT UpdateChannels();
 
 private:
 	const LPWSTR m_strSourceType;
@@ -76,6 +85,8 @@ private:
 	std::vector<BDADVBTSourceTuner *> m_Tuners;
 	//Recorder
 	DVBTChannels channels;
+	DVBTChannels_Network *m_pCurrentNetwork;
+	DVBTChannels_Service *m_pCurrentService;
 	BDACardCollection cardList;
 	//NaN
 
