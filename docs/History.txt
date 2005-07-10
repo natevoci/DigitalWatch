@@ -3,6 +3,27 @@ DigitalWatch History
 --------------------
 ________
 
+v2.0.0.7
+________
+
+  Changes
+  ```````
+  - Implemented Channel Scanning. This required heaps of other changes.
+    - Renamed "Program" in DVBTChannels to "Service".
+    - Added a command queue thread to TVControl to allow UpdateChannel events to be handled.
+    - Reworked BDADVBTSource to be able to tune to frequencies without channels entries so that scanning can be done for that frequency.
+  - Removed all state information (such as current network) from DVBTChannels. It's the wrong place for it.
+  - Added menu options for adding and ordering networks.
+  - Added FrequencyList to show a list of frequencies (for Australia) when adding networks.
+  - Added ability for an OSDList to contain both items and itemLists.
+  - Fixed DirectDraw OSD so the overlay color blt rectangle doesn't go out of bounds.
+  - Commented out the FPS display.
+  - Added DScaler video decoder
+  - Fixed an exception when application is closing. There may still be a problem though.
+  - Fixed stuttering by setting the reference clock to the DW demux instead of the default demux.
+
+________
+
 v2.0.0.5
 ________
 
