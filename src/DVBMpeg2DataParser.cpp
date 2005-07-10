@@ -589,9 +589,9 @@ void DVBMpeg2DataParser::StartScanThread()
 		ResetEvent(m_hScanningDoneEvent);
 		//SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
 
-		(log << "\nStarting Scan...\n").Write();
+		(log << "\nStarting Scan Thread...\n").Write();
 
-		BOOL bFirstScan = TRUE;
+		long nScanCount = 0;
 
 		while (m_piMpeg2Data)
 		{
@@ -602,13 +602,22 @@ void DVBMpeg2DataParser::StartScanThread()
 				continue;
 			}
 
-			if (bFirstScan)
+			nScanCount++;
+
+			if (nScanCount == 1)
 			{
 				g_pOSD->Data()->SetItem(L"Scanning", L"Scanning");
 				g_pTv->ShowOSDItem(L"Scanning");
-				bFirstScan = FALSE;
 			}
-
+			if (nScanCount % 20 == 0)
+			{
+				// Clear the log file every so often so that it doesn't grow huge
+				m_logWriter.Clear();
+				(log << "-------------------------\nDigitalWatch Scanning log\n").Write();
+				log.LogVersionNumber();
+				(log << "-------------------------\n").Write();
+				(log << "\nStarting Scan " << nScanCount << "\n").Write();
+			}
 
 			// Initial tables to scan
 			DVBSection *pPATSection;
