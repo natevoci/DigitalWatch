@@ -53,7 +53,7 @@ public:
 	DVBTChannels *get_Channels();
 
 protected:
-	virtual HRESULT SetChannel(long transportStreamId, long serviceId);
+	virtual HRESULT SetChannel(long originalNetworkId, long serviceId);
 	virtual HRESULT SetFrequency(long frequency, long bandwidth = 0);
 	virtual HRESULT NetworkUp();
 	virtual HRESULT NetworkDown();

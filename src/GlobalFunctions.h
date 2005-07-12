@@ -63,7 +63,9 @@ void strCopy(LPWSTR &dest, LPCWSTR src);
 void strCopyA2W(LPWSTR &dest, LPCSTR src);
 void strCopyW2A(LPSTR &dest, LPCWSTR src);
 
-void strCopy(LPSTR &dest, long value);
 void strCopy(LPWSTR &dest, long value);
+void strCopyHex(LPWSTR &dest, long value);
+
+long StringToLong(LPWSTR pValue);
 
 #endif

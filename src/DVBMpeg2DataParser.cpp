@@ -217,9 +217,6 @@ void DVBService::ParseServiceDescriptor(unsigned char *buf)
 DVBTransponder::DVBTransponder() :
 	DVBTChannels_Network(NULL)
 {
-	networkId = 0;
-	originalNetworkId = 0;
-	
 	otherFrequencyFlag = 0;
 }
 
@@ -638,13 +635,18 @@ void DVBMpeg2DataParser::StartScanThread()
 			hr = ReadSection(pPATSection);	// if PAT fails then there's no point doing NIT or SDT
 			if SUCCEEDED(hr)
 			{
+				BOOL bKeepScanning = TRUE;
 				while (m_waitingFilters.size())
 				{
 					pSection = m_waitingFilters.front();
-					hr = ReadSection(pSection);
-					if FAILED(hr)
+					if (bKeepScanning)
 					{
-						break;
+						hr = ReadSection(pSection);
+						if FAILED(hr)
+						{
+							// Stop scanning, but keep looping to delete all the sections.
+							bKeepScanning = FALSE;
+						}
 					}
 					m_waitingFilters.erase(m_waitingFilters.begin());
 					delete pSection;

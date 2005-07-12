@@ -65,6 +65,9 @@ private:
 	std::vector<DWOSDDataItem *> m_Items;
 	std::vector<DWOSDDataList *> m_Lists;
 
+	CCritSec  m_itemsLock;
+	CCritSec  m_listsLock;
+
 	DWOSDWindows *m_pWindows;
 };
 

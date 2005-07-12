@@ -281,25 +281,6 @@ void strCopyW2A(LPSTR &dest, LPCWSTR src)
 	strCopyW2A(dest, src, -1);
 }
 
-void strCopy(LPSTR &dest, long value)
-{
-	if (dest)
-		delete[] dest;
-	BOOL bNegative = (value < 0);
-	value = abs(value);
-	long length = (long)log10(value) + (bNegative ? 2 : 1);
-	dest = new char[length + 1];
-
-	for ( int i=length-1 ; i>=0 ; i-- )
-	{
-		dest[i] = '0' + (value % 10);
-		value /= 10;
-	}
-	if (bNegative)
-		dest[0] = '-';
-	dest[length] = 0;
-}
-
 void strCopy(LPWSTR &dest, long value)
 {
 	if (dest)
@@ -317,5 +298,67 @@ void strCopy(LPWSTR &dest, long value)
 	if (bNegative)
 		dest[0] = '-';
 	dest[length] = 0;
+}
+
+void strCopyHex(LPWSTR &dest, long value)
+{
+	if (dest)
+		delete[] dest;
+
+	unsigned long rem;
+	long length = 0;
+	for ( rem=value; rem>0; rem = rem>>4 )
+	{
+		length++;
+	}
+	length += 2; // 0x
+
+	dest = new wchar_t[length + 1];
+	dest[length] = 0;
+	dest[0] = '0';
+	dest[1] = 'x';
+
+	for ( rem=value; rem>0; rem = rem>>4 )
+	{
+		length--;
+		unsigned short digit = (unsigned short)(rem & 0x000F);
+		if (digit < 10)
+			dest[length] = '0' + digit;
+		else
+			dest[length] = 'A' + digit - 10;
+	}
+}
+
+long StringToLong(LPWSTR pValue)
+{
+	if (pValue[0] == '\0')
+		return 0;
+	if ((pValue[0] != '0') || (pValue[1] != 'x'))
+		return _wtol(pValue);
+
+	int i=2;
+	long result = 0;
+	long val;
+	while ((val = pValue[i++]) != '\0')
+	{
+		result *= 16;
+		val -= '0';
+		if (val < 0)
+			return 0;
+		if (val > 9)
+		{
+			val += '0' - 'A' + 10;
+			if (val < 10)
+				return 0;
+			if (val > 16)
+			{
+				val += 'A' - 'a';
+				if ((val < 10) || (val > 16))
+					return 0;
+			}
+		}
+		result += val;
+	}
+	return result;
 }
 

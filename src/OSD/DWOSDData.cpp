@@ -41,6 +41,8 @@ DWOSDData::~DWOSDData()
 
 void DWOSDData::SetItem(LPWSTR name, LPWSTR value)
 {
+	CAutoLock lock(&m_itemsLock);
+
 	DWOSDDataItem *item;
 	std::vector<DWOSDDataItem *>::iterator it = m_Items.begin();
 	for ( ; it < m_Items.end() ; it++ )
@@ -62,6 +64,8 @@ void DWOSDData::SetItem(LPWSTR name, LPWSTR value)
 
 LPWSTR DWOSDData::GetItem(LPWSTR name)
 {
+	CAutoLock lock(&m_itemsLock);
+
 	DWOSDDataItem *item;
 	std::vector<DWOSDDataItem *>::iterator it = m_Items.begin();
 	for ( ; it < m_Items.end() ; it++ )
@@ -78,6 +82,8 @@ LPWSTR DWOSDData::GetItem(LPWSTR name)
 
 void DWOSDData::AddList(LPWSTR pListName, IDWOSDDataList* list)
 {
+	CAutoLock lock(&m_listsLock);
+
 	DWOSDDataList* newList = new DWOSDDataList();
 	strCopy(newList->name, pListName);
 	newList->list = list;
@@ -86,6 +92,8 @@ void DWOSDData::AddList(LPWSTR pListName, IDWOSDDataList* list)
 
 IDWOSDDataList* DWOSDData::GetList(LPWSTR pListName)
 {
+	CAutoLock lock(&m_listsLock);
+
 	//look for existing list of same name
 	std::vector<DWOSDDataList *>::iterator it = m_Lists.begin();
 	for ( ; it < m_Lists.end() ; it++ )

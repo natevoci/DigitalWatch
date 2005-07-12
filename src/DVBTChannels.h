@@ -134,7 +134,9 @@ public:
 	virtual long GetListSize();
 
 public:
+	long originalNetworkId;
 	long transportStreamId;
+	long networkId;
 	long frequency;
 	long frequencyInStream;
 	long bandwidth;
@@ -156,6 +158,7 @@ public:
 	virtual ~DVBTChannels();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
+	HRESULT Destroy();
 
 	HRESULT LoadChannels(LPWSTR filename);
 	HRESULT SaveChannels(LPWSTR filename = NULL);
@@ -163,18 +166,19 @@ public:
 	long get_DefaultBandwidth();
 
 	DVBTChannels_Network *FindDefaultNetwork();
-	DVBTChannels_Network *FindNetworkByTransportStreamId(long transportStreamId);
+	DVBTChannels_Network *FindNetwork(long originalNetworkId, long transportStreamId, long networkId);
+	DVBTChannels_Network *FindNetworkByONID(long originalNetworkId);
 	DVBTChannels_Network *FindNetworkByFrequency(long frequency);
-	DVBTChannels_Network *FindNextNetworkByTransportStreamId(long oldTransportStreamId);
-	DVBTChannels_Network *FindPrevNetworkByTransportStreamId(long oldTransportStreamId);
+	DVBTChannels_Network *FindNextNetworkByOriginalNetworkId(long oldOriginalNetworkId);
+	DVBTChannels_Network *FindPrevNetworkByOriginalNetworkId(long oldOriginalNetworkId);
 	DVBTChannels_Network *FindNextNetworkByFrequency(long oldFrequency);
 	DVBTChannels_Network *FindPrevNetworkByFrequency(long oldFrequency);
 
 	//Update Methods
 	BOOL UpdateNetwork(DVBTChannels_Network *pNewNetwork);
 
-	HRESULT MoveNetworkUp(long transportStreamId);
-	HRESULT MoveNetworkDown(long transportStreamId);
+	HRESULT MoveNetworkUp(long originalNetworkId);
+	HRESULT MoveNetworkDown(long originalNetworkId);
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);

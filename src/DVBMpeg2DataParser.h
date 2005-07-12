@@ -139,9 +139,6 @@ private:
 	void ParseTerrestrialChannelNumberDescriptor(unsigned char *buf);
 
 public:
-	long networkId;
-	long originalNetworkId;
-	
 	unsigned char otherFrequencyFlag : 1;
 	std::vector<long> otherFrequencys;
 
