@@ -92,6 +92,8 @@ DWOSDListItem::~DWOSDListItem()
 {
 	if (m_wszText)
 		delete[] m_wszText;
+	if (m_wszFont)
+		delete[] m_wszFont;
 }
 
 HRESULT DWOSDListItem::LoadFromXML(XMLElement *pElement)
@@ -250,7 +252,8 @@ HRESULT DWOSDListItem::Draw(long tickCount)
 	g_pOSD->Data()->ReplaceTokens(m_wszText, pStr);
 
 	DWSurfaceText text;
-	strCopy(text.text, pStr);
+	text.text = pStr;
+	pStr = NULL;
 
 	//Set Font
 	ZeroMemory(&text.font, sizeof(LOGFONT));

@@ -51,6 +51,16 @@ DWOSDControl::~DWOSDControl()
 {
 	if (m_pName)
 		delete[] m_pName;
+	if (m_pwcsOnUp)
+		delete[] m_pwcsOnUp;
+	if (m_pwcsOnDown)
+		delete[] m_pwcsOnDown;
+	if (m_pwcsOnLeft)
+		delete[] m_pwcsOnLeft;
+	if (m_pwcsOnRight)
+		delete[] m_pwcsOnRight;
+	if (m_pwcsOnSelect)
+		delete[] m_pwcsOnSelect;
 }
 
 HRESULT DWOSDControl::LoadFromXML(XMLElement *pElement)
