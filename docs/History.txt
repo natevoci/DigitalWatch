@@ -3,6 +3,19 @@ DigitalWatch History
 --------------------
 ________
 
+v2.0.0.9
+________
+
+  Changes
+  ```````
+  - Fixed channels file for when more than one broadcaster used the same transport stream id.
+  - Fixed problem where selecting Watch TV a second time would duplicate all the channels.
+  - Fixed problem in scanning. The waiting filters weren't cleared if there was a timeout scanning a table.
+  - Fixed threading issue with data items and lists.
+  - Fixed memory leak in OSD code
+
+________
+
 v2.0.0.7
 ________
 

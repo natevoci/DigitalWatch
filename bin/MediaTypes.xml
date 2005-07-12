@@ -3,7 +3,7 @@
 	<MajorType  clsid="{73646976-0000-0010-8000-00AA00389B71}" /> <!--KSDATAFORMAT_TYPE_VIDEO-->
 	<SubType    clsid="{E06D8026-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--MEDIASUBTYPE_MPEG2_VIDEO-->
 	<FormatType clsid="{E06D80E3-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--FORMAT_MPEG2Video-->
-	<Decoder name="DScaler Video Decoder" />
+	<Decoder name="Mpeg2Dec Video Decoder" />
 </MediaType>
 
 <MediaType name="MPEG Audio">
