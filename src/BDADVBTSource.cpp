@@ -181,11 +181,11 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount > 2)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		n2 = 0;
 		if (command->LHS.ParameterCount >= 2)
-			n2 = _wtoi(command->LHS.Parameter[1]);
+			n2 = StringToLong(command->LHS.Parameter[1]);
 
 		return SetChannel(n1, n2);
 	}
@@ -232,11 +232,11 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount > 2)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		n2 = 0;
 		if (command->LHS.ParameterCount >= 2)
-			n2 = _wtoi(command->LHS.Parameter[1]);
+			n2 = StringToLong(command->LHS.Parameter[1]);
 
 		return SetFrequency(n1, n2);
 	}
@@ -255,7 +255,7 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount > 1)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		return ChangeFrequencySelectionOffset(n1);
 	}
@@ -267,7 +267,7 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount > 1)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		return MoveNetworkUp(n1);
 	}
@@ -279,7 +279,7 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount > 1)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		return MoveNetworkDown(n1);
 	}

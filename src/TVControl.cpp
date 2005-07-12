@@ -581,19 +581,19 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if ((command->LHS.Parameter[0][0] == '\'') && (command->LHS.Parameter[0][2] == '\''))
 			n1 = command->LHS.Parameter[0][1];
 		else
-			n1 = _wtoi(command->LHS.Parameter[0]);
+			n1 = StringToLong(command->LHS.Parameter[0]);
 
 		n2 = 0;
 		if (command->LHS.ParameterCount >= 2)
-			n2 = _wtoi(command->LHS.Parameter[1]);
+			n2 = StringToLong(command->LHS.Parameter[1]);
 
 		n3 = 0;
 		if (command->LHS.ParameterCount >= 3)
-			n3 = _wtoi(command->LHS.Parameter[2]);
+			n3 = StringToLong(command->LHS.Parameter[2]);
 
 		n4 = 0;
 		if (command->LHS.ParameterCount >= 4)
-			n4 = _wtoi(command->LHS.Parameter[3]);
+			n4 = StringToLong(command->LHS.Parameter[3]);
 
 		return Key(n1, n2, n3, n4);
 	}
@@ -602,7 +602,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return AlwaysOnTop(n1);
 	}
 	else if (_wcsicmp(pCurr, L"Fullscreen") == 0)
@@ -610,7 +610,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return Fullscreen(n1);
 	}
 	else if (_wcsicmp(pCurr, L"SetSource") == 0)
@@ -625,7 +625,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return VolumeUp(n1);
 	}
 	else if (_wcsicmp(pCurr, L"VolumeDown") == 0)
@@ -633,7 +633,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return VolumeDown(n1);
 	}
 	else if (_wcsicmp(pCurr, L"SetVolume") == 0)
@@ -641,7 +641,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return SetVolume(n1);
 	}
 	else if (_wcsicmp(pCurr, L"Mute") == 0)
@@ -649,7 +649,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return Mute(n1);
 	}
 	else if (_wcsicmp(pCurr, L"SetColorControls") == 0)
@@ -657,11 +657,11 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 5)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 5 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
-		n2 = _wtoi(command->LHS.Parameter[1]);
-		n3 = _wtoi(command->LHS.Parameter[2]);
-		n4 = _wtoi(command->LHS.Parameter[3]);
-		n5 = _wtoi(command->LHS.Parameter[4]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
+		n2 = StringToLong(command->LHS.Parameter[1]);
+		n3 = StringToLong(command->LHS.Parameter[2]);
+		n4 = StringToLong(command->LHS.Parameter[3]);
+		n5 = StringToLong(command->LHS.Parameter[4]);
 		return SetColorControls(n1, n2, n3, n4, n5);
 	}
 	else if (_wcsicmp(pCurr, L"Zoom") == 0)
@@ -669,7 +669,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return Zoom(n1);
 	}
 	else if (_wcsicmp(pCurr, L"ZoomIn") == 0)
@@ -677,7 +677,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return ZoomIn(n1);
 	}
 	else if (_wcsicmp(pCurr, L"ZoomOut") == 0)
@@ -685,7 +685,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return ZoomOut(n1);
 	}
 	else if (_wcsicmp(pCurr, L"ZoomMode") == 0)
@@ -693,7 +693,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
 		return ZoomMode(n1);
 	}
 	else if (_wcsicmp(pCurr, L"AspectRatio") == 0)
@@ -701,8 +701,8 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 2)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		n1 = _wtoi(command->LHS.Parameter[0]);
-		n2 = _wtoi(command->LHS.Parameter[1]);
+		n1 = StringToLong(command->LHS.Parameter[0]);
+		n2 = StringToLong(command->LHS.Parameter[1]);
 		return AspectRatio(n1, n2);
 	}
 	else if (_wcsicmp(pCurr, L"ShowMenu") == 0)
@@ -723,7 +723,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		}
 		else
 		{
-			n1 = _wtoi(command->LHS.Parameter[0]);
+			n1 = StringToLong(command->LHS.Parameter[0]);
 			return ExitMenu(n1);
 		}
 	}
@@ -738,7 +738,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		}
 		else
 		{
-			n1 = _wtoi(command->LHS.Parameter[1]);
+			n1 = StringToLong(command->LHS.Parameter[1]);
 			return ShowOSDItem(command->LHS.Parameter[0], n1);
 		}
 	}
