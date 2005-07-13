@@ -53,7 +53,7 @@
 				DigitalWatch 2.x has been totally redeveloped from the DigitalWatch 0.x series with
 				an entirely different architecture. As a result, not all of the features available
 				in 0.x versions have been implemented in 2.x versions. I plan to add most of them
-				back in as time permits but for the moment i'm focussing on the big things like
+				as time permits but for the moment i'm focussing on the big things like
 				channel scanning and the epg.<br>
 				<br>
 				<h4>What does it do?</h4>
@@ -76,17 +76,17 @@
 					<li>Supports HD and AC3, but depends on which video and audio decoders you choose and what their settings are.<br>
 					<li>SPDIF passthrough depending on Audio decoder, Audio decoder settings, and hardware.<br>
 					<br>
-					New since 0.xxx versions<br>
+					<h5>New to 2.x versions</h5>
 					<li>Supports any BDA compatible DVB-T digital tv tuner.<br>
-					<li>Supports multiple tuners<br>
+					<li>Supports multiple tuners (Not simultaneously. Yet)<br>
 					<li>Tuners are automatically detected. No configuration required unless you want to disable one<br>
 					<li>Much nicer OSD (only works for the Overlay Mixer at the moment. VMR9 is to come)<br>
 					<li>Detailed logging to diagnose problems<br>
+					<li>Channel scanning.<br>
 				</ul>
 				<br>
 				<h4>What doesn't it do? (Yet)</h4>
 				<ul>
-					<li>Channel scanning.<br>
 					<li>Time Shifting (for VisionPlus cards with WDM drivers only at the moment)<br>
 					<li>Now and Next information displayed on OSD<br>
 					<li>Play back recorded files.<br>
@@ -104,24 +104,43 @@
 			<div id=text>
 				<table class=downloads>
 					<tr>
+						<td>DigitalWatch 2.0.0.9
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.9.zip">Zip File</a> (200kb)
+						<td>
+						<td><a href="#DW2009">History</a>
+						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.9/">Source Tag</a>
+					</tr>
+					<tr>
+						<td>DigitalWatch 2.0.0.7
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.7.zip">Zip File</a> (199kb)
+						<td>
+						<td><a href="#DW2007">History</a>
+						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.7/">Source Tag</a>
+					</tr>
+					<tr>
 						<td>DigitalWatch 2.0.0.5
-						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW2005.zip">Zip File</a> (179kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.5.zip">Zip File</a> (179kb)
 						<td>
 						<td><a href="#DW2005">History</a>
+						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.5/">Source Tag</a>
 					</tr>
 					<tr>
 						<td>DigitalWatch 2.0.0.3
-						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW2003.zip">Zip File</a> (177kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.3.zip">Zip File</a> (177kb)
 						<td>
 						<td><a href="#DW2003">History</a>
+						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.3/">Source Tag</a>
 					</tr>
 					<tr>
 						<td>DigitalWatch 2.0.0.1
-						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW2001.zip">Zip File</a> (177kb)
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.1.zip">Zip File</a> (177kb)
 						<td>
 						<td><a href="#DW2001">History</a>
+						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.1/">Source Tag</a>
 					</tr>
 				</table>
+				<br>
+				<a href="http://nate.dynalias.net/svn/DigitalWatch/trunk/">Latest Source Code</a>
 			</div>
 		</div>
 	
@@ -129,6 +148,47 @@
 		<div id=section>
 			<a name="History"><h2>History</h2>
 	
+			<div id=text>
+				<h4><a name="DW2009">DigitalWatch 2.0.0.9</h4>
+				<div id=indent>
+					Changes:<br>
+					<ul>
+						<li>Fixed channels file for when more than one broadcaster used the same transport stream id.
+						<li>Fixed problem where selecting Watch TV a second time would duplicate all the channels.
+						<li>Fixed problem in scanning. The waiting filters weren't cleared if there was a timeout scanning a table.
+						<li>Fixed threading issue with data items and lists.
+						<li>Fixed memory leak in OSD code
+					</ul>
+				</div>
+			</div>
+		
+			<div id=text>
+				<h4><a name="DW2007">DigitalWatch 2.0.0.7</h4>
+				<div id=indent>
+					Note: This version updates the channels.xml file so if you want to keep your old one make sure you make a copy of it.<br>
+					For this version i'd like people to start without a channels file at all to test out the scanning.<br>
+
+					Changes:<br>
+					<ul>
+						<li>Implemented Channel Scanning. This required heaps of other changes.<br>
+						<ul>
+							<li>Renamed "Program" in DVBTChannels to "Service".<br>
+							<li>Added a command queue thread to TVControl to allow UpdateChannel events to be handled.<br>
+							    This also allows the OSD to be drawn while changing channels.<br>
+							<li>Reworked BDADVBTSource to be able to tune to frequencies without channels entries so that scanning can be done for that frequency.<br>
+						</ul><li>Removed all state information (such as current network) from DVBTChannels. It's the wrong place for it.<br>
+						<li>Added menu options for adding and ordering networks.<br>
+						<li>Added FrequencyList to show a list of frequencies (for Australia) when adding networks.<br>
+						<li>Added ability for an OSDList to contain both items and itemLists.<br>
+						<li>Fixed DirectDraw OSD so the overlay color blt rectangle doesn't go out of bounds.<br>
+						<li>Commented out the FPS display.<br>
+						<li>Added DScaler video decoder.<br>
+						<li>Fixed an exception when application is closing. There may still be a problem though.<br>
+						<li>Fixed stuttering by setting the reference clock to the DW demux instead of the default demux.<br>
+					</ul>
+				</div>
+			</div>
+		
 			<div id=text>
 				<h4><a name="DW2005">DigitalWatch 2.0.0.5</h4>
 				<div id=indent>
@@ -195,6 +255,7 @@
 					<br>
 				</div>
 			</div>
+			<a href="../index.html">Home</a>
 		</div>
 	</body>
 </html>
