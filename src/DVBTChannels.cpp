@@ -486,8 +486,10 @@ DVBTChannels_Network::DVBTChannels_Network(DVBTChannels *pChannels) :
 	networkId = 0;
 	frequency = 0;
 	bandwidth = 0;
+	otherFrequencyFlag = 0;
 	networkName = NULL;
 	m_dataListString = NULL;
+
 }
 
 DVBTChannels_Network::~DVBTChannels_Network()
@@ -818,6 +820,194 @@ long DVBTChannels_Network::GetListSize()
 	return m_services.size();
 }
 
+//////////////////////////////////////////////////////////////////////
+// DVBTChannels_NetworkList
+//////////////////////////////////////////////////////////////////////
+
+DVBTChannels_NetworkList::DVBTChannels_NetworkList()
+{
+}
+
+DVBTChannels_NetworkList::~DVBTChannels_NetworkList()
+{
+	Clear();
+}
+
+void DVBTChannels_NetworkList::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for ( ; it != m_networks.end() ; it++ )
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		pNetwork->SetLogCallback(callback);
+	}
+}
+
+HRESULT DVBTChannels_NetworkList::Clear()
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for ( ; it != m_networks.end() ; it++ )
+	{
+		delete *it;
+	}
+	m_networks.clear();
+
+	return S_OK;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::CreateNetwork(long originalNetworkId, long transportStreamId, long networkId)
+{
+	DVBTChannels_Network *pNetwork = new DVBTChannels_Network(NULL);
+	pNetwork->SetLogCallback(m_pLogCallback);
+	pNetwork->originalNetworkId = originalNetworkId;
+	pNetwork->transportStreamId = transportStreamId;
+	pNetwork->networkId = networkId;
+
+	CAutoLock lock(&m_networksLock);
+	m_networks.push_back(pNetwork);
+	return pNetwork;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::FindNetwork(long originalNetworkId, long transportStreamId, long networkId)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if ((pNetwork->originalNetworkId == originalNetworkId) &&
+			(pNetwork->transportStreamId == transportStreamId) &&
+			(pNetwork->networkId == networkId))
+			return pNetwork;
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::FindNetworkByONID(long originalNetworkId)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->originalNetworkId == originalNetworkId)
+			return pNetwork;
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::FindNetworkByTSID(long transportStreamId)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->transportStreamId == transportStreamId)
+			return pNetwork;
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::FindNetworkByFrequency(long frequency)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->frequency == frequency)
+			return pNetwork;
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::FindNextNetworkByOriginalNetworkId(long oldOriginalNetworkId)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->originalNetworkId == oldOriginalNetworkId)
+		{
+			it++;
+			if (it < m_networks.end())
+				return *it;
+			return m_networks.front();
+		}
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::FindPrevNetworkByOriginalNetworkId(long oldOriginalNetworkId)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->originalNetworkId == oldOriginalNetworkId)
+		{
+			it--;
+			if (it >= m_networks.begin())
+				return *it;
+			return m_networks.back();
+		}
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::FindNextNetworkByFrequency(long oldFrequency)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->frequency == oldFrequency)
+		{
+			it++;
+			if (it < m_networks.end())
+				return *it;
+			return m_networks.front();
+		}
+	}
+	return NULL;
+}
+
+DVBTChannels_Network *DVBTChannels_NetworkList::FindPrevNetworkByFrequency(long oldFrequency)
+{
+	CAutoLock lock(&m_networksLock);
+
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for (; it < m_networks.end(); it++)
+	{
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork->frequency == oldFrequency)
+		{
+			it--;
+			if (it >= m_networks.begin())
+				return *it;
+			return m_networks.back();
+		}
+	}
+	return NULL;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // DVBTChannels
@@ -832,23 +1022,12 @@ DVBTChannels::DVBTChannels()
 
 DVBTChannels::~DVBTChannels()
 {
-	CAutoLock lock(&m_networksLock);
-
 	Destroy();
 }
 
 void DVBTChannels::SetLogCallback(LogMessageCallback *callback)
 {
-	LogMessageCaller::SetLogCallback(callback);
-
-	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for ( ; it != m_networks.end() ; it++ )
-	{
-		DVBTChannels_Network *pNetwork = *it;
-		pNetwork->SetLogCallback(callback);
-	}
+	DVBTChannels_NetworkList::SetLogCallback(callback);
 }
 
 HRESULT DVBTChannels::Destroy()
@@ -857,14 +1036,7 @@ HRESULT DVBTChannels::Destroy()
 		delete m_filename;
 	m_filename = NULL;
 
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for ( ; it != m_networks.end() ; it++ )
-	{
-		delete *it;
-	}
-	m_networks.clear();
-
-	return S_OK;
+	return DVBTChannels_NetworkList::Clear();
 }
 
 HRESULT DVBTChannels::LoadChannels(LPWSTR filename)
@@ -958,129 +1130,11 @@ long DVBTChannels::get_DefaultBandwidth()
 
 DVBTChannels_Network* DVBTChannels::FindDefaultNetwork()
 {
+	CAutoLock lock(&m_networksLock);
+
 	if (m_networks.size() > 0)
 	{
 		return m_networks.at(0);
-	}
-	return NULL;
-}
-
-DVBTChannels_Network *DVBTChannels::FindNetwork(long originalNetworkId, long transportStreamId, long networkId)
-{
-	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for (; it < m_networks.end(); it++)
-	{
-		DVBTChannels_Network *pNetwork = *it;
-		if ((pNetwork->originalNetworkId == originalNetworkId) &&
-			(pNetwork->transportStreamId == transportStreamId) &&
-			(pNetwork->networkId == networkId))
-			return pNetwork;
-	}
-	return NULL;
-}
-
-DVBTChannels_Network *DVBTChannels::FindNetworkByONID(long originalNetworkId)
-{
-	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for (; it < m_networks.end(); it++)
-	{
-		DVBTChannels_Network *pNetwork = *it;
-		if (pNetwork->originalNetworkId == originalNetworkId)
-			return pNetwork;
-	}
-	return NULL;
-}
-
-DVBTChannels_Network *DVBTChannels::FindNetworkByFrequency(long frequency)
-{
-	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for (; it < m_networks.end(); it++)
-	{
-		DVBTChannels_Network *pNetwork = *it;
-		if (pNetwork->frequency == frequency)
-			return pNetwork;
-	}
-	return NULL;
-}
-
-DVBTChannels_Network *DVBTChannels::FindNextNetworkByOriginalNetworkId(long oldOriginalNetworkId)
-{
-	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for (; it < m_networks.end(); it++)
-	{
-		DVBTChannels_Network *pNetwork = *it;
-		if (pNetwork->originalNetworkId == oldOriginalNetworkId)
-		{
-			it++;
-			if (it < m_networks.end())
-				return *it;
-			return m_networks.front();
-		}
-	}
-	return NULL;
-}
-
-DVBTChannels_Network *DVBTChannels::FindPrevNetworkByOriginalNetworkId(long oldOriginalNetworkId)
-{
-	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for (; it < m_networks.end(); it++)
-	{
-		DVBTChannels_Network *pNetwork = *it;
-		if (pNetwork->originalNetworkId == oldOriginalNetworkId)
-		{
-			it--;
-			if (it >= m_networks.begin())
-				return *it;
-			return m_networks.back();
-		}
-	}
-	return NULL;
-}
-
-DVBTChannels_Network *DVBTChannels::FindNextNetworkByFrequency(long oldFrequency)
-{
-	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for (; it < m_networks.end(); it++)
-	{
-		DVBTChannels_Network *pNetwork = *it;
-		if (pNetwork->frequency == oldFrequency)
-		{
-			it++;
-			if (it < m_networks.end())
-				return *it;
-			return m_networks.front();
-		}
-	}
-	return NULL;
-}
-
-DVBTChannels_Network *DVBTChannels::FindPrevNetworkByFrequency(long oldFrequency)
-{
-	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for (; it < m_networks.end(); it++)
-	{
-		DVBTChannels_Network *pNetwork = *it;
-		if (pNetwork->frequency == oldFrequency)
-		{
-			it--;
-			if (it >= m_networks.begin())
-				return *it;
-			return m_networks.back();
-		}
 	}
 	return NULL;
 }
@@ -1096,13 +1150,14 @@ BOOL DVBTChannels::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 
 	if (!pNetwork)
 	{
-		CAutoLock lock(&m_networksLock);
-
 		(log << "Adding a network\n").Write();
 		LogMessageIndent indent(&log);
 		pNetwork = new DVBTChannels_Network(this);
 		pNetwork->SetLogCallback(m_pLogCallback);
+
+		CAutoLock lock(&m_networksLock);
 		m_networks.push_back(pNetwork);
+
 		LPWSTR listName = new wchar_t[1024];
 		swprintf(listName, L"TVChannels.Services.%i", pNewNetwork->originalNetworkId);
 		g_pOSD->Data()->AddList(listName, pNetwork);
@@ -1198,6 +1253,7 @@ LPWSTR DVBTChannels::GetListItem(LPWSTR name, long nIndex)
 
 long DVBTChannels::GetListSize()
 {
+	CAutoLock lock(&m_networksLock);
 	return m_networks.size();
 }
 

@@ -137,28 +137,14 @@ private:
 	void ParseTerrestrialDeliverySystemDescriptor(unsigned char *buf);
 	void ParseFrequencyListDescriptor(unsigned char *buf);
 	void ParseTerrestrialChannelNumberDescriptor(unsigned char *buf);
-
-public:
-	unsigned char otherFrequencyFlag : 1;
-	std::vector<long> otherFrequencys;
-
 };
 
-class DVBTransponderList : public LogMessageCaller
+//TransponderList
+class DVBTransponderList : public DVBTChannels_NetworkList
 {
 public:
-	DVBTransponderList();
-	virtual ~DVBTransponderList();
-
-	void SetLogCallback(LogMessageCallback *callback);
-
-	DVBTransponder *FindTransponder(long transportStreamId);
-	DVBTransponder *CreateTransponder(long transportStreamId);
-
-	//void UpdateChannels(DVBTChannels *pDVBTChannels);
-private:
-	vector<DVBTransponder *> m_transponders;
-
+	HRESULT Clear();
+	DVBTChannels_Network *CreateNetwork(long originalNetworkId, long transportStreamId, long networkId);
 };
 
 class DVBMpeg2DataParser
@@ -206,7 +192,7 @@ private:
 
 	vector<DVBSection *> m_waitingFilters;
 
-	DVBTransponderList m_transponders;
+	DVBTransponderList m_networks;
 	DVBTransponder *m_currentTransponder;
 
 	const int m_cBufferSize;

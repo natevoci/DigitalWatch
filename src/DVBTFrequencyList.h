@@ -45,6 +45,8 @@ public:
 	DVBTFrequencyList();
 	virtual ~DVBTFrequencyList();
 
+	virtual HRESULT Destroy();
+
 	virtual HRESULT LoadFrequencyList(LPWSTR filename);
 	virtual HRESULT ChangeOffset(long change);
 

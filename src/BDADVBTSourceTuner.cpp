@@ -50,6 +50,7 @@ BDADVBTSourceTuner::BDADVBTSourceTuner(BDADVBTSource *pBDADVBTSource, BDACard *p
 	m_lFrequency = -1;
 	m_lBandwidth = -1;
 
+	m_pMpeg2DataParser = NULL;
 	m_pMpeg2DataParser = new DVBMpeg2DataParser();
 	m_pMpeg2DataParser->SetDVBTChannels(m_pBDADVBTSource->get_Channels());
 
@@ -273,7 +274,8 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 {
 	m_bActive = FALSE;
 
-	m_pMpeg2DataParser->ReleaseFilter();
+	if (m_pMpeg2DataParser)
+		m_pMpeg2DataParser->ReleaseFilter();
 
 	if (m_piBDASecTab)
 	{
@@ -363,9 +365,13 @@ long BDADVBTSourceTuner::GetCurrentFrequency()
 
 HRESULT BDADVBTSourceTuner::StartScanning()
 {
-	m_pMpeg2DataParser->SetFrequency(m_lFrequency);
-	m_pMpeg2DataParser->SetFilter(m_piBDASecTab);
-	return m_pMpeg2DataParser->StartScan();
+	if (m_pMpeg2DataParser)
+	{
+		m_pMpeg2DataParser->SetFrequency(m_lFrequency);
+		m_pMpeg2DataParser->SetFilter(m_piBDASecTab);
+		return m_pMpeg2DataParser->StartScan();
+	}
+	return S_FALSE;
 }
 
 

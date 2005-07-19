@@ -41,12 +41,18 @@ BDACardCollection::BDACardCollection()
 
 BDACardCollection::~BDACardCollection()
 {
+	Destroy();
+}
+
+HRESULT BDACardCollection::Destroy()
+{
 	std::vector<BDACard *>::iterator it = cards.begin();
 	for ( ; it != cards.end() ; it++ )
 	{
 		delete *it;
 	}
 	cards.clear();
+	return S_OK;
 }
 
 void BDACardCollection::SetLogCallback(LogMessageCallback *callback)

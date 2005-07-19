@@ -140,18 +140,48 @@ public:
 	long frequency;
 	long frequencyInStream;
 	long bandwidth;
+	unsigned char otherFrequencyFlag : 1;
+	std::vector<long> otherFrequencys;
+
 	LPWSTR networkName;
 
 protected:
 	DVBTChannels *m_pChannels;
 
 	std::vector<DVBTChannels_Service *> m_services;
-	CCritSec  m_servicesLock;
+	CCritSec m_servicesLock;
 	LPWSTR m_dataListString;
 };
 
+//NetworkList
+class DVBTChannels_NetworkList : public LogMessageCaller
+{
+	friend DVBTChannels;
+public:
+	DVBTChannels_NetworkList();
+	virtual ~DVBTChannels_NetworkList();
+
+	virtual void SetLogCallback(LogMessageCallback *callback);
+	virtual HRESULT Clear();
+
+	virtual DVBTChannels_Network *CreateNetwork(long originalNetworkId, long transportStreamId, long networkId);
+	virtual DVBTChannels_Network *FindNetwork(long originalNetworkId, long transportStreamId, long networkId);
+	virtual DVBTChannels_Network *FindNetworkByONID(long originalNetworkId);
+	virtual DVBTChannels_Network *FindNetworkByTSID(long transportStreamId);
+	virtual DVBTChannels_Network *FindNetworkByFrequency(long frequency);
+	virtual DVBTChannels_Network *FindNextNetworkByOriginalNetworkId(long oldOriginalNetworkId);
+	virtual DVBTChannels_Network *FindPrevNetworkByOriginalNetworkId(long oldOriginalNetworkId);
+	virtual DVBTChannels_Network *FindNextNetworkByFrequency(long oldFrequency);
+	virtual DVBTChannels_Network *FindPrevNetworkByFrequency(long oldFrequency);
+
+protected:
+	std::vector<DVBTChannels_Network *> m_networks;
+
+	CCritSec m_networksLock;
+};
+
 //Channels
-class DVBTChannels : public LogMessageCaller, public IDWOSDDataList
+class DVBTChannels : public DVBTChannels_NetworkList, public IDWOSDDataList
 {
 public:
 	DVBTChannels();
@@ -166,13 +196,6 @@ public:
 	long get_DefaultBandwidth();
 
 	DVBTChannels_Network *FindDefaultNetwork();
-	DVBTChannels_Network *FindNetwork(long originalNetworkId, long transportStreamId, long networkId);
-	DVBTChannels_Network *FindNetworkByONID(long originalNetworkId);
-	DVBTChannels_Network *FindNetworkByFrequency(long frequency);
-	DVBTChannels_Network *FindNextNetworkByOriginalNetworkId(long oldOriginalNetworkId);
-	DVBTChannels_Network *FindPrevNetworkByOriginalNetworkId(long oldOriginalNetworkId);
-	DVBTChannels_Network *FindNextNetworkByFrequency(long oldFrequency);
-	DVBTChannels_Network *FindPrevNetworkByFrequency(long oldFrequency);
 
 	//Update Methods
 	BOOL UpdateNetwork(DVBTChannels_Network *pNewNetwork);
@@ -185,8 +208,6 @@ public:
 	virtual long GetListSize();
 
 protected:
-	std::vector<DVBTChannels_Network *> m_networks;
-	CCritSec  m_networksLock;
 	long m_bandwidth;
 	LPWSTR m_filename;
 	LPWSTR m_dataListString;

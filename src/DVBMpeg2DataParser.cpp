@@ -217,17 +217,10 @@ void DVBService::ParseServiceDescriptor(unsigned char *buf)
 DVBTransponder::DVBTransponder() :
 	DVBTChannels_Network(NULL)
 {
-	otherFrequencyFlag = 0;
 }
 
 DVBTransponder::~DVBTransponder()
 {
-	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
-	for (; it != m_services.end(); it++ )
-	{
-		delete *it;
-	}
-	m_services.clear();
 }
 
 void DVBTransponder::SetLogCallback(LogMessageCallback *callback)
@@ -362,6 +355,7 @@ void DVBTransponder::ParseTerrestrialDeliverySystemDescriptor(unsigned char *buf
 		 << "Transmission mode " << transmissionModeString[transmissionMode] << "\n").Write();
 	(log << "HP - " << coderateString[coderateHP] << "    "
 		 << "LP - " << coderateString[coderateLP] << "\n").Write();
+
 }
 
 void DVBTransponder::ParseFrequencyListDescriptor(unsigned char *buf)
@@ -413,68 +407,37 @@ void DVBTransponder::ParseTerrestrialChannelNumberDescriptor(unsigned char *buf)
 	}
 }
 
-
-
 //////////////////////////////////////////////////////////////////////
-// DVBTransponderList
+// TransponderList
 //////////////////////////////////////////////////////////////////////
 
-DVBTransponderList::DVBTransponderList()
+HRESULT DVBTransponderList::Clear()
 {
-}
+	CAutoLock lock(&m_networksLock);
 
-DVBTransponderList::~DVBTransponderList()
-{
-	std::vector<DVBTransponder *>::iterator it = m_transponders.begin();
-	for (; it != m_transponders.end(); it++ )
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for ( ; it != m_networks.end() ; it++ )
 	{
-		delete *it;
+		DVBTransponder *pTransponder = (DVBTransponder *)*it;
+		delete pTransponder;
 	}
-	m_transponders.clear();
+	m_networks.clear();
+
+	return S_OK;
 }
 
-void DVBTransponderList::SetLogCallback(LogMessageCallback *callback)
+DVBTChannels_Network *DVBTransponderList::CreateNetwork(long originalNetworkId, long transportStreamId, long networkId)
 {
-	LogMessageCaller::SetLogCallback(callback);
+	DVBTransponder *pNetwork = new DVBTransponder();
+	pNetwork->SetLogCallback(m_pLogCallback);
+	pNetwork->originalNetworkId = originalNetworkId;
+	pNetwork->transportStreamId = transportStreamId;
+	pNetwork->networkId = networkId;
 
-	std::vector<DVBTransponder *>::iterator it = m_transponders.begin();
-	for (; it != m_transponders.end(); it++ )
-	{
-		DVBTransponder *pTransponder = *it;
-		pTransponder->SetLogCallback(callback);
-	}
+	CAutoLock lock(&m_networksLock);
+	m_networks.push_back((DVBTChannels_Network *)pNetwork);
+	return pNetwork;
 }
-
-DVBTransponder *DVBTransponderList::FindTransponder(long transportStreamId)
-{
-	std::vector<DVBTransponder *>::iterator it = m_transponders.begin();
-	for (; it != m_transponders.end(); it++ )
-	{
-		DVBTransponder *pTransponder = *it;
-		if (pTransponder->transportStreamId == transportStreamId)
-			return pTransponder;
-	}
-	return NULL;
-}
-
-DVBTransponder *DVBTransponderList::CreateTransponder(long transportStreamId)
-{
-	DVBTransponder *pTransponder = new DVBTransponder();
-	pTransponder->SetLogCallback(m_pLogCallback);
-	pTransponder->transportStreamId = transportStreamId;
-	m_transponders.push_back(pTransponder);
-	return pTransponder;
-}
-
-/*void DVBTransponderList::UpdateChannels(DVBTChannels *pDVBTChannels)
-{
-	std::vector<DVBTransponder *>::iterator it = m_transponders.begin();
-	for (; it != m_transponders.end(); it++ )
-	{
-		DVBTransponder *pTransponder = *it;
-		pDVBTChannels->UpdateNetwork(pTransponder);
-	}
-}*/
 
 //////////////////////////////////////////////////////////////////////
 // DVBMpeg2DataParser
@@ -503,7 +466,7 @@ DVBMpeg2DataParser::DVBMpeg2DataParser() :
 	log.LogVersionNumber();
 	(log << "-------------------------\n").Write();
 
-	m_transponders.SetLogCallback(&m_logWriter);
+	m_networks.SetLogCallback(&m_logWriter);
 }
 
 DVBMpeg2DataParser::~DVBMpeg2DataParser()
@@ -633,6 +596,8 @@ void DVBMpeg2DataParser::StartScanThread()
 
 			// Scan tables
 			hr = ReadSection(pPATSection);	// if PAT fails then there's no point doing NIT or SDT
+			delete pPATSection;
+
 			if SUCCEEDED(hr)
 			{
 				BOOL bKeepScanning = TRUE;
@@ -655,6 +620,9 @@ void DVBMpeg2DataParser::StartScanThread()
 
 			if SUCCEEDED(hr)
 				UpdateInformation();
+
+			m_currentTransponder = NULL;
+			m_networks.Clear();
 
 			if (g_pOSD)
 			{
@@ -935,9 +903,9 @@ void DVBMpeg2DataParser::ParsePAT(unsigned char *buf, int sectionLength, int tra
 {
 	log.showf("Transport Stream Id 0x%04x\n", transportStreamId);
 
-	m_currentTransponder = m_transponders.FindTransponder(transportStreamId);	//i'm not expecting this to return anything, but just in case
+	m_currentTransponder = (DVBTransponder *)m_networks.FindNetworkByTSID(transportStreamId);	//i'm not expecting this to return anything, but just in case
 	if (!m_currentTransponder)
-		m_currentTransponder = m_transponders.CreateTransponder(transportStreamId);
+		m_currentTransponder = (DVBTransponder *)m_networks.CreateNetwork(0, transportStreamId, 0);
 
 	while (sectionLength >= 4)
 	{
@@ -957,14 +925,14 @@ void DVBMpeg2DataParser::ParsePAT(unsigned char *buf, int sectionLength, int tra
 				log.showf("Existing service object found\n");
 
 			pService->pmtPid = pmtPID;
-			if (!pService->pmtPid)
+			if (!pmtPID)
 			{
 				log.showf("Skipping adding filter. pmt pid is 0x00\n");
 			}
 			else
 			{
 				DVBSection *pSection = new DVBSection();
-				pSection->Setup(pService->pmtPid, 0x02, 0, 5);
+				pSection->Setup(pmtPID, 0x02, 0, 5);
 				m_waitingFilters.push_back(pSection);
 			}
 		}
@@ -1091,6 +1059,8 @@ void DVBMpeg2DataParser::ParseNIT(unsigned char *buf, int sectionLength, int net
 		return;
 	}
 
+	if ((m_currentTransponder->networkId != 0) && (m_currentTransponder->networkId != networkId))
+		(log << "Warning: NIT is changing NID from " << m_currentTransponder->networkId << " to " << networkId << "\n").Write();
 	m_currentTransponder->networkId = networkId;
 
 	log.showf("TransportStreamId 0x%04x, NetworkId 0x%04x\n",
@@ -1098,21 +1068,22 @@ void DVBMpeg2DataParser::ParseNIT(unsigned char *buf, int sectionLength, int net
 
 	m_currentTransponder->ParseNITDescriptors(buf + 2, descriptorsLoopLen);
 
-
 	sectionLength -= descriptorsLoopLen + 4;
 	buf += descriptorsLoopLen + 4;
 
 	while (sectionLength > 6)
 	{
-		int transport_stream_id = (buf[0] << 8) | buf[1];
+		int transportStreamId = (buf[0] << 8) | buf[1];
+		int originalNetworkId = (buf[2] << 8) | buf[3];
 
 		DVBTransponder *pTransponder;
-		pTransponder = m_transponders.FindTransponder(transport_stream_id);
+		pTransponder = (DVBTransponder *)m_networks.FindNetworkByTSID(transportStreamId);
 		if (!pTransponder)
-			pTransponder = m_transponders.CreateTransponder(transport_stream_id);
+			pTransponder = (DVBTransponder *)m_networks.CreateNetwork(originalNetworkId, transportStreamId, networkId);
 
-		pTransponder->networkId = networkId;
-		pTransponder->originalNetworkId = (buf[2] << 8) | buf[3];
+		if ((pTransponder->originalNetworkId != 0) && (pTransponder->originalNetworkId != originalNetworkId))
+			(log << "Warning: NIT is changing ONID from " << pTransponder->originalNetworkId << " to " << originalNetworkId << "\n").Write();
+		pTransponder->originalNetworkId = originalNetworkId;
 
 		descriptorsLoopLen = ((buf[4] & 0x0f) << 8) | buf[5];
 
@@ -1136,14 +1107,17 @@ void DVBMpeg2DataParser::ParseNIT(unsigned char *buf, int sectionLength, int net
 
 void DVBMpeg2DataParser::ParseSDT(unsigned char *buf, int sectionLength, int transportStreamId)
 {
-	DVBTransponder *pTransponder;
- 	pTransponder = m_transponders.FindTransponder(transportStreamId);	//i'm not expecting this to return anything, but just in case
-	if (!pTransponder)
-		pTransponder = m_transponders.CreateTransponder(transportStreamId);
-
 	long originalNetworkId = (buf[0] << 8) | buf[1];
-	if (pTransponder->originalNetworkId != originalNetworkId)
-		pTransponder->originalNetworkId = originalNetworkId;
+
+	DVBTransponder *pTransponder;
+ 	pTransponder = (DVBTransponder *)m_networks.FindNetworkByTSID(transportStreamId);	//i'm not expecting this to return anything, but just in case
+	if (!pTransponder)
+		pTransponder = (DVBTransponder *)m_networks.CreateNetwork(originalNetworkId, transportStreamId, 0);
+
+	if ((pTransponder->originalNetworkId != 0) && (pTransponder->originalNetworkId != originalNetworkId))
+		(log << "Warning: SDT is changing ONID from " << pTransponder->originalNetworkId << " to " << originalNetworkId << "\n").Write();
+	pTransponder->originalNetworkId = originalNetworkId;
+
 	log.showf("TransportStreamId 0x%04x, OriginalNetworkId 0x%04x\n",
 		pTransponder->transportStreamId, pTransponder->originalNetworkId);
 

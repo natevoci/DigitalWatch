@@ -36,6 +36,7 @@ public:
 	virtual ~BDACardCollection();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
+	virtual HRESULT Destroy();
 
 	BOOL LoadCards();
 	BOOL LoadCards(LPWSTR filename);

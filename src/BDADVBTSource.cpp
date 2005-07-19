@@ -157,6 +157,8 @@ HRESULT BDADVBTSource::Destroy()
 
 	m_piGraphBuilder.Release();
 
+	cardList.Destroy();
+	frequencyList.Destroy();
 	channels.Destroy();
 
 	indent.Release();
