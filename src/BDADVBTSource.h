@@ -88,7 +88,8 @@ private:
 	const LPWSTR m_strSourceType;
 
 	BDADVBTSourceTuner *m_pCurrentTuner;
-	std::vector<BDADVBTSourceTuner *> m_Tuners;
+	std::vector<BDADVBTSourceTuner *> m_tuners;
+	CCritSec m_tunersLock;
 	//Recorder
 	DVBTChannels channels;
 	DVBTChannels_Network *m_pCurrentNetwork;

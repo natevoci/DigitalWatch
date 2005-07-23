@@ -31,12 +31,20 @@ KeyMap::KeyMap(void)
 
 KeyMap::~KeyMap(void)
 {
+	std::vector<KeyMapEntry>::iterator it = m_keyMaps.begin();
+	for ( ; it != m_keyMaps.end() ; it++ )
+	{
+		KeyMapEntry keyMap = *it;
+		delete[] keyMap.Function;
+	}
 }
 
 HRESULT KeyMap::GetFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
 {
-	std::vector<KeyMapEntry>::iterator it = keyMaps.begin();
-	for ( ; it != keyMaps.end() ; it++ )
+	CAutoLock keyMapsLock(&m_keyMapsLock);
+
+	std::vector<KeyMapEntry>::iterator it = m_keyMaps.begin();
+	for ( ; it != m_keyMaps.end() ; it++ )
 	{
 		KeyMapEntry keyMap = *it;
 		if ((keyMap.Keycode == keycode) &&
@@ -77,6 +85,8 @@ HRESULT KeyMap::LoadFromFile(LPWSTR filename)
 
 HRESULT KeyMap::LoadFromXML(XMLElementList* elementList)
 {
+	CAutoLock keyMapsLock(&m_keyMapsLock);
+
 	(log << "Loading Keys from XML\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -119,7 +129,7 @@ HRESULT KeyMap::LoadFromXML(XMLElementList* elementList)
 
 			strCopy(newKeyMapEntry.Function, element->value);
 
-			keyMaps.push_back(newKeyMapEntry);
+			m_keyMaps.push_back(newKeyMapEntry);
 			continue;
 		}
 	}

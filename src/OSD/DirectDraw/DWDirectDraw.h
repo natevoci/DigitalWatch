@@ -67,10 +67,12 @@ private:
 
 	BOOL m_bAddEnumeratedDevices;
 
-	std::vector<DWDirectDrawScreen*> m_Screens;
+	std::vector<DWDirectDrawScreen*> m_screens;
+	CCritSec m_screensLock;
+
 	DWSurface *m_pDWSurface;
 
-	IDDrawExclModeVideoCallback *m_pOverlayCallback;
+	CComPtr<IDDrawExclModeVideoCallback> m_pOverlayCallback;
 	BOOL m_bOverlayEnabled;
 	RECT m_OverlayPositionRect;
 	COLORREF m_dwVideoKeyColor;

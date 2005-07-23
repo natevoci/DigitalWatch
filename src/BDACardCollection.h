@@ -44,8 +44,6 @@ public:
 
 	std::vector<BDACard *> cards;
 
-	LogMessage get_Logger();
-
 private:
 	BOOL LoadCardsFromHardware();
 	BOOL LoadCardsFromFile(LPWSTR filename);

@@ -61,6 +61,8 @@ DWMediaTypes::DWMediaTypes()
 
 DWMediaTypes::~DWMediaTypes()
 {
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+
 	if (m_filename)
 		delete m_filename;
 
@@ -74,6 +76,8 @@ DWMediaTypes::~DWMediaTypes()
 
 void DWMediaTypes::SetLogCallback(LogMessageCallback *callback)
 {
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+
 	LogMessageCaller::SetLogCallback(callback);
 
 	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
@@ -91,6 +95,8 @@ void DWMediaTypes::SetDecoders(DWDecoders *pDecoders)
 
 DWMediaType *DWMediaTypes::FindMediaType(AM_MEDIA_TYPE *mt)
 {
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+
 	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
 	for ( ; it < m_mediaTypes.end() ; it++ )
 	{
@@ -108,6 +114,8 @@ DWMediaType *DWMediaTypes::FindMediaType(AM_MEDIA_TYPE *mt)
 
 HRESULT DWMediaTypes::Load(LPWSTR filename)
 {
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+
 	(log << "Loading Media Types file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 

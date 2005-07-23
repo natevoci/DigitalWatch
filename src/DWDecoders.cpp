@@ -28,12 +28,15 @@
 // DWDecoder
 //////////////////////////////////////////////////////////////////////
 
-DWDecoder::DWDecoder()
+DWDecoder::DWDecoder(XMLElement *pElement)
 {
+	m_pElement = pElement;
+	m_pElement->AddRef();
 }
 
 DWDecoder::~DWDecoder()
 {
+	m_pElement->Release();
 }
 
 void DWDecoder::SetLogCallback(LogMessageCallback *callback)
@@ -289,6 +292,8 @@ DWDecoders::DWDecoders() : m_filename(0)
 
 DWDecoders::~DWDecoders()
 {
+	CAutoLock decodersLock(&m_decodersLock);
+
 	if (m_filename)
 		delete m_filename;
 
@@ -302,6 +307,8 @@ DWDecoders::~DWDecoders()
 
 void DWDecoders::SetLogCallback(LogMessageCallback *callback)
 {
+	CAutoLock decodersLock(&m_decodersLock);
+
 	LogMessageCaller::SetLogCallback(callback);
 
 	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
@@ -314,6 +321,8 @@ void DWDecoders::SetLogCallback(LogMessageCallback *callback)
 
 HRESULT DWDecoders::Load(LPWSTR filename)
 {
+	CAutoLock decodersLock(&m_decodersLock);
+
 	(log << "Loading Decoders file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -336,10 +345,8 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 		element = file.Elements.Item(item);
 		if (_wcsicmp(element->name, L"Decoder") == 0)
 		{
-			DWDecoder *dec = new DWDecoder();
+			DWDecoder *dec = new DWDecoder(element);
 			dec->SetLogCallback(m_pLogCallback);
-			dec->m_pElement = element;
-			dec->m_pElement->AddRef();
 			m_decoders.push_back(dec);
 		}
 	}
@@ -349,6 +356,8 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 
 DWDecoder *DWDecoders::Item(LPWSTR pName)
 {
+	CAutoLock decodersLock(&m_decodersLock);
+
 	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
 	for ( ; it < m_decoders.end() ; it++ )
 	{

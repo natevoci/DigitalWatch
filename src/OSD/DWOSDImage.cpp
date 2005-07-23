@@ -42,7 +42,12 @@ DWOSDImage::DWOSDImage()
 
 DWOSDImage::~DWOSDImage()
 {
-
+	if (m_pwszName)
+		delete[] m_pwszName;
+	if (m_pwszFilename)
+		delete[] m_pwszFilename;
+	if (m_pImage)
+		delete m_pImage;
 }
 
 LPWSTR DWOSDImage::Name()

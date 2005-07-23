@@ -33,9 +33,8 @@
 class DWDecoders;
 class DWDecoder : public LogMessageCaller
 {
-	friend DWDecoders;
 public:
-	DWDecoder();
+	DWDecoder(XMLElement *pElement);
 	virtual ~DWDecoder();
 
 	void SetLogCallback(LogMessageCallback *callback);
@@ -64,6 +63,7 @@ public:
 
 private:
 	std::vector<DWDecoder *> m_decoders;
+	CCritSec m_decodersLock;
 
 	LPWSTR m_filename;
 };

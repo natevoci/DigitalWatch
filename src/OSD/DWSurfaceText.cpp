@@ -21,6 +21,7 @@
  */
 
 #include "DWSurfaceText.h"
+#include "GlobalFunctions.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -39,7 +40,7 @@ DWSurfaceText::DWSurfaceText()
 	font.lfQuality = ANTIALIASED_QUALITY;
 	lstrcpy(font.lfFaceName, TEXT("Arial"));
 
-	text = NULL;
+	m_text = NULL;
 
 	m_hFont = NULL;
 	m_hOldFont = NULL;
@@ -47,8 +48,8 @@ DWSurfaceText::DWSurfaceText()
 
 DWSurfaceText::~DWSurfaceText()
 {
-	if (text)
-		delete[] text;
+	if (m_text)
+		delete[] m_text;
 
 	if (m_hFont)
 		DeleteObject(m_hFont);
@@ -60,14 +61,14 @@ HRESULT DWSurfaceText::GetTextExtent(SIZE *extent)
 	USES_CONVERSION;
 
 	HDC hDC;
-	if (text == NULL)
+	if (m_text == NULL)
 	{
 		return (log << "DWSurfaceText::GetTextExtent: No text defined\n").Write(E_FAIL);
 	}
 
 	hDC = CreateCompatibleDC(NULL);
 	InitDC(hDC);
-	::GetTextExtentPoint32(hDC, W2T(text), wcslen(text), extent);
+	::GetTextExtentPoint32(hDC, W2T(m_text), wcslen(m_text), extent);
 	UninitDC(hDC);
 	DeleteDC(hDC);
 
@@ -110,3 +111,12 @@ HRESULT DWSurfaceText::UninitDC(HDC &hDC)
 	return S_OK;
 }
 
+void DWSurfaceText::set_Text(LPWSTR text)
+{
+	strCopy(m_text, text);
+}
+
+LPWSTR DWSurfaceText::get_Text()
+{
+	return m_text;
+}

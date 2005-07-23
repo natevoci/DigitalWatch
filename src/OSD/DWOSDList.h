@@ -65,6 +65,7 @@ public:
 
 //	HRESULT Render(long tickCount, int x, int y, int width, int height);
 
+	BOOL Equals(DWOSDListItem* target);
 	void CopyTo(DWOSDListItem* target);
 
 protected:
@@ -135,7 +136,10 @@ protected:
 	long m_nMovingToYOffset;
 
 	std::vector <DWOSDListEntry *> m_items;
+	CCritSec m_itemsLock;
+
 	std::vector <DWOSDListItem *> m_itemsToRender;
+	CCritSec m_itemsToRenderLock;
 };
 
 #endif

@@ -176,6 +176,7 @@ HRESULT FilterGraphTools::AddFilterByDevicePath(IGraphBuilder* piGraphBuilder, I
 	if FAILED(hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, reinterpret_cast<void**>(ppiFilter)))
 	{
 		(log << "Could Not Create Filter: " << pGraphName << "\n").Write();
+		delete[] pGraphName;
 		return hr;
 	}
 
@@ -183,8 +184,10 @@ HRESULT FilterGraphTools::AddFilterByDevicePath(IGraphBuilder* piGraphBuilder, I
 	{
 		(*ppiFilter)->Release();
 		(log << "Failed to add filter: " << pGraphName << "\n").Write();
+		delete[] pGraphName;
 		return hr;
 	}
+	delete[] pGraphName;
 	return S_OK;
 } 
 
@@ -798,6 +801,7 @@ HRESULT FilterGraphTools::AddToRot(IUnknown *pUnkGraph, DWORD *pdwRegister)
 	{
         hr = pROT->Register(ROTFLAGS_REGISTRATIONKEEPSALIVE, pUnkGraph, pMoniker, pdwRegister);
     }
+	free(wsz);
     return hr;
 }
 

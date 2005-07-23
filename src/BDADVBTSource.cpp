@@ -51,6 +51,8 @@ BDADVBTSource::~BDADVBTSource()
 
 void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 {
+	CAutoLock tunersLock(&m_tunersLock);
+
 	DWSource::SetLogCallback(callback);
 
 	graphTools.SetLogCallback(callback);
@@ -58,8 +60,8 @@ void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 	frequencyList.SetLogCallback(callback);
 	cardList.SetLogCallback(callback);
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
-	for ( ; it != m_Tuners.end() ; it++ )
+	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+	for ( ; it != m_tuners.end() ; it++ )
 	{
 		BDADVBTSourceTuner *tuner = *it;
 		tuner->SetLogCallback(callback);
@@ -98,6 +100,8 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	if (cardList.cards.size() == 0)
 		return (log << "Could not find any BDA cards\n").Show(E_FAIL);
 	
+	CAutoLock tunersLock(&m_tunersLock);
+
 	std::vector<BDACard *>::iterator it = cardList.cards.begin();
 	for ( ; it != cardList.cards.end() ; it++ )
 	{
@@ -108,14 +112,14 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 			m_pCurrentTuner->SetLogCallback(m_pLogCallback);
 			if SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph))
 			{
-				m_Tuners.push_back(m_pCurrentTuner);
+				m_tuners.push_back(m_pCurrentTuner);
 				continue;
 			}
 			delete m_pCurrentTuner;
 			m_pCurrentTuner = NULL;
 		}
 	}
-	if (m_Tuners.size() == 0)
+	if (m_tuners.size() == 0)
 		return (log << "There are no active BDA cards\n").Show(E_FAIL);
 
 	m_pCurrentTuner = NULL;
@@ -144,13 +148,15 @@ HRESULT BDADVBTSource::Destroy()
 		if FAILED(hr = m_pDWGraph->Cleanup())
 			(log << "Failed to cleanup DWGraph\n").Write();
 
-		std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
-		for ( ; it != m_Tuners.end() ; it++ )
+		CAutoLock tunersLock(&m_tunersLock);
+
+		std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+		for ( ; it != m_tuners.end() ; it++ )
 		{
 			BDADVBTSourceTuner *tuner = *it;
 			delete tuner;
 		}
-		m_Tuners.clear();
+		m_tuners.clear();
 	}
 
 	m_pDWGraph = NULL;
@@ -507,7 +513,9 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 	if FAILED(hr = m_pDWGraph->Stop())
 		(log << "Failed to stop DWGraph\n").Write();
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_Tuners.begin();
+	CAutoLock tunersLock(&m_tunersLock);
+
+	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
 	for ( ; TRUE /*check for end of list done after graph is cleaned up*/ ; it++ )
 	{
 		hr = UnloadTuner();
@@ -516,7 +524,7 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			(log << "Failed to cleanup DWGraph\n").Write();
 
 		// check for end of list done here
-		if (it == m_Tuners.end())
+		if (it == m_tuners.end())
 			break;
 
 		m_pCurrentTuner = *it;
@@ -555,8 +563,8 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		}
 
 		//Move current tuner to back of list so that other cards will be used next
-		m_Tuners.erase(it);
-		m_Tuners.push_back(m_pCurrentTuner);
+		m_tuners.erase(it);
+		m_tuners.push_back(m_pCurrentTuner);
 		
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 

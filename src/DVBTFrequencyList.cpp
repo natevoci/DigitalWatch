@@ -65,6 +65,8 @@ DVBTFrequencyList::~DVBTFrequencyList()
 
 HRESULT DVBTFrequencyList::Destroy()
 {
+	CAutoLock listLock(&m_listLock);
+
 	std::vector<DVBTFrequencyListItem *>::iterator it = m_list.begin();
 	for ( ; it < m_list.end() ; it++ )
 	{
@@ -76,6 +78,8 @@ HRESULT DVBTFrequencyList::Destroy()
 
 HRESULT DVBTFrequencyList::LoadFrequencyList(LPWSTR filename)
 {
+	CAutoLock listLock(&m_listLock);
+
 	(log << "Loading DVBT Frequency List file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -141,6 +145,8 @@ HRESULT DVBTFrequencyList::ChangeOffset(long change)
 
 LPWSTR DVBTFrequencyList::GetListItem(LPWSTR name, long nIndex)
 {
+	CAutoLock listLock(&m_listLock);
+
 	if (nIndex >= m_list.size())
 		return NULL;
 
@@ -163,6 +169,8 @@ LPWSTR DVBTFrequencyList::GetListItem(LPWSTR name, long nIndex)
 
 long DVBTFrequencyList::GetListSize()
 {
+	CAutoLock listLock(&m_listLock);
+
 	return m_list.size();
 }
 

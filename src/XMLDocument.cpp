@@ -57,6 +57,8 @@ XMLAttributeList::XMLAttributeList()
 
 XMLAttributeList::~XMLAttributeList()
 {
+	CAutoLock attributesLock(&m_attributesLock);
+
 	std::vector<XMLAttribute *>::iterator it = m_attributes.begin();
 	for ( ; it < m_attributes.end() ; it++ )
 	{
@@ -68,21 +70,29 @@ XMLAttributeList::~XMLAttributeList()
 
 void XMLAttributeList::Add(XMLAttribute *pItem)
 {
+	CAutoLock attributesLock(&m_attributesLock);
+
 	m_attributes.push_back(pItem);
 }
 
 void XMLAttributeList::Remove(int nIndex)
 {
+	CAutoLock attributesLock(&m_attributesLock);
+
 	m_attributes.erase(m_attributes.begin()+nIndex);
 }
 
 XMLAttribute *XMLAttributeList::Item(int nIndex)
 {
+	CAutoLock attributesLock(&m_attributesLock);
+
 	return m_attributes.at(nIndex);
 }
 
 XMLAttribute *XMLAttributeList::Item(LPWSTR pName)
 {
+	CAutoLock attributesLock(&m_attributesLock);
+
 	std::vector<XMLAttribute *>::iterator it = m_attributes.begin();
 	for ( ; it < m_attributes.end() ; it++ )
 	{
@@ -95,6 +105,8 @@ XMLAttribute *XMLAttributeList::Item(LPWSTR pName)
 
 int XMLAttributeList::Count()
 {
+	CAutoLock attributesLock(&m_attributesLock);
+
 	return m_attributes.size();
 }
 
@@ -131,6 +143,8 @@ XMLElementList::XMLElementList()
 
 XMLElementList::~XMLElementList()
 {
+	CAutoLock elementsLock(&m_elementsLock);
+
 	std::vector<XMLElement *>::iterator it = m_elements.begin();
 	for ( ; it < m_elements.end() ; it++ )
 	{
@@ -142,16 +156,22 @@ XMLElementList::~XMLElementList()
 
 void XMLElementList::Add(XMLElement *pItem)
 {
+	CAutoLock elementsLock(&m_elementsLock);
+
 	m_elements.push_back(pItem);
 }
 
 void XMLElementList::Remove(int nIndex)
 {
+	CAutoLock elementsLock(&m_elementsLock);
+
 	m_elements.erase(m_elements.begin()+nIndex);
 }
 
 XMLElement *XMLElementList::Item(int nIndex)
 {
+	CAutoLock elementsLock(&m_elementsLock);
+
 	if ((nIndex < 0) || (nIndex >= m_elements.size()))
 		return NULL;
 	return m_elements.at(nIndex);
@@ -159,6 +179,8 @@ XMLElement *XMLElementList::Item(int nIndex)
 
 XMLElement *XMLElementList::Item(LPWSTR pName)
 {
+	CAutoLock elementsLock(&m_elementsLock);
+
 	std::vector<XMLElement *>::iterator it = m_elements.begin();
 	for ( ; it < m_elements.end() ; it++ )
 	{
@@ -171,6 +193,8 @@ XMLElement *XMLElementList::Item(LPWSTR pName)
 
 int XMLElementList::Count()
 {
+	CAutoLock elementsLock(&m_elementsLock);
+
 	return m_elements.size();
 }
 
@@ -188,8 +212,12 @@ XMLDocument::XMLDocument()
 XMLDocument::~XMLDocument()
 {
 	if (m_pBuff)
-		delete m_pBuff;
+		delete[] m_pBuff;
 	m_pBuff = NULL;
+
+	if (m_filename)
+		delete[] m_filename;
+	m_filename = NULL;
 }
 
 HRESULT XMLDocument::Load(LPWSTR filename)
@@ -320,6 +348,8 @@ HRESULT XMLDocument::Parse()
 				pToken = m_pCurr;
 				if (hr == S_OK)
 					Elements.Add(pElement);
+				else
+					delete pElement;
 			}
 			break;
 
@@ -418,6 +448,10 @@ HRESULT XMLDocument::ParseElement(XMLElement *pElement)
 					pElement->Attributes.Add(pAttribute);
 					pToken = m_pCurr;
 					continue;
+				}
+				else
+				{
+					delete pAttribute;
 				}
 			}
 			break;
@@ -638,7 +672,10 @@ HRESULT XMLDocument::ParseElementData(XMLElement *pElement)
 				hr = ParseElement(pSubElement);
 				pToken = m_pCurr;
 				pStart = pToken;
-				pElement->Elements.Add(pSubElement);
+				if (hr == S_OK)
+					pElement->Elements.Add(pSubElement);
+				else
+					delete pSubElement;
 			}
 			break;
 

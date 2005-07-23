@@ -41,9 +41,13 @@ public:
 	BOOL bTextBkTransparent;
 
 	LOGFONT font;
-	LPWSTR text;
+
+	void set_Text(LPWSTR text);
+	LPWSTR get_Text();
 
 private:
+	LPWSTR m_text;
+
 	HFONT m_hFont;
 	HFONT m_hOldFont;
 

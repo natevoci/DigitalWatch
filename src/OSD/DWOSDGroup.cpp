@@ -37,10 +37,18 @@ DWOSDGroup::DWOSDGroup(DWSurface* pSurface) : DWOSDControl(pSurface)
 
 DWOSDGroup::~DWOSDGroup()
 {
+	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
+	for ( ; it < m_controls.end() ; it++ )
+	{
+		delete *it;
+	}
+	m_controls.clear();
 }
 
 HRESULT DWOSDGroup::LoadFromXML(XMLElement *pElement)
 {
+	CAutoLock controlsLock(&m_controlsLock);
+
 	DWOSDControl::LoadFromXML(pElement);
 
 	XMLElement *element = NULL;
@@ -93,6 +101,8 @@ HRESULT DWOSDGroup::LoadFromXML(XMLElement *pElement)
 
 HRESULT DWOSDGroup::Draw(long tickCount)
 {
+	CAutoLock controlsLock(&m_controlsLock);
+
 	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
 	for ( ; it < m_controls.end() ; it++ )
 	{

@@ -42,19 +42,27 @@ DWSurface::~DWSurface()
 
 HRESULT DWSurface::CreateFromDirectDrawBackSurface()
 {
-	if (g_pOSD->get_DirectDraw()->m_Screens.size() <= 0)
+	CAutoLock surfacesLock(&m_surfacesLock);
+
+	DWDirectDraw *pDirectDraw = g_pOSD->get_DirectDraw();
+	if (pDirectDraw == NULL)
+		return (log << "DWDirectDraw object does not exist\n").Write(E_FAIL);
+
+	CAutoLock screenLock(&pDirectDraw->m_screensLock);
+
+	if (pDirectDraw->m_screens.size() <= 0)
 		return (log << "Could not create back surface because no directdraw screens exist\n").Write(E_FAIL);
 
-	m_Width = g_pOSD->get_DirectDraw()->m_nBackBufferWidth;
-	m_Height = g_pOSD->get_DirectDraw()->m_nBackBufferHeight;
+	m_Width = pDirectDraw->m_nBackBufferWidth;
+	m_Height = pDirectDraw->m_nBackBufferHeight;
 
-	std::vector<DWDirectDrawScreen*>::iterator it = g_pOSD->get_DirectDraw()->m_Screens.begin();
-	for ( ; it < g_pOSD->get_DirectDraw()->m_Screens.end() ; it++ )
+	std::vector<DWDirectDrawScreen*>::iterator it = pDirectDraw->m_screens.begin();
+	for ( ; it < pDirectDraw->m_screens.end() ; it++ )
 	{
 		DWScreenSurface* screen = new DWScreenSurface();
 		screen->pDDScreen = *it;
 		screen->piDDSurface = screen->pDDScreen->get_BackSurface();
-		m_Surfaces.push_back(screen);
+		m_surfaces.push_back(screen);
 	}
 
 	return S_OK;
@@ -62,17 +70,25 @@ HRESULT DWSurface::CreateFromDirectDrawBackSurface()
 
 HRESULT DWSurface::Create(long width, long height)
 {
+	CAutoLock surfacesLock(&m_surfacesLock);
+
 	HRESULT hr;
 	Destroy();
 
-	if (g_pOSD->get_DirectDraw()->m_Screens.size() <= 0)
+	DWDirectDraw *pDirectDraw = g_pOSD->get_DirectDraw();
+	if (pDirectDraw == NULL)
+		return (log << "DWDirectDraw object does not exist\n").Write(E_FAIL);
+
+	CAutoLock screenLock(&pDirectDraw->m_screensLock);
+
+	if (pDirectDraw->m_screens.size() <= 0)
 		return (log << "Could not create surface because no directdraw screens exist\n").Write(E_FAIL);
 
 	m_Width = width;
 	m_Height = height;
 
-	std::vector<DWDirectDrawScreen*>::iterator it = g_pOSD->get_DirectDraw()->m_Screens.begin();
-	for ( ; it < g_pOSD->get_DirectDraw()->m_Screens.end() ; it++ )
+	std::vector<DWDirectDrawScreen*>::iterator it = pDirectDraw->m_screens.begin();
+	for ( ; it < pDirectDraw->m_screens.end() ; it++ )
 	{
 		DWScreenSurface* screen = new DWScreenSurface();
 		screen->pDDScreen = *it;
@@ -81,7 +97,7 @@ HRESULT DWSurface::Create(long width, long height)
 		if (FAILED(hr))
 			return hr;
 
-		m_Surfaces.push_back(screen);
+		m_surfaces.push_back(screen);
 	}
 
 	hr = Clear();
@@ -91,23 +107,28 @@ HRESULT DWSurface::Create(long width, long height)
 
 HRESULT DWSurface::Destroy()
 {
-	std::vector<DWScreenSurface *>::iterator it = m_Surfaces.begin();
-	for ( ; it < m_Surfaces.end() ; it++ )
+	CAutoLock surfacesLock(&m_surfacesLock);
+
+	std::vector<DWScreenSurface *>::iterator it = m_surfaces.begin();
+	for ( ; it < m_surfaces.end() ; it++ )
 	{
 		DWScreenSurface* screen = *it;
 		screen->piDDSurface->Release();
+		delete screen;
 	}
-	m_Surfaces.clear();
+	m_surfaces.clear();
 
 	return S_OK;
 }
 
 HRESULT DWSurface::Clear()
 {
+	CAutoLock surfacesLock(&m_surfacesLock);
+
 	HRESULT hr;
 
-	std::vector<DWScreenSurface *>::iterator it = m_Surfaces.begin();
-	for ( ; it < m_Surfaces.end() ; it++ )
+	std::vector<DWScreenSurface *>::iterator it = m_surfaces.begin();
+	for ( ; it < m_surfaces.end() ; it++ )
 	{
 		DWScreenSurface* screen = *it;
 
@@ -124,13 +145,15 @@ HRESULT DWSurface::Clear()
 
 HRESULT DWSurface::SetColorKey(COLORREF dwColorKey)
 {
+	CAutoLock surfacesLock(&m_surfacesLock);
+
 	HRESULT hr;
 
 	m_bColorKey = TRUE;
 	m_dwColorKey = dwColorKey;
 
-	std::vector<DWScreenSurface *>::iterator it = m_Surfaces.begin();
-	for ( ; it < m_Surfaces.end() ; it++ )
+	std::vector<DWScreenSurface *>::iterator it = m_surfaces.begin();
+	for ( ; it < m_surfaces.end() ; it++ )
 	{
 		DWScreenSurface* screen = *it;
 
@@ -146,13 +169,16 @@ HRESULT DWSurface::SetColorKey(COLORREF dwColorKey)
 
 HRESULT DWSurface::Blt(DWSurface *targetSurface, RECT* lprcDest, RECT* lprcSrc)
 {
+	CAutoLock surfacesLock(&m_surfacesLock);
+	CAutoLock targetSurfacesLock(&targetSurface->m_surfacesLock);
+
 	HRESULT	hr;
 	RECT rcDest;
 	RECT rcSrc;
 
-	std::vector<DWScreenSurface *>::iterator target_it = targetSurface->m_Surfaces.begin();
-	std::vector<DWScreenSurface *>::iterator source_it = m_Surfaces.begin();
-	while ((target_it < targetSurface->m_Surfaces.end()) && (source_it < m_Surfaces.end()))
+	std::vector<DWScreenSurface *>::iterator target_it = targetSurface->m_surfaces.begin();
+	std::vector<DWScreenSurface *>::iterator source_it = m_surfaces.begin();
+	while ((target_it < targetSurface->m_surfaces.end()) && (source_it < m_surfaces.end()))
 	{
 		DWScreenSurface* screenSrc = *source_it;
 		DWScreenSurface* screenDest = *target_it;
@@ -228,9 +254,11 @@ HRESULT DWSurface::Blt(DWSurface *targetSurface, RECT* lprcDest, RECT* lprcSrc)
 
 HRESULT DWSurface::DrawText(DWSurfaceText *text, int x, int y)
 {
+	CAutoLock surfacesLock(&m_surfacesLock);
+
 	USES_CONVERSION;
 
-	if (text->text == NULL)
+	if (text->get_Text() == NULL)
 	{
 		(log << "DWSurface::DrawText : No text defined\n").Write(E_FAIL);
 	}
@@ -238,8 +266,8 @@ HRESULT DWSurface::DrawText(DWSurfaceText *text, int x, int y)
 	HRESULT hr;
 	HDC hDC;
 
-	std::vector<DWScreenSurface *>::iterator it = m_Surfaces.begin();
-	for ( ; it < m_Surfaces.end() ; it++ )
+	std::vector<DWScreenSurface *>::iterator it = m_surfaces.begin();
+	for ( ; it < m_surfaces.end() ; it++ )
 	{
 		DWScreenSurface* screen = *it;
 
@@ -248,7 +276,7 @@ HRESULT DWSurface::DrawText(DWSurfaceText *text, int x, int y)
 			return hr;
 
 		text->InitDC(hDC);
-		TextOut(hDC, x, y, W2T(text->text), wcslen(text->text));
+		TextOut(hDC, x, y, W2T(text->get_Text()), wcslen(text->get_Text()));
 		text->UninitDC(hDC);
 
 		hr = screen->piDDSurface->ReleaseDC(hDC);
@@ -271,8 +299,10 @@ UINT DWSurface::Height()
 
 void DWSurface::Restore()
 {
-	std::vector<DWScreenSurface *>::iterator it = m_Surfaces.begin();
-	for ( ; it < m_Surfaces.end() ; it++ )
+	CAutoLock surfacesLock(&m_surfacesLock);
+
+	std::vector<DWScreenSurface *>::iterator it = m_surfaces.begin();
+	for ( ; it < m_surfaces.end() ; it++ )
 	{
 		DWScreenSurface* screen = *it;
 		screen->piDDSurface->Restore();

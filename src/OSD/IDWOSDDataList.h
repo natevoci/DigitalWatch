@@ -24,7 +24,6 @@
 #define IDWOSDDATALIST_H
 
 #include "StdAfx.h"
-#include <vector>
 
 interface IDWOSDDataList
 {

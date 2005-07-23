@@ -103,7 +103,8 @@ private:
 	int m_indent;
 
 	int callbackHandleID;
-	vector<LogMessageCallback *> callbacks;
+	vector<LogMessageCallback *> m_callbacks;
+	CCritSec m_callbacksLock;
 };
 
 //LogMessageCaller

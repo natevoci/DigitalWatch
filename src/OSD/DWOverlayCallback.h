@@ -24,9 +24,6 @@
 #define DWOVERLAYCALLBACK_H
 
 #include "StdAfx.h"
-//#include "LogMessage.h"
-//#include <ddraw.h>
-//#include <vector>
 
 class DWOverlayCallback : public CUnknown, public IDDrawExclModeVideoCallback
 {

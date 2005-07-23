@@ -390,8 +390,8 @@ BOOL DVBTChannels_Service::UpdateStreams(DVBTChannels_Service *pNewService)
 	BOOL bChange = FALSE;
 
 	// First we mark all streams as not detected
-	std::vector<DVBTChannels_Stream *>::iterator it;
-	for ( it=m_streams.begin() ; it != m_streams.end() ; it++ )
+	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
+	for ( ; it != m_streams.end() ; it++ )
 	{
 		(*it)->bDetected = FALSE;
 	}
@@ -425,6 +425,8 @@ BOOL DVBTChannels_Service::UpdateStreams(DVBTChannels_Service *pNewService)
 			(log << "Stream Information\n").Write();
 			LogMessageIndent indent2(&log);
 			(*it)->PrintStreamDetails();
+
+			delete *it;
 
 			m_streams.erase(it);
 			it=m_streams.begin();
@@ -464,6 +466,8 @@ void DVBTChannels_Service::PrintServiceDetails()
 
 DVBTChannels_Stream *DVBTChannels_Service::FindStreamByPID(long PID)
 {
+	CAutoLock lock(&m_streamsLock);
+
 	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
 	for (; it < m_streams.end(); it++)
 	{
@@ -505,6 +509,9 @@ DVBTChannels_Network::~DVBTChannels_Network()
 
 	if (networkName)
 		delete[] networkName;
+
+	if (m_dataListString)
+		delete[] m_dataListString;
 }
 
 void DVBTChannels_Network::SetLogCallback(LogMessageCallback *callback)
@@ -770,13 +777,6 @@ BOOL DVBTChannels_Network::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 		}
 	}
 
-	if (bChange)
-	{
-		if (m_pChannels)
-			m_pChannels->SaveChannels();
-
-		g_pTv->ExecuteCommandsQueue(L"UpdateChannels()");
-	}
 	return bChange;
 }
 
@@ -1023,6 +1023,9 @@ DVBTChannels::DVBTChannels()
 DVBTChannels::~DVBTChannels()
 {
 	Destroy();
+
+	if (m_dataListString)
+		delete[] m_dataListString;
 }
 
 void DVBTChannels::SetLogCallback(LogMessageCallback *callback)
@@ -1163,7 +1166,15 @@ BOOL DVBTChannels::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 		g_pOSD->Data()->AddList(listName, pNetwork);
 		delete[] listName;
 	}
-	return pNetwork->UpdateNetwork(pNewNetwork);
+
+	if (pNetwork->UpdateNetwork(pNewNetwork))
+	{
+		SaveChannels();
+		g_pTv->ExecuteCommandsQueue(L"UpdateChannels()");
+
+		return TRUE;
+	}
+	return FALSE;
 }
 
 HRESULT DVBTChannels::MoveNetworkUp(long originalNetworkId)
@@ -1181,6 +1192,7 @@ HRESULT DVBTChannels::MoveNetworkUp(long originalNetworkId)
 				m_networks.erase(it);
 				it--;
 				m_networks.insert(it, pNetwork);
+				SaveChannels();
 				return S_OK;
 			}
 		}
@@ -1203,6 +1215,7 @@ HRESULT DVBTChannels::MoveNetworkDown(long originalNetworkId)
 				m_networks.erase(it);
 				it++;
 				m_networks.insert(it, pNetwork);
+				SaveChannels();
 				return S_OK;
 			}
 		}

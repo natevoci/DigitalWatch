@@ -169,11 +169,15 @@ HRESULT DWOSDLabel::Draw(long tickCount)
 	//Replace Tokens
 	g_pOSD->Data()->ReplaceTokens(m_wszText, pStr);
 
-	if (!pStr || pStr[0] == '\0')
+	if (pStr[0] == '\0')
+	{
+		delete[] pStr;
 		return S_OK;
+	}
 
 	DWSurfaceText text;
-	text.text = pStr;
+	text.set_Text(pStr);
+	delete[] pStr;
 	pStr = NULL;
 
 	//Set Font

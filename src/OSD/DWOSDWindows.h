@@ -66,6 +66,7 @@ private:
 
 	LPWSTR m_pName;
 	std::vector<DWOSDControl *> m_controls;
+	CCritSec m_controlsLock;
 
 	DWOSDControl *m_pHighlightedControl;
 	BOOL m_bHideWindowsBehindThisOne;
@@ -73,6 +74,7 @@ private:
 	KeyMap m_keyMap;
 
 	std::vector<LPWSTR> m_parameters;
+	CCritSec m_parametersLock;
 };
 
 
@@ -93,7 +95,10 @@ public:
 
 private:
 	std::vector<DWOSDWindow *> m_windows;
+	CCritSec m_windowsLock;
+
 	std::vector<DWOSDImage *> m_images;
+	CCritSec m_imagesLock;
 
 	LPWSTR m_filename;
 };

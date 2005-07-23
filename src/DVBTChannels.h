@@ -103,7 +103,7 @@ public:
 
 protected:
 	std::vector<DVBTChannels_Stream *> m_streams;
-	CCritSec  m_streamsLock;
+	CCritSec m_streamsLock;
 	long favoriteID;
 	BOOL bManualUpdate;
 };
@@ -176,7 +176,6 @@ public:
 
 protected:
 	std::vector<DVBTChannels_Network *> m_networks;
-
 	CCritSec m_networksLock;
 };
 

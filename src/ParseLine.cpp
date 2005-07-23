@@ -45,6 +45,8 @@ ParseLine::~ParseLine()
 	if (m_strErrorMessage)
 		delete[] m_strErrorMessage;
 	
+	if (LHS.Function)
+		delete[] LHS.Function;
 	if (LHS.FunctionName)
 		delete[] LHS.FunctionName;
 	if (LHS.ParameterCount > 0)
@@ -52,6 +54,17 @@ ParseLine::~ParseLine()
 		for (int i=0 ; i<LHS.ParameterCount ; i++ )
 			delete[] LHS.Parameter[i];
 		delete[] LHS.Parameter;
+	}
+
+	if (RHS.Function)
+		delete[] RHS.Function;
+	if (RHS.FunctionName)
+		delete[] RHS.FunctionName;
+	if (RHS.ParameterCount > 0)
+	{
+		for (int i=0 ; i<RHS.ParameterCount ; i++ )
+			delete[] RHS.Parameter[i];
+		delete[] RHS.Parameter;
 	}
 }
 

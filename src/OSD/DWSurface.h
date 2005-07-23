@@ -64,7 +64,8 @@ protected:
 
 	void FixRects(RECT &rcSrc, RECT &rcDest, long destSurfaceWidth, long destSurfaceHeight);
 
-	std::vector<DWScreenSurface *> m_Surfaces;
+	std::vector<DWScreenSurface *> m_surfaces;
+	CCritSec m_surfacesLock;
 
 	long m_Width;
 	long m_Height;

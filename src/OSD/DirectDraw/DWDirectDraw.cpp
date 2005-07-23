@@ -52,8 +52,11 @@ DWDirectDraw::~DWDirectDraw()
 	Destroy();
 }
 
+
 HRESULT DWDirectDraw::Init(HWND hWnd)
 {
+	CAutoLock screensLock(&m_screensLock);
+
 	HRESULT hr = S_OK;
 
 	(log << "Initialising DirectDraw\n").Write();
@@ -61,9 +64,15 @@ HRESULT DWDirectDraw::Init(HWND hWnd)
 
 	m_hWnd = hWnd;
 
-	m_pOverlayCallback = new DWOverlayCallback(&hr);
-	if (FAILED(hr))
-		return (log << "Failed to create DWOverlayCallback : " << hr << "\n").Write(hr);
+	if (!m_pOverlayCallback)
+	{
+		IDDrawExclModeVideoCallback *pNewCallback = new DWOverlayCallback(&hr);
+		m_pOverlayCallback.Attach(pNewCallback);
+		if (FAILED(hr))
+		{
+			return (log << "Failed to create DWOverlayCallback : " << hr << "\n").Write(hr);
+		}
+	}
 
 	m_bAddEnumeratedDevices = FALSE;
 	{
@@ -97,18 +106,18 @@ HRESULT DWDirectDraw::Init(HWND hWnd)
 			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
 	}
 
-	if (m_Screens.size() > 1)
+	if (m_screens.size() > 1)
 	{
-		DWDirectDrawScreen* ddScreen = m_Screens.at(0);
-		m_Screens.erase(m_Screens.begin());
+		DWDirectDrawScreen* ddScreen = m_screens.at(0);
+		m_screens.erase(m_screens.begin());
 		delete ddScreen;
 	}
 
 	{
 		(log << "Creating DirectDraw screens\n").Write();
 		LogMessageIndent indent2(&log);
-		std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
-		for ( ; it < m_Screens.end() ; it++ )
+		std::vector<DWDirectDrawScreen*>::iterator it = m_screens.begin();
+		for ( ; it < m_screens.end() ; it++ )
 		{
 			DWDirectDrawScreen* ddScreen = *it;
 			hr = ddScreen->Create();
@@ -134,36 +143,42 @@ void DWDirectDraw::Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDri
 
 	if (m_bAddEnumeratedDevices)
 	{
+		CAutoLock screensLock(&m_screensLock);
+
 		DWDirectDrawScreen* ddScreen = new DWDirectDrawScreen(lpGUID, lpDriverDescription, lpDriverName, hm, m_hWnd, m_nBackBufferWidth, m_nBackBufferHeight);
 		ddScreen->SetLogCallback(m_pLogCallback);
-		m_Screens.push_back(ddScreen);
+		m_screens.push_back(ddScreen);
 	}
 }
 
 HRESULT DWDirectDraw::Destroy()
 {
-	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
-	for ( ; it < m_Screens.end() ; it++ )
+	CAutoLock screensLock(&m_screensLock);
+
+	std::vector<DWDirectDrawScreen*>::iterator it = m_screens.begin();
+	for ( ; it < m_screens.end() ; it++ )
 	{
 		DWDirectDrawScreen* ddScreen = *it;
 		delete ddScreen;
 	}
-	m_Screens.clear();
+	m_screens.clear();
 
 	return S_OK;
 }
 
 IDDrawExclModeVideoCallback* DWDirectDraw::get_OverlayCallbackInterface()
 {
-	return m_pOverlayCallback;
+	return m_pOverlayCallback.p;
 }
 
 HRESULT DWDirectDraw::Clear()
 {
+	CAutoLock screensLock(&m_screensLock);
+
 	HRESULT hr;
 
-	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
-	for ( ; it < m_Screens.end() ; it++ )
+	std::vector<DWDirectDrawScreen*>::iterator it = m_screens.begin();
+	for ( ; it < m_screens.end() ; it++ )
 	{
 		DWDirectDrawScreen* ddScreen = *it;
 		hr = ddScreen->Clear(m_bOverlayEnabled, &m_OverlayPositionRect, m_dwVideoKeyColor);
@@ -176,10 +191,12 @@ HRESULT DWDirectDraw::Clear()
 
 HRESULT DWDirectDraw::Flip()
 {
+	CAutoLock screensLock(&m_screensLock);
+
 	HRESULT hr;
 
-	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
-	for ( ; it < m_Screens.end() ; it++ )
+	std::vector<DWDirectDrawScreen*>::iterator it = m_screens.begin();
+	for ( ; it < m_screens.end() ; it++ )
 	{
 		DWDirectDrawScreen* ddScreen = *it;
 		hr = ddScreen->Flip();
@@ -251,10 +268,12 @@ void DWDirectDraw::SetOverlayColor(COLORREF color)
 
 HRESULT DWDirectDraw::CheckSurfaces()
 {
+	CAutoLock screensLock(&m_screensLock);
+
 	HRESULT hr;
 
-	std::vector<DWDirectDrawScreen*>::iterator it = m_Screens.begin();
-	for ( ; it < m_Screens.end() ; it++ )
+	std::vector<DWDirectDrawScreen*>::iterator it = m_screens.begin();
+	for ( ; it < m_screens.end() ; it++ )
 	{
 		DWDirectDrawScreen* ddScreen = *it;
 		hr = ddScreen->CheckSurfaces();

@@ -225,6 +225,8 @@ DVBTransponder::~DVBTransponder()
 
 void DVBTransponder::SetLogCallback(LogMessageCallback *callback)
 {
+	CAutoLock servicesLock(&m_servicesLock);
+
 	LogMessageCaller::SetLogCallback(callback);
 
 	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
@@ -529,11 +531,11 @@ HRESULT DVBMpeg2DataParser::StartScan()
 
 DWORD DVBMpeg2DataParser::WaitForThreadToFinish()
 {
-	DWORD result;
-	do
+	DWORD result = WAIT_TIMEOUT;
+	while ((result == WAIT_TIMEOUT) && (m_bThreadStarted))
 	{
 		result = WaitForSingleObject(m_hScanningDoneEvent, 1000);
-	} while ((result == WAIT_TIMEOUT) && (m_bThreadStarted));
+	}
 	return result;
 }
 
@@ -584,22 +586,21 @@ void DVBMpeg2DataParser::StartScanThread()
 			pPATSection = new DVBSection();
 			pPATSection->Setup(0x00, 0x00, 0, 5);  // PAT
 
-			DVBSection *pSection;
-			pSection = new DVBSection();
-			pSection->Setup(0x10, 0x40, 0, 30); // NIT
-			m_waitingFilters.push_back(pSection);
-
-			pSection = new DVBSection();
-			pSection->Setup(0x11, 0x42, 0, 30);  // SDT
-			m_waitingFilters.push_back(pSection);
-
-
 			// Scan tables
 			hr = ReadSection(pPATSection);	// if PAT fails then there's no point doing NIT or SDT
 			delete pPATSection;
 
 			if SUCCEEDED(hr)
 			{
+				DVBSection *pSection;
+				pSection = new DVBSection();
+				pSection->Setup(0x10, 0x40, 0, 30); // NIT
+				m_waitingFilters.push_back(pSection);
+
+				pSection = new DVBSection();
+				pSection->Setup(0x11, 0x42, 0, 30);  // SDT
+				m_waitingFilters.push_back(pSection);
+
 				BOOL bKeepScanning = TRUE;
 				while (m_waitingFilters.size())
 				{

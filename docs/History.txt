@@ -1,6 +1,17 @@
 --------------------
 DigitalWatch History
 --------------------
+_________
+
+v2.0.0.11
+_________
+
+  Changes
+  ```````
+  - Made ExecuteCommand operations able to read hex strings aswell as normal strings.
+  - Fixed problem of Frequency list and Cards list duplicating if Watch TV is reselected
+  - Fixed problem when scanning different frequencies with the same tsid
+
 ________
 
 v2.0.0.9

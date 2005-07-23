@@ -17,4 +17,5 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <streams.h>
+#include <math.h>
 

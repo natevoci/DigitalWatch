@@ -82,6 +82,7 @@ private:
 	DWOSDWindow* m_pOverlayWindow;
 	DWOSDWindow* m_pCurrentWindow;
 	std::vector <DWOSDWindow *> m_windowStack;
+	CCritSec m_windowStackLock;
 
 	RENDER_METHOD m_renderMethod;
 };

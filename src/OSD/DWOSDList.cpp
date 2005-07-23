@@ -206,6 +206,52 @@ HRESULT DWOSDListItem::LoadFromXML(XMLElement *pElement)
 	return S_OK;
 }
 
+BOOL DWOSDListItem::Equals(DWOSDListItem* target)
+{
+	if (target->m_nWidth != m_nWidth)
+		return FALSE;
+	if (target->m_nHeight != m_nHeight)
+		return FALSE;
+	if (target->m_nGap != m_nGap)
+		return FALSE;
+
+	if (target->m_uAlignHorizontal != m_uAlignHorizontal)
+		return FALSE;
+	if (target->m_uAlignVertical != m_uAlignVertical)
+		return FALSE;
+
+	if ((m_wszText && (!target->m_wszText || _wcsicmp(target->m_wszText, m_wszText) != 0)) || (!m_wszText && target->m_wszText))
+		return FALSE;
+	if ((m_pwcsOnSelect && (!target->m_pwcsOnSelect || _wcsicmp(target->m_pwcsOnSelect, m_pwcsOnSelect) != 0)) || (!m_pwcsOnSelect && target->m_pwcsOnSelect))
+		return FALSE;
+	if ((m_wszFont && (!target->m_wszFont || _wcsicmp(target->m_wszFont, m_wszFont) != 0)) || (!m_wszFont && target->m_wszFont))
+		return FALSE;
+	if ((m_pwcsOnSelect && (!target->m_pwcsOnSelect || _wcsicmp(target->m_pwcsOnSelect, m_pwcsOnSelect) != 0)) || (!m_pwcsOnSelect && target->m_pwcsOnSelect))
+		return FALSE;
+	if ((m_pwcsOnUp && (!target->m_pwcsOnUp || _wcsicmp(target->m_pwcsOnUp, m_pwcsOnUp) != 0)) || (!m_pwcsOnUp && target->m_pwcsOnUp))
+		return FALSE;
+	if ((m_pwcsOnDown && (!target->m_pwcsOnDown || _wcsicmp(target->m_pwcsOnDown, m_pwcsOnDown) != 0)) || (!m_pwcsOnDown && target->m_pwcsOnDown))
+		return FALSE;
+	if ((m_pwcsOnLeft && (!target->m_pwcsOnLeft || _wcsicmp(target->m_pwcsOnLeft, m_pwcsOnLeft) != 0)) || (!m_pwcsOnLeft && target->m_pwcsOnLeft))
+		return FALSE;
+	if ((m_pwcsOnRight && (!target->m_pwcsOnRight || _wcsicmp(target->m_pwcsOnRight, m_pwcsOnRight) != 0)) || (!m_pwcsOnRight && target->m_pwcsOnRight))
+		return FALSE;
+
+
+	if (target->m_dwTextColor != m_dwTextColor)
+		return FALSE;
+	if (target->m_nTextHeight != m_nTextHeight)
+		return FALSE;
+	if (target->m_nTextWeight != m_nTextWeight)
+		return FALSE;
+
+	if (target->m_pBackgroundImage != m_pBackgroundImage)
+		return FALSE;
+	if (target->m_pHighlightImage != m_pHighlightImage)
+		return FALSE;
+	return TRUE;
+}
+
 void DWOSDListItem::CopyTo(DWOSDListItem* target)
 {
 	target->m_nWidth = m_nWidth;
@@ -251,8 +297,15 @@ HRESULT DWOSDListItem::Draw(long tickCount)
 	//Replace Tokens
 	g_pOSD->Data()->ReplaceTokens(m_wszText, pStr);
 
+	if (pStr[0] == '\0')
+	{
+		delete[] pStr;
+		return S_OK;
+	}
+
 	DWSurfaceText text;
-	text.text = pStr;
+	text.set_Text(pStr);
+	delete[] pStr;
 	pStr = NULL;
 
 	//Set Font
@@ -339,10 +392,15 @@ DWOSDList::~DWOSDList()
 {
 	ClearItems();
 	ClearItemsToRender();
+
+	delete m_pListItemTemplate;
+	delete m_pListSurface;
 }
 
 HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 {
+	CAutoLock itemsLock(&m_itemsLock);
+
 	DWOSDControl::LoadFromXML(pElement);
 
 	XMLAttribute *attr;
@@ -447,6 +505,8 @@ HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 
 LPWSTR DWOSDList::OnUp()
 {
+	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+
 	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
 	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
@@ -473,6 +533,8 @@ LPWSTR DWOSDList::OnUp()
 
 LPWSTR DWOSDList::OnDown()
 {
+	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+
 	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
 	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
@@ -499,6 +561,8 @@ LPWSTR DWOSDList::OnDown()
 
 LPWSTR DWOSDList::OnLeft()
 {
+	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+
 	if (m_itemsToRender.size() <= 0)
 		return NULL;
 	DWOSDListItem* item = m_itemsToRender.at(m_nHighlighedItem);
@@ -507,6 +571,8 @@ LPWSTR DWOSDList::OnLeft()
 
 LPWSTR DWOSDList::OnRight()
 {
+	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+
 	if (m_itemsToRender.size() <= 0)
 		return NULL;
 	DWOSDListItem* item = m_itemsToRender.at(m_nHighlighedItem);
@@ -515,6 +581,8 @@ LPWSTR DWOSDList::OnRight()
 
 LPWSTR DWOSDList::OnSelect()
 {
+	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+
 	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
 	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
@@ -530,6 +598,8 @@ LPWSTR DWOSDList::OnSelect()
 
 void DWOSDList::ClearItems()
 {
+	CAutoLock itemsLock(&m_itemsLock);
+
 	std::vector<DWOSDListEntry *>::iterator it = m_items.begin();
 	for ( ; it < m_items.end() ; it++ )
 	{
@@ -540,6 +610,8 @@ void DWOSDList::ClearItems()
 
 void DWOSDList::ClearItemsToRender()
 {
+	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+
 	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
 	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
@@ -581,17 +653,25 @@ HRESULT DWOSDList::Draw(long tickCount)
 
 	m_pListSurface->Clear();
 
-	int i=0;
-	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
-	for ( ; it < m_itemsToRender.end() ; it++ )
+//	int i=0;
 	{
-		DWOSDListItem* item = *it;
-		item->m_nPosY = nYOffset;
-		item->m_nWidth = m_nWidth;
-		if ((nYOffset < m_nHeight) && (nYOffset > -item->m_nHeight))
-			item->Render(tickCount);
-		nYOffset += item->m_nHeight + item->m_nGap;
-		i++;
+		CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+
+		std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
+		for ( ; it < m_itemsToRender.end() ; it++ )
+		{
+			DWOSDListItem* item = *it;
+			item->m_nPosY = nYOffset;
+			item->m_nWidth = m_nWidth;
+			if ((nYOffset < m_nHeight) && (nYOffset > -item->m_nHeight))
+				item->Render(tickCount);
+			nYOffset += item->m_nHeight + item->m_nGap;
+/*
+			i++;
+			if (i >= 1)
+				break;
+*/
+		}
 	}
 	
 	RECT rcDest, rcSrc;
@@ -607,24 +687,34 @@ HRESULT DWOSDList::Draw(long tickCount)
 
 HRESULT DWOSDList::RefreshListItems()
 {
-	ClearItemsToRender();
+	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+	CAutoLock itemsLock(&m_itemsLock);
 
-	std::vector<DWOSDListEntry *>::iterator it = m_items.begin();
-	for ( ; it < m_items.end() ; it++ )
+	BOOL bNeedsRefresh = FALSE;
+	//bNeedsRefresh = TRUE;
+
+	std::vector<DWOSDListItem *>::iterator  itItemsToRender = m_itemsToRender.begin();
+	std::vector<DWOSDListEntry *>::iterator itItems = m_items.begin();
+	for ( ; itItems < m_items.end() ; itItems++ )
 	{
-		DWOSDListEntry* entry = *it;
+		if (itItemsToRender >= m_itemsToRender.end())
+		{
+			bNeedsRefresh = TRUE;
+			break;
+		}
+
+		DWOSDListEntry* entry = *itItems;
+		DWOSDListItem* listItem = *itItemsToRender;
 
 		DWOSDListItem* item = dynamic_cast<DWOSDListItem*>(entry);
 		if (item)
 		{
-
-			DWOSDListItem* listItem = new DWOSDListItem(m_pListSurface);
-			listItem->SetLogCallback(m_pLogCallback);
-			item->CopyTo(listItem);
-			if (m_itemsToRender.size() == m_nHighlighedItem)
-				listItem->SetHighlight(TRUE);
-			m_itemsToRender.push_back(listItem);
-			continue;
+			if (item->Equals(listItem) == FALSE)
+			{
+				bNeedsRefresh = TRUE;
+				break;
+			}
+			itItemsToRender++;
 		}
 
 		DWOSDListItemList* itemList = dynamic_cast<DWOSDListItemList*>(entry);
@@ -633,48 +723,174 @@ HRESULT DWOSDList::RefreshListItems()
 			LPWSTR pStr = NULL;
 			g_pOSD->Data()->ReplaceTokens(itemList->m_pSource, pStr);
 			IDWOSDDataList* list = g_pOSD->Data()->GetList(pStr);
+			delete[] pStr;
+			pStr = NULL;
 			if (list)
 			{
 				long listSize = list->GetListSize();
 
 				for (int i=0 ; i<listSize ; i++ )
 				{
-					DWOSDListItem* listItem = new DWOSDListItem(m_pListSurface);
-					listItem->SetLogCallback(m_pLogCallback);
-
-					m_pListItemTemplate->CopyTo(listItem);
+					listItem = *itItemsToRender;
 
 					g_pOSD->Data()->ReplaceTokens(itemList->m_pText, pStr, list, i);
 					if (pStr[0] != '\0')
-						strCopy(listItem->m_wszText, pStr);
+					{
+						if (!listItem->m_wszText || _wcsicmp(listItem->m_wszText, pStr) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
+					else
+					{
+						if (strCmp(listItem->m_wszText, m_pListItemTemplate->m_wszText) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
 
 					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnSelect, pStr, list, i);
 					if (pStr[0] != '\0')
-						strCopy(listItem->m_pwcsOnSelect, pStr);
+					{
+						if (!listItem->m_pwcsOnSelect || _wcsicmp(listItem->m_pwcsOnSelect, pStr) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
+					else
+					{
+						if (strCmp(listItem->m_pwcsOnSelect, m_pListItemTemplate->m_pwcsOnSelect) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
 
 					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnLeft, pStr, list, i);
 					if (pStr[0] != '\0')
-						strCopy(listItem->m_pwcsOnLeft, pStr);
+					{
+						if (!listItem->m_pwcsOnLeft || _wcsicmp(listItem->m_pwcsOnLeft, pStr) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
+					else
+					{
+						if (strCmp(listItem->m_pwcsOnLeft, m_pListItemTemplate->m_pwcsOnLeft) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
 
 					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnRight, pStr, list, i);
 					if (pStr[0] != '\0')
-						strCopy(listItem->m_pwcsOnRight, pStr);
+					{
+						if (!listItem->m_pwcsOnRight || _wcsicmp(listItem->m_pwcsOnRight, pStr) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
+					else
+					{
+						if (strCmp(listItem->m_pwcsOnRight, m_pListItemTemplate->m_pwcsOnRight) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
 
-					if (m_itemsToRender.size() == m_nHighlighedItem)
-						listItem->SetHighlight(TRUE);
-					m_itemsToRender.push_back(listItem);
+					delete[] pStr;
+					pStr = NULL;
+
+					itItemsToRender++;
 				}
 			}
 		}
 	}
-	if (m_nHighlighedItem >= m_itemsToRender.size())
-		m_nHighlighedItem = m_itemsToRender.size()-1;
 
+
+	if (bNeedsRefresh)
+	{
+		ClearItemsToRender();
+
+		std::vector<DWOSDListEntry *>::iterator it = m_items.begin();
+		for ( ; it < m_items.end() ; it++ )
+		{
+			DWOSDListEntry* entry = *it;
+
+			DWOSDListItem* item = dynamic_cast<DWOSDListItem*>(entry);
+			if (item)
+			{
+				DWOSDListItem* listItem = new DWOSDListItem(m_pListSurface);
+				listItem->SetLogCallback(m_pLogCallback);
+				item->CopyTo(listItem);
+				if (m_itemsToRender.size() == m_nHighlighedItem)
+					listItem->SetHighlight(TRUE);
+				m_itemsToRender.push_back(listItem);
+				continue;
+			}
+
+			DWOSDListItemList* itemList = dynamic_cast<DWOSDListItemList*>(entry);
+			if (itemList && itemList->m_pSource)
+			{
+				LPWSTR pStr = NULL;
+				g_pOSD->Data()->ReplaceTokens(itemList->m_pSource, pStr);
+				IDWOSDDataList* list = g_pOSD->Data()->GetList(pStr);
+				delete[] pStr;
+				pStr = NULL;
+				if (list)
+				{
+					long listSize = list->GetListSize();
+
+					for (int i=0 ; i<listSize ; i++ )
+					{
+						DWOSDListItem* listItem = new DWOSDListItem(m_pListSurface);
+						listItem->SetLogCallback(m_pLogCallback);
+
+						m_pListItemTemplate->CopyTo(listItem);
+
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pText, pStr, list, i);
+						if (pStr[0] != '\0')
+							strCopy(listItem->m_wszText, pStr);
+
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnSelect, pStr, list, i);
+						if (pStr[0] != '\0')
+							strCopy(listItem->m_pwcsOnSelect, pStr);
+
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnLeft, pStr, list, i);
+						if (pStr[0] != '\0')
+							strCopy(listItem->m_pwcsOnLeft, pStr);
+
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnRight, pStr, list, i);
+						if (pStr[0] != '\0')
+							strCopy(listItem->m_pwcsOnRight, pStr);
+
+						delete[] pStr;
+						pStr = NULL;
+
+						if (m_itemsToRender.size() == m_nHighlighedItem)
+							listItem->SetHighlight(TRUE);
+						m_itemsToRender.push_back(listItem);
+					}
+				}
+			}
+		}
+		if (m_nHighlighedItem >= m_itemsToRender.size())
+			m_nHighlighedItem = m_itemsToRender.size()-1;
+	}
 	return S_OK;
 }
 
 void DWOSDList::UpdateScrolling()
 {
+	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
+
 	long nOffsetLast = 0;
 	long nOffsetHighlighted = 0;
 	long nOffsetNext = 0;

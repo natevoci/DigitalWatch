@@ -63,6 +63,7 @@ public:
 
 private:
 	std::vector<DWMediaType *> m_mediaTypes;
+	CCritSec m_mediaTypesLock;
 	DWDecoders *m_pDecoders;
 
 	LPWSTR m_filename;

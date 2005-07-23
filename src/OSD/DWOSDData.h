@@ -62,10 +62,12 @@ public:
 	HRESULT ReplaceTokens(LPWSTR pSource, LPWSTR &pResult, IDWOSDDataList* piDataList = NULL, long ixDataList = 0);
 
 private:
-	std::vector<DWOSDDataItem *> m_Items;
-	std::vector<DWOSDDataList *> m_Lists;
+	HRESULT ReplaceFunction(LPWSTR &pSrc, LPWSTR &result, long resultSize, int dst, IDWOSDDataList* piDataList, long ixDataList);
 
-	CCritSec  m_itemsLock;
+	std::vector<DWOSDDataItem *> m_items;
+	CCritSec m_itemsLock;
+
+	std::vector<DWOSDDataList *> m_lists;
 	CCritSec  m_listsLock;
 
 	DWOSDWindows *m_pWindows;

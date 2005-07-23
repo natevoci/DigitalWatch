@@ -26,7 +26,6 @@
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include <ddraw.h>
-#include <vector>
 
 class DWDirectDrawScreen : public LogMessageCaller
 {

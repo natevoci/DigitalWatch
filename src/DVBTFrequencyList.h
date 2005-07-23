@@ -54,6 +54,8 @@ public:
 	virtual long GetListSize();
 private:
 	std::vector<DVBTFrequencyListItem *> m_list;
+	CCritSec m_listLock;
+
 	long m_offset;
 	LPWSTR m_tmpString;
 };

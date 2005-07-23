@@ -88,8 +88,10 @@ HRESULT DWDirectDrawImage::LoadBitmap()
 	if FAILED(hr = Create(bm.bmWidth, bm.bmHeight))
 		return hr;
 
-	std::vector<DWScreenSurface *>::iterator it = m_Surfaces.begin();
-	for ( ; it < m_Surfaces.end() ; it++ )
+	CAutoLock surfacesLock(&m_surfacesLock);
+
+	std::vector<DWScreenSurface *>::iterator it = m_surfaces.begin();
+	for ( ; it < m_surfaces.end() ; it++ )
 	{
 		DWScreenSurface* screen = *it;
 

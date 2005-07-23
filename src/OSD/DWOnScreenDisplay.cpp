@@ -42,8 +42,12 @@ DWOnScreenDisplay::DWOnScreenDisplay()
 
 DWOnScreenDisplay::~DWOnScreenDisplay()
 {
+	delete m_pData;
+	m_pData = NULL;
 	delete m_pDirectDraw;
 	m_pDirectDraw = NULL;
+	delete m_pBackSurface;
+	m_pBackSurface = NULL;
 }
 
 void DWOnScreenDisplay::SetLogCallback(LogMessageCallback *callback)
@@ -130,7 +134,10 @@ HRESULT DWOnScreenDisplay::ShowMenu(LPWSTR szMenuName)
 		}
 
 		if (m_pCurrentWindow != m_pOverlayWindow)
+		{
+			CAutoLock windowStackLock(&m_windowStackLock);
 			m_windowStack.push_back(m_pCurrentWindow);
+		}
 		m_pCurrentWindow = window;
 		return S_OK;
 	}
@@ -139,6 +146,8 @@ HRESULT DWOnScreenDisplay::ShowMenu(LPWSTR szMenuName)
 
 HRESULT DWOnScreenDisplay::ExitMenu(long nNumberOfMenusToExit)
 {
+	CAutoLock windowStackLock(&m_windowStackLock);
+
 	if (nNumberOfMenusToExit < 0)
 	{
 		if (m_pCurrentWindow == m_pOverlayWindow)
@@ -263,6 +272,8 @@ HRESULT DWOnScreenDisplay::RenderDirectDraw(long tickCount)
 
 	if (m_pCurrentWindow != m_pOverlayWindow)
 	{
+		CAutoLock windowStackLock(&m_windowStackLock);
+
 		std::vector <DWOSDWindow *>::iterator it_begin = m_windowStack.begin();
 		std::vector <DWOSDWindow *>::iterator it_end = m_windowStack.end();
 		long it_count = m_windowStack.size();
@@ -288,17 +299,18 @@ HRESULT DWOnScreenDisplay::RenderDirectDraw(long tickCount)
 		m_pCurrentWindow->Render(tickCount);
 	}
 
+#ifdef DEBUG
 	//Display FPS
-/*
 	DWSurfaceText text;
 	text.crTextColor = RGB(255, 255, 255);
 
 	wchar_t buffer[30];
 	swprintf((LPWSTR)&buffer, L"FPS - %f", m_pDirectDraw->GetFPS());
-	strCopy(text.text, buffer);
+	text.set_Text(buffer);
 	hr = m_pBackSurface->DrawText(&text, 0, 560);
 	hr = m_pBackSurface->DrawText(&text, 700, 560);
-*/
+#endif
+
 	//Flip
 	hr = m_pDirectDraw->Flip();
 	if FAILED(hr)

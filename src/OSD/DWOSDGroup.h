@@ -41,6 +41,7 @@ protected:
 	virtual HRESULT Draw(long tickCount);
 
 	std::vector<DWOSDControl *> m_controls;
+	CCritSec m_controlsLock;
 };
 
 #endif

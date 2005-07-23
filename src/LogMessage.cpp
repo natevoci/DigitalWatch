@@ -89,9 +89,11 @@ LogMessage::~LogMessage()
 		if (m_pStr[0] != 0)
 			WriteLogMessage();
 		delete[] m_pStr;
+		m_pStr = NULL;
 	}
 
-	callbacks.clear();
+	CAutoLock callbacksLock(&m_callbacksLock);
+	m_callbacks.clear();
 }
 
 int LogMessage::AddCallback(LogMessageCallback *callback)
@@ -100,8 +102,10 @@ int LogMessage::AddCallback(LogMessageCallback *callback)
 	{
 		int handle = callback->GetHandle();
 
-		vector<LogMessageCallback *>::iterator it = callbacks.begin();
-		while ( it != callbacks.end() )
+		CAutoLock callbacksLock(&m_callbacksLock);
+
+		vector<LogMessageCallback *>::iterator it = m_callbacks.begin();
+		while ( it != m_callbacks.end() )
 		{
 			if ((*it)->GetHandle() == handle)
 			{
@@ -111,7 +115,7 @@ int LogMessage::AddCallback(LogMessageCallback *callback)
 			it++;
 		}
 
-		callbacks.push_back(callback);
+		m_callbacks.push_back(callback);
 		return handle;
 	}
 	return 0;
@@ -119,12 +123,14 @@ int LogMessage::AddCallback(LogMessageCallback *callback)
 
 void LogMessage::RemoveCallback(int handle)
 {
-	vector<LogMessageCallback *>::iterator it = callbacks.begin();
-	while ( it != callbacks.end() )
+	CAutoLock callbacksLock(&m_callbacksLock);
+
+	vector<LogMessageCallback *>::iterator it = m_callbacks.begin();
+	while ( it != m_callbacks.end() )
 	{
 		if ((*it)->GetHandle() == handle)
 		{
-			callbacks.erase(it);
+			m_callbacks.erase(it);
 			continue;
 		}
 		it++;
@@ -135,8 +141,10 @@ void LogMessage::WriteLogMessage()
 {
 	if (m_pStr && (m_pStr[0] != 0))
 	{
-		vector<LogMessageCallback *>::iterator it;
-		for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
+		CAutoLock callbacksLock(&m_callbacksLock);
+
+		vector<LogMessageCallback *>::iterator it = m_callbacks.begin();
+		for ( ; it != m_callbacks.end() ; it++ )
 		{
 			(*it)->Write(m_pStr);
 		}
@@ -165,8 +173,10 @@ int LogMessage::Show(int returnValue)
 {
 	if (m_pStr && (m_pStr[0] != 0))
 	{
-		vector<LogMessageCallback *>::iterator it;
-		for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
+		CAutoLock callbacksLock(&m_callbacksLock);
+
+		vector<LogMessageCallback *>::iterator it = m_callbacks.begin();
+		for ( ; it != m_callbacks.end() ; it++ )
 		{
 			(*it)->Show(m_pStr);
 			(*it)->Write(m_pStr);
@@ -180,8 +190,10 @@ int LogMessage::Show(int returnValue)
 
 void LogMessage::Indent()
 {
-	vector<LogMessageCallback *>::iterator it;
-	for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
+	CAutoLock callbacksLock(&m_callbacksLock);
+
+	vector<LogMessageCallback *>::iterator it = m_callbacks.begin();
+	for ( ; it != m_callbacks.end() ; it++ )
 	{
 		(*it)->Indent();
 	}
@@ -189,8 +201,10 @@ void LogMessage::Indent()
 
 void LogMessage::Unindent()
 {
-	vector<LogMessageCallback *>::iterator it;
-	for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
+	CAutoLock callbacksLock(&m_callbacksLock);
+
+	vector<LogMessageCallback *>::iterator it = m_callbacks.begin();
+	for ( ; it != m_callbacks.end() ; it++ )
 	{
 		(*it)->Unindent();
 	}
@@ -198,8 +212,10 @@ void LogMessage::Unindent()
 
 void LogMessage::ClearFile()
 {
-	vector<LogMessageCallback *>::iterator it;
-	for ( it = callbacks.begin() ; it != callbacks.end() ; it++ )
+	CAutoLock callbacksLock(&m_callbacksLock);
+
+	vector<LogMessageCallback *>::iterator it = m_callbacks.begin();
+	for ( ; it != m_callbacks.end() ; it++ )
 	{
 		(*it)->Clear();
 	}

@@ -49,6 +49,7 @@ public:
 
 private:
 	std::vector<XMLAttribute *> m_attributes;
+	CCritSec m_attributesLock;
 };
 
 class XMLAttribute : public ReferenceCountingClass
@@ -82,6 +83,7 @@ public:
 
 private:
 	std::vector<XMLElement *> m_elements;
+	CCritSec m_elementsLock;
 };
 
 class XMLElement : public ReferenceCountingClass

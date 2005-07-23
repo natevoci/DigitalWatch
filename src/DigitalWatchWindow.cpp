@@ -84,8 +84,8 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 	
 	int x = 0;
 	int y = 0;
-	g_pData->values.window.aspectRatio.width = 726;
-	g_pData->values.window.aspectRatio.height = 414;
+	g_pData->values.window.aspectRatio.width = 1030;
+	g_pData->values.window.aspectRatio.height = 582;
 	UINT flags = SWP_NOMOVE | SWP_NOZORDER;
 
 	if (g_pData->settings.window.startLastWindowPosition != 0)

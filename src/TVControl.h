@@ -112,6 +112,7 @@ private:
 	DWGraph *m_pFilterGraph;
 	DWSource *m_pActiveSource;
 	std::vector<DWSource *> m_sources;
+	CCritSec m_sourcesLock;
 
 	std::deque<LPWSTR> m_commandQueue;
 	HANDLE m_hCommandProcessingDoneEvent;

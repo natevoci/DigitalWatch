@@ -58,6 +58,8 @@ TVControl::~TVControl(void)
 
 void TVControl::SetLogCallback(LogMessageCallback *callback)
 {
+	CAutoLock sourcesLock(&m_sourcesLock);
+
 	LogMessageCaller::SetLogCallback(callback);
 
 	std::vector<DWSource *>::iterator it = m_sources.begin();
@@ -94,6 +96,7 @@ HRESULT TVControl::Initialise()
 	m_pFilterGraph->Initialise();
 	m_pActiveSource = NULL;
 
+	CAutoLock sourcesLock(&m_sourcesLock);
 	DWSource *source;
 
 	source = new BDADVBTSource();
@@ -138,6 +141,8 @@ HRESULT TVControl::Destroy()
 		DWORD err = GetLastError();
 		(log << "WaitForSingleObject error: " << (int)err << "\n").Write();
 	}
+
+	CAutoLock sourcesLock(&m_sourcesLock);
 
 	std::vector<DWSource *>::iterator it = m_sources.begin();
 	for ( ; it != m_sources.end() ; it++ )
@@ -201,6 +206,8 @@ HRESULT TVControl::Fullscreen(int nFullScreen)
 
 HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 {
+	CAutoLock sourcesLock(&m_sourcesLock);
+
 	std::vector<DWSource *>::iterator it = m_sources.begin();
 	for ( ; it < m_sources.end() ; it++ )
 	{
@@ -523,17 +530,23 @@ HRESULT TVControl::Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 HRESULT TVControl::ExecuteCommandsImmediate(LPCWSTR command)
 {
 	HRESULT hr = S_FALSE;
-	LPCWSTR pCurr = command;
-
 	if (command == NULL)
 		return hr;
+
+	(log << "TVControl Execute '" << command << "'\n").Write();
+	LogMessageIndent indent(&log);
+
+	//Make a copy of the command in case executing it changes the pointer that was passed in.
+	LPWSTR pCurr = NULL;
+	strCopy(pCurr, command);
+	LPWSTR pCommand = pCurr;
 
 	while (wcslen(pCurr) > 0)
 	{
 		ParseLine parseLine;
 		parseLine.IgnoreRHS();
 		if (parseLine.Parse(pCurr) == FALSE)
-			return (log << "TVControl::ExecuteCommandImmediate - Parse error in function: " << command << "\n").Show(E_FAIL);
+			return (log << "TVControl::ExecuteCommandImmediate - Parse error in function: " << pCurr << "\n").Show(E_FAIL);
 
 		hr = ExecuteGlobalCommand(&parseLine);
 		if (hr == S_FALSE)	//S_FALSE if the ExecuteFunction didn't handle the function
@@ -549,11 +562,17 @@ HRESULT TVControl::ExecuteCommandsImmediate(LPCWSTR command)
 		}
 		if (hr == S_FALSE)
 		{
-			(log << "Function '" << command << "' called but has no implementation.\n").Write();
+			(log << "Function '" << parseLine.LHS.Function << "' called but has no implementation.\n").Write();
 		}
 		pCurr += parseLine.GetLength();
 		skipWhitespaces(pCurr);
-	}		
+	}
+
+	delete[] pCommand;
+
+	indent.Release();
+	(log << "Finished Execute : " << hr << "\n").Write();
+
 	return hr;
 }
 
@@ -1640,6 +1659,8 @@ HRESULT TVControl::OnTimer(int wParam)
 // update also.
 void TVControl::ExecuteCommandsQueue(LPCWSTR command)
 {
+	(log << "Queue Command '" << command << "'\n").Write();
+
 	LPWSTR newCommand = NULL;
 	strCopy(newCommand, command);
 	m_commandQueue.push_back(newCommand);

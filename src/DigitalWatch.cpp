@@ -30,6 +30,11 @@
 #include "LogMessageWriter.h"
 #include "GlobalFunctions.h"
 
+//#ifdef DEBUG
+//#include "MemLeakDetect.h"
+//CMemLeakDetect memLeakDetect;
+//#endif
+
 AppData* g_pData;
 TVControl* g_pTv;
 DigitalWatchWindow* g_pDWWindow;
@@ -134,7 +139,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 					// Render a frame during idle time (no messages are waiting)
 					if FAILED(g_pOSD->Render(tickCount))
 						SendMessage(g_pData->hWnd, WM_CLOSE, 0, 0);
-					//g_pTv->ProcessQueue();
 				}
 				Sleep(1);
 			}
@@ -159,7 +163,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 LRESULT MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HWND hWndDW = g_pData->hWnd;
+	HWND hWndDW = (g_pData ? g_pData->hWnd : 0);
 
 	switch (message) 
 	{

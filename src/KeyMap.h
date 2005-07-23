@@ -59,7 +59,8 @@ public:
 	HRESULT LoadFromXML(XMLElementList* elementList);
 
 private:
-	std::vector<KeyMapEntry> keyMaps;
+	std::vector<KeyMapEntry> m_keyMaps;
+	CCritSec m_keyMapsLock;
 };
 
 #endif

@@ -43,6 +43,15 @@ DWOSDWindow::~DWOSDWindow()
 {
 	if (m_pName)
 		delete[] m_pName;
+
+	ClearParameters();
+
+	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
+	for ( ; it < m_controls.end() ; it++ )
+	{
+		delete *it;
+	}
+	m_controls.clear();
 }
 
 LPWSTR DWOSDWindow::Name()
@@ -52,6 +61,8 @@ LPWSTR DWOSDWindow::Name()
 
 HRESULT DWOSDWindow::Render(long tickCount)
 {
+	CAutoLock controlsLock(&m_controlsLock);
+
 	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
 	for ( ; it < m_controls.end() ; it++ )
 	{
@@ -63,6 +74,8 @@ HRESULT DWOSDWindow::Render(long tickCount)
 
 DWOSDControl* DWOSDWindow::GetControl(LPWSTR pName)
 {
+	CAutoLock controlsLock(&m_controlsLock);
+
 	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
 	for ( ; it < m_controls.end() ; it++ )
 	{
@@ -144,6 +157,8 @@ BOOL DWOSDWindow::HideWindowsBehindThisOne()
 
 void DWOSDWindow::ClearParameters()
 {
+	CAutoLock parametersLock(&m_parametersLock);
+
 	std::vector<LPWSTR>::iterator it = m_parameters.begin();
 	for ( ; it < m_parameters.end() ; it++ )
 	{
@@ -154,6 +169,8 @@ void DWOSDWindow::ClearParameters()
 
 void DWOSDWindow::AddParameter(LPWSTR pwcsParameter)
 {
+	CAutoLock parametersLock(&m_parametersLock);
+
 	LPWSTR newArg = NULL;
 	strCopy(newArg, pwcsParameter);
 	m_parameters.push_back(newArg);
@@ -161,6 +178,8 @@ void DWOSDWindow::AddParameter(LPWSTR pwcsParameter)
 
 LPWSTR DWOSDWindow::GetParameter(long nIndex)
 {
+	CAutoLock parametersLock(&m_parametersLock);
+
 	if ((nIndex < 0) || (nIndex >= m_parameters.size()))
 		return NULL;
 	return m_parameters.at(nIndex);
@@ -168,6 +187,8 @@ LPWSTR DWOSDWindow::GetParameter(long nIndex)
 
 HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 {
+	CAutoLock controlsLock(&m_controlsLock);
+
 	XMLAttribute *attr;
 
 	attr = pElement->Attributes.Item(L"name");
@@ -298,19 +319,30 @@ DWOSDWindows::DWOSDWindows() : m_filename(0)
 
 DWOSDWindows::~DWOSDWindows()
 {
+	CAutoLock windowsLock(&m_windowsLock);
+
 	if (m_filename)
 		delete m_filename;
 
-	std::vector<DWOSDWindow *>::iterator it = m_windows.begin();
-	for ( ; it != m_windows.end() ; it++ )
+	std::vector<DWOSDWindow *>::iterator itWindows = m_windows.begin();
+	for ( ; itWindows != m_windows.end() ; itWindows++ )
 	{
-		delete *it;
+		delete *itWindows;
 	}
 	m_windows.clear();
+
+	std::vector<DWOSDImage *>::iterator itImages = m_images.begin();
+	for ( ; itImages != m_images.end() ; itImages++ )
+	{
+		delete *itImages;
+	}
+	m_images.clear();
 }
 
 void DWOSDWindows::SetLogCallback(LogMessageCallback *callback)
 {
+	CAutoLock windowsLock(&m_windowsLock);
+
 	LogMessageCaller::SetLogCallback(callback);
 
 	std::vector<DWOSDWindow *>::iterator it = m_windows.begin();
@@ -323,6 +355,9 @@ void DWOSDWindows::SetLogCallback(LogMessageCallback *callback)
 
 HRESULT DWOSDWindows::Load(LPWSTR filename)
 {
+	CAutoLock windowsLock(&m_windowsLock);
+	CAutoLock imagesLock(&m_imagesLock);
+
 	(log << "Loading OSD file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -370,6 +405,8 @@ HRESULT DWOSDWindows::Load(LPWSTR filename)
 
 DWOSDWindow *DWOSDWindows::GetWindow(LPWSTR pName)
 {
+	CAutoLock windowsLock(&m_windowsLock);
+
 	std::vector<DWOSDWindow *>::iterator it = m_windows.begin();
 	for ( ; it < m_windows.end() ; it++ )
 	{
@@ -382,6 +419,8 @@ DWOSDWindow *DWOSDWindows::GetWindow(LPWSTR pName)
 
 DWOSDImage *DWOSDWindows::GetImage(LPWSTR pName)
 {
+	CAutoLock imagesLock(&m_imagesLock);
+
 	std::vector<DWOSDImage *>::iterator it = m_images.begin();
 	for ( ; it < m_images.end() ; it++ )
 	{

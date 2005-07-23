@@ -20,8 +20,6 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-//this is a file from DigitalWatch 2 that i've hacked up to work here.
-
 #include "BDACardCollection.h"
 #include "StdAfx.h"
 #include "ParseLine.h"
@@ -52,6 +50,11 @@ HRESULT BDACardCollection::Destroy()
 		delete *it;
 	}
 	cards.clear();
+
+	if (m_filename)
+		delete m_filename;
+	m_filename = NULL;
+
 	return S_OK;
 }
 
@@ -67,11 +70,6 @@ void BDACardCollection::SetLogCallback(LogMessageCallback *callback)
 		BDACard *card = *it;
 		card->SetLogCallback(callback);
 	}
-}
-
-LogMessage BDACardCollection::get_Logger()
-{
-	return log;
 }
 
 BOOL BDACardCollection::LoadCards()
