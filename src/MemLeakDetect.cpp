@@ -11,6 +11,8 @@
 ****************************************************************/
 #define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
 //
+#ifdef DEBUG
+
 #pragma warning(disable:4312)
 #pragma warning(disable:4313)
 #pragma warning(disable:4267)
@@ -520,3 +522,5 @@ BOOL CMemLeakDetect::symModuleNameFromAddress( UINT address, TCHAR* lpszModule )
 	
 	return ret;
 }
+
+#endif

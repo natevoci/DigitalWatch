@@ -46,7 +46,7 @@ AppData::AppData()
 
 	//SETTINGS
 	settings.application.disableScreenSaver = TRUE;
-	settings.application.priority = NORMAL_PRIORITY_CLASS;
+	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
 	settings.application.addToROT = TRUE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
