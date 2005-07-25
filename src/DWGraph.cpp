@@ -189,6 +189,10 @@ HRESULT DWGraph::Start()
 	//Set renderer method
 	g_pOSD->SetRenderMethod(m_renderMethod);
 
+	hr = ApplyColorControls();
+	hr = SetVolume(g_pData->values.audio.volume);
+	hr = Mute(g_pData->values.audio.bMute);
+
 	//Log the reference clock
 	do
 	{
@@ -392,9 +396,9 @@ void DWGraph::GetVideoRect(RECT *rect)
 	GetClientRect(g_pData->hWnd, rect);
 
 	double ar   = 0;
-	if (g_pData->values.display.aspectRatio.height > 0)
-		ar = g_pData->values.display.aspectRatio.width / g_pData->values.display.aspectRatio.height;
-	double zoom = g_pData->values.display.zoom / 100.0;
+	if (g_pData->values.video.aspectRatio.height > 0)
+		ar = g_pData->values.video.aspectRatio.width / g_pData->values.video.aspectRatio.height;
+	double zoom = g_pData->values.video.zoom / 100.0;
 	
 	if (ar >= 0)
 	{
@@ -402,7 +406,7 @@ void DWGraph::GetVideoRect(RECT *rect)
 		long windowHeight = (rect->bottom - rect->top );
 		long newWidth, newHeight;
 
-		switch (g_pData->values.display.zoomMode)
+		switch (g_pData->values.video.zoomMode)
 		{
 		case 1:
 			{
@@ -458,7 +462,7 @@ HRESULT DWGraph::GetVolume(long &volume)
 
 	volume = (int)sqrt((double)-volume);
 	volume = 100 - volume;
-	g_pData->values.audio.currVolume = volume;
+	g_pData->values.audio.volume = volume;
 	return S_OK;
 }
 
@@ -473,7 +477,7 @@ HRESULT DWGraph::SetVolume(long volume)
 	if (!piBasicAudio)
 		return (log << "could not query graph builder for IBasicAudio\n").Write(E_FAIL);
 
-	g_pData->values.audio.currVolume = volume;
+	g_pData->values.audio.volume = volume;
 	volume -= 100;
 	volume *= volume;
 	volume = -volume;
@@ -488,7 +492,7 @@ HRESULT DWGraph::Mute(BOOL bMute)
 {
 	int value = 0;
 	if (!bMute)
-		value = g_pData->values.audio.currVolume;
+		value = g_pData->values.audio.volume;
 		
 	HRESULT hr = S_OK;
 	CComQIPtr <IBasicAudio> piBasicAudio(m_piGraphBuilder);
@@ -507,11 +511,11 @@ HRESULT DWGraph::Mute(BOOL bMute)
 
 HRESULT DWGraph::SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma)
 {
-	g_pData->values.display.overlay.brightness = nBrightness;
-	g_pData->values.display.overlay.contrast = nContrast;
-	g_pData->values.display.overlay.hue = nHue;
-	g_pData->values.display.overlay.saturation = nSaturation;
-	g_pData->values.display.overlay.gamma = nGamma;
+	g_pData->values.video.overlay.brightness = nBrightness;
+	g_pData->values.video.overlay.contrast = nContrast;
+	g_pData->values.video.overlay.hue = nHue;
+	g_pData->values.video.overlay.saturation = nSaturation;
+	g_pData->values.video.overlay.gamma = nGamma;
 
 	return ApplyColorControls();
 }
@@ -532,11 +536,11 @@ HRESULT DWGraph::ApplyColorControls()
 	DDCOLORCONTROL colorControl;
 	colorControl.dwSize = sizeof(DDCOLORCONTROL);
 	colorControl.dwFlags = DDCOLOR_BRIGHTNESS | DDCOLOR_CONTRAST | DDCOLOR_HUE | DDCOLOR_SATURATION | DDCOLOR_GAMMA;
-	colorControl.lBrightness = g_pData->values.display.overlay.brightness;
-	colorControl.lContrast = g_pData->values.display.overlay.contrast;
-	colorControl.lHue = g_pData->values.display.overlay.hue;
-	colorControl.lSaturation = g_pData->values.display.overlay.saturation;
-	colorControl.lGamma = g_pData->values.display.overlay.gamma;
+	colorControl.lBrightness = g_pData->values.video.overlay.brightness;
+	colorControl.lContrast = g_pData->values.video.overlay.contrast;
+	colorControl.lHue = g_pData->values.video.overlay.hue;
+	colorControl.lSaturation = g_pData->values.video.overlay.saturation;
+	colorControl.lGamma = g_pData->values.video.overlay.gamma;
 
 	hr = piMixerPinConfig2->SetOverlaySurfaceColorControls(&colorControl);
 	if FAILED(hr)

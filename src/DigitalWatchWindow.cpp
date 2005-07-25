@@ -81,24 +81,16 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 	}
 
 	SetWindowLong(g_pData->hWnd, GWL_STYLE, GetWindowLong(g_pData->hWnd, GWL_STYLE) & (~(WS_CAPTION/* | WS_BORDER*/))); 
-	
-	int x = 0;
-	int y = 0;
-	g_pData->values.window.aspectRatio.width = 1030;
-	g_pData->values.window.aspectRatio.height = 582;
-	UINT flags = SWP_NOMOVE | SWP_NOZORDER;
 
-	if (g_pData->settings.window.startLastWindowPosition != 0)
+	if (g_pData->settings.window.startAtLastWindowPosition && g_pData->settings.loadedFromFile)
 	{
-		(log << "Restoring last window position. x=" << g_pData->settings.window.lastWindowPositionX << " y=" << g_pData->settings.window.lastWindowPositionY << " width=" <<g_pData->settings.window.lastWindowWidth << " height=" << g_pData->settings.window.lastWindowHeight << "\n").Write();
-		x = g_pData->settings.window.lastWindowPositionX;
-		y = g_pData->settings.window.lastWindowPositionY;
-		g_pData->values.window.aspectRatio.width = g_pData->settings.window.lastWindowWidth;
-		g_pData->values.window.aspectRatio.height = g_pData->settings.window.lastWindowHeight;
-		flags = SWP_NOZORDER;
+		(log << "Restoring last window position. x=" << g_pData->values.window.position.x << " y=" << g_pData->values.window.position.y << " width=" <<g_pData->values.window.size.width << " height=" << g_pData->values.window.size.height << "\n").Write();
 	}
-
-	SetWindowPos(g_pData->hWnd, NULL, x, y, g_pData->values.window.aspectRatio.width, g_pData->values.window.aspectRatio.height, flags);
+	
+	BOOL bFullscreen = g_pData->values.window.bFullScreen;
+	g_pData->values.window.bFullScreen = FALSE;
+	g_pTv->SetWindowPos(g_pData->values.window.position.x, g_pData->values.window.position.y, g_pData->values.window.size.width, g_pData->values.window.size.height, g_pData->settings.window.startAtLastWindowPosition && g_pData->settings.loadedFromFile, TRUE);
+	g_pData->values.window.bFullScreen = bFullscreen;
 
 	ShowWindow(g_pData->hWnd, nCmdShow);
 	UpdateWindow(g_pData->hWnd);
@@ -192,10 +184,11 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 		break;
 	case WM_SIZE:
 		lResult = DefWindowProc(hWnd, message, wParam, lParam);
-		
 		g_pTv->OnSize();
-		//g_pTv->m_pOSD->RefreshOSD();
-
+		break;
+	case WM_MOVE:
+		lResult = DefWindowProc(hWnd, message, wParam, lParam);
+		g_pTv->OnMove();
 		break;
 
 	case WM_LBUTTONDBLCLK:

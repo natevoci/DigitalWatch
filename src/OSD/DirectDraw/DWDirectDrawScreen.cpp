@@ -248,9 +248,12 @@ HRESULT DWDirectDrawScreen::Flip()
 		rcDest.bottom = m_nMonitorHeight - 1;
 	}
 
-	hr = m_piFrontSurface->Blt(&rcDest, m_piBackSurface, &rcSrc, DDBLT_WAIT, NULL);
-	if FAILED(hr)
-		return (log << "Failed to blt back surface to front surface : " << hr << "\n").Write(hr);
+	if ((rcSrc.right - rcSrc.left > 0) && (rcSrc.bottom - rcSrc.top > 0))
+	{
+		hr = m_piFrontSurface->Blt(&rcDest, m_piBackSurface, &rcSrc, DDBLT_WAIT, NULL);
+		if FAILED(hr)
+			return (log << "Failed to blt back surface to front surface : " << hr << "\n").Write(hr);
+	}
 
 	return hr;
 }

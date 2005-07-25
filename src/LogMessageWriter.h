@@ -36,6 +36,7 @@ public:
 	virtual void Clear();
 private:
 	LPWSTR m_logFilename;
+	CCritSec m_logFileLock;
 };
 
 #endif

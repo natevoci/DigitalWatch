@@ -82,6 +82,8 @@ public:
 	HRESULT HideOSDItem(LPWSTR szName);
 	HRESULT ToggleOSDItem(LPWSTR szName);
 
+	HRESULT SetWindowPos(int left, int top, int width, int height, BOOL bMove, BOOL bResize);
+
 	HRESULT Exit();
 
 	HRESULT Key(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt);
@@ -96,6 +98,7 @@ public:
 
 	HRESULT OnSizing(long fwSide, LPRECT rect);
 	HRESULT OnSize();
+	HRESULT OnMove();
 	HRESULT OnTimer(int wParam);
 
 	HRESULT ExecuteCommandsImmediate(LPCWSTR command);
@@ -113,6 +116,13 @@ private:
 	DWSource *m_pActiveSource;
 	std::vector<DWSource *> m_sources;
 	CCritSec m_sourcesLock;
+
+	enum windowInitialiseState
+	{
+		WIS_UNDEFINED    = 0x00,
+		WIS_INITIALISING = 0x01,
+		WIS_INITIALISED  = 0x02
+	} m_windowInitialiseState;
 
 	std::deque<LPWSTR> m_commandQueue;
 	HANDLE m_hCommandProcessingDoneEvent;
@@ -146,7 +156,6 @@ private:
 	BOOL ResolutionEntry(int nIndex);
 	//#ColorControlsEntry(Index) 
 
-	BOOL Resolution(int left, int top, int width, int height, BOOL bMove, BOOL bResize);
 	BOOL SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma);
 
 	BOOL Zoom(int percentage);

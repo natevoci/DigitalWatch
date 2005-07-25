@@ -126,6 +126,14 @@ XMLElement::XMLElement(LPCWSTR pName)
 	strCopy(name, pName);
 }
 
+XMLElement::XMLElement(LPCWSTR pName, LPCWSTR pValue)
+{
+	name = NULL;
+	value = NULL;
+	strCopy(name, pName);
+	strCopy(value, pValue);
+}
+
 XMLElement::~XMLElement()
 {
 	if (name)

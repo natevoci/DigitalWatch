@@ -32,8 +32,8 @@ public:
 	AppData();
 	~AppData();
 
-	void LoadSettings();
-	void SaveSettings();
+	HRESULT LoadSettings();
+	HRESULT SaveSettings();
 
 	HWND hWnd;
 
@@ -59,32 +59,46 @@ public:
 			BOOL startFullscreen;
 			BOOL startAlwaysOnTop;
 
-			BOOL startLastWindowPosition;
-			int lastWindowPositionX;
-			int lastWindowPositionY;
-			int lastWindowWidth;
-			int lastWindowHeight;
+			BOOL startAtLastWindowPosition;
+			BOOL startWithLastWindowSize;
 
-			BOOL storeFullscreenState;
-			BOOL storeAlwaysOnTopState;
-			BOOL storeLastWindowPosition;
+			struct SETTINGS_WINDOW_POSITION
+			{
+				long x;
+				long y;
+			} position;
+			struct SETTINGS_WINDOW_SIZE
+			{
+				long width;
+				long height;
+			} size;
+
+			//int lastWindowPositionX;
+			//int lastWindowPositionY;
+			//int lastWindowWidth;
+			//int lastWindowHeight;
+
+			BOOL rememberFullscreenState;
+			BOOL rememberAlwaysOnTopState;
+			BOOL rememberWindowPosition;
 		} window;
 
-		struct SETTINGS_DISPLAY
+		struct VALUES_AUDIO
+		{
+			long volume;
+			long bMute;
+		} audio;
+
+		struct SETTINGS_VIDEO
 		{
 			struct SETTINGS_ASPECT_RATIO
 			{
-				double width;
-				double height;
+				float width;
+				float height;
 			} aspectRatio;
 
 			int zoom;
 			int zoomMode;
-
-			LPWSTR OSDTimeFormat;
-
-			int defaultVideoDecoder;
-			int defaultAudioDecoder;
 
 			struct OVERLAY_DISPLAY_SETTINGS
 			{
@@ -94,7 +108,7 @@ public:
 				int saturation;
 				int gamma;
 			} overlay;
-		} display;
+		} video;
 
 		struct SETTINGS_CAPTURE
 		{
@@ -108,12 +122,7 @@ public:
 			int bufferMinutes;
 		} timeshift;
 
-		struct SETTINGS_LASTCHANNEL
-		{
-			BOOL startLastChannel;
-			int network;
-			int program;
-		} lastChannel;
+		int loadedFromFile;
 	} settings;
 
 	//These values reflect runtime values that are not stored in the settings file
@@ -124,24 +133,30 @@ public:
 		{
 			long bFullScreen;
 			long bAlwaysOnTop;
-			long bLockAspect;
-			struct VALUES_ASPECT_RATIO
+			struct VALUES_WINDOW_POSITION
 			{
-				float width;
-				float height;
+				long x;
+				long y;
+			} position;
+			struct VALUES_WINDOW_SIZE
+			{
+				long width;
+				long height;
+			} size;
+			struct VALUES_WINDOW_ASPECTRATIO
+			{
+				long width;
+				long height;
 			} aspectRatio;
 		} window;
 
-		long selectedVideoDecoder;
-		long selectedAudioDecoder;
-
 		struct VALUES_AUDIO
 		{
-			long currVolume;
+			long volume;
 			long bMute;
 		} audio;
 
-		struct VALUES_DISPLAY
+		struct VALUES_VIDEO
 		{
 			struct VALUES_ASPECT_RATIO
 			{
@@ -160,7 +175,7 @@ public:
 				long saturation;
 				long gamma;
 			} overlay;
-		} display;
+		} video;
 	} values;
 
 	void RestoreMarkedChanges();

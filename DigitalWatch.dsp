@@ -570,5 +570,21 @@ SOURCE=.\bin\Channels.ini
 
 # PROP Default_Filter ""
 # End Group
+# Begin Group "MemoryLeakDetect"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\dbgint.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\MemLeakDetect.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\MemLeakDetect.h
+# End Source File
+# End Group
 # End Target
 # End Project

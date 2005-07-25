@@ -91,6 +91,7 @@ class XMLElement : public ReferenceCountingClass
 public:
 	XMLElement();
 	XMLElement(LPCWSTR pName);
+	XMLElement(LPCWSTR pName, LPCWSTR pValue);
 	virtual ~XMLElement();
 
 	LPWSTR name;

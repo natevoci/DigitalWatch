@@ -692,12 +692,12 @@ HRESULT DWOSDData::ReplaceFunction(LPWSTR &pSrc, LPWSTR &result, long resultSize
 
 	else if (_wcsicmp(pCurr, L"Zoom") == 0)
 	{
-		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.display.zoom) < 0)
+		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.video.zoom) < 0)
 			return S_FALSE;
 	}
 	else if (_wcsicmp(pCurr, L"ZoomMode") == 0)
 	{
-		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.display.zoomMode) < 0)
+		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.video.zoomMode) < 0)
 			return S_FALSE;
 	}
 
@@ -720,7 +720,7 @@ HRESULT DWOSDData::ReplaceFunction(LPWSTR &pSrc, LPWSTR &result, long resultSize
 
 	else if (_wcsicmp(pCurr, L"Volume") == 0)
 	{
-		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.audio.currVolume) < 0)
+		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.audio.volume) < 0)
 			return S_FALSE;
 	}
 	else if (_wcsicmp(pCurr, L"Mute") == 0)
@@ -826,27 +826,27 @@ HRESULT DWOSDData::ReplaceFunction(LPWSTR &pSrc, LPWSTR &result, long resultSize
 
 	else if (_wcsicmp(pCurr, L"Brightness") == 0)
 	{
-		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.display.overlay.brightness) < 0)
+		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.video.overlay.brightness) < 0)
 			return S_FALSE;
 	}
 	else if (_wcsicmp(pCurr, L"Contrast") == 0)
 	{
-		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.display.overlay.contrast) < 0)
+		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.video.overlay.contrast) < 0)
 			return S_FALSE;
 	}
 	else if (_wcsicmp(pCurr, L"Hue") == 0)
 	{
-		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.display.overlay.hue) < 0)
+		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.video.overlay.hue) < 0)
 			return S_FALSE;
 	}
 	else if (_wcsicmp(pCurr, L"Saturation") == 0)
 	{
-		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.display.overlay.saturation) < 0)
+		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.video.overlay.saturation) < 0)
 			return S_FALSE;
 	}
 	else if (_wcsicmp(pCurr, L"Gamma") == 0)
 	{
-		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.display.overlay.gamma) < 0)
+		if (_snwprintf(result, resultSize-dst, L"%s%i", result, g_pData->values.video.overlay.gamma) < 0)
 			return S_FALSE;
 	}
 

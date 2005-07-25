@@ -23,11 +23,16 @@
 #include "StdAfx.h"
 #include "AppData.h"
 #include "GlobalFunctions.h"
-#if (_MSC_VER == 1200)
-	#include <fstream.h>
-#else
-	#include <fstream>
-	using namespace std;
+#include "Globals.h"
+
+#include "XMLDocument.h"
+
+#ifndef ABOVE_NORMAL_PRIORITY_CLASS
+#define ABOVE_NORMAL_PRIORITY_CLASS 0x00008000
+#endif
+
+#ifndef BELOW_NORMAL_PRIORITY_CLASS
+#define BELOW_NORMAL_PRIORITY_CLASS 0x00004000
 #endif
 
 AppData::AppData()
@@ -40,41 +45,40 @@ AppData::AppData()
 	application.bCursorVisible = TRUE;
 
 	//SETTINGS
-	settings.application.disableScreenSaver = 0;
-	settings.application.priority = 0;
-	settings.application.addToROT = 1;
+	settings.application.disableScreenSaver = TRUE;
+	settings.application.priority = NORMAL_PRIORITY_CLASS;
+	settings.application.addToROT = TRUE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
-	settings.window.startFullscreen = 0;
-	settings.window.startAlwaysOnTop = 0;
+	settings.window.startFullscreen = FALSE;
+	settings.window.startAlwaysOnTop = FALSE;
+	settings.window.startAtLastWindowPosition = TRUE;
+	settings.window.startWithLastWindowSize = TRUE;
 
-	settings.window.startLastWindowPosition = 0;
-	settings.window.lastWindowPositionX = 0;
-	settings.window.lastWindowPositionY = 0;
-	settings.window.lastWindowWidth = 720;
-	settings.window.lastWindowHeight = 408;
+	settings.window.position.x = 0;
+	settings.window.position.y = 0;
+	settings.window.size.width = 1024;
+	settings.window.size.height = 576;
 
-	settings.window.storeFullscreenState = 0;
-	settings.window.storeAlwaysOnTopState = 0;
-	settings.window.storeLastWindowPosition = 0;
+	settings.window.rememberFullscreenState = TRUE;
+	settings.window.rememberAlwaysOnTopState = TRUE;
+	settings.window.rememberWindowPosition = TRUE;
 
-	settings.display.aspectRatio.width = 16;
-	settings.display.aspectRatio.height = 9;
+	settings.audio.volume = 100;
+	settings.audio.bMute = FALSE;
 
-	settings.display.zoom = 100;
-	settings.display.zoomMode = 0;
+	settings.video.aspectRatio.width = 16;
+	settings.video.aspectRatio.height = 9;
 
-	settings.display.OSDTimeFormat = NULL;
+	settings.video.zoom = 100;
+	settings.video.zoomMode = 0;
 
-	settings.display.defaultVideoDecoder;
-	settings.display.defaultAudioDecoder;
-
-	settings.display.overlay.brightness = 750;
-	settings.display.overlay.contrast = 10000;
-	settings.display.overlay.hue = 0;
-	settings.display.overlay.saturation = 10000;
-	settings.display.overlay.gamma = 1;
+	settings.video.overlay.brightness = 750;
+	settings.video.overlay.contrast = 10000;
+	settings.video.overlay.hue = 0;
+	settings.video.overlay.saturation = 10000;
+	settings.video.overlay.gamma = 1;
 
 	settings.capture.fileName = NULL;
 	settings.capture.format = 0;
@@ -82,34 +86,50 @@ AppData::AppData()
 	settings.timeshift.folder = NULL;
 	settings.timeshift.bufferMinutes = 30;
 
-	settings.lastChannel.startLastChannel = 0;
-	settings.lastChannel.network = 0;
-	settings.lastChannel.program = 0;
+	HRESULT hr = LoadSettings();
+	settings.loadedFromFile = SUCCEEDED(hr);
 
 	//VALUES
-	values.window.bFullScreen = FALSE;
-	values.window.bAlwaysOnTop = FALSE;
-	values.window.bLockAspect = FALSE;
-	values.window.aspectRatio.width = 0;
-	values.window.aspectRatio.height = 0;
+	values.window.bFullScreen = settings.window.startFullscreen;
+	values.window.bAlwaysOnTop = settings.window.startAlwaysOnTop;
 
-	values.selectedVideoDecoder = 0;
-	values.selectedAudioDecoder = 0;
+	if (settings.window.startAtLastWindowPosition)
+	{
+		values.window.position.x = settings.window.position.x;
+		values.window.position.y = settings.window.position.y;
+	}
+	else
+	{
+		values.window.position.x = 0;
+		values.window.position.y = 0;
+	}
+	if (settings.window.startWithLastWindowSize)
+	{
+		values.window.size.width = settings.window.size.width;
+		values.window.size.height = settings.window.size.height;
+	}
+	else
+	{
+		values.window.size.width = 1024;
+		values.window.size.height = 576;
+	}
+	values.window.aspectRatio.width = values.window.size.width;
+	values.window.aspectRatio.height = values.window.size.height;
 
-	values.audio.currVolume = 100;
-	values.audio.bMute = FALSE;
+	values.audio.volume = settings.audio.volume;
+	values.audio.bMute = settings.audio.bMute;
 
-	values.display.aspectRatio.width = 16;
-	values.display.aspectRatio.height = 9;
+	values.video.aspectRatio.width = settings.video.aspectRatio.width;
+	values.video.aspectRatio.height = settings.video.aspectRatio.height;
 
-	values.display.zoom = 100;
-	values.display.zoomMode = 0;
+	values.video.zoom = settings.video.zoom;
+	values.video.zoomMode = settings.video.zoomMode;
 
-	values.display.overlay.brightness = 750;
-	values.display.overlay.contrast = 10000;
-	values.display.overlay.hue = 0;
-	values.display.overlay.saturation = 10000;
-	values.display.overlay.gamma = 1;
+	values.video.overlay.brightness = settings.video.overlay.brightness;
+	values.video.overlay.contrast = settings.video.overlay.contrast;
+	values.video.overlay.hue = settings.video.overlay.hue;
+	values.video.overlay.saturation = settings.video.overlay.saturation;
+	values.video.overlay.gamma = settings.video.overlay.gamma;
 
 	ZeroMemory(&markedValues, sizeof(VALUES));
 	ZeroMemory(&globalValues, sizeof(VALUES));
@@ -117,10 +137,10 @@ AppData::AppData()
 
 AppData::~AppData()
 {
+	SaveSettings();
+
 	if (application.appPath)
 		delete[] application.appPath;
-	if (settings.display.OSDTimeFormat)
-		delete[] settings.display.OSDTimeFormat;
 }
 
 void AppData::RestoreMarkedChanges()
@@ -169,209 +189,381 @@ void AppData::MarkValuesChanges()
 	}
 }
 
-void AppData::LoadSettings()
-{/*
-	char filename[MAX_PATH];
-	sprintf((char*)&filename, "%s%s", m_pTv->m_pAppData->appPath, "Settings.ini");
-	
-	ifstream file;
-	file.open(filename);
-	if (file.is_open() != 1)
+HRESULT AppData::LoadSettings()
+{
+	wchar_t filename[MAX_PATH];
+	swprintf((LPWSTR)&filename, L"%s%s", application.appPath, L"Settings.xml");
+
+	//(log << "Loading DVBT Channels file: " << filename << "\n").Write();
+	//LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+	XMLDocument file;
+	//file.SetLogCallback(m_pLogCallback);
+
+	if FAILED(hr = file.Load(filename))
 	{
-		//TODO: OSD Error
-		char* error = (char*) alloca(MAX_PATH+12);
-		sprintf(error, "Error: Cannot load %s", filename);
-		MessageBox(NULL, error, "DigitalWatch", MB_OK);
-		return;
+		//return (log << "Could not load channels file: " << m_filename << "\n").Show(hr);
+		return hr;
 	}
 
-	char* buff = (char*)alloca(256);
-	char* value;
-	while (!file.eof())
+	int elementCount = file.Elements.Count();
+	for ( int item=0 ; item<elementCount ; item++ )
 	{
-		file.getline(buff, 256);
-
-		if (buff[0] == '\0')
-			continue;
-		if (buff[0] == '#')
-			continue;
-		if ((buff[0] == '/') && (buff[1] == '/'))
-			continue;
-		value = strpbrk(buff, "= ");
-		value[0] = '\0';
-		value++;
-		while ((value[0] == ' ') || (value[0] == '=')) value++;
-
-		if (_stricmp(buff, "CardNumber") == 0)
-			cardNumber = atoi(value);
-		else if (_stricmp(buff, "DVBInput") == 0)
-			dvbInput = atoi(value);
-		else if (_stricmp(buff, "CaptureFileName") == 0)
-			strcpy(captureFileName, value);
-		else if (_stricmp(buff, "CaptureFormat") == 0)
-			captureFormat = atoi(value);
-		else if (_stricmp(buff, "OSDTimeFormat") == 0)
-			strcpy(OSDTimeFormat, value);
-		else if (_stricmp(buff, "TimeShiftFolder") == 0)
-			strcpy(timeshiftFolder, value);
-		else if (_stricmp(buff, "TimeShiftBufferMinutes") == 0)
-			timeshiftBufferMinutes = atoi(value);
-		else if (_stricmp(buff, "AspectRatio") == 0)
+		XMLElement *element = file.Elements.Item(item);
+		if (_wcsicmp(element->name, L"Application") == 0)
 		{
-			char* colon;
-			colon = strchr(value, ':');
-			colon[0] = '\0';
-			colon++;
-			aspectRatioWidth = atoi(value);
-			aspectRatioHeight = atoi(colon);
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"disableScreenSaver") == 0)
+				{
+					settings.application.disableScreenSaver = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"priority") == 0)
+				{
+					if (_wcsicmp(pSubElement->value, L"RealTime") == 0)
+					{
+						settings.application.priority = REALTIME_PRIORITY_CLASS;
+					}
+					else if (_wcsicmp(pSubElement->value, L"High") == 0)
+					{
+						settings.application.priority = HIGH_PRIORITY_CLASS;
+					}
+					else if (_wcsicmp(pSubElement->value, L"AboveNormal") == 0)
+					{
+						settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
+					}
+					else if (_wcsicmp(pSubElement->value, L"BelowNormal") == 0)
+					{
+						settings.application.priority = BELOW_NORMAL_PRIORITY_CLASS;
+					}
+					else if (_wcsicmp(pSubElement->value, L"Low") == 0)
+					{
+						settings.application.priority = IDLE_PRIORITY_CLASS;
+					}
+					else //if (_wcsicmp(pSubElement->value, L"Normal") == 0)
+					{
+						settings.application.priority = NORMAL_PRIORITY_CLASS;
+					}
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"addToROT") == 0)
+				{
+					settings.application.addToROT = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+			}
+			continue;
 		}
-		else if (_stricmp(buff, "Zoom") == 0)
-			zoom = atoi(value);
-		else if (_stricmp(buff, "ZoomMode") == 0)
-			zoomMode = atoi(value);
+		if (_wcsicmp(element->name, L"Window") == 0)
+		{
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"startFullscreen") == 0)
+				{
+					settings.window.startFullscreen = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"startAlwaysOnTop") == 0)
+				{
+					settings.window.startAlwaysOnTop = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"startAtLastWindowPosition") == 0)
+				{
+					settings.window.startAtLastWindowPosition = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"startWithLastWindowSize") == 0)
+				{
+					settings.window.startWithLastWindowSize = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 
-		else if (_stricmp(buff, "StartFullscreen") == 0)
-			startFullscreen = atoi(value);
-		else if (_stricmp(buff, "StartAlwaysOnTop") == 0)
-			startAlwaysOnTop = atoi(value);
+				if (_wcsicmp(pSubElement->name, L"Position") == 0)
+				{
+					XMLAttribute *attrX = pSubElement->Attributes.Item(L"x");
+					XMLAttribute *attrY = pSubElement->Attributes.Item(L"y");
+					if (attrX && attrY)
+					{
+						settings.window.position.x = StringToLong(attrX->value);
+						settings.window.position.y = StringToLong(attrY->value);
+					}
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"Size") == 0)
+				{
+					XMLAttribute *attrX = pSubElement->Attributes.Item(L"width");
+					XMLAttribute *attrY = pSubElement->Attributes.Item(L"height");
+					if (attrX && attrY)
+					{
+						settings.window.size.width  = StringToLong(attrX->value);
+						settings.window.size.height = StringToLong(attrY->value);
+					}
+					continue;
+				}
 
-		else if (_stricmp(buff, "StartLastWindowPosition") == 0)
-			startLastWindowPosition = atoi(value);
-		else if (_stricmp(buff, "LastWindowPositionX") == 0)
-			lastWindowPositionX = atoi(value);
-		else if (_stricmp(buff, "LastWindowPositionY") == 0)
-			lastWindowPositionY = atoi(value);
-		else if (_stricmp(buff, "LastWindowWidth") == 0)
-			lastWindowWidth = atoi(value);
-		else if (_stricmp(buff, "LastWindowHeight") == 0)
-			lastWindowHeight = atoi(value);
+				if (_wcsicmp(pSubElement->name, L"rememberFullscreenState") == 0)
+				{
+					settings.window.rememberFullscreenState = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"rememberAlwaysOnTopState") == 0)
+				{
+					settings.window.rememberAlwaysOnTopState = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"rememberWindowPosition") == 0)
+				{
+					settings.window.rememberWindowPosition = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 
-		else if (_stricmp(buff, "StoreFullscreenState") == 0)
-			storeFullscreenState = atoi(value);
-		else if (_stricmp(buff, "StoreAlwaysOnTopState") == 0)
-			storeAlwaysOnTopState = atoi(value);
-		else if (_stricmp(buff, "StoreLastWindowPosition") == 0)
-			storeLastWindowPosition = atoi(value);
-		
-		else if (_stricmp(buff, "StartLastChannel") == 0)
-			startLastChannel = atoi(value);
-		else if (_stricmp(buff, "LastNetwork") == 0)
-			lastNetwork = atoi(value);
-		else if (_stricmp(buff, "LastProgram") == 0)
-			lastProgram = atoi(value);
-		else if (_stricmp(buff, "DefaultVideoDecoder") == 0)
-			defaultVideoDecoder = atoi(value);
-		else if (_stricmp(buff, "DefaultAudioDecoder") == 0)
-			defaultAudioDecoder = atoi(value);
+			}
+			continue;
+		}
+		if (_wcsicmp(element->name, L"Audio") == 0)
+		{
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"volume") == 0)
+				{
+					settings.audio.volume = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"mute") == 0)
+				{
+					settings.audio.bMute = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+			}
+			continue;
+		}
+		if (_wcsicmp(element->name, L"Video") == 0)
+		{
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"AspectRatio") == 0)
+				{
+					XMLAttribute *attrX = pSubElement->Attributes.Item(L"width");
+					XMLAttribute *attrY = pSubElement->Attributes.Item(L"height");
+					if (attrX && attrY)
+					{
+						settings.video.aspectRatio.width  = StringToLong(attrX->value);
+						settings.video.aspectRatio.height = StringToLong(attrY->value);
+					}
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"zoom") == 0)
+				{
+					settings.video.zoom = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"zoomMode") == 0)
+				{
+					settings.video.zoomMode = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"Overlay") == 0)
+				{
+					int sub2Count = pSubElement->Elements.Count();
+					for ( int sub2Item=0 ; sub2Item<sub2Count ; sub2Item++ )
+					{
+						XMLElement *pSub2Element = pSubElement->Elements.Item(sub2Item);
+						if (_wcsicmp(pSub2Element->name, L"Brightness") == 0)
+						{
+							settings.video.overlay.brightness = _wtoi(pSub2Element->value);
+							continue;
+						}
+						if (_wcsicmp(pSub2Element->name, L"Contrast") == 0)
+						{
+							settings.video.overlay.contrast = _wtoi(pSub2Element->value);
+							continue;
+						}
+						if (_wcsicmp(pSub2Element->name, L"Hue") == 0)
+						{
+							settings.video.overlay.hue = _wtoi(pSub2Element->value);
+							continue;
+						}
+						if (_wcsicmp(pSub2Element->name, L"Saturation") == 0)
+						{
+							settings.video.overlay.saturation = _wtoi(pSub2Element->value);
+							continue;
+						}
+						if (_wcsicmp(pSub2Element->name, L"Gamma") == 0)
+						{
+							settings.video.overlay.gamma = _wtoi(pSub2Element->value);
+							continue;
+						}
+					} // for ( int sub2Item=0 ; sub2Item<sub2Count ; sub2Item++ )
+					continue;
+				}
+			} // for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			continue;
+		}
+	} // for ( int item=0 ; item<elementCount ; item++ )
 
-		else if (_stricmp(buff, "DefaultBrightness") == 0)
-			brightness = atoi(value);
-		else if (_stricmp(buff, "DefaultContrast") == 0)
-			contrast = atoi(value);
-		else if (_stricmp(buff, "DefaultHue") == 0)
-			hue = atoi(value);
-		else if (_stricmp(buff, "DefaultSaturation") == 0)
-			saturation = atoi(value);
-		else if (_stricmp(buff, "DefaultGamma") == 0)
-			gamma = atoi(value);
-
-		else if (_stricmp(buff, "DisableScreenSaver") == 0)
-			disableScreenSaver = atoi(value);
-
-		else if (_stricmp(buff, "BasePriority") == 0)
-			priority = atoi(value);
-
-		else if (_stricmp(buff, "AddToROT") == 0)
-			addToROT = atoi(value);
-	}
-	file.close();
-
-	m_pTv->m_pAppData->cardNumber = cardNumber;
-	m_pTv->m_pAppData->dvbInput = dvbInput;
-	strcpy((char*)m_pTv->m_pAppData->captureFileName, captureFileName);
-	m_pTv->m_pAppData->captureFormat = captureFormat;
-	strcpy((char*)m_pTv->m_pAppData->OSDTimeFormat, OSDTimeFormat);
-	strcpy((char*)m_pTv->m_pAppData->timeshiftFolder, timeshiftFolder);
-	m_pTv->m_pAppData->timeshiftBufferMinutes = timeshiftBufferMinutes;
-	m_pTv->m_pAppData->values.aspectRatioWidth = aspectRatioWidth;
-	m_pTv->m_pAppData->values.aspectRatioHeight = aspectRatioHeight;
-	m_pTv->m_pAppData->values.zoom = zoom;
-	m_pTv->m_pAppData->values.zoomMode = zoomMode;
-	m_pTv->m_pAppData->values.brightness = brightness;
-	m_pTv->m_pAppData->values.contrast = contrast;
-	m_pTv->m_pAppData->values.hue = hue;
-	m_pTv->m_pAppData->values.saturation = saturation;
-	m_pTv->m_pAppData->values.gamma = gamma;
-	m_pTv->m_pAppData->addToROT = addToROT;
-	*/
+	return S_OK;
 }
 
-void AppData::SaveSettings()
-{/*
-	char filename[MAX_PATH];
-	sprintf((char*)&filename, "%s%s", m_pTv->m_pAppData->appPath, "Settings.ini");
+HRESULT AppData::SaveSettings()
+{
+	wchar_t filename[MAX_PATH];
+	swprintf((LPWSTR)&filename, L"%s%s", application.appPath, L"Settings.xml");
 
-	ofstream file;
-	file.open(filename);
-	if (file.is_open() != 1)
+	XMLDocument file;
+	//file.SetLogCallback(m_pLogCallback);
+
+	LPWSTR pValue = NULL;
+
+	XMLElement *pApplication = new XMLElement(L"Application");
+	file.Elements.Add(pApplication);
 	{
-		MessageBox(NULL, "Cannot save settings.ini", "DigitalWatch", MB_OK);
-		return;
+		pApplication->Elements.Add(new XMLElement(L"DisableScreenSaver", (settings.application.disableScreenSaver ? L"True" : L"False")));
+		switch (settings.application.priority)
+		{
+			case REALTIME_PRIORITY_CLASS:
+				strCopy(pValue, L"Realtime");
+				break;
+			case HIGH_PRIORITY_CLASS:
+				strCopy(pValue, L"High");
+				break;
+			case ABOVE_NORMAL_PRIORITY_CLASS:
+				strCopy(pValue, L"AboveNormal");
+				break;
+			case BELOW_NORMAL_PRIORITY_CLASS:
+				strCopy(pValue, L"BelowNormal");
+				break;
+			case IDLE_PRIORITY_CLASS:
+				strCopy(pValue, L"Low");
+				break;
+			default:
+				strCopy(pValue, L"Normal");
+				break;
+		};
+		pApplication->Elements.Add(new XMLElement(L"Priority", pValue));
+		pApplication->Elements.Add(new XMLElement(L"AddToROT", (settings.application.addToROT ? L"True" : L"False")));
 	}
 
-	file << "# DigitalWatch - Settings.ini" << endl;
-	file << "#" << endl;
-	file << endl;
-	file << "CardNumber = " << cardNumber << endl;
-	file << "DVBInput = " << dvbInput << endl;
-	file << endl;
-	file << "CaptureFileName = " << captureFileName << endl;
-	file << "CaptureFormat = " << captureFormat << endl;
-	file << endl;
-	file << "OSDTimeFormat = " << OSDTimeFormat << endl;
-	file << endl;
-	file << "TimeShiftFolder = " << timeshiftFolder << endl;
-	file << "TimeShiftBufferMinutes = " << timeshiftBufferMinutes << endl;
-	file << endl;
-	file << "AspectRatio = " << aspectRatioWidth << ":" << aspectRatioHeight << endl;
-	file << "Zoom = " << zoom << endl;
-	file << "ZoomMode = " << zoomMode << endl;
-	file << endl;
-	file << "StartFullscreen = " << startFullscreen << endl;
-	file << "StartAlwaysOnTop = " << startAlwaysOnTop << endl;
-	file << endl;
-	file << "StartLastWindowPosition = " << startLastWindowPosition << endl;
-	file << "LastWindowPositionX = " << lastWindowPositionX << endl;
-	file << "LastWindowPositionY = " << lastWindowPositionY << endl;
-	file << "LastWindowWidth = " << lastWindowWidth << endl;
-	file << "LastWindowHeight = " << lastWindowHeight << endl;
-	file << endl;
-	file << "StoreFullscreenState = " << storeFullscreenState << endl;
-	file << "StoreAlwaysOnTopState = " << storeAlwaysOnTopState << endl;
-	file << "StoreLastWindowPosition = " << storeLastWindowPosition << endl;
-	file << endl;
-	file << "StartLastChannel = " << startLastChannel << endl;
-	file << "LastNetwork = " << lastNetwork << endl;
-	file << "LastProgram = " << lastProgram << endl;
-	file << endl;
-	file << "DefaultVideoDecoder = " << defaultVideoDecoder << endl;
-	file << "DefaultAudioDecoder = " << defaultAudioDecoder << endl;
-	file << endl;
-	file << "DefaultBrightness = "  << brightness << endl;
-	file << "DefaultContrast = "  << contrast << endl;
-	file << "DefaultHue = "  << hue << endl;
-	file << "DefaultSaturation = "  << saturation << endl;
-	file << "DefaultGamma = "  << gamma << endl;
-	file << endl;
-	file << "DisableScreenSaver = " << disableScreenSaver << endl;
-	file << endl;
-	file << "BasePriority = " << priority << endl;
-	file << endl;
-	file << "AddToROT = " << addToROT << endl;
-	file << endl;
+	XMLElement *pWindow = new XMLElement(L"Window");
+	file.Elements.Add(pWindow);
+	{
+		if (settings.window.rememberFullscreenState)
+			settings.window.startFullscreen = values.window.bFullScreen;
+		if (settings.window.rememberAlwaysOnTopState)
+			settings.window.startAlwaysOnTop = values.window.bAlwaysOnTop;
+		if (settings.window.rememberWindowPosition)
+		{
+			settings.window.position.x = values.window.position.x;
+			settings.window.position.y = values.window.position.y;
+			settings.window.size.width = values.window.size.width;
+			settings.window.size.height = values.window.size.height;
+		}
 
-	file.close();
-	*/
+		pWindow->Elements.Add(new XMLElement(L"StartFullscreen", (settings.window.startFullscreen ? L"True" : L"False")));
+		pWindow->Elements.Add(new XMLElement(L"StartAlwaysOnTop", (settings.window.startAlwaysOnTop ? L"True" : L"False")));
+		pWindow->Elements.Add(new XMLElement(L"StartAtLastWindowPosition", (settings.window.startAtLastWindowPosition ? L"True" : L"False")));
+		pWindow->Elements.Add(new XMLElement(L"StartWithLastWindowSize", (settings.window.startWithLastWindowSize ? L"True" : L"False")));
+
+		XMLElement *pPosition = new XMLElement(L"Position");
+		pWindow->Elements.Add(pPosition);
+		{
+			strCopy(pValue, settings.window.position.x);
+			pPosition->Attributes.Add(new XMLAttribute(L"x", pValue));
+			strCopy(pValue, settings.window.position.y);
+			pPosition->Attributes.Add(new XMLAttribute(L"y", pValue));
+		}
+
+		XMLElement *pSize = new XMLElement(L"Size");
+		pWindow->Elements.Add(pSize);
+		{
+			strCopy(pValue, settings.window.size.width);
+			pSize->Attributes.Add(new XMLAttribute(L"width", pValue));
+			strCopy(pValue, settings.window.size.height);
+			pSize->Attributes.Add(new XMLAttribute(L"height", pValue));
+		}
+
+		pWindow->Elements.Add(new XMLElement(L"RememberFullscreenState", (settings.window.rememberFullscreenState ? L"True" : L"False")));
+		pWindow->Elements.Add(new XMLElement(L"RememberAlwaysOnTopState", (settings.window.rememberAlwaysOnTopState ? L"True" : L"False")));
+		pWindow->Elements.Add(new XMLElement(L"RememberWindowPosition", (settings.window.rememberWindowPosition ? L"True" : L"False")));
+	}
+
+	XMLElement *pAudio = new XMLElement(L"Audio");
+	file.Elements.Add(pAudio);
+	{
+		strCopy(pValue, settings.audio.volume);
+		pAudio->Elements.Add(new XMLElement(L"Volume", pValue));
+		pAudio->Elements.Add(new XMLElement(L"Mute", (settings.audio.bMute ? L"True" : L"False")));
+	}
+
+	XMLElement *pVideo = new XMLElement(L"Video");
+	file.Elements.Add(pVideo);
+	{
+		XMLElement *pAspectRatio = new XMLElement(L"AspectRatio");
+		pVideo->Elements.Add(pAspectRatio);
+		{
+			strCopy(pValue, settings.video.aspectRatio.width);
+			pAspectRatio->Attributes.Add(new XMLAttribute(L"width", pValue));
+			strCopy(pValue, settings.video.aspectRatio.height);
+			pAspectRatio->Attributes.Add(new XMLAttribute(L"height", pValue));
+		}
+
+		strCopy(pValue, settings.video.zoom);
+		pVideo->Elements.Add(new XMLElement(L"Zoom", pValue));
+		strCopy(pValue, settings.video.zoomMode);
+		pVideo->Elements.Add(new XMLElement(L"ZoomMode", pValue));
+
+		XMLElement *pOverlay = new XMLElement(L"Overlay");
+		pVideo->Elements.Add(pOverlay);
+		{
+			strCopy(pValue, settings.video.overlay.brightness);
+			pOverlay->Elements.Add(new XMLElement(L"Brightness", pValue));
+			strCopy(pValue, settings.video.overlay.contrast);
+			pOverlay->Elements.Add(new XMLElement(L"Contrast", pValue));
+			strCopy(pValue, settings.video.overlay.hue);
+			pOverlay->Elements.Add(new XMLElement(L"Hue", pValue));
+			strCopy(pValue, settings.video.overlay.saturation);
+			pOverlay->Elements.Add(new XMLElement(L"Saturation", pValue));
+			strCopy(pValue, settings.video.overlay.gamma);
+			pOverlay->Elements.Add(new XMLElement(L"Gamma", pValue));
+		}
+
+	}
+/*
+	XMLElement *pCapture = new XMLElement(L"Capture");
+	file.Elements.Add(pCapture);
+	{
+		pCapture->Elements.Add(new XMLElement(L"Filename", settings.capture.fileName));
+		strCopy(pValue, settings.capture.fileName);
+		pCapture->Elements.Add(new XMLElement(L"Format", pValue));
+	}
+*/
+/*
+	XMLElement *pTimeshift = new XMLElement(L"Timeshift");
+	file.Elements.Add(pTimeshift);
+	{
+		pTimeshift->Elements.Add(new XMLElement(L"Folder", settings.timeshift.folder));
+		strCopy(pValue, settings.timeshift.bufferMinutes);
+		pTimeshift->Elements.Add(new XMLElement(L"BufferMinutes", pValue));
+	}
+*/
+	if (pValue)
+	{
+		delete pValue;
+		pValue = NULL;
+	}
+
+	return file.Save(filename);
 }
 
 /*double AppData::GetAspectRatio()

@@ -30,10 +30,10 @@
 #include "LogMessageWriter.h"
 #include "GlobalFunctions.h"
 
-//#ifdef DEBUG
+//  Start Memory Leak Detect. Uncomment this to do memory leak detection
 //#include "MemLeakDetect.h"
 //CMemLeakDetect memLeakDetect;
-//#endif
+//  Ene Memory Leak Detect
 
 AppData* g_pData;
 TVControl* g_pTv;
@@ -73,25 +73,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	g_pDWWindow->SetLogCallback(&g_DWLogWriter);
 	g_pOSD->SetLogCallback(&g_DWLogWriter);
 
-	switch (g_pData->settings.application.priority)
-	{
-	case 2:
-		(log << "Warning: Setting priority to Realtime\n").Write();
-		SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
-		break;
-	case 1:
-		(log << "Setting priority to high\n").Write();
-		SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
-		break;
-	case -1:
-		(log << "Setting priority to idle\n").Write();
-		SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
-		break;
-	default:
-		SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
-		break;
-	}
-
+	BOOL bSucceeded = SetPriorityClass(GetCurrentProcess(), g_pData->settings.application.priority);
+	
 	if (g_pDWWindow->Create(hInstance, hPrevInstance, lpCmdLine, nCmdShow))
 	{
 		if FAILED(g_pOSD->Initialise())

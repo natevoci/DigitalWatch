@@ -22,9 +22,7 @@
 
 #include "LogMessageWriter.h"
 #include "GlobalFunctions.h"
-
-#include <fstream>
-using namespace std;
+#include "FileWriter.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -37,12 +35,16 @@ LogMessageWriter::LogMessageWriter()
 
 LogMessageWriter::~LogMessageWriter()
 {
+	CAutoLock logFileLock(&m_logFileLock);
+
 	if (m_logFilename)
 		delete[] m_logFilename;
 }
 
 void LogMessageWriter::SetFilename(LPWSTR filename)
 {
+	CAutoLock logFileLock(&m_logFileLock);
+
 	if ((wcslen(filename) > 2) &&
 		((filename[1] == ':') ||
 		 (filename[0] == '\\' && filename[1] == '\\')
@@ -63,35 +65,54 @@ void LogMessageWriter::SetFilename(LPWSTR filename)
 
 void LogMessageWriter::Write(LPWSTR pStr)
 {
+	CAutoLock logFileLock(&m_logFileLock);
+
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
-		ofstream file;
-		file.open(W2A(m_logFilename), ios::app);
-
-		if (file.is_open() == 1)
+		FileWriter file;
+		if SUCCEEDED(file.Open(m_logFilename, TRUE))
 		{
 			for ( int i=0 ; i<m_indent ; i++ )
 			{
 				file << "  ";
 			}
-			file << W2A(pStr);
-			file.close();
+
+			//Write one line at a time so we can do dos style EOL's
+			LPWSTR pCurr = pStr;
+			while (pCurr[0] != '\0')
+			{
+				LPWSTR pEOL = wcschr(pCurr, '\n');
+				if (pEOL)
+				{
+					pEOL[0] = '\0';
+					file << pCurr << file.EOL;
+					pEOL[0] = '\n';
+					pCurr = pEOL + 1;
+				}
+				else
+				{
+					file << pCurr;
+					break;
+				}
+			}
+
+			file.Close();
 		}
 	}
 }
 
 void LogMessageWriter::Clear()
 {
+	CAutoLock logFileLock(&m_logFileLock);
+
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
-		ofstream file;
-		file.open(W2A(m_logFilename));
-
-		if (file.is_open() == 1)
+		FileWriter file;
+		if SUCCEEDED(file.Open(m_logFilename, FALSE))
 		{
-			file.close();
+			file.Close();
 		}
 	}
 }

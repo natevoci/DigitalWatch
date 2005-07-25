@@ -31,7 +31,7 @@ public:
 	FileWriter();
 	virtual ~FileWriter();
 
-	BOOL Open(LPCWSTR filename);
+	BOOL Open(LPCWSTR filename, BOOL append = FALSE);
 	void Close();
 
 	FileWriter& operator<< (const int& val);

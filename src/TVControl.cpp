@@ -48,6 +48,8 @@ TVControl::TVControl()
 	m_hCommandProcessingStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_hCommandProcessingDoneEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_pFilterGraph = NULL;
+
+	m_windowInitialiseState = WIS_UNDEFINED;
 }
 TVControl::~TVControl(void)
 {
@@ -79,7 +81,10 @@ HRESULT TVControl::Initialise()
 	(log << "Initialising TVControl\n").Write();
 	LogMessageIndent indent(&log);
 
-	SetTimer(g_pData->hWnd, TIMER_DISABLE_POWER_SAVING, 30000, NULL);
+	if (g_pData->settings.application.disableScreenSaver)
+	{
+		SetTimer(g_pData->hWnd, TIMER_DISABLE_POWER_SAVING, 30000, NULL);
+	}
 	SetTimer(g_pData->hWnd, TIMER_RECORDING_TIMELEFT, 1000, NULL);
 	
 	//SetTimer(g_pData->hWnd, 996, 100, NULL);
@@ -165,17 +170,15 @@ HRESULT TVControl::Destroy()
 HRESULT TVControl::AlwaysOnTop(int nAlwaysOnTop)
 {
 	long bAlwaysOnTop = ((nAlwaysOnTop == 1) || ((nAlwaysOnTop == 2) && !g_pData->values.window.bAlwaysOnTop));
-	if (g_pData->values.window.bAlwaysOnTop == bAlwaysOnTop)
-		return S_OK;
 
 	g_pData->values.window.bAlwaysOnTop = bAlwaysOnTop;
 
 	BOOL bResult = FALSE;
 
 	if (g_pData->values.window.bAlwaysOnTop)
-		bResult = SetWindowPos(g_pData->hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+		bResult = ::SetWindowPos(g_pData->hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
 	else
-		bResult = SetWindowPos(g_pData->hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+		bResult = ::SetWindowPos(g_pData->hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
 
 	//if (bResult)
 	//	m_pOSD->ShowItem("AlwaysOnTop");
@@ -185,8 +188,6 @@ HRESULT TVControl::AlwaysOnTop(int nAlwaysOnTop)
 HRESULT TVControl::Fullscreen(int nFullScreen)
 {
 	long bFullScreen = ((nFullScreen == 1) || ((nFullScreen == 2) && !g_pData->values.window.bFullScreen));
-	if (g_pData->values.window.bFullScreen == bFullScreen)
-		return S_OK;
 
 	g_pData->values.window.bFullScreen = bFullScreen;
 
@@ -199,6 +200,7 @@ HRESULT TVControl::Fullscreen(int nFullScreen)
 		wPlace.showCmd = SW_RESTORE;
 
 	BOOL bResult = SetWindowPlacement(g_pData->hWnd, &wPlace);
+
 	//if (bResult)
 	//	m_pOSD->ShowItem("Fullscreen");
 	return (bResult ? S_OK : E_FAIL);
@@ -311,9 +313,9 @@ HRESULT TVControl::SetColorControls(int nBrightness, int nContrast, int nHue, in
 
 HRESULT TVControl::Zoom(int percentage)
 {
-	g_pData->values.display.zoom = percentage;
-	if (g_pData->values.display.zoom < 10)	//Limit the smallest zoom to 10%
-		g_pData->values.display.zoom = 10;
+	g_pData->values.video.zoom = percentage;
+	if (g_pData->values.video.zoom < 10)	//Limit the smallest zoom to 10%
+		g_pData->values.video.zoom = 10;
 	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
@@ -324,7 +326,7 @@ HRESULT TVControl::Zoom(int percentage)
 
 HRESULT TVControl::ZoomIn(int percentage)
 {
-	g_pData->values.display.zoom += percentage;
+	g_pData->values.video.zoom += percentage;
 	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
@@ -335,9 +337,9 @@ HRESULT TVControl::ZoomIn(int percentage)
 
 HRESULT TVControl::ZoomOut(int percentage)
 {
-	g_pData->values.display.zoom -= percentage;
-	if (g_pData->values.display.zoom < 10)	//Limit the smallest zoom to 10%
-		g_pData->values.display.zoom = 10;
+	g_pData->values.video.zoom -= percentage;
+	if (g_pData->values.video.zoom < 10)	//Limit the smallest zoom to 10%
+		g_pData->values.video.zoom = 10;
 	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
@@ -353,11 +355,11 @@ HRESULT TVControl::ZoomMode(int mode)
 		return (log << "zoommode " << mode << " is not a valid mode\n").Write(E_FAIL);
 	if (mode < 0)
 	{
-		mode = g_pData->values.display.zoomMode + 1;
+		mode = g_pData->values.video.zoomMode + 1;
 		if (mode >= maxModes)
 			mode = 0;
 	}
-	g_pData->values.display.zoomMode = mode;
+	g_pData->values.video.zoomMode = mode;
 	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
@@ -373,8 +375,8 @@ HRESULT TVControl::AspectRatio(int width, int height)
 	if (height <= 0)
 		return (log << "Zero or negative height supplied: " << height << "\n").Write(E_FAIL);
 
-	g_pData->values.display.aspectRatio.width = width;
-	g_pData->values.display.aspectRatio.height = height;
+	g_pData->values.video.aspectRatio.width = width;
+	g_pData->values.video.aspectRatio.height = height;
 	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
@@ -431,6 +433,48 @@ HRESULT TVControl::ToggleOSDItem(LPWSTR szName)
 	}
 
 	return S_FALSE;
+}
+
+HRESULT TVControl::SetWindowPos(int nLeft, int nTop, int nWidth, int nHeight, BOOL bMove, BOOL bResize)
+{
+	if (m_windowInitialiseState == WIS_UNDEFINED)
+	{
+		m_windowInitialiseState = WIS_INITIALISING;
+		// This seems to make the client area and border width initialise
+		::SetWindowPos(g_pData->hWnd, NULL, 0, 0, 720, 408, SWP_NOMOVE | SWP_NOZORDER);
+		m_windowInitialiseState = WIS_INITIALISED;
+	}
+
+	if (g_pData->values.window.bFullScreen)
+		return S_FALSE;
+	HRESULT hr;
+
+	RECT gwr, gcr;
+	GetWindowRect(g_pData->hWnd, &gwr);
+	GetClientRect(g_pData->hWnd, &gcr);
+	POINT point;
+
+	point.x = gwr.left;
+	point.y = gwr.top;
+	::ScreenToClient(g_pData->hWnd, &point);
+	int left = gcr.left - point.x;
+	int top  = gcr.top  - point.y;
+
+	point.x = gwr.right;
+	point.y = gwr.bottom;
+	::ScreenToClient(g_pData->hWnd, &point);
+	int right  = point.x - gcr.right;
+	int bottom = point.y - gcr.bottom;
+
+	int width  = nWidth  + (left + right);
+	int height = nHeight + (top + bottom);
+	left = nLeft - left;
+	top  = nTop  - top;
+
+	long flags = SWP_NOZORDER | (bMove ? 0 : SWP_NOMOVE) | (bResize ? 0 : SWP_NOSIZE);
+	hr = (::SetWindowPos(g_pData->hWnd, NULL, left, top, width, height, flags) ? S_OK : E_FAIL);
+
+	return hr;
 }
 
 HRESULT TVControl::Exit()
@@ -1444,39 +1488,6 @@ BOOL TVControl::ResolutionEntry(int nIndex)
 				   m_pAppData->resolutions.Current()->size);
 	return TRUE;
 }
-BOOL TVControl::Resolution(int nLeft, int nTop, int nWidth, int nHeight, BOOL bMove, BOOL bResize)
-{
-	if (m_pAppData->values.bFullScreen)
-		return FALSE;
-	BOOL bResult = FALSE;
-	RECT gwr, gcr;
-	GetWindowRect(m_pAppData->hWnd, &gwr);
-	GetClientRect(m_pAppData->hWnd, &gcr);
-	int left = nLeft - (((gwr.right-gwr.left) - (gcr.right-gcr.left)) / 2);
-	int top = nTop - (((gwr.bottom-gwr.top) - (gcr.bottom-gcr.top)) / 2);
-	int width = nWidth + ((gwr.right-gwr.left) - (gcr.right-gcr.left));
-	int height = nHeight + ((gwr.bottom-gwr.top) - (gcr.bottom-gcr.top));
-
-	char text[256] = "";
-	if (bMove && bResize)
-	{
-		sprintf((char *) &text, "Move to (%i, %i)  Resize to (%i, %i)", m_pAppData->resolutions.Current()->left, m_pAppData->resolutions.Current()->top, m_pAppData->resolutions.Current()->width, m_pAppData->resolutions.Current()->height);
-		bResult = SetWindowPos(m_pAppData->hWnd, NULL, left, top, width, height, SWP_NOZORDER);
-	}
-	else if (bMove)
-	{
-		sprintf((char *) &text, "Move to (%i, %i)", m_pAppData->resolutions.Current()->left, m_pAppData->resolutions.Current()->top);
-		bResult = SetWindowPos(m_pAppData->hWnd, NULL, left, top, width, height, SWP_NOZORDER | SWP_NOSIZE);
-	}
-	else if (bResize)
-	{
-		sprintf((char *) &text, "Resize to (%i, %i)", m_pAppData->resolutions.Current()->width, m_pAppData->resolutions.Current()->height);
-		bResult = SetWindowPos(m_pAppData->hWnd, NULL, left, top, width, height, SWP_NOZORDER | SWP_NOMOVE);
-	}
-	if (bResult)
-		m_pOSD->ShowItem("Resolution");
-	return bResult;
-}
 
 BOOL TVControl::ShowFilterProperties()
 {
@@ -1612,15 +1623,36 @@ HRESULT TVControl::OnSizing(long fwSide, LPRECT rect)
 			break;
 		};
 	}
+
 	return S_OK;
 }
 
 HRESULT TVControl::OnSize()
 {
-	HRESULT hr = S_OK;
+	HRESULT hr = OnMove();
 	if (m_pFilterGraph)
 		hr = m_pFilterGraph->RefreshVideoPosition();
 	return hr;
+}
+
+HRESULT TVControl::OnMove()
+{
+	if (m_windowInitialiseState == WIS_INITIALISED)
+	{
+		//Update position and size values using new position and/or size
+		RECT rect;
+		POINT point;
+
+		::GetClientRect(g_pData->hWnd, &rect);
+		point.x = rect.left;
+		point.y = rect.top;
+		::ClientToScreen(g_pData->hWnd, &point);
+		g_pData->values.window.position.x = point.x;
+		g_pData->values.window.position.y = point.y;
+		g_pData->values.window.size.width = rect.right - rect.left;
+		g_pData->values.window.size.height = rect.bottom - rect.top;
+	}
+	return S_OK;
 }
 
 HRESULT TVControl::OnTimer(int wParam)
