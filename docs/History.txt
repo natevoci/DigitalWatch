@@ -1,6 +1,33 @@
 --------------------
 DigitalWatch History
 --------------------
+________
+
+v2.0.1.3
+________
+
+  Changes
+  ```````
+  - Implemented Settings.xml, including:
+    - All six application priorities. Low, BelowNormal, Normal, AboveNormal,
+	  High, and Realtime. AboveNormal is now the Default.
+    - Window settings to remember Fullscreen, AlwaysOnTop, the Size, and the
+	  Position of the window when you close it and restore them when the app
+	  is next loaded.
+    - Startup volume and mute setting.
+    - Startup zoom, zoomMode, and overlay color controls settings.
+  - Fixed a crash caused when the window spans 2 screens by 1 pixel.
+  - Added memory leak detection code from codeproject
+    http://www.codeproject.com/cpp/MemLeakDetect.asp.
+  - Added an append mode to the FileWriter class. ofstream caused problems
+    with the memory leak detection code so i'm using FileWriter everywhere
+	now instead.
+  - Fixed menu not hiding after changing channels.
+  - Fixed channel reorder not saving the channels file.
+  - Lots of memory leaks removed.
+  - Added critical sections for most vectors to improved multithreading safety.
+  - Improved OSD efficiency when displaying long lists.
+
 _________
 
 v2.0.0.11

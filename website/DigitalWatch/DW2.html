@@ -104,6 +104,13 @@
 			<div id=text>
 				<table class=downloads>
 					<tr>
+						<td>DigitalWatch 2.0.1.3
+						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.1.3.zip">Zip File</a> (164kb)
+						<td>
+						<td><a href="#DW-2.0.1.3">History</a>
+						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.1.3/">Source Tag</a>
+					</tr>
+					<tr>
 						<td>DigitalWatch 2.0.0.11
 						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.11.zip">Zip File</a> (201kb)
 						<td>
@@ -155,6 +162,35 @@
 		<div id=section>
 			<a name="History"><h2>History</h2>
 	
+			<div id=text>
+				<h4><a name="DW-2.0.1.3">DigitalWatch 2.0.1.3</h4>
+				<div id=indent>
+					Changes:<br>
+					<ul>
+						<li>Implemented Settings.xml, including:
+						<ul>
+							<li>All six application priorities. Low, BelowNormal, Normal, AboveNormal,
+								High, and Realtime. AboveNormal is now the Default.
+							<li>Window settings to remember Fullscreen, AlwaysOnTop, the Size, and the
+								Position of the window when you close it and restore them when the app
+								is next loaded.
+							<li>Startup volume and mute setting.
+							<li>Startup zoom, zoomMode, and overlay color controls settings.
+						</ul><li>Fixed a crash caused when the window spans 2 screens by 1 pixel.
+						<li>Added memory leak detection code from codeproject<br>
+    						<a href=http://www.codeproject.com/cpp/MemLeakDetect.asp>http://www.codeproject.com/cpp/MemLeakDetect.asp</a>.
+						<li>Added an append mode to the FileWriter class. ofstream caused problems
+    						with the memory leak detection code so i'm using FileWriter everywhere
+							now instead.
+						<li>Fixed menu not hiding after changing channels.
+						<li>Fixed channel reorder not saving the channels file.
+						<li>Lots of memory leaks removed.
+						<li>Added critical sections for most vectors to improved multithreading safety.
+						<li>Improved OSD efficiency when displaying long lists.
+					</ul>
+				</div>
+			</div>
+		
 			<div id=text>
 				<h4><a name="DW-2.0.0.11">DigitalWatch 2.0.0.11</h4>
 				<div id=indent>
