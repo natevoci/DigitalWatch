@@ -62,6 +62,8 @@ Debugging
   be causing the trouble.
 
 
-comments, suggestions, bug reports to an appropriate thread on the
-http://forums.dvbowners.com/ forums
-or email to nate@deepcreek.org.au (I prefer the forums though)
+comments, suggestions, bug reports to an appropriate thread on the forum
+http://forums.dvbowners.com/
+
+DigitalWatch Development thread
+http://forums.dvbowners.com/index.php?showforum=25
