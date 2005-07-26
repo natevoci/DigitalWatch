@@ -2,6 +2,9 @@
 DigitalWatch Functions
 ----------------------
 
+This file has not been updated for DW2 yet.
+
+
 These are the predefined functions that you can assign to keys, mouse-clicks,
 control bar buttons, and channels.
 If you assign a function that is not one of these then DigitalWatch will

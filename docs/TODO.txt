@@ -11,7 +11,7 @@ DigitalWatch TODO
     - Last channel
     - current service for each network
   - TV Menu
-    - Still need a Scan All option
+    - Still need a Scan All option (low priority)
 	- Services Menu
 	  - ServiceName 1
 	  - ServiceName 2
@@ -58,7 +58,6 @@ DigitalWatch TODO
 - Startup
   - Startup.xml functions that happen on startup
   - Command-line parameters
-    - If i filename is 
 
 
 

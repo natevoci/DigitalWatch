@@ -1,5 +1,8 @@
-# DigitalWatch - Configuration.txt
-#
+--------------------------
+DigitalWatch Configuration
+--------------------------
+
+This file has not been updated for DW2 yet.
 
 ------------
 channels.ini

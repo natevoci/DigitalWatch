@@ -1,7 +1,7 @@
 DigitalWatch Readme
 ```````````````````
 Author: Nate
-webpage: http://nate.dynalias.net/DigitalWatch/
+webpage: http://nate.dynalias.net/
 
 Description
 ```````````
@@ -24,36 +24,44 @@ Description
 
 Getting started
 ```````````````
-1. Set up channels
-  DigitalWatch does not automatically scan for channels yet.
-  To set up channels, open up the channels.ini file in the DigitalWatch folder
-  and fill it in with the appropriate frequencies and PID's for your region.
-  There are details in the channels.ini file on how to use ScanChannels.exe
-  to scan for channels.
-  Note: You can use a channels.ini file from a previous version of DigitalWatch
-        the program number needs to be valid if you want the Now and Next
-        function to work.
+1. Load DigitalWatch
 
-2. Load DigitalWatch
+2. Use the Arrow keys and Enter and Esc to navigate the menu's
+   If you loose the menu's then F1 and F2 will bring them up again.
+   Basically just keep pressing enter until you get the to Add Network menu.
 
-3. Press a number from 1 to 9 to select a network to start watching.
+3. Select the frequency you want to add and press enter.
+
+4. Wait until the number in the bottom right hand corner changes to the network name
+   Or, if the scanning text disappears then it has timed out.
+
+5. Repeat steps 3 and 4 for each network
+
+6. Press Esc to get out of the Add Network menu.
+
+7. When no menu's are visible use the Enter key to bring up the network selection list
+   Use the right and left arrows to show or hide the services for each network
+   Press enter to change to the selected network or service.
+   
 
 Keys / Mouse
 ````````````
+  For key assignments see the Keys.xml and BDA_DVB-T\Keys.xml files.
+  For function descriptions see docs\Functions.txt (not updated yet)
+
   Left mouse click-and-drag to move the window.
   Left mouse double-click to toggle fullscreen.
-
-  For key assignments see Keys.ini
-  For function descriptions see docs\Functions.txt
+  Left mouse click-and-drag the border to resize.
+  Shift Left mouse click-and-drag the border to change the aspect ratio.
 
 Debugging
 `````````
-  In settings.ini there is an option to add the graph to ROT so you use
-  Filter Graph to see exactly what filters are being used. People having
-  trouble can use this to have a look and see what might be causing
-  the trouble.
+  In Settings.xml there is an option to add the graph to ROT so you use
+  Filter Graph (graphedt.exe) to see exactly what filters are being used.
+  People having trouble can use this to have a look and see what might
+  be causing the trouble.
 
 
-
-comments, suggestions, bug reports to nate@bigblue.net.au
-
+comments, suggestions, bug reports to an appropriate thread on the
+http://forums.dvbowners.com/ forums
+or email to nate@deepcreek.org.au (I prefer the forums though)
