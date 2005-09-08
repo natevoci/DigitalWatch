@@ -78,7 +78,7 @@ HRESULT KeyMap::LoadFromFile(LPWSTR filename)
 		return hr;
 
 	indent.Release();
-	(log << "Finished loading keys file\n").Write();
+	(log << "Finished loading keys file : " << hr << "\n").Write();
 
 	return hr;
 }
@@ -133,6 +133,7 @@ HRESULT KeyMap::LoadFromXML(XMLElementList* elementList)
 			continue;
 		}
 	}
+	(log << "Loaded " << (long)m_keyMaps.size() << " key mappings\n").Write();
 
 	indent.Release();
 	(log << "Finished loading keys from XML\n").Write();

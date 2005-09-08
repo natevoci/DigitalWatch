@@ -202,6 +202,11 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 		}
 	}
 
+	(log << "Loaded " << (long)m_mediaTypes.size() << " media types\n").Write();
+
+	indent.Release();
+	(log << "Finished loading media types file : " << hr << "\n").Write();
+
 	return S_OK;
 }
 

@@ -82,19 +82,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		if FAILED(g_pTv->Initialise())
 			return -1;
 
-		//tv->VideoDecoderEntry(appSettings->defaultVideoDecoder);
-		//tv->AudioDecoderEntry(appSettings->defaultAudioDecoder);
-
 		//appData->StoreGlobalValues();
 		//if (appSettings->startLastChannel != 0)
 		/*{
 			tv->SetChannel(appSettings->lastNetwork, appSettings->lastProgram);
 		}*/
-		/*if (appSettings->disableScreenSaver != 0)
-		{
-			SetTimer(appData->hWnd, 998, 30000, NULL);
-		}*/
-		//g_pTv->StartTimer();
 
 		BOOL bGotMsg;
 		msg.message = WM_NULL;

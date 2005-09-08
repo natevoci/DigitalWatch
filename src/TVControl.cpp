@@ -81,15 +81,6 @@ HRESULT TVControl::Initialise()
 	(log << "Initialising TVControl\n").Write();
 	LogMessageIndent indent(&log);
 
-	if (g_pData->settings.application.disableScreenSaver)
-	{
-		SetTimer(g_pData->hWnd, TIMER_DISABLE_POWER_SAVING, 30000, NULL);
-	}
-	SetTimer(g_pData->hWnd, TIMER_RECORDING_TIMELEFT, 1000, NULL);
-	
-	//SetTimer(g_pData->hWnd, 996, 100, NULL);
-	//SetTimer(g_pData->hWnd, 997, 1000, NULL);
-
 	HRESULT hr;
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%sKeys.xml", g_pData->application.appPath);
@@ -114,7 +105,8 @@ HRESULT TVControl::Initialise()
 //	m_sources.push_back(source);
 //	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
 
-	ShowMenu(L"MainMenu");
+	hr = ShowMenu(L"MainMenu");
+	(log << "Showing Main Menu : " << hr << "\n").Write();
 
 	(log << "Starting command processing thread\n").Write();
 	ResetEvent(m_hCommandProcessingStopEvent);
@@ -126,6 +118,13 @@ HRESULT TVControl::Initialise()
 		return E_FAIL;
 	}
 
+	(log << "Starting Timers\n").Write();
+	if (g_pData->settings.application.disableScreenSaver)
+	{
+		SetTimer(g_pData->hWnd, TIMER_DISABLE_POWER_SAVING, 30000, NULL);
+	}
+	SetTimer(g_pData->hWnd, TIMER_RECORDING_TIMELEFT, 1000, NULL);
+
 	indent.Release();
 	(log << "Finished Initialising TVControl\n").Write();
 
@@ -134,7 +133,14 @@ HRESULT TVControl::Initialise()
 
 HRESULT TVControl::Destroy()
 {
-	// Stop command queue processing thread
+	(log << "Destroying TVControl\n").Write();
+	LogMessageIndent indent(&log);
+
+	(log << "Stopping Timers\n").Write();
+	KillTimer(g_pData->hWnd, TIMER_DISABLE_POWER_SAVING);
+	KillTimer(g_pData->hWnd, TIMER_RECORDING_TIMELEFT);
+
+	(log << "Stoping command queue processing thread\n").Write();
 	SetEvent(m_hCommandProcessingStopEvent);
 	DWORD result;
 	do
@@ -147,6 +153,7 @@ HRESULT TVControl::Destroy()
 		(log << "WaitForSingleObject error: " << (int)err << "\n").Write();
 	}
 
+	(log << "Cleaning up sources\n").Write();
 	CAutoLock sourcesLock(&m_sourcesLock);
 
 	std::vector<DWSource *>::iterator it = m_sources.begin();
@@ -164,6 +171,10 @@ HRESULT TVControl::Destroy()
 		delete m_pFilterGraph;
 		m_pFilterGraph = NULL;
 	}
+
+	indent.Release();
+	(log << "Finished Destroying TVControl\n").Write();
+
 	return S_OK;
 }
 
@@ -1637,7 +1648,7 @@ HRESULT TVControl::OnSize()
 
 HRESULT TVControl::OnMove()
 {
-	if (m_windowInitialiseState == WIS_INITIALISED)
+	if ((m_windowInitialiseState == WIS_INITIALISED) && (g_pData->values.window.bFullScreen == FALSE))
 	{
 		//Update position and size values using new position and/or size
 		RECT rect;

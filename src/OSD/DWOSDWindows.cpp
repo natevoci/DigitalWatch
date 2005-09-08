@@ -399,6 +399,11 @@ HRESULT DWOSDWindows::Load(LPWSTR filename)
 				delete image;
 		}
 	}
+	(log << "Loaded " << (long)m_windows.size() << " windows\n").Write();
+	(log << "Loaded " << (long)m_images.size() << " images\n").Write();
+
+	indent.Release();
+	(log << "Finished loading OSD file : " << hr << "\n").Write();
 
 	return S_OK;
 }

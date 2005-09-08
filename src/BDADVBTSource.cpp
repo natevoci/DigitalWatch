@@ -313,20 +313,22 @@ HRESULT BDADVBTSource::Play()
 
 	//TODO: replace this with last selected channel, or menu depending on options.
 	DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
-	if (pNetwork)
+	DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
+	if (pService)
 	{
-		DVBTChannels_Service* pService = pNetwork->FindDefaultService();
-		if (pService)
-		{
-			return RenderChannel(pNetwork, pService);
-		}
+		hr = RenderChannel(pNetwork, pService);
 	}
-	g_pTv->ShowMenu(L"TVMenu");
+	else
+	{
+		hr = g_pTv->ShowMenu(L"TVMenu");
+		(log << "No channel found. Loading TV Menu : " << hr << "\n").Write();
+		hr = E_FAIL;
+	}
 
 	indent.Release();
-	(log << "Finished Playing BDA Source\n").Write();
+	(log << "Finished Playing BDA Source : " << hr << "\n").Write();
 
-	return E_FAIL;
+	return hr;
 }
 
 DVBTChannels *BDADVBTSource::get_Channels()
