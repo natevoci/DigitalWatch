@@ -22,17 +22,13 @@
 
 #include "DWGraph.h"
 #include "Globals.h"
+#include "DWOnScreenDisplay.h"
 
 #include <math.h>
 #include <mpconfig.h>
 #include <ks.h> // Must be included before ksmedia.h
 #include <ksmedia.h> // Must be included before bdamedia.h
 #include "bdamedia.h"
-
-//TODO: Remove these later once they're included via DWOnScreenDisplay and DWVMR9AllocatorPresenter
-#include <D3d9.h>
-#include <Vmr9.h>
-
 
 
 HRESULT GetProcAmpControlValue(float *controlValue, IVMRMixerControl9 *piMixerControl, VMR9ProcAmpControlFlags dwProperty, long value, long minValue, long maxValue, long defaultValue)
@@ -72,7 +68,7 @@ HRESULT GetProcAmpControlValue(float *controlValue, IVMRMixerControl9 *piMixerCo
 
 
 //////////////////////////////////////////////////////////////////////
-// Construction/Destruction
+// DWGraph
 //////////////////////////////////////////////////////////////////////
 
 DWGraph::DWGraph()
@@ -130,7 +126,6 @@ BOOL DWGraph::Initialise()
 	{
 		if FAILED(hr = graphTools.AddToRot(m_piGraphBuilder, &m_rotEntry))
 		{
-			//TODO: release graphbuilder
 			return (log << "Failed adding graph to ROT: " << hr << "\n").Write();
 		}
 	}
@@ -139,7 +134,6 @@ BOOL DWGraph::Initialise()
 	if FAILED(hr = m_piGraphBuilder->QueryInterface(IID_IMediaControl, reinterpret_cast<void**>(&m_piMediaControl)))
 		return (log << "Failed to get Media Control interface: " << hr << "\n").Write();
 
-//	m_pOverlayCallback = new OverlayCallback(g_pData->hWnd, &hr);
 	m_bInitialised = TRUE;
 
 	indent.Release();

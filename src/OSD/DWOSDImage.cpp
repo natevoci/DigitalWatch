@@ -57,7 +57,6 @@ LPWSTR DWOSDImage::Name()
 
 HRESULT DWOSDImage::Draw(DWSurface *pSurface, long x, long y, long width, long height)
 {
-	USES_CONVERSION;
 	HRESULT hr;
 
 	RECT rcSrc, rcDest;
@@ -65,7 +64,7 @@ HRESULT DWOSDImage::Draw(DWSurface *pSurface, long x, long y, long width, long h
 	if (!m_pImage)
 	{
 		m_pImage = new DWSurface();
-		hr = m_pImage->LoadBitmap(W2T(m_pwszFilename));
+		hr = m_pImage->LoadBitmap(m_pwszFilename);
 		if (m_bUseColorKey)
 			m_pImage->SetColorKey(m_dwColorKey & 0x00FFFFFF);
 		if FAILED(hr)

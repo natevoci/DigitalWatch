@@ -37,7 +37,7 @@ public:
 	virtual HRESULT CreateMainSurface() = 0;
 	virtual HRESULT Create(long width, long height) = 0;
 	virtual HRESULT LoadBitmap(HINSTANCE hInst, UINT nRes) = 0;
-	virtual HRESULT LoadBitmap(LPCTSTR szBitmap) = 0;
+	virtual HRESULT LoadBitmap(LPCWSTR szBitmap) = 0;
 
 	virtual HRESULT Destroy() = 0;
 

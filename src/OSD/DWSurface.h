@@ -41,7 +41,7 @@ public:
 	HRESULT CreateMainSurface();
 	HRESULT Create(long width, long height);
 	HRESULT LoadBitmap(HINSTANCE hInst, UINT nRes);
-	HRESULT LoadBitmap(LPCTSTR szBitmap);
+	HRESULT LoadBitmap(LPCWSTR szBitmap);
 
 	HRESULT Destroy();
 
@@ -75,9 +75,13 @@ protected:
 	long		m_Height;
 	HINSTANCE	m_hInstance;
 	UINT		m_nResource;
-	LPTSTR		m_szBitmap;
+	LPWSTR		m_szBitmap;
 
 	int m_lastRenderMethodChangeCount;
+
+private:
+	HRESULT LoadBitmap();
+
 };
 
 #endif

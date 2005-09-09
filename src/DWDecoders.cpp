@@ -23,11 +23,7 @@
 #include "DWDecoders.h"
 #include "GlobalFunctions.h"
 #include "Globals.h"
-#include "DirectDraw/DWRendererDirectDraw.h"
-
-//TODO: Remove these later once they're included via DWOnScreenDisplay and DWVMR9AllocatorPresenter
-#include <D3d9.h>
-#include <Vmr9.h>
+#include "DWOnScreenDisplay.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWDecoder

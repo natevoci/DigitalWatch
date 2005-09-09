@@ -23,7 +23,6 @@
 #include "DWOnScreenDisplay.h"
 #include "Globals.h"
 #include "GlobalFunctions.h"
-#include "DirectDraw/DWRendererDirectDraw.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWOSD
@@ -37,13 +36,19 @@ DWOnScreenDisplay::DWOnScreenDisplay()
 	m_pData = new DWOSDData(&windows);
 
 	m_pRenderer = NULL;
+	m_pMainSurface = new DWSurface();
+
 	m_renderMethod = RENDER_METHOD_NONE;
 	m_renderMethodChangeCount = 0;
 }
 
 DWOnScreenDisplay::~DWOnScreenDisplay()
 {
-	delete m_pData;
+	if (m_pMainSurface)
+		delete m_pMainSurface;
+
+	if (m_pData)
+		delete m_pData;
 	m_pData = NULL;
 }
 
@@ -101,7 +106,7 @@ void DWOnScreenDisplay::SetRenderMethod(RENDER_METHOD renderMethod)
 
 		if (renderMethod == RENDER_METHOD_OverlayMixer)
 		{
-			m_pRenderer = new DWRendererDirectDraw();
+			m_pRenderer = new DWRendererDirectDraw(m_pMainSurface);
 		}
 		else if (renderMethod == RENDER_METHOD_VMR9Windowless)
 		{

@@ -22,16 +22,13 @@
 
 #include "DWRenderer.h"
 
-DWRenderer::DWRenderer()
+DWRenderer::DWRenderer(DWSurface *pSurface)
 {
-	m_pSurface = new DWSurface();
+	m_pSurface = pSurface;
 }
 
 DWRenderer::~DWRenderer()
 {
-	if (m_pSurface)
-		delete m_pSurface;
-	m_pSurface = NULL;
 }
 
 void DWRenderer::SetLogCallback(LogMessageCallback *callback)

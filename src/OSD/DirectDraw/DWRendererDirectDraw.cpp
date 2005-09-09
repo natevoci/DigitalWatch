@@ -23,7 +23,7 @@
 #include "DWRendererDirectDraw.h"
 #include "Globals.h"
 
-DWRendererDirectDraw::DWRendererDirectDraw()
+DWRendererDirectDraw::DWRendererDirectDraw(DWSurface *pSurface) : DWRenderer(pSurface)
 {
 	m_pDirectDraw = new DWDirectDraw();
 }

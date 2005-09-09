@@ -64,7 +64,8 @@ HRESULT DWSurface::CreateMainSurface()
 	if (m_pSurfaceRenderer)
 	{
 		hr = m_pSurfaceRenderer->CreateMainSurface();
-		//TODO if failed
+		if FAILED(hr)
+			return (log << "Failed to create main surface: " << hr << "\n").Write(hr);
 
 		m_Width = m_pSurfaceRenderer->GetWidth();
 		m_Height = m_pSurfaceRenderer->GetHeight();
@@ -89,10 +90,12 @@ HRESULT DWSurface::Create(long width, long height)
 	if (m_pSurfaceRenderer)
 	{
 		hr = m_pSurfaceRenderer->Create(width, height);
-		//TODO if failed
+		if FAILED(hr)
+			return (log << "Failed to create fixed size surface: " << hr << "\n").Write(hr);
 
 		hr = m_pSurfaceRenderer->Clear();
-		//TODO if failed
+		if FAILED(hr)
+			return (log << "Failed to clear surface after creating it: " << hr << "\n").Write(hr);
 
 		m_Width = m_pSurfaceRenderer->GetWidth();
 		m_Height = m_pSurfaceRenderer->GetHeight();
@@ -102,51 +105,22 @@ HRESULT DWSurface::Create(long width, long height)
 
 HRESULT DWSurface::LoadBitmap(HINSTANCE hInst, UINT nRes)
 {
-	HRESULT hr;
-
-	CAutoLock surfacesLock(&m_surfacesLock);
-
-	hr = Destroy();
-
-	m_surfaceType = CM_LOADBITMAP_RESOURCE;
+	if (m_szBitmap)
+		delete[] m_szBitmap;
+	m_szBitmap = NULL;
 	m_hInstance = hInst;
 	m_nResource = nRes;
 
-	hr = CreateSurfaceRenderer();
-
-	if (m_pSurfaceRenderer)
-	{
-		HRESULT hr = m_pSurfaceRenderer->LoadBitmap(hInst, nRes);
-		//TODO if failed
-
-		m_Width = m_pSurfaceRenderer->GetWidth();
-		m_Height = m_pSurfaceRenderer->GetHeight();
-	}
-	return hr;
+	return LoadBitmap();
 }
 
-HRESULT DWSurface::LoadBitmap(LPCTSTR szBitmap)
+HRESULT DWSurface::LoadBitmap(LPCWSTR szBitmap)
 {
-	HRESULT hr;
-
-	CAutoLock surfacesLock(&m_surfacesLock);
-
-	hr = Destroy();
-
-	m_surfaceType = CM_LOADBITMAP_FILE;
 	strCopy(m_szBitmap, szBitmap);
+	m_hInstance = 0;
+	m_nResource = 0;
 
-	hr = CreateSurfaceRenderer();
-
-	if (m_pSurfaceRenderer)
-	{
-		HRESULT hr = m_pSurfaceRenderer->LoadBitmap(szBitmap);
-		//TODO if failed
-
-		m_Width = m_pSurfaceRenderer->GetWidth();
-		m_Height = m_pSurfaceRenderer->GetHeight();
-	}
-	return hr;
+	return LoadBitmap();
 }
 
 HRESULT DWSurface::Destroy()
@@ -179,8 +153,12 @@ HRESULT DWSurface::Clear()
 	if FAILED(hr)
 		return hr;
 
-	hr = m_pSurfaceRenderer->Clear();
-	//TODO if failed
+	if (m_pSurfaceRenderer)
+	{
+		hr = m_pSurfaceRenderer->Clear();
+		if FAILED(hr)
+			return (log << "Failed to clear surface: " << hr << "\n").Write(hr);
+	}
 
 	return hr;
 }
@@ -198,7 +176,8 @@ HRESULT DWSurface::SetColorKey(COLORREF dwColorKey)
 	if (m_pSurfaceRenderer)
 	{
 		hr = m_pSurfaceRenderer->SetColorKey(dwColorKey);
-		//TODO if failed
+		if FAILED(hr)
+			return (log << "Failed to set color key for surface: " << hr << "\n").Write(hr);
 	}
 
 	return hr;
@@ -218,7 +197,8 @@ HRESULT DWSurface::Blt(DWSurface *targetSurface, RECT* lprcDest, RECT* lprcSrc)
 	if (m_pSurfaceRenderer)
 	{
 		hr = m_pSurfaceRenderer->Blt(targetSurface->m_pSurfaceRenderer, lprcDest, lprcSrc);
-		//TODO if failed
+		if FAILED(hr)
+			return (log << "Failed to blit surface: " << hr << "\n").Write(hr);
 	}
 	return hr;
 }
@@ -236,7 +216,8 @@ HRESULT DWSurface::DrawText(DWSurfaceText *text, int x, int y)
 	if (m_pSurfaceRenderer)
 	{
 		hr = m_pSurfaceRenderer->DrawText(text, x, y);
-		//TODO if failed
+		if FAILED(hr)
+			return (log << "Failed to draw text on surface: " << hr << "\n").Write(hr);
 	}
 
 	return hr;
@@ -309,7 +290,7 @@ HRESULT DWSurface::CheckSurface()
 			hr = LoadBitmap(m_hInstance, m_nResource);
 			break;
 		case CM_LOADBITMAP_FILE:
-			hr = LoadBitmap(m_szBitmap);
+			hr = LoadBitmap();
 			break;
 		};
 		if FAILED(hr)
@@ -318,3 +299,33 @@ HRESULT DWSurface::CheckSurface()
 	return hr;
 }
 
+HRESULT DWSurface::LoadBitmap()
+{
+	HRESULT hr;
+
+	CAutoLock surfacesLock(&m_surfacesLock);
+
+	hr = Destroy();
+
+	m_surfaceType = (m_szBitmap) ? CM_LOADBITMAP_FILE : CM_LOADBITMAP_RESOURCE;
+
+	hr = CreateSurfaceRenderer();
+
+	if (m_pSurfaceRenderer)
+	{
+		if (m_szBitmap)
+		{
+			hr = m_pSurfaceRenderer->LoadBitmap(m_szBitmap);
+		}
+		else
+		{
+			hr = m_pSurfaceRenderer->LoadBitmap(m_hInstance, m_nResource);
+		}
+		if FAILED(hr)
+			return (log << "Failed to create surface from bitmap file: " << hr << "\n").Write(hr);
+
+		m_Width = m_pSurfaceRenderer->GetWidth();
+		m_Height = m_pSurfaceRenderer->GetHeight();
+	}
+	return hr;
+}

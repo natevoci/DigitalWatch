@@ -129,7 +129,7 @@ HRESULT DWSurfaceRendererDirectDraw::LoadBitmap(HINSTANCE hInst, UINT nRes)
 	return LoadBitmap();
 }
 
-HRESULT DWSurfaceRendererDirectDraw::LoadBitmap(LPCTSTR szBitmap)
+HRESULT DWSurfaceRendererDirectDraw::LoadBitmap(LPCWSTR szBitmap)
 {
 	strCopy(m_szBitmap, szBitmap);
 	return LoadBitmap();
@@ -316,6 +316,8 @@ HRESULT DWSurfaceRendererDirectDraw::DrawText(DWSurfaceText *text, int x, int y)
 
 HRESULT DWSurfaceRendererDirectDraw::LoadBitmap()
 {
+	USES_CONVERSION;
+
 	HRESULT hr;
     HBITMAP hbm;
 	HBITMAP hbmOld;
@@ -327,7 +329,7 @@ HRESULT DWSurfaceRendererDirectDraw::LoadBitmap()
 
 	if (m_szBitmap)
 	{
-	    hbm = (HBITMAP)LoadImage(NULL, m_szBitmap, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE|LR_CREATEDIBSECTION);
+	    hbm = (HBITMAP)LoadImage(NULL, W2T(m_szBitmap), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE|LR_CREATEDIBSECTION);
 		if (hbm == NULL)
 			return E_FAIL;
 	}

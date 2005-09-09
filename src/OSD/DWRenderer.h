@@ -30,7 +30,7 @@
 class DWRenderer : public LogMessageCaller
 {
 public:
-	DWRenderer();
+	DWRenderer(DWSurface *pSurface);
 	virtual ~DWRenderer();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);

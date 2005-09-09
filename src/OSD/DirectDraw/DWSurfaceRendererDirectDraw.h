@@ -46,7 +46,7 @@ public:
 	virtual HRESULT CreateMainSurface();
 	virtual HRESULT Create(long width, long height);
 	virtual HRESULT LoadBitmap(HINSTANCE hInst, UINT nRes);
-	virtual HRESULT LoadBitmap(LPCTSTR szBitmap);
+	virtual HRESULT LoadBitmap(LPCWSTR szBitmap);
 
 	virtual HRESULT Destroy();
 
@@ -67,7 +67,7 @@ protected:
 
 	HINSTANCE	m_hInstance;
 	UINT		m_nResource;
-	LPTSTR		m_szBitmap;
+	LPWSTR		m_szBitmap;
 };
 
 #endif

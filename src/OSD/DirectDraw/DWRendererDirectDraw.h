@@ -30,7 +30,7 @@
 class DWRendererDirectDraw : public DWRenderer
 {
 public:
-	DWRendererDirectDraw();
+	DWRendererDirectDraw(DWSurface *pSurface);
 	virtual ~DWRendererDirectDraw();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
