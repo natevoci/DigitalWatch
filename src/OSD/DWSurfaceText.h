@@ -42,8 +42,8 @@ public:
 
 	LOGFONT font;
 
-	void set_Text(LPWSTR text);
-	LPWSTR get_Text();
+	void SetText(LPWSTR text);
+	LPWSTR GetText();
 
 private:
 	LPWSTR m_text;

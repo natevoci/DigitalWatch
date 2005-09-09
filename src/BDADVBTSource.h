@@ -50,7 +50,7 @@ public:
 
 	virtual HRESULT Play();
 
-	DVBTChannels *get_Channels();
+	DVBTChannels *GetChannels();
 
 protected:
 	virtual HRESULT SetChannel(long originalNetworkId, long serviceId);

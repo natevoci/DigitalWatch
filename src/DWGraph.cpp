@@ -311,7 +311,7 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 		if (dwMediaType == NULL)
 			continue;
 
-		DWDecoder *dwDecoder = dwMediaType->get_Decoder();
+		DWDecoder *dwDecoder = dwMediaType->GetDecoder();
 		if (dwDecoder == NULL)
 			continue;
 

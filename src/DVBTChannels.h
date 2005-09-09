@@ -192,7 +192,7 @@ public:
 	HRESULT LoadChannels(LPWSTR filename);
 	HRESULT SaveChannels(LPWSTR filename = NULL);
 
-	long get_DefaultBandwidth();
+	long GetDefaultBandwidth();
 
 	DVBTChannels_Network *FindDefaultNetwork();
 

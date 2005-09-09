@@ -41,7 +41,7 @@ public:
     GUID subtype;
     GUID formattype;
 
-	DWDecoder *get_Decoder();
+	DWDecoder *GetDecoder();
 
 private:
 	DWDecoder *m_pDecoder;

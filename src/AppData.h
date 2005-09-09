@@ -93,6 +93,7 @@ public:
 		{
 			struct SETTINGS_ASPECT_RATIO
 			{
+				long bOverride;
 				float width;
 				float height;
 			} aspectRatio;
@@ -160,6 +161,7 @@ public:
 		{
 			struct VALUES_ASPECT_RATIO
 			{
+				long bOverride;
 				float width;
 				float height;
 			} aspectRatio;

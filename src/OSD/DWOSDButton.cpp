@@ -218,7 +218,7 @@ HRESULT DWOSDButton::Draw(long tickCount)
 	}
 
 	DWSurfaceText text;
-	text.set_Text(pStr);
+	text.SetText(pStr);
 	delete[] pStr;
 	pStr = NULL;
 

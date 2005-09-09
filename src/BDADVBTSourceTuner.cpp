@@ -52,7 +52,7 @@ BDADVBTSourceTuner::BDADVBTSourceTuner(BDADVBTSource *pBDADVBTSource, BDACard *p
 
 	m_pMpeg2DataParser = NULL;
 	m_pMpeg2DataParser = new DVBMpeg2DataParser();
-	m_pMpeg2DataParser->SetDVBTChannels(m_pBDADVBTSource->get_Channels());
+	m_pMpeg2DataParser->SetDVBTChannels(m_pBDADVBTSource->GetChannels());
 
 	m_rotEntry = 0;
 }

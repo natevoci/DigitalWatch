@@ -44,7 +44,7 @@ DWMediaType::~DWMediaType()
 		delete name;
 }
 
-DWDecoder *DWMediaType::get_Decoder()
+DWDecoder *DWMediaType::GetDecoder()
 {
 	return m_pDecoder;
 }

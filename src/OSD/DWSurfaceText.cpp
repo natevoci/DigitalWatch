@@ -111,12 +111,12 @@ HRESULT DWSurfaceText::UninitDC(HDC &hDC)
 	return S_OK;
 }
 
-void DWSurfaceText::set_Text(LPWSTR text)
+void DWSurfaceText::SetText(LPWSTR text)
 {
 	strCopy(m_text, text);
 }
 
-LPWSTR DWSurfaceText::get_Text()
+LPWSTR DWSurfaceText::GetText()
 {
 	return m_text;
 }

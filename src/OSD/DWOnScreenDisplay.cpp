@@ -172,7 +172,7 @@ HRESULT DWOnScreenDisplay::ExitMenu(long nNumberOfMenusToExit)
 	return (i<nNumberOfMenusToExit) ? S_FALSE : S_OK;
 }
 
-DWDirectDraw* DWOnScreenDisplay::get_DirectDraw()
+DWDirectDraw* DWOnScreenDisplay::GetDirectDraw()
 {
 	return m_pDirectDraw;
 }
@@ -182,7 +182,7 @@ DWOSDWindow* DWOnScreenDisplay::Overlay()
 	return m_pOverlayWindow;
 }
 
-DWSurface* DWOnScreenDisplay::get_BackSurface()
+DWSurface* DWOnScreenDisplay::GetBackSurface()
 {
 	return m_pBackSurface;
 }
@@ -306,7 +306,7 @@ HRESULT DWOnScreenDisplay::RenderDirectDraw(long tickCount)
 
 	wchar_t buffer[30];
 	swprintf((LPWSTR)&buffer, L"FPS - %f", m_pDirectDraw->GetFPS());
-	text.set_Text(buffer);
+	text.SetText(buffer);
 	hr = m_pBackSurface->DrawText(&text, 0, 560);
 	hr = m_pBackSurface->DrawText(&text, 700, 560);
 #endif

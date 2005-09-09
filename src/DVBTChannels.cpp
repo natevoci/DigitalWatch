@@ -1126,7 +1126,7 @@ HRESULT DVBTChannels::SaveChannels(LPWSTR filename)
 	return S_OK;
 }
 
-long DVBTChannels::get_DefaultBandwidth()
+long DVBTChannels::GetDefaultBandwidth()
 {
 	return m_bandwidth;
 }

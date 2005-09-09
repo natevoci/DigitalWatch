@@ -42,7 +42,7 @@ public:
 
 	void Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm);
 
-	IDDrawExclModeVideoCallback* get_OverlayCallbackInterface();
+	IDDrawExclModeVideoCallback* GetOverlayCallbackInterface();
 
 	HRESULT Clear();
 	HRESULT Flip();

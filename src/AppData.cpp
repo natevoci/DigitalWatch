@@ -68,6 +68,7 @@ AppData::AppData()
 	settings.audio.volume = 100;
 	settings.audio.bMute = FALSE;
 
+	settings.video.aspectRatio.bOverride = FALSE;
 	settings.video.aspectRatio.width = 16;
 	settings.video.aspectRatio.height = 9;
 
@@ -119,6 +120,7 @@ AppData::AppData()
 	values.audio.volume = settings.audio.volume;
 	values.audio.bMute = settings.audio.bMute;
 
+	values.video.aspectRatio.bOverride = settings.video.aspectRatio.bOverride;
 	values.video.aspectRatio.width = settings.video.aspectRatio.width;
 	values.video.aspectRatio.height = settings.video.aspectRatio.height;
 
@@ -355,6 +357,10 @@ HRESULT AppData::LoadSettings()
 				XMLElement *pSubElement = element->Elements.Item(subItem);
 				if (_wcsicmp(pSubElement->name, L"AspectRatio") == 0)
 				{
+					XMLAttribute *attrOverride = pSubElement->Attributes.Item(L"Override");
+					if (attrOverride)
+						settings.video.aspectRatio.bOverride = (_wcsicmp(attrOverride->value, L"true") == 0);
+
 					XMLAttribute *attrX = pSubElement->Attributes.Item(L"width");
 					XMLAttribute *attrY = pSubElement->Attributes.Item(L"height");
 					if (attrX && attrY)
@@ -512,6 +518,7 @@ HRESULT AppData::SaveSettings()
 		XMLElement *pAspectRatio = new XMLElement(L"AspectRatio");
 		pVideo->Elements.Add(pAspectRatio);
 		{
+			pAspectRatio->Attributes.Add(new XMLAttribute(L"override", (settings.video.aspectRatio.bOverride ? L"True" : L"False")));
 			strCopy(pValue, settings.video.aspectRatio.width);
 			pAspectRatio->Attributes.Add(new XMLAttribute(L"width", pValue));
 			strCopy(pValue, settings.video.aspectRatio.height);

@@ -114,7 +114,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 
 				//hr = piDDrawExclMode->SetDDrawObject((IDirectDraw *)g_pOSD->get_DirectDraw()->get_Object());
 				//hr = piDDrawExclMode->SetDDrawSurface((IDirectDrawSurface *)g_pOSD->get_DirectDraw()->get_FrontSurface());
-				hr = piDDrawExclMode->SetCallbackInterface(g_pOSD->get_DirectDraw()->get_OverlayCallbackInterface(), 0);
+				hr = piDDrawExclMode->SetCallbackInterface(g_pOSD->GetDirectDraw()->GetOverlayCallbackInterface(), 0);
 				if FAILED(hr)
 					return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
 

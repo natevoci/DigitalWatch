@@ -41,7 +41,7 @@ DWOverlayCallback::~DWOverlayCallback()
 
 HRESULT DWOverlayCallback::OnUpdateOverlay(BOOL bBefore, DWORD dwFlags, BOOL bOldVisible, const RECT *prcSrcOld, const RECT *prcDestOld, BOOL bNewVisible, const RECT *prcSrcNew, const RECT *prcDestNew)
 {
-    if ((g_pOSD == NULL) || (g_pOSD->get_DirectDraw() == NULL))
+    if ((g_pOSD == NULL) || (g_pOSD->GetDirectDraw() == NULL))
     {
         DbgLog((LOG_ERROR, 1, TEXT("ERROR: NULL DDraw object pointer was specified"))) ;
         return E_POINTER ;
@@ -50,7 +50,7 @@ HRESULT DWOverlayCallback::OnUpdateOverlay(BOOL bBefore, DWORD dwFlags, BOOL bOl
     if (bBefore)  // overlay is going to be updated
     {
         DbgLog((LOG_TRACE, 5, TEXT("Just turn off color keying and return"))) ;
-        g_pOSD->get_DirectDraw()->SetOverlayEnabled(FALSE);
+        g_pOSD->GetDirectDraw()->SetOverlayEnabled(FALSE);
         //g_pOSD->Render(GetTickCount());  // render the surface so that video doesn't show anymore
         return S_OK ;
     }
@@ -63,14 +63,14 @@ HRESULT DWOverlayCallback::OnUpdateOverlay(BOOL bBefore, DWORD dwFlags, BOOL bOl
                    AM_OVERLAY_NOTIFY_SOURCE_CHANGE  |
                    AM_OVERLAY_NOTIFY_DEST_CHANGE))
     {               
-        g_pOSD->get_DirectDraw()->SetOverlayEnabled(bNewVisible) ;  // paint/don't paint color key based on param
+        g_pOSD->GetDirectDraw()->SetOverlayEnabled(bNewVisible) ;  // paint/don't paint color key based on param
     }        
 
     if (dwFlags & AM_OVERLAY_NOTIFY_DEST_CHANGE)     // overlay destination rect change
     {
         ASSERT(prcDestOld);
         ASSERT(prcDestNew);
-        g_pOSD->get_DirectDraw()->SetOverlayPosition(prcDestNew);
+        g_pOSD->GetDirectDraw()->SetOverlayPosition(prcDestNew);
     }
 
     return S_OK ;
@@ -82,7 +82,7 @@ HRESULT DWOverlayCallback::OnUpdateColorKey(COLORKEY const *pKey,
 {
     DbgLog((LOG_TRACE, 5, TEXT("DWOverlayCallback::OnUpdateColorKey(.., 0x%lx) entered"), dwColor)) ;
 
-	g_pOSD->get_DirectDraw()->SetOverlayColor(dwColor);
+	g_pOSD->GetDirectDraw()->SetOverlayColor(dwColor);
     return S_OK ;
 }
 

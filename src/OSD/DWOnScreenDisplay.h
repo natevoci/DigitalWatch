@@ -55,10 +55,10 @@ public:
 	HRESULT ShowMenu(LPWSTR szMenuName);
 	HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
 
-	DWDirectDraw* get_DirectDraw();
+	DWDirectDraw* GetDirectDraw();
 	DWOSDWindow* Overlay();
 
-	DWSurface* get_BackSurface();
+	DWSurface* GetBackSurface();
 
 	HRESULT GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
 	HRESULT ExecuteCommand(ParseLine* command);

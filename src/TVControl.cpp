@@ -379,13 +379,17 @@ HRESULT TVControl::ZoomMode(int mode)
 	return S_OK;
 }
 
-HRESULT TVControl::AspectRatio(int width, int height)
+HRESULT TVControl::AspectRatio(int nOverride, int width, int height)
 {
+	if (nOverride == 0)
+		g_pData->values.video.aspectRatio.bOverride = FALSE;
+
 	if (width <= 0)
 		return (log << "Zero or negative width supplied: " << width << "\n").Write(E_FAIL);
 	if (height <= 0)
 		return (log << "Zero or negative height supplied: " << height << "\n").Write(E_FAIL);
 
+	g_pData->values.video.aspectRatio.bOverride = nOverride;
 	g_pData->values.video.aspectRatio.width = width;
 	g_pData->values.video.aspectRatio.height = height;
 	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
@@ -772,12 +776,17 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"AspectRatio") == 0)
 	{
-		if (command->LHS.ParameterCount != 2)
-			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+		if ((command->LHS.ParameterCount != 1) &&
+			(command->LHS.ParameterCount != 3))
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 or 3 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = StringToLong(command->LHS.Parameter[0]);
+		if (command->LHS.ParameterCount == 1)
+			return AspectRatio(n1, 0, 0);
+
 		n2 = StringToLong(command->LHS.Parameter[1]);
-		return AspectRatio(n1, n2);
+		n3 = StringToLong(command->LHS.Parameter[2]);
+		return AspectRatio(n1, n2, n3);
 	}
 	else if (_wcsicmp(pCurr, L"ShowMenu") == 0)
 	{
@@ -1598,6 +1607,61 @@ BOOL TVControl::HideCursor()
 	}
 }
 
+HRESULT TVControl::OnPaint()
+{
+/*	if (m_pFilterGraph)
+	{
+		RECT gcr, gvr, rect;
+		m_pFilterGraph->GetVideoRect(&gvr);
+
+		HBRUSH br = CreateSolidBrush(0x00000000);
+
+		HDC hdc;
+		hdc = GetDC(g_pData->hWnd);
+
+		GetClientRect(g_pData->hWnd, &gcr);
+
+		if (gvr.left   < gcr.left  ) gvr.left   = gcr.left;
+		if (gvr.right  > gcr.right ) gvr.right  = gcr.right;
+		if (gvr.top    < gcr.top   ) gvr.top    = gcr.top;
+		if (gvr.bottom > gcr.bottom) gvr.bottom = gcr.bottom;
+
+		if (gvr.top > gcr.top)
+		{
+			CopyRect(&rect, &gcr);
+			rect.bottom = gvr.top;
+			FillRect(hdc, &rect, br);
+		}
+		if (gvr.bottom < gcr.bottom)
+		{
+			CopyRect(&rect, &gcr);
+			rect.top = gvr.bottom;
+			FillRect(hdc, &rect, br);
+		}
+		if (gvr.left > gcr.left)
+		{
+			CopyRect(&rect, &gcr);
+			rect.right = gvr.left;
+			rect.top = gvr.top;
+			rect.bottom = gvr.bottom;
+			FillRect(hdc, &rect, br);
+		}
+		if (gvr.right < gcr.right)
+		{
+			CopyRect(&rect, &gcr);
+			rect.left = gvr.right;
+			rect.top = gvr.top;
+			rect.bottom = gvr.bottom;
+			FillRect(hdc, &rect, br);
+		}
+
+		DeleteObject(br);
+		ReleaseDC(g_pData->hWnd, hdc);
+	}
+*/
+	return S_OK;
+}
+
 HRESULT TVControl::OnSizing(long fwSide, LPRECT rect)
 {
 	if ((GetKeyState(VK_SHIFT) & 0x80) != 0)
@@ -1752,3 +1816,10 @@ void TVControl::StartCommandQueueThread()
 	SetEvent(m_hCommandProcessingDoneEvent);
 }
 
+HRESULT TVControl::GetFilterGraph(DWGraph **ppDWGraph)
+{
+	if (!ppDWGraph)
+		return E_POINTER;
+	*ppDWGraph = m_pFilterGraph;
+	return S_OK;
+}

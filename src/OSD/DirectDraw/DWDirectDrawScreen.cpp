@@ -279,7 +279,7 @@ BOOL DWDirectDrawScreen::IsWindowOnScreen()
 	return TRUE;
 }
 
-IDirectDrawSurface7* DWDirectDrawScreen::get_BackSurface()
+IDirectDrawSurface7* DWDirectDrawScreen::GetBackSurface()
 {
 	m_piBackSurface.p->AddRef();
 	return m_piBackSurface;

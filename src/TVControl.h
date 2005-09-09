@@ -73,7 +73,7 @@ public:
 	HRESULT ZoomIn(int percentage);
 	HRESULT ZoomOut(int percentage);
 	HRESULT ZoomMode(int mode);
-	HRESULT AspectRatio(int width, int height);
+	HRESULT AspectRatio(int nOverride, int width, int height);
 
 	HRESULT ShowMenu(LPWSTR szMenuName);
 	HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
@@ -96,6 +96,7 @@ public:
 	BOOL ShowCursor(BOOL bAllowHide = TRUE);
 	BOOL HideCursor();
 
+	HRESULT OnPaint();
 	HRESULT OnSizing(long fwSide, LPRECT rect);
 	HRESULT OnSize();
 	HRESULT OnMove();
@@ -104,6 +105,9 @@ public:
 	HRESULT ExecuteCommandsImmediate(LPCWSTR command);
 	void ExecuteCommandsQueue(LPCWSTR command);
 	void StartCommandQueueThread();
+
+public:
+	HRESULT GetFilterGraph(DWGraph **ppDWGraph);
 
 private:
 	HRESULT ExecuteGlobalCommand(ParseLine* command);

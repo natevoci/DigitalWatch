@@ -44,7 +44,7 @@ HRESULT DWSurface::CreateFromDirectDrawBackSurface()
 {
 	CAutoLock surfacesLock(&m_surfacesLock);
 
-	DWDirectDraw *pDirectDraw = g_pOSD->get_DirectDraw();
+	DWDirectDraw *pDirectDraw = g_pOSD->GetDirectDraw();
 	if (pDirectDraw == NULL)
 		return (log << "DWDirectDraw object does not exist\n").Write(E_FAIL);
 
@@ -61,7 +61,7 @@ HRESULT DWSurface::CreateFromDirectDrawBackSurface()
 	{
 		DWScreenSurface* screen = new DWScreenSurface();
 		screen->pDDScreen = *it;
-		screen->piDDSurface = screen->pDDScreen->get_BackSurface();
+		screen->piDDSurface = screen->pDDScreen->GetBackSurface();
 		m_surfaces.push_back(screen);
 	}
 
@@ -75,7 +75,7 @@ HRESULT DWSurface::Create(long width, long height)
 	HRESULT hr;
 	Destroy();
 
-	DWDirectDraw *pDirectDraw = g_pOSD->get_DirectDraw();
+	DWDirectDraw *pDirectDraw = g_pOSD->GetDirectDraw();
 	if (pDirectDraw == NULL)
 		return (log << "DWDirectDraw object does not exist\n").Write(E_FAIL);
 
@@ -258,7 +258,7 @@ HRESULT DWSurface::DrawText(DWSurfaceText *text, int x, int y)
 
 	USES_CONVERSION;
 
-	if (text->get_Text() == NULL)
+	if (text->GetText() == NULL)
 	{
 		(log << "DWSurface::DrawText : No text defined\n").Write(E_FAIL);
 	}
@@ -276,7 +276,7 @@ HRESULT DWSurface::DrawText(DWSurfaceText *text, int x, int y)
 			return hr;
 
 		text->InitDC(hDC);
-		TextOut(hDC, x, y, W2T(text->get_Text()), wcslen(text->get_Text()));
+		TextOut(hDC, x, y, W2T(text->GetText()), wcslen(text->GetText()));
 		text->UninitDC(hDC);
 
 		hr = screen->piDDSurface->ReleaseDC(hDC);

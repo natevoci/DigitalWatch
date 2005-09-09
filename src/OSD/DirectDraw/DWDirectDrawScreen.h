@@ -44,7 +44,7 @@ public:
 
 	BOOL IsWindowOnScreen();
 
-	IDirectDrawSurface7* get_BackSurface();
+	IDirectDrawSurface7* GetBackSurface();
 
 	HRESULT CreateSurface(long nWidth, long nHeight, IDirectDrawSurface7** pSurface);
 

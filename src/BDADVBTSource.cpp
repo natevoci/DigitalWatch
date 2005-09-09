@@ -331,7 +331,7 @@ HRESULT BDADVBTSource::Play()
 	return hr;
 }
 
-DVBTChannels *BDADVBTSource::get_Channels()
+DVBTChannels *BDADVBTSource::GetChannels()
 {
 	return &channels;
 }
@@ -406,7 +406,7 @@ HRESULT BDADVBTSource::SetFrequency(long frequency, long bandwidth)
 	else
 	{
 		if (bandwidth == 0)
-			bandwidth = channels.get_DefaultBandwidth();
+			bandwidth = channels.GetDefaultBandwidth();
 	}
 
 	return RenderChannel(frequency, bandwidth);
