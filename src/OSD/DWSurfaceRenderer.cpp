@@ -1,5 +1,5 @@
 /**
- *	DWOSDImage.h
+ *	DWSurfaceRenderer.cpp
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,37 +20,32 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSDIMAGE_H
-#define DWOSDIMAGE_H
-
-#include "StdAfx.h"
-#include "LogMessage.h"
-#include "XMLDocument.h"
 #include "DWSurface.h"
+#include "DWSurfaceRenderer.h"
+#include "Globals.h"
 
-class DWOSDWindows;
-class DWOSDImage : public LogMessageCaller
+//////////////////////////////////////////////////////////////////////
+// DWSurfaceRenderer
+//////////////////////////////////////////////////////////////////////
+
+DWSurfaceRenderer::DWSurfaceRenderer()
 {
-	friend DWOSDWindows;
-public:
-	DWOSDImage();
-	virtual ~DWOSDImage();
+	m_Width = 0;
+	m_Height = 0;
+	m_bColorKey = FALSE;
+	m_dwColorKey = 0;
+}
 
-	LPWSTR Name();
+DWSurfaceRenderer::~DWSurfaceRenderer()
+{
+}
 
-	HRESULT Draw(DWSurface *pSurface, long x, long y, long width, long height);
+UINT DWSurfaceRenderer::GetWidth()
+{
+	return m_Width;
+}
 
-private:
-	HRESULT LoadFromXML(XMLElement *pElement);
-
-	LPWSTR m_pwszName;
-
-	LPWSTR m_pwszFilename;
-	BOOL m_bUseColorKey;
-	COLORREF m_dwColorKey;
-	RECT m_rectStretchArea;
-
-	DWSurface* m_pImage;
-};
-
-#endif
+UINT DWSurfaceRenderer::GetHeight()
+{
+	return m_Height;
+}

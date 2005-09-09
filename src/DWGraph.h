@@ -59,8 +59,10 @@ public:
 
 	HRESULT SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma);
 
-protected:
 	void GetVideoRect(RECT *rect);
+
+protected:
+	void CalculateVideoRect(double aspectRatio = 0);
 	HRESULT ApplyColorControls();
 
 	HRESULT InitialiseVideoPosition();
@@ -70,9 +72,8 @@ private:
 	CComPtr <IMediaControl> m_piMediaControl;
 
 	BOOL m_bInitialised;
-	BOOL m_bVideoRenderered;
 
-	RENDER_METHOD m_renderMethod;
+	RECT m_videoRect;
 
 	DWORD m_rotEntry;
 

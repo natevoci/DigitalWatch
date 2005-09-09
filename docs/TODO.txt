@@ -2,35 +2,45 @@
 DigitalWatch TODO
 -----------------
 
+- Change ColorControls to use a standard range Br:-100<0<100 Co:-100<0<100 Hu:-180<0<180 Sa:-100<0<100
+
+- Make changing channels not change cards be default in release build
 
 - Channels
   - Favorites
   - Scanning
     - Need to add an OSD log of some sort so we can display changes to services
+    - Once it's done transfer it to ScanChannelsBDA
   - Will need to create a new way to store state information about channels
     - Last channel
     - current service for each network
-  - TV Menu
-    - Still need a Scan All option (low priority)
-	- Services Menu
-	  - ServiceName 1
-	  - ServiceName 2
-	  - ...
-	  > Left/Right to reorder
-	  > 1-9 to set as favorite
-	- How to turn Auto Update On/Off
-	- Delete?
 
 - Data item
+  - Add signal strength and quality stats
   - output to an xml file so we don't have to document it, and so other apps can read it.
+  - Shared memory segment (http://forums.dvbowners.com/index.php?showtopic=3154&view=findpost&p=34132)
 
 - OSD
   - Direct3D OSD renderer
   - Figure out how to handle OSD.xml files for different sources. *
-  - Position slider/percentage bar. seeking/timeshifting/volume
+  - Position slider/percentage bar. seeking/timeshifting/volume/signal
   - Bold text in OSD?
   - OSD item for Mute, always on top
   - Mouse actions to operate buttons, lists, etc...
+  - Menus
+    - TV Menu
+      - Still need a Scan All option (low priority)
+	  - Services Menu
+	    - ServiceName 1
+	    - ServiceName 2
+	    - ...
+	    > Left/Right to reorder
+	    > 1-9 to set as favorite
+	  - How to turn Auto Update On/Off
+	  - Delete?
+	  - Language/Audio Selection
+	- Filter Properties
+	- Audio and Video decoder selection
 
 - Add File source
   - Perhaps a generic file playback will do since TSFileSource can be registered to be a default source for .ts files.
@@ -59,7 +69,11 @@ DigitalWatch TODO
   - Startup.xml functions that happen on startup
   - Command-line parameters
 
+- Option to diable logging (an option for each file)
 
+- Automatically register directx9 filters if they're not registered (like mpg2splt, bdasup, tif, m2s&t, mpeg2decfilter, ffdshow)
+
+- Figure out of BDA graphs can be run from a limited user account
 
 - SetLCN()
 - Menu to list filters being used and bring up properties dialog

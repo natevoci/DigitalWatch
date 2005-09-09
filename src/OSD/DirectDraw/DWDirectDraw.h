@@ -26,13 +26,15 @@
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "DWSurface.h"
+#include "DWSurfaceRendererDirectDraw.h"
 #include "DWDirectDrawScreen.h"
 #include <ddraw.h>
 #include <vector>
 
 class DWDirectDraw : public LogMessageCaller
 {
-	friend DWSurface;
+	//friend DWSurface;
+	friend DWSurfaceRendererDirectDraw;
 public:
 	DWDirectDraw();
 	virtual ~DWDirectDraw();

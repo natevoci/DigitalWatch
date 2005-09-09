@@ -1,5 +1,5 @@
 /**
- *	DWSurface.h
+ *	DWSurfaceRenderer.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,66 +20,45 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWSURFACE_H
-#define DWSURFACE_H
+#ifndef DWSURFACERENDERER_H
+#define DWSURFACERENDERER_H
 
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "DWSurfaceText.h"
 #include <vector>
 
-class DWSurface;
-
-#include "DWSurfaceRenderer.h"
-
-class DWSurface : public LogMessageCaller
+class DWSurfaceRenderer : public LogMessageCaller
 {
 public:
-	DWSurface();
-	virtual ~DWSurface();
+	DWSurfaceRenderer();
+	virtual ~DWSurfaceRenderer();
 
-	HRESULT CreateMainSurface();
-	HRESULT Create(long width, long height);
-	HRESULT LoadBitmap(HINSTANCE hInst, UINT nRes);
-	HRESULT LoadBitmap(LPCTSTR szBitmap);
+	virtual HRESULT CreateMainSurface() = 0;
+	virtual HRESULT Create(long width, long height) = 0;
+	virtual HRESULT LoadBitmap(HINSTANCE hInst, UINT nRes) = 0;
+	virtual HRESULT LoadBitmap(LPCTSTR szBitmap) = 0;
 
-	HRESULT Destroy();
+	virtual HRESULT Destroy() = 0;
 
-	HRESULT Clear();
-	HRESULT SetColorKey(COLORREF dwColorKey);
+	virtual HRESULT Clear() = 0;
+	virtual HRESULT SetColorKey(COLORREF dwColorKey) = 0;
 
-	HRESULT Blt(DWSurface *targetSurface, RECT* lprcDest = NULL, RECT* lprcSrc = NULL);
+	virtual HRESULT Blt(DWSurfaceRenderer *targetSurface, RECT* lprcDest = NULL, RECT* lprcSrc = NULL) = 0;
 
-	//HRESULT DrawImage()
+	//virtual HRESULT DrawImage()
 
-	HRESULT DrawText(DWSurfaceText *text, int x, int y);
+	virtual HRESULT DrawText(DWSurfaceText *text, int x, int y) = 0;
 
 	UINT GetWidth();
 	UINT GetHeight();
 
 protected:
-	HRESULT CreateSurfaceRenderer();
-	HRESULT CheckSurface();
+	long m_Width;
+	long m_Height;
+	BOOL m_bColorKey;
+	COLORREF m_dwColorKey;
 
-	CCritSec m_surfacesLock;
-
-	DWSurfaceRenderer *m_pSurfaceRenderer;
-
-	enum DWSurfaceCreateMethod
-	{
-		CM_NONE,
-		CM_CREATEMAINSURFACE,
-		CM_CREATE,
-		CM_LOADBITMAP_RESOURCE,
-		CM_LOADBITMAP_FILE
-	} m_surfaceType;
-	long		m_Width;
-	long		m_Height;
-	HINSTANCE	m_hInstance;
-	UINT		m_nResource;
-	LPTSTR		m_szBitmap;
-
-	int m_lastRenderMethodChangeCount;
 };
 
 #endif

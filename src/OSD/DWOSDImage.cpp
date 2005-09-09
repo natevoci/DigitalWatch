@@ -64,7 +64,7 @@ HRESULT DWOSDImage::Draw(DWSurface *pSurface, long x, long y, long width, long h
 		
 	if (!m_pImage)
 	{
-		m_pImage = new DWDirectDrawImage();
+		m_pImage = new DWSurface();
 		hr = m_pImage->LoadBitmap(W2T(m_pwszFilename));
 		if (m_bUseColorKey)
 			m_pImage->SetColorKey(m_dwColorKey & 0x00FFFFFF);
@@ -72,8 +72,8 @@ HRESULT DWOSDImage::Draw(DWSurface *pSurface, long x, long y, long width, long h
 			return (log << "Failed to load image: " << hr << "\n").Write(hr);
 	}
 
-	long srcWidth = m_pImage->Width();
-	long srcHeight = m_pImage->Height();
+	long srcWidth = m_pImage->GetWidth();
+	long srcHeight = m_pImage->GetHeight();
 
 	//Stretching
 	if ((m_rectStretchArea.left >= 0) && (m_rectStretchArea.right >= 0) && 

@@ -123,7 +123,7 @@ protected:
 	long m_nWidth;
 	long m_nHeight;
 
-	long m_nHighlighedItem;
+	long m_nHighlightedItem;
 
 
 

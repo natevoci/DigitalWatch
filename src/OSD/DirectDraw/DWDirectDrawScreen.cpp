@@ -140,11 +140,19 @@ HRESULT DWDirectDrawScreen::Create()
 	ddsd.dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_CAPS;
 	ddsd.dwWidth = m_nBackBufferWidth;
 	ddsd.dwHeight = m_nBackBufferHeight;
-	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_VIDEOMEMORY;
 	
 	hr = m_piDDObject->CreateSurface(&ddsd, &m_piBackSurface, NULL);
-	if FAILED(hr)
-		return (log << "Failed to create back surface : " << hr << "\n").Write(hr);
+
+    if FAILED(hr)
+	{
+		(log << "Failed to create back surface in video memory. Trying system memory\n").Write();
+		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
+		hr = m_piDDObject->CreateSurface(&ddsd, &m_piBackSurface, NULL);
+
+		if FAILED(hr)
+			return (log << "Failed to create back surface : " << hr << "\n").Write(hr);
+	}
 
 	return S_OK;
 }
@@ -303,12 +311,9 @@ HRESULT DWDirectDrawScreen::CreateSurface(long nWidth, long nHeight, IDirectDraw
 	hr = m_piDDObject->CreateSurface(&ddsd, pSurface, NULL );
     if FAILED(hr)
 	{
-		if (hr == DDERR_OUTOFVIDEOMEMORY)
-		{
-			(log << "Failed to create surface in video memory. Trying system memory\n").Write();
-			ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
-			hr = m_piDDObject->CreateSurface(&ddsd, pSurface, NULL );
-		}
+		(log << "Failed to create surface in video memory. Trying system memory\n").Write();
+		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
+		hr = m_piDDObject->CreateSurface(&ddsd, pSurface, NULL );
 
 		if FAILED(hr)
 			return (log << "Failed to create surface : " << hr << "\n").Write(hr);

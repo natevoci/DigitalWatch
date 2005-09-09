@@ -24,12 +24,13 @@
 #define DWOVERLAYCALLBACK_H
 
 #include "StdAfx.h"
+#include "DWDirectDraw.h"
 
 class DWOverlayCallback : public CUnknown, public IDDrawExclModeVideoCallback
 {
 public:
-    DWOverlayCallback(HRESULT *phr) ;
-    ~DWOverlayCallback() ;
+    DWOverlayCallback(HRESULT *phr, DWDirectDraw *pDirectDraw);
+    ~DWOverlayCallback();
 
     DECLARE_IUNKNOWN
 
@@ -37,6 +38,10 @@ public:
     STDMETHODIMP OnUpdateOverlay(BOOL  bBefore, DWORD dwFlags, BOOL bOldVisible, const RECT *prcSrcOld, const RECT *prcDestOld, BOOL bNewVisible, const RECT *prcSrcNew, const RECT *prcDestNew);
     STDMETHODIMP OnUpdateColorKey(COLORKEY const *pKey, DWORD dwColor);
     STDMETHODIMP OnUpdateSize(DWORD dwWidth, DWORD dwHeight, DWORD dwARWidth, DWORD dwARHeight);
+
+private:
+	DWDirectDraw *m_pDirectDraw;
+
 };
 
 

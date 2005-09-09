@@ -1,5 +1,5 @@
 /**
- *	DWOSDImage.h
+ *	DWRendererDirectDraw.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,37 +20,34 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSDIMAGE_H
-#define DWOSDIMAGE_H
+#ifndef DWRENDERERDIRECTDRAW_H
+#define DWRENDERERDIRECTDRAW_H
 
 #include "StdAfx.h"
-#include "LogMessage.h"
-#include "XMLDocument.h"
-#include "DWSurface.h"
+#include "DWRenderer.h"
+#include "DWDirectDraw.h"
 
-class DWOSDWindows;
-class DWOSDImage : public LogMessageCaller
+class DWRendererDirectDraw : public DWRenderer
 {
-	friend DWOSDWindows;
 public:
-	DWOSDImage();
-	virtual ~DWOSDImage();
+	DWRendererDirectDraw();
+	virtual ~DWRendererDirectDraw();
 
-	LPWSTR Name();
+	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT Draw(DWSurface *pSurface, long x, long y, long width, long height);
+	virtual HRESULT Initialise();
+	virtual HRESULT Destroy();
 
-private:
-	HRESULT LoadFromXML(XMLElement *pElement);
+	virtual HRESULT Clear();
+	virtual HRESULT Present();
 
-	LPWSTR m_pwszName;
+	//TODO: Move this back to protected
+	DWDirectDraw* m_pDirectDraw;
+	//TODO: Get rid of this
+	DWSurface* GetBackSurface() { return m_pSurface; };
 
-	LPWSTR m_pwszFilename;
-	BOOL m_bUseColorKey;
-	COLORREF m_dwColorKey;
-	RECT m_rectStretchArea;
+protected:
 
-	DWSurface* m_pImage;
 };
 
 #endif

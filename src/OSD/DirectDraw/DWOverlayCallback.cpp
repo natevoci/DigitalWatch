@@ -28,10 +28,11 @@
 // DWOverlayCallback
 //////////////////////////////////////////////////////////////////////
 
-DWOverlayCallback::DWOverlayCallback(HRESULT *phr) :
+DWOverlayCallback::DWOverlayCallback(HRESULT *phr, DWDirectDraw *pDirectDraw) :
     CUnknown("Overlay Callback Object", NULL, phr)
 {
     AddRef();
+	m_pDirectDraw = pDirectDraw;
 }
 
 
@@ -41,7 +42,7 @@ DWOverlayCallback::~DWOverlayCallback()
 
 HRESULT DWOverlayCallback::OnUpdateOverlay(BOOL bBefore, DWORD dwFlags, BOOL bOldVisible, const RECT *prcSrcOld, const RECT *prcDestOld, BOOL bNewVisible, const RECT *prcSrcNew, const RECT *prcDestNew)
 {
-    if ((g_pOSD == NULL) || (g_pOSD->GetDirectDraw() == NULL))
+    if ((g_pOSD == NULL) || (m_pDirectDraw == NULL))
     {
         DbgLog((LOG_ERROR, 1, TEXT("ERROR: NULL DDraw object pointer was specified"))) ;
         return E_POINTER ;
@@ -50,7 +51,7 @@ HRESULT DWOverlayCallback::OnUpdateOverlay(BOOL bBefore, DWORD dwFlags, BOOL bOl
     if (bBefore)  // overlay is going to be updated
     {
         DbgLog((LOG_TRACE, 5, TEXT("Just turn off color keying and return"))) ;
-        g_pOSD->GetDirectDraw()->SetOverlayEnabled(FALSE);
+        m_pDirectDraw->SetOverlayEnabled(FALSE);
         //g_pOSD->Render(GetTickCount());  // render the surface so that video doesn't show anymore
         return S_OK ;
     }
@@ -63,38 +64,30 @@ HRESULT DWOverlayCallback::OnUpdateOverlay(BOOL bBefore, DWORD dwFlags, BOOL bOl
                    AM_OVERLAY_NOTIFY_SOURCE_CHANGE  |
                    AM_OVERLAY_NOTIFY_DEST_CHANGE))
     {               
-        g_pOSD->GetDirectDraw()->SetOverlayEnabled(bNewVisible) ;  // paint/don't paint color key based on param
+        m_pDirectDraw->SetOverlayEnabled(bNewVisible) ;  // paint/don't paint color key based on param
     }        
 
     if (dwFlags & AM_OVERLAY_NOTIFY_DEST_CHANGE)     // overlay destination rect change
     {
         ASSERT(prcDestOld);
         ASSERT(prcDestNew);
-        g_pOSD->GetDirectDraw()->SetOverlayPosition(prcDestNew);
+        m_pDirectDraw->SetOverlayPosition(prcDestNew);
     }
 
     return S_OK ;
 }
 
 
-HRESULT DWOverlayCallback::OnUpdateColorKey(COLORKEY const *pKey,
-                                           DWORD dwColor)
+HRESULT DWOverlayCallback::OnUpdateColorKey(COLORKEY const *pKey, DWORD dwColor)
 {
-    DbgLog((LOG_TRACE, 5, TEXT("DWOverlayCallback::OnUpdateColorKey(.., 0x%lx) entered"), dwColor)) ;
-
-	g_pOSD->GetDirectDraw()->SetOverlayColor(dwColor);
+	m_pDirectDraw->SetOverlayColor(dwColor);
     return S_OK ;
 }
 
 
-HRESULT DWOverlayCallback::OnUpdateSize(DWORD dwWidth,   DWORD dwHeight, 
-                                       DWORD dwARWidth, DWORD dwARHeight)
+HRESULT DWOverlayCallback::OnUpdateSize(DWORD dwWidth, DWORD dwHeight, DWORD dwARWidth, DWORD dwARHeight)
 {
-    DbgLog((LOG_TRACE, 5, TEXT("DWOverlayCallback::OnUpdateSize(%lu, %lu, %lu, %lu) entered"), 
-            dwWidth, dwHeight, dwARWidth, dwARHeight)) ;
-
     //PostMessage(g_pData->hWnd, WM_SIZE_CHANGE, 0, 0) ;
-
     return S_OK ;
 }
 

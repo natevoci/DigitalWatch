@@ -375,7 +375,7 @@ DWOSDList::DWOSDList(DWSurface* pSurface) : DWOSDControl(pSurface)
 	m_nWidth = 0;
 	m_nHeight = 0;
 
-	m_nHighlighedItem = 0;
+	m_nHighlightedItem = 0;
 
 	m_nYOffset = 0;
 	m_nLastTickCount = 0;
@@ -433,8 +433,10 @@ HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 			if (attr)
 				m_nHeight = _wtoi(attr->value);
 
-			m_pListSurface->Create(m_nWidth, m_nHeight);
-			m_pListSurface->SetColorKey(RGB(0, 0, 0));
+			if FAILED(m_pListSurface->Create(m_nWidth, m_nHeight))
+				(log << "Failed to create surface for OSD List\n").Write();
+			if FAILED(m_pListSurface->SetColorKey(RGB(0, 0, 0)))
+				(log << "Failed to set color key for OSD List surface\n").Write();
 		}
 		else if (_wcsicmp(element->name, L"itemTemplate") == 0)
 		{
@@ -457,8 +459,6 @@ HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 			}
 			else
 			{
-				//if (m_items.size() == m_nHighlighedItem)
-				//	listItem->SetHighlight(TRUE);
 				m_items.push_back(listItem);
 			}
 		}
@@ -507,56 +507,24 @@ LPWSTR DWOSDList::OnUp()
 {
 	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
 
-	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
-	for ( ; it < m_itemsToRender.end() ; it++ )
-	{
-		DWOSDListItem* item = *it;
-		if (item->IsHighlighted())
-		{
-			it--;
-			if (it < m_itemsToRender.begin())
-				return DWOSDControl::OnUp();
+	if (m_nHighlightedItem == 0)
+		return DWOSDControl::OnUp();
 
-			DWOSDListItem* lastItem = *it;
-
-			item->SetHighlight(FALSE);
-			lastItem->SetHighlight(TRUE);
-			m_nHighlighedItem--;
-
-			UpdateScrolling();
-			return L"";
-		}
-	}
-
-	return NULL;
+	m_nHighlightedItem--;
+	UpdateScrolling();
+	return L"";
 }
 
 LPWSTR DWOSDList::OnDown()
 {
 	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
 
-	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
-	for ( ; it < m_itemsToRender.end() ; it++ )
-	{
-		DWOSDListItem* item = *it;
-		if (item->IsHighlighted())
-		{
-			it++;
-			if (it >= m_itemsToRender.end())
-				return DWOSDControl::OnDown();
+	if (m_nHighlightedItem >= m_itemsToRender.size()-1)
+		return DWOSDControl::OnDown();
 
-			DWOSDListItem* nextItem = *it;
-
-			item->SetHighlight(FALSE);
-			nextItem->SetHighlight(TRUE);
-			m_nHighlighedItem++;
-
-			UpdateScrolling();
-			return L"";
-		}
-	}
-
-	return NULL;
+	m_nHighlightedItem++;
+	UpdateScrolling();
+	return L"";
 }
 
 LPWSTR DWOSDList::OnLeft()
@@ -565,7 +533,7 @@ LPWSTR DWOSDList::OnLeft()
 
 	if (m_itemsToRender.size() <= 0)
 		return NULL;
-	DWOSDListItem* item = m_itemsToRender.at(m_nHighlighedItem);
+	DWOSDListItem* item = m_itemsToRender.at(m_nHighlightedItem);
 	return item->OnLeft();
 }
 
@@ -575,7 +543,7 @@ LPWSTR DWOSDList::OnRight()
 
 	if (m_itemsToRender.size() <= 0)
 		return NULL;
-	DWOSDListItem* item = m_itemsToRender.at(m_nHighlighedItem);
+	DWOSDListItem* item = m_itemsToRender.at(m_nHighlightedItem);
 	return item->OnRight();
 }
 
@@ -657,20 +625,25 @@ HRESULT DWOSDList::Draw(long tickCount)
 	{
 		CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
 
+		long itemID = 0;
 		std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
 		for ( ; it < m_itemsToRender.end() ; it++ )
 		{
 			DWOSDListItem* item = *it;
-			item->m_nPosY = nYOffset;
-			item->m_nWidth = m_nWidth;
 			if ((nYOffset < m_nHeight) && (nYOffset > -item->m_nHeight))
+			{
+				item->m_nPosY = nYOffset;
+				item->m_nWidth = m_nWidth;
+				item->SetHighlight((itemID == m_nHighlightedItem));
 				item->Render(tickCount);
+			}
 			nYOffset += item->m_nHeight + item->m_nGap;
 /*
 			i++;
 			if (i >= 1)
 				break;
 */
+			itemID++;
 		}
 	}
 	
@@ -691,7 +664,6 @@ HRESULT DWOSDList::RefreshListItems()
 	CAutoLock itemsLock(&m_itemsLock);
 
 	BOOL bNeedsRefresh = FALSE;
-	//bNeedsRefresh = TRUE;
 
 	std::vector<DWOSDListItem *>::iterator  itItemsToRender = m_itemsToRender.begin();
 	std::vector<DWOSDListEntry *>::iterator itItems = m_items.begin();
@@ -830,8 +802,6 @@ HRESULT DWOSDList::RefreshListItems()
 				DWOSDListItem* listItem = new DWOSDListItem(m_pListSurface);
 				listItem->SetLogCallback(m_pLogCallback);
 				item->CopyTo(listItem);
-				if (m_itemsToRender.size() == m_nHighlighedItem)
-					listItem->SetHighlight(TRUE);
 				m_itemsToRender.push_back(listItem);
 				continue;
 			}
@@ -874,15 +844,14 @@ HRESULT DWOSDList::RefreshListItems()
 						delete[] pStr;
 						pStr = NULL;
 
-						if (m_itemsToRender.size() == m_nHighlighedItem)
-							listItem->SetHighlight(TRUE);
 						m_itemsToRender.push_back(listItem);
 					}
 				}
 			}
 		}
-		if (m_nHighlighedItem >= m_itemsToRender.size())
-			m_nHighlighedItem = m_itemsToRender.size()-1;
+		if (m_nHighlightedItem >= m_itemsToRender.size())
+			m_nHighlightedItem = m_itemsToRender.size()-1;
+		UpdateScrolling();
 	}
 	return S_OK;
 }
@@ -903,6 +872,7 @@ void DWOSDList::UpdateScrolling()
 
 	long nLastItemHeight = 0;
 
+	long nItemID = 0;
 	std::vector<DWOSDListItem *>::iterator it = m_itemsToRender.begin();
 	for ( ; it < m_itemsToRender.end() ; it++ )
 	{
@@ -915,7 +885,7 @@ void DWOSDList::UpdateScrolling()
 		nOffsetLastCentre = nOffsetHighlightedCentre;
 		nOffsetHighlightedCentre += (item->m_nHeight / 2);
 
-		if (item->IsHighlighted())
+		if (nItemID == m_nHighlightedItem)
 		{
 			if ((nOffsetNext - nOffsetLast) < m_nHeight)
 			{
@@ -941,6 +911,8 @@ void DWOSDList::UpdateScrolling()
 			break;
 		}
 		nOffsetHighlightedCentre += (item->m_nHeight / 2) + item->m_nGap;
+
+		nItemID++;
 	}
 
 	if (m_nMovingToYOffset < nMaximumOffset)

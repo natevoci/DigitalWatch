@@ -24,6 +24,10 @@
 #include "GlobalFunctions.h"
 #include "Globals.h"
 
+//TODO: Remove these later once they're included via DWOnScreenDisplay and DWVMR9AllocatorPresenter
+#include <D3d9.h>
+#include <Vmr9.h>
+
 //////////////////////////////////////////////////////////////////////
 // DWDecoder
 //////////////////////////////////////////////////////////////////////
@@ -56,14 +60,14 @@ LPWSTR DWDecoder::Name()
 	return L"";
 }
 
-HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, RENDER_METHOD &renderMethod)
+HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 {
 	HRESULT hr;
 
 	// Note: Every video renderer must set renderMethod to something
 	//       other than RENDER_METHOD_DEFAULT. If it doesn't then
 	//       the renderer's window won't get owned by DW.
-	renderMethod = RENDER_METHOD_DEFAULT;
+	RENDER_METHOD renderMethod = RENDER_METHOD_DEFAULT;
 
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
@@ -100,10 +104,21 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 				continue;
 			LPWSTR pName = attr->value;
 
-			if (_wcsicmp(pName, L"Overlay Mixer") == 0)
+			if (renderMethod != RENDER_METHOD_DEFAULT)
 			{
+				(log << "Cannot add a second video renderer to the graph. Ignoring " << pName << "\n").Write();
+				continue;
+			}
+
+			if ((_wcsicmp(pName, L"Overlay Mixer") == 0) ||
+				(_wcsicmp(pName, L"OverlayMixer") == 0))
+			{
+				//Set renderer method
+				renderMethod = RENDER_METHOD_OverlayMixer;
+				g_pOSD->SetRenderMethod(renderMethod);
+
 				CComPtr <IBaseFilter> piOMFilter;
-				hr = graphTools.AddFilter(piGraphBuilder, CLSID_OverlayMixer, &piOMFilter, L"Overlay Mixer");
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_OverlayMixer, &piOMFilter, pName);
 				if (hr != S_OK)
 					return (log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Show(hr);
 
@@ -112,8 +127,6 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 				if (piDDrawExclMode == NULL)
 					return (log << "Error: Could not QI for IDDrawExclModeVideo\n").Write(hr);
 
-				//hr = piDDrawExclMode->SetDDrawObject((IDirectDraw *)g_pOSD->get_DirectDraw()->get_Object());
-				//hr = piDDrawExclMode->SetDDrawSurface((IDirectDrawSurface *)g_pOSD->get_DirectDraw()->get_FrontSurface());
 				hr = piDDrawExclMode->SetCallbackInterface(g_pOSD->GetDirectDraw()->GetOverlayCallbackInterface(), 0);
 				if FAILED(hr)
 					return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
@@ -127,25 +140,68 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 				if (hr != S_OK)
 					return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
 				
-				renderMethod = RENDER_METHOD_DIRECTDRAW;
 			}
 			else if (_wcsicmp(pName, L"VMR7") == 0)
 			{
+				//Set renderer method
+				renderMethod = RENDER_METHOD_VMR7;
+				g_pOSD->SetRenderMethod(renderMethod);
+
 				CComPtr <IBaseFilter> piVMR7Filter;
-				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer, &piVMR7Filter, L"VMR7");
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer, &piVMR7Filter, pName);
 				if (hr != S_OK)
 					return (log << "Error: Can't Add VMR7: " << hr << "\n").Show(hr);
-
-				renderMethod = RENDER_METHOD_NONE;
 			}
 			else if (_wcsicmp(pName, L"VMR9") == 0)
 			{
+				//Set renderer method
+				renderMethod = RENDER_METHOD_VMR9;
+				g_pOSD->SetRenderMethod(renderMethod);
+
 				CComPtr <IBaseFilter> piVMR9Filter;
-				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, L"VMR9");
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, pName);
+				if (hr != S_OK)
+					return (log << "Error: Can't Add VMR9: " << hr << "\n").Show(hr);
+			}
+			else if (_wcsicmp(pName, L"VMR9Windowless") == 0)
+			{
+				//Set renderer method
+				renderMethod = RENDER_METHOD_VMR9Windowless;
+				g_pOSD->SetRenderMethod(renderMethod);
+
+				CComPtr <IBaseFilter> piVMR9Filter;
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, pName);
 				if (hr != S_OK)
 					return (log << "Error: Can't Add VMR9: " << hr << "\n").Show(hr);
 
-				renderMethod = RENDER_METHOD_DIRECT3D;
+				// Set Windowless Mode
+				CComQIPtr<IVMRFilterConfig9> piFilterConfig(piVMR9Filter);
+				if (piFilterConfig == NULL)
+					return (log << "Error: Failed to get IVMRFilterConfig9 interface\n").Show(hr);
+
+				hr = piFilterConfig->SetRenderingMode(VMR9Mode_Windowless);
+				if (hr != S_OK)
+					return (log << "Error: Can't set windowless mode: " << hr << "\n").Show(hr);
+
+				// Set the clipping window
+				CComQIPtr<IVMRWindowlessControl9> piWindowlessControl(piVMR9Filter);
+				if (piWindowlessControl == NULL)
+					return (log << "Error: Failed to get IVMRWindowlessControl9 interface\n").Show(hr);
+
+				hr = piWindowlessControl->SetVideoClippingWindow(g_pData->hWnd);
+				if (hr != S_OK)
+					return (log << "Error: Failed to set clipping window: " << hr << "\n").Show(hr);
+			}
+			else if (_wcsicmp(pName, L"VMR9Renderless") == 0)
+			{
+				//Set renderer method
+				renderMethod = RENDER_METHOD_VMR9Renderless;
+				g_pOSD->SetRenderMethod(renderMethod);
+
+				CComPtr <IBaseFilter> piVMR9Filter;
+				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, pName);
+				if (hr != S_OK)
+					return (log << "Error: Can't Add VMR9: " << hr << "\n").Show(hr);
 			}
 			else
 			{
@@ -350,6 +406,11 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 			m_decoders.push_back(dec);
 		}
 	}
+
+	(log << "Loaded " << (long)m_decoders.size() << " decoders\n").Write();
+
+	indent.Release();
+	(log << "Finished loading decoders file : " << hr << "\n").Write();
 
 	return S_OK;
 }

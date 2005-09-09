@@ -41,7 +41,7 @@ public:
 
 	LPWSTR Name();
 
-	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, RENDER_METHOD &renderMethod);
+	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin);
 
 private:
 	XMLElement *m_pElement;

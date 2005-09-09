@@ -33,6 +33,8 @@
   <!-- numpad + and - -->
   <Key code=107>				NetworkUp()</>
   <Key code=109>				NetworkDown()</>
+  <Key code=107 shift>			ProgramUp()</>
+  <Key code=109 shift>			ProgramDown()</>
 
   <!-- Page-Up and Page-Down -->
   <Key code= 33>				NetworkUp()</>

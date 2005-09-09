@@ -23,6 +23,7 @@
 #include "DWOnScreenDisplay.h"
 #include "Globals.h"
 #include "GlobalFunctions.h"
+#include "DirectDraw/DWRendererDirectDraw.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWOSD
@@ -30,24 +31,20 @@
 
 DWOnScreenDisplay::DWOnScreenDisplay()
 {
-	m_pBackSurface = new DWSurface();
-	m_pDirectDraw = new DWDirectDraw();
 	m_pOverlayWindow = NULL;
 	m_pCurrentWindow = NULL;
 	
 	m_pData = new DWOSDData(&windows);
 
-	m_renderMethod = RENDER_METHOD_DEFAULT;
+	m_pRenderer = NULL;
+	m_renderMethod = RENDER_METHOD_NONE;
+	m_renderMethodChangeCount = 0;
 }
 
 DWOnScreenDisplay::~DWOnScreenDisplay()
 {
 	delete m_pData;
 	m_pData = NULL;
-	delete m_pDirectDraw;
-	m_pDirectDraw = NULL;
-	delete m_pBackSurface;
-	m_pBackSurface = NULL;
 }
 
 void DWOnScreenDisplay::SetLogCallback(LogMessageCallback *callback)
@@ -55,22 +52,13 @@ void DWOnScreenDisplay::SetLogCallback(LogMessageCallback *callback)
 	LogMessageCaller::SetLogCallback(callback);
 
 	windows.SetLogCallback(callback);
-	m_pBackSurface->SetLogCallback(callback);
-	m_pDirectDraw->SetLogCallback(callback);
 }
 
 HRESULT DWOnScreenDisplay::Initialise()
 {
 	HRESULT hr;
-	m_pBackSurface->Destroy();
 
-	hr = m_pDirectDraw->Init(g_pData->hWnd);
-	if FAILED(hr)
-		return (log << "Failed to initialise DWDirectDraw: " << hr << "\n").Write(hr);
-
-	hr = m_pBackSurface->CreateFromDirectDrawBackSurface();
-	if (FAILED(hr))
-		return (log << "Failed to create DWSurface from directdraw back surface : " << hr << "\n").Write(hr);
+	SetRenderMethod(RENDER_METHOD_DEFAULT);
 
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, L"OSD.xml");
@@ -83,32 +71,96 @@ HRESULT DWOnScreenDisplay::Initialise()
 	return S_OK;
 }
 
+RENDER_METHOD DWOnScreenDisplay::GetRenderMethod()
+{
+	return m_renderMethod;
+}
+
+int DWOnScreenDisplay::GetRenderMethodChangeCount()
+{
+	return m_renderMethodChangeCount;
+}
+
 void DWOnScreenDisplay::SetRenderMethod(RENDER_METHOD renderMethod)
 {
-	m_renderMethod = renderMethod;
+	if (renderMethod == RENDER_METHOD_DEFAULT)
+		renderMethod = RENDER_METHOD_OverlayMixer;
+
+	if ((m_renderMethod != renderMethod) /*|| (m_renderMethod == RENDER_METHOD_NONE)*/)
+	{
+		m_renderMethod = renderMethod;
+		m_renderMethodChangeCount++;
+
+		HRESULT hr;
+		if (m_pRenderer)
+		{
+			hr = m_pRenderer->Destroy();
+			delete m_pRenderer;
+			m_pRenderer = NULL;
+		}
+
+		if (renderMethod == RENDER_METHOD_OverlayMixer)
+		{
+			m_pRenderer = new DWRendererDirectDraw();
+		}
+		else if (renderMethod == RENDER_METHOD_VMR9Windowless)
+		{
+		}
+
+		if (m_pRenderer)
+			m_pRenderer->Initialise();
+	}
+
 }
 
 HRESULT DWOnScreenDisplay::Render(long tickCount)
 {
-	HRESULT hr = S_OK;
+	HRESULT hr;
 
-	switch (m_renderMethod)
+	if (!m_pRenderer)
+		return S_FALSE;
+
+	m_pRenderer->SetTickCount(tickCount);
+
+	hr = m_pRenderer->Clear();
+	if FAILED(hr)
+		return (log << "Renderer failed to clear: " << hr << "\n").Write(hr);
+
+	if (m_pCurrentWindow != m_pOverlayWindow)
 	{
-	case RENDER_METHOD_NONE:
-		break;
+		CAutoLock windowStackLock(&m_windowStackLock);
 
-	case RENDER_METHOD_DEFAULT:
-	case RENDER_METHOD_DIRECTDRAW:
-		hr = RenderDirectDraw(tickCount);
-		break;
+		std::vector <DWOSDWindow *>::iterator it_begin = m_windowStack.begin();
+		std::vector <DWOSDWindow *>::iterator it_end = m_windowStack.end();
+		long it_count = m_windowStack.size();
+		std::vector <DWOSDWindow *>::iterator it = m_windowStack.end();
+		while (it && (it > m_windowStack.begin()))
+		{
+			it--;
+			if ((*it)->HideWindowsBehindThisOne())
+				break;
+		}
 
-	case RENDER_METHOD_DIRECT3D:
-		hr = RenderDirect3D(tickCount);
-		break;
+		if ((it == NULL) || ((*it)->HideWindowsBehindThisOne() == FALSE))
+			m_pOverlayWindow->Render(tickCount);
 
-	};
+		for ( ; it < m_windowStack.end() ; it++ )
+		{
+			(*it)->Render(tickCount);
+		}
+		m_pCurrentWindow->Render(tickCount);
+	}
+	else
+	{
+		m_pCurrentWindow->Render(tickCount);
+	}
 
-	return hr;
+	//Present
+	hr = m_pRenderer->Present();
+	if FAILED(hr)
+		return (log << "Renderer failed to present: " << hr << "\n").Write(hr);
+
+	return S_OK;
 }
 
 HRESULT DWOnScreenDisplay::ShowMenu(LPWSTR szMenuName)
@@ -172,20 +224,27 @@ HRESULT DWOnScreenDisplay::ExitMenu(long nNumberOfMenusToExit)
 	return (i<nNumberOfMenusToExit) ? S_FALSE : S_OK;
 }
 
-DWDirectDraw* DWOnScreenDisplay::GetDirectDraw()
-{
-	return m_pDirectDraw;
-}
 
 DWOSDWindow* DWOnScreenDisplay::Overlay()
 {
 	return m_pOverlayWindow;
 }
 
+
+DWDirectDraw* DWOnScreenDisplay::GetDirectDraw()
+{
+	if (!m_pRenderer)
+		return NULL;
+	return ((DWRendererDirectDraw *)m_pRenderer)->m_pDirectDraw;
+}
+
 DWSurface* DWOnScreenDisplay::GetBackSurface()
 {
-	return m_pBackSurface;
+	if (!m_pRenderer)
+		return NULL;
+	return ((DWRendererDirectDraw *)m_pRenderer)->GetBackSurface();
 }
+
 
 HRESULT DWOnScreenDisplay::GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
 {
@@ -255,73 +314,4 @@ DWOSDData* DWOnScreenDisplay::Data()
 {
 	return m_pData;
 }
-
-
-/////////////////////
-// Private methods //
-/////////////////////
-HRESULT DWOnScreenDisplay::RenderDirectDraw(long tickCount)
-{
-	HRESULT hr;
-
-	m_pDirectDraw->SetTickCount(tickCount);
-
-	hr = m_pDirectDraw->Clear();
-	if FAILED(hr)
-		return (log << "Failed to clear directdraw: " << hr << "\n").Write(hr);
-
-	if (m_pCurrentWindow != m_pOverlayWindow)
-	{
-		CAutoLock windowStackLock(&m_windowStackLock);
-
-		std::vector <DWOSDWindow *>::iterator it_begin = m_windowStack.begin();
-		std::vector <DWOSDWindow *>::iterator it_end = m_windowStack.end();
-		long it_count = m_windowStack.size();
-		std::vector <DWOSDWindow *>::iterator it = m_windowStack.end();
-		while (it && (it > m_windowStack.begin()))
-		{
-			it--;
-			if ((*it)->HideWindowsBehindThisOne())
-				break;
-		}
-
-		if ((it == NULL) || ((*it)->HideWindowsBehindThisOne() == FALSE))
-			m_pOverlayWindow->Render(tickCount);
-
-		for ( ; it < m_windowStack.end() ; it++ )
-		{
-			(*it)->Render(tickCount);
-		}
-		m_pCurrentWindow->Render(tickCount);
-	}
-	else
-	{
-		m_pCurrentWindow->Render(tickCount);
-	}
-
-#ifdef DEBUG
-	//Display FPS
-	DWSurfaceText text;
-	text.crTextColor = RGB(255, 255, 255);
-
-	wchar_t buffer[30];
-	swprintf((LPWSTR)&buffer, L"FPS - %f", m_pDirectDraw->GetFPS());
-	text.SetText(buffer);
-	hr = m_pBackSurface->DrawText(&text, 0, 560);
-	hr = m_pBackSurface->DrawText(&text, 700, 560);
-#endif
-
-	//Flip
-	hr = m_pDirectDraw->Flip();
-	if FAILED(hr)
-		return (log << "Failed to flip directdraw: " << hr << "\n").Write(hr);
-
-	return S_OK;
-}
-
-HRESULT DWOnScreenDisplay::RenderDirect3D(long tickCount)
-{
-	return S_OK;
-}
-
 

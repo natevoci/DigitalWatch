@@ -24,19 +24,25 @@
 #define DWOSD
 
 #include "StdAfx.h"
-#include "DirectDraw/DWDirectDraw.h"
 #include "DWOSDWindows.h"
 #include "DWOSDData.h"
 #include "LogMessage.h"
 #include "ParseLine.h"
+#include "DWRenderer.h"
 #include <vector>
+
+//TODO remove after GetDirectDraw() is removed from DWOnScreenDisplay
+#include "DirectDraw/DWDirectDraw.h"
 
 enum RENDER_METHOD
 {
 	RENDER_METHOD_NONE,
 	RENDER_METHOD_DEFAULT,
-	RENDER_METHOD_DIRECTDRAW,
-	RENDER_METHOD_DIRECT3D
+	RENDER_METHOD_OverlayMixer,
+	RENDER_METHOD_VMR7,
+	RENDER_METHOD_VMR9,
+	RENDER_METHOD_VMR9Windowless,
+	RENDER_METHOD_VMR9Renderless
 };
 
 class DWOnScreenDisplay : public LogMessageCaller
@@ -49,15 +55,18 @@ public:
 
 	HRESULT Initialise();
 
+	RENDER_METHOD GetRenderMethod();
+	int GetRenderMethodChangeCount();
 	void SetRenderMethod(RENDER_METHOD renderMethod);
+
 	HRESULT Render(long tickCount);
 
 	HRESULT ShowMenu(LPWSTR szMenuName);
 	HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
 
-	DWDirectDraw* GetDirectDraw();
 	DWOSDWindow* Overlay();
 
+	DWDirectDraw* GetDirectDraw();
 	DWSurface* GetBackSurface();
 
 	HRESULT GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
@@ -69,22 +78,20 @@ public:
 	DWOSDData* Data();
 
 private:
-	HRESULT RenderDirectDraw(long tickCount);
-	HRESULT RenderDirect3D(long tickCount);
 
 	DWOSDData* m_pData;
 
 	DWOSDWindows windows;
 
-	DWSurface* m_pBackSurface;
+	DWRenderer* m_pRenderer;
 
-	DWDirectDraw* m_pDirectDraw;
 	DWOSDWindow* m_pOverlayWindow;
 	DWOSDWindow* m_pCurrentWindow;
 	std::vector <DWOSDWindow *> m_windowStack;
 	CCritSec m_windowStackLock;
 
 	RENDER_METHOD m_renderMethod;
+	int m_renderMethodChangeCount;
 };
 
 #endif

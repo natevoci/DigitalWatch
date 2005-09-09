@@ -1,5 +1,5 @@
 /**
- *	DWDirectDrawSurface.h
+ *	DWRenderer.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,27 +20,33 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWDIRECTDRAWSURFACE_H
-#define DWDIRECTDRAWSURFACE_H
+#ifndef DWRENDERER_H
+#define DWRENDERER_H
 
-#include <ddraw.h>
-#include "DWDirectDraw.h"
+#include "StdAfx.h"
+#include "LogMessage.h"
+#include "DWSurface.h"
 
-class DWDirectDrawImage : public DWSurface
+class DWRenderer : public LogMessageCaller
 {
 public:
-	DWDirectDrawImage();
-	virtual ~DWDirectDrawImage();
+	DWRenderer();
+	virtual ~DWRenderer();
 
-	HRESULT LoadBitmap(HINSTANCE hInst, UINT nRes);
-	HRESULT LoadBitmap(LPCTSTR szBitmap);
-	HRESULT LoadBitmap();
+	virtual void SetLogCallback(LogMessageCallback *callback);
+
+	virtual HRESULT Initialise() = 0;
+	virtual HRESULT Destroy() = 0;
+
+	virtual HRESULT Clear() = 0;
+	virtual HRESULT Present() = 0;
+
+	virtual HRESULT GetSurface(DWSurface **ppDWSurface);
+	virtual HRESULT SetTickCount(long tickCount);
 
 protected:
-	HINSTANCE	m_hInstance;
-	UINT		m_nResource;
-	LPTSTR		m_szBitmap;
-
+	DWSurface* m_pSurface;
+	long m_tickCount;
 };
 
 #endif

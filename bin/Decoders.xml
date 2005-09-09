@@ -40,6 +40,32 @@
    	</>
 </Decoder>
 
+<Decoder name="Mpeg2Dec Video Decoder - VMR9Windowless">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <VideoRenderer name="VMR9Windowless" />
+
+    <InputFilter name="Mpeg2Dec Video Decoder" />
+    <Connect>
+    	<From name="Mpeg2Dec Video Decoder" />
+    	<To name="VMR9Windowless" />
+   	</>
+</Decoder>
+
+<Decoder name="Mpeg2Dec Video Decoder - VMR9Renderless">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <VideoRenderer name="VMR9Renderless" />
+
+    <InputFilter name="Mpeg2Dec Video Decoder" />
+    <Connect>
+    	<From name="Mpeg2Dec Video Decoder" />
+    	<To name="VMR9Renderless" />
+   	</>
+</Decoder>
+
 <Decoder name="Mpeg2Dec Video Decoder c/ ffdshow">
 	<MediaType name="MPEG2 Video" />
 	
@@ -305,6 +331,32 @@
    	</>
 </Decoder>
 
+<Decoder name="ffdshow Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{04FE9017-F873-410E-871E-AB91661A4EF7}" name="ffdshow Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <InputFilter name="ffdshow Video Decoder" />
+    <Connect>
+    	<From name="ffdshow Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="ffdshow Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{04FE9017-F873-410E-871E-AB91661A4EF7}" name="ffdshow Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <InputFilter name="ffdshow Video Decoder" />
+    <Connect>
+    	<From name="ffdshow Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
 
 
 <!--
@@ -406,7 +458,19 @@
     </>
 </Decoder>
 
-
+<Decoder name="ffdshow Audio Decoder">
+	<MediaType name="MPEG Audio" />
+	<MediaType name="MPEG2 Audio" />
+	
+    <LoadFilter clsid="{0F40E1E5-4F79-4988-B1A9-CC98794E6B55}" name="ffdshow Audio Decoder" />
+    <AudioRenderer name="Default DirectSound Device" />
+    
+    <InputFilter name="ffdshow Audio Decoder" />
+    <Connect>
+    	<From name="ffdshow Audio Decoder" />
+    	<To name="Default DirectSound Device" />
+    </>
+</Decoder>
 
 
 <!--

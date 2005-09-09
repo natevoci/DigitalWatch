@@ -66,7 +66,7 @@ HRESULT DWDirectDraw::Init(HWND hWnd)
 
 	if (!m_pOverlayCallback)
 	{
-		IDDrawExclModeVideoCallback *pNewCallback = new DWOverlayCallback(&hr);
+		IDDrawExclModeVideoCallback *pNewCallback = new DWOverlayCallback(&hr, this);
 		m_pOverlayCallback.Attach(pNewCallback);
 		if (FAILED(hr))
 		{

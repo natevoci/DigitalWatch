@@ -275,14 +275,6 @@ SOURCE=.\src\dsnetifc.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\OSD\DWOverlayCallback.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\OSD\DWOverlayCallback.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\src\FilterGraphTools.cpp
 # End Source File
 # Begin Source File
@@ -402,19 +394,35 @@ SOURCE=.\src\OSD\DirectDraw\DWDirectDraw.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\OSD\DirectDraw\DWDirectDrawImage.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\OSD\DirectDraw\DWDirectDrawImage.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\src\OSD\DirectDraw\DWDirectDrawScreen.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\OSD\DirectDraw\DWDirectDrawScreen.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DirectDraw\DWOverlayCallback.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DirectDraw\DWOverlayCallback.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DirectDraw\DWRendererDirectDraw.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DirectDraw\DWRendererDirectDraw.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DirectDraw\DWSurfaceRendererDirectDraw.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DirectDraw\DWSurfaceRendererDirectDraw.h
 # End Source File
 # End Group
 # Begin Source File
@@ -427,11 +435,27 @@ SOURCE=.\src\OSD\DWOnScreenDisplay.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\OSD\DWRenderer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWRenderer.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\OSD\DWSurface.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\OSD\DWSurface.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWSurfaceRenderer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\DWSurfaceRenderer.h
 # End Source File
 # Begin Source File
 

@@ -29,6 +29,48 @@
 #include <ksmedia.h> // Must be included before bdamedia.h
 #include "bdamedia.h"
 
+//TODO: Remove these later once they're included via DWOnScreenDisplay and DWVMR9AllocatorPresenter
+#include <D3d9.h>
+#include <Vmr9.h>
+
+
+
+HRESULT GetProcAmpControlValue(float *controlValue, IVMRMixerControl9 *piMixerControl, VMR9ProcAmpControlFlags dwProperty, long value, long minValue, long maxValue, long defaultValue)
+{
+	HRESULT hr;
+
+	VMR9ProcAmpControlRange controlRange;
+	memset(&controlRange, 0, sizeof(VMR9ProcAmpControlRange));
+
+	controlRange.dwSize = sizeof(VMR9ProcAmpControlRange);
+	controlRange.dwProperty = dwProperty;
+
+	hr = piMixerControl->GetProcAmpControlRange(0, &controlRange);
+	if (hr != S_OK)
+		return hr;
+
+	float result;
+	float perc;
+
+	if (value < defaultValue)
+	{
+		result = controlRange.MinValue;
+		perc = (value-minValue) / (float)(defaultValue-minValue);
+		result += (controlRange.DefaultValue - controlRange.MinValue) * perc;
+	}
+	else if (value > defaultValue)
+	{
+		result = controlRange.DefaultValue;
+		perc = (value-defaultValue) / (float)(maxValue-defaultValue);
+		result += (controlRange.MaxValue - controlRange.DefaultValue) * perc;
+	}
+	else
+		result = controlRange.DefaultValue;
+	*controlValue = result;
+	return S_OK;
+}
+
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -38,8 +80,7 @@ DWGraph::DWGraph()
 	m_piGraphBuilder = NULL;
 	m_piMediaControl = NULL;
 	m_bInitialised = FALSE;
-	m_bVideoRenderered = FALSE;
-	m_renderMethod = RENDER_METHOD_DEFAULT;
+	SetRect(&m_videoRect, 0, 0, 0, 0);
 	m_rotEntry = 0;
 }
 
@@ -157,37 +198,14 @@ HRESULT DWGraph::Start()
 
 	HRESULT hr;
 
-	if (m_bVideoRenderered)
-	{
-		//Set the video renderer to use our window.
-		CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
-		if (piVideoWindow)
-		{
-			if FAILED(hr = piVideoWindow->put_Owner((OAHWND)g_pData->hWnd))
-				return (log << "could not set IVideoWindow Window Handle: " << hr << "\n").Write(hr);
-
-			if FAILED(hr = piVideoWindow->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS))
-				return (log << "could not set IVideoWindow Window Style: " << hr << "\n").Write(hr);
-
-			if FAILED(hr = piVideoWindow->put_MessageDrain((OAHWND)g_pData->hWnd))
-				return (log << "could not set IVideoWindow Message Drain: " << hr << "\n").Write(hr);
-
-			//if FAILED(hr = piVideoWindow->put_AutoShow(OAFALSE))
-			//	return (log << "could not set IVideoWindow AutoShow: " << hr << "\n").Write(hr);
-		}
-
-		hr = InitialiseVideoPosition();
-		if FAILED(hr)
-			return (log << "Failed to refresh video posistion: " << hr << "\n").Write(hr);
-	}
+	hr = InitialiseVideoPosition();
+	if FAILED(hr)
+		return (log << "Failed to Initialise Video Rendering: " << hr << "\n").Write(hr);
 
 	//Start the graph
 	hr = m_piMediaControl->Run();
 	if FAILED(hr)
 		return (log << "Failed to start graph: " << hr << "\n").Write(hr);
-
-	//Set renderer method
-	g_pOSD->SetRenderMethod(m_renderMethod);
 
 	hr = ApplyColorControls();
 	hr = SetVolume(g_pData->values.audio.volume);
@@ -235,7 +253,7 @@ HRESULT DWGraph::Start()
 	} while (FALSE);
 
 	indent.Release();
-	(log << "Finished Starting DW Graph\n").Write();
+	(log << "Finished Starting DW Graph : " << hr << "\n").Write();
 
 	return hr;
 }
@@ -250,12 +268,11 @@ HRESULT DWGraph::Stop()
 		return (log << "Failed to stop graph: " << hr << "\n").Write(hr);
 
 	//Reset renderer method
-	m_renderMethod = RENDER_METHOD_DEFAULT;
 	if (g_pOSD)
-		g_pOSD->SetRenderMethod(m_renderMethod);
+		g_pOSD->SetRenderMethod(RENDER_METHOD_DEFAULT);
 
 	indent.Release();
-	(log << "Finished Stopping DW Graph\n").Write();
+	(log << "Finished Stopping DW Graph : " << hr << "\n").Write();
 
 	return hr;
 }
@@ -266,8 +283,6 @@ HRESULT DWGraph::Cleanup()
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
-
-	m_bVideoRenderered = FALSE;
 
 /*	CComQIPtr<IFilterChain> piFilterChain(m_piGraphBuilder);
 	if (piFilterChain == NULL)
@@ -295,7 +310,6 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 		return E_INVALIDARG;
 
 	HRESULT hr;
-	RENDER_METHOD renderMethod;
 
 	CComPtr <IEnumMediaTypes> piMediaTypes;
 	if FAILED(hr = piPin->EnumMediaTypes(&piMediaTypes))
@@ -317,16 +331,12 @@ HRESULT DWGraph::RenderPin(IPin *piPin)
 
 		(log << "Rendering stream of type \"" << dwMediaType->name << "\" with decoder \"" << dwDecoder->Name() << "\"\n").Write();
 
-		if SUCCEEDED(hr = dwDecoder->AddFilters(m_piGraphBuilder, piPin, renderMethod))
+		if SUCCEEDED(hr = dwDecoder->AddFilters(m_piGraphBuilder, piPin))
 		{
-			if (renderMethod != RENDER_METHOD_DEFAULT)
-			{
-				m_bVideoRenderered = TRUE;
-				m_renderMethod = renderMethod;
-			}
 			break;
 		}
 	}
+
 	piMediaTypes.Release();
 
 	return hr;
@@ -337,18 +347,51 @@ HRESULT DWGraph::InitialiseVideoPosition()
 	HRESULT hr = S_OK;
 
 	if (!m_piGraphBuilder)
-		return (log << "IGraphBuilder doesn't exist yet").Write(S_FALSE);
+		return (log << "IGraphBuilder doesn't exist yet\n").Write(E_POINTER);
+	if (!g_pOSD)
+		return (log << "OSD is gone!\n").Write(E_POINTER);
 
-	//Set overlay to streched AR mode
-	CComPtr <IPin> piPin;
-	hr = graphTools.GetOverlayMixerInputPin(m_piGraphBuilder, L"Input0", &piPin);
-	if (hr == S_OK)
+	RENDER_METHOD renderMethod = g_pOSD->GetRenderMethod();
+
+	if ((renderMethod == RENDER_METHOD_OverlayMixer) ||
+		(renderMethod == RENDER_METHOD_VMR7) ||
+		(renderMethod == RENDER_METHOD_VMR9))
 	{
-		CComPtr <IMixerPinConfig> piMixerPinConfig;
-		hr = piPin->QueryInterface(IID_IMixerPinConfig, reinterpret_cast<void**>(&piMixerPinConfig));
+		//Set the video renderer to use our window.
+		CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
+		if (piVideoWindow)
+		{
+			if FAILED(hr = piVideoWindow->put_Owner((OAHWND)g_pData->hWnd))
+				return (log << "could not set IVideoWindow Window Handle: " << hr << "\n").Write(hr);
+
+			if FAILED(hr = piVideoWindow->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS))
+				return (log << "could not set IVideoWindow Window Style: " << hr << "\n").Write(hr);
+
+			if FAILED(hr = piVideoWindow->put_MessageDrain((OAHWND)g_pData->hWnd))
+				return (log << "could not set IVideoWindow Message Drain: " << hr << "\n").Write(hr);
+
+			//if FAILED(hr = piVideoWindow->put_AutoShow(OAFALSE))
+			//	return (log << "could not set IVideoWindow AutoShow: " << hr << "\n").Write(hr);
+		}
+	}
+
+	if (renderMethod == RENDER_METHOD_OverlayMixer)
+	{
+		//Set overlay to streched AR mode
+		CComPtr <IPin> piPin;
+		hr = graphTools.GetOverlayMixerInputPin(m_piGraphBuilder, L"Input0", &piPin);
 		if (hr == S_OK)
 		{
-			hr = piMixerPinConfig->SetAspectRatioMode(AM_ARMODE_STRETCHED);
+			CComPtr <IMixerPinConfig> piMixerPinConfig;
+			hr = piPin->QueryInterface(IID_IMixerPinConfig, reinterpret_cast<void**>(&piMixerPinConfig));
+			if (hr == S_OK)
+			{
+				hr = piMixerPinConfig->SetAspectRatioMode(AM_ARMODE_STRETCHED);
+			}
+		}
+		else
+		{
+			(log << "Error: Failed to find input pin of overlay mixer: " << hr << "\n").Write();
 		}
 	}
 
@@ -359,51 +402,108 @@ HRESULT DWGraph::RefreshVideoPosition()
 {
 	HRESULT hr = S_OK;
 
+	double aspectRatio = 0;
+
 	if (!m_piGraphBuilder)
 		return (log << "IGraphBuilder doesn't exist yet").Write(S_FALSE);
+	if (!g_pOSD)
+		return (log << "OSD is gone!\n").Write(E_POINTER);
 
-	CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
-	if (!piVideoWindow)
-		return (log << "Could not query graph builder for IVideoWindow\n").Write(S_FALSE);
+	RENDER_METHOD renderMethod = g_pOSD->GetRenderMethod();
 
-	CComQIPtr <IBasicVideo> piBasicVideo(m_piGraphBuilder);
-	if (!piBasicVideo)
-		return (log << "could not query graph builder for IBasicVideo\n").Write(S_FALSE);
+	if (renderMethod == RENDER_METHOD_VMR9Windowless)
+	{
+		CComPtr <IBaseFilter> piVMR9Filter;
+		hr = graphTools.FindFilterByCLSID(m_piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter);
+		if (hr == S_OK)
+		{
+			// Fill client area of our window with VMR9
+			RECT clientRect;
+			GetClientRect(g_pData->hWnd, &clientRect);
 
-	//RECT srcRect;
-	//srcRect.left = 0; srcRect.top = 0;
-	//hr = piBasicVideo->GetVideoSize(&srcRect.right, &srcRect.bottom);
-	//if (hr == S_OK) hr = piBasicVideo->SetSourcePosition(srcRect.left, srcRect.top, srcRect.right-srcRect.left, srcRect.bottom-srcRect.top);
+			CComQIPtr<IVMRWindowlessControl9> piWindowlessControl(piVMR9Filter);
+			if (piWindowlessControl == NULL)
+				return (log << "Error: Failed to get IVMRWindowlessControl9 interface\n").Show(E_NOINTERFACE);
 
-	RECT mainRect;
-	GetClientRect(g_pData->hWnd, &mainRect);
-	if FAILED(hr = piVideoWindow->SetWindowPosition(0, 0, mainRect.right-mainRect.left, mainRect.bottom-mainRect.top))
-		return (log << "could not set IVideoWindow position: " << hr << "\n").Write(hr);
+			hr = piWindowlessControl->SetVideoPosition(NULL, &clientRect);
+			if (hr != S_OK)
+				return (log << "Error: Failed to set clipping window: " << hr << "\n").Show(hr);
 
-	RECT zoomRect;
-	GetVideoRect(&zoomRect);
-	if FAILED(hr = piBasicVideo->SetDestinationPosition(zoomRect.left, zoomRect.top, zoomRect.right-zoomRect.left, zoomRect.bottom-zoomRect.top))
-		return (log << "count not set IBasicVideo destination position: " << hr << "\n").Write(hr);
+			// Position the video within our application window
+			long lWidth, lHeight, lARWidth, lARHeight;
+			piWindowlessControl->GetNativeVideoSize(&lWidth, &lHeight, &lARWidth, &lARHeight);
+			aspectRatio = lARWidth / (double)lARHeight;
 
-//	if FAILED(hr = piVideoWindow->put_Visible(OATRUE))
-//		return (log << "could not set IVideoWindow visible: " << hr << "\n").Write(hr);
+			CalculateVideoRect(aspectRatio);
+
+			CComQIPtr<IVMRMixerControl9> piMixerControl(piVMR9Filter);
+			if (piMixerControl == NULL)
+				return (log << "Error: Failed to get IVMRMixerControl9 interface\n").Show(E_NOINTERFACE);
+
+			VMR9NormalizedRect zoomRect;
+			lWidth = (clientRect.right - clientRect.left);
+			lHeight = (clientRect.bottom - clientRect.top);
+			zoomRect.left   = m_videoRect.left   / (float)lWidth;
+			zoomRect.top    = m_videoRect.top    / (float)lHeight;
+			zoomRect.right  = m_videoRect.right  / (float)lWidth;
+			zoomRect.bottom = m_videoRect.bottom / (float)lHeight;
+			hr = piMixerControl->SetOutputRect(0, &zoomRect);
+			if (hr != S_OK)
+				return (log << "Error: Failed to set output rectangle: " << hr << "\n").Show(hr);
+		}
+	}
+	else if (renderMethod == RENDER_METHOD_VMR9Renderless)
+	{
+	}
+	else
+	{
+		CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
+		if (!piVideoWindow)
+			return (log << "Could not query graph builder for IVideoWindow\n").Write(S_FALSE);
+
+		CComQIPtr <IBasicVideo> piBasicVideo(m_piGraphBuilder);
+		if (!piBasicVideo)
+			return (log << "could not query graph builder for IBasicVideo\n").Write(S_FALSE);
+
+		CComQIPtr <IBasicVideo2> piBasicVideo2(m_piGraphBuilder);
+		if (piBasicVideo2)
+		{
+			long lARWidth, lARHeight;
+			hr = piBasicVideo2->GetPreferredAspectRatio(&lARWidth, &lARHeight);
+			if (hr == S_OK)
+				aspectRatio = lARWidth / (double)lARHeight;
+		}
+		else
+			(log << "could not query graph builder for IBasicVideo2\n").Write();
+
+		RECT mainRect;
+		GetClientRect(g_pData->hWnd, &mainRect);
+		if FAILED(hr = piVideoWindow->SetWindowPosition(0, 0, mainRect.right-mainRect.left, mainRect.bottom-mainRect.top))
+			return (log << "could not set IVideoWindow position: " << hr << "\n").Write(hr);
+
+		CalculateVideoRect(aspectRatio);
+		if FAILED(hr = piBasicVideo->SetDestinationPosition(m_videoRect.left, m_videoRect.top, m_videoRect.right-m_videoRect.left, m_videoRect.bottom-m_videoRect.top))
+			return (log << "count not set IBasicVideo destination position: " << hr << "\n").Write(hr);
+	}
 
 	return S_OK;
 }
 
-void DWGraph::GetVideoRect(RECT *rect)
+void DWGraph::CalculateVideoRect(double aspectRatio/* = 0*/)
 {
-	GetClientRect(g_pData->hWnd, rect);
+	GetClientRect(g_pData->hWnd, &m_videoRect);
 
-	double ar   = 0;
-	if (g_pData->values.video.aspectRatio.height > 0)
-		ar = g_pData->values.video.aspectRatio.width / g_pData->values.video.aspectRatio.height;
+	double ar = aspectRatio;
+	if ((aspectRatio == 0) || g_pData->values.video.aspectRatio.bOverride)
+		if (g_pData->values.video.aspectRatio.height > 0)
+			ar = g_pData->values.video.aspectRatio.width / g_pData->values.video.aspectRatio.height;
+
 	double zoom = g_pData->values.video.zoom / 100.0;
 	
 	if (ar >= 0)
 	{
-		long windowWidth  = (rect->right  - rect->left);
-		long windowHeight = (rect->bottom - rect->top );
+		long windowWidth  = (m_videoRect.right  - m_videoRect.left);
+		long windowHeight = (m_videoRect.bottom - m_videoRect.top );
 		long newWidth, newHeight;
 
 		switch (g_pData->values.video.zoomMode)
@@ -413,10 +513,10 @@ void DWGraph::GetVideoRect(RECT *rect)
 				newWidth  = long(windowHeight * ar * zoom);
 				newHeight = long(windowHeight * zoom);
 
-				rect->left   = long((windowWidth  - newWidth ) / 2);
-				rect->top    = long((windowHeight - newHeight) / 2);
-				rect->right  = rect->left + newWidth;
-				rect->bottom = rect->top  + newHeight;
+				m_videoRect.left   = long((windowWidth  - newWidth ) / 2);
+				m_videoRect.top    = long((windowHeight - newHeight) / 2);
+				m_videoRect.right  = m_videoRect.left + newWidth;
+				m_videoRect.bottom = m_videoRect.top  + newHeight;
 			}
 			break;
 		default:
@@ -426,20 +526,20 @@ void DWGraph::GetVideoRect(RECT *rect)
 					newWidth  = long(windowWidth * zoom);
 					newHeight = long(windowWidth * (1.0 / ar) * zoom);
 
-					rect->left   = long((windowWidth  - newWidth ) / 2);
-					rect->top    = long((windowHeight - newHeight) / 2);
-					rect->right  = rect->left + newWidth;
-					rect->bottom = rect->top  + newHeight;
+					m_videoRect.left   = long((windowWidth  - newWidth ) / 2);
+					m_videoRect.top    = long((windowHeight - newHeight) / 2);
+					m_videoRect.right  = m_videoRect.left + newWidth;
+					m_videoRect.bottom = m_videoRect.top  + newHeight;
 				}
 				else
 				{
 					newWidth  = long(windowHeight * ar * zoom);
 					newHeight = long(windowHeight * zoom);
 
-					rect->left   = long((windowWidth  - newWidth ) / 2);
-					rect->top    = long((windowHeight - newHeight) / 2);
-					rect->right  = rect->left + newWidth;
-					rect->bottom = rect->top  + newHeight;
+					m_videoRect.left   = long((windowWidth  - newWidth ) / 2);
+					m_videoRect.top    = long((windowHeight - newHeight) / 2);
+					m_videoRect.right  = m_videoRect.left + newWidth;
+					m_videoRect.bottom = m_videoRect.top  + newHeight;
 				}
 			}
 			break;
@@ -524,28 +624,72 @@ HRESULT DWGraph::ApplyColorControls()
 {
 	HRESULT hr = S_OK;
 
-	CComPtr <IPin> piPin;
-	hr = graphTools.GetOverlayMixerInputPin(m_piGraphBuilder, L"Input0", &piPin);
-	if (FAILED(hr))
-		return hr;
+	if (!g_pOSD)
+		return (log << "OSD is gone!\n").Write(E_POINTER);
 
-	CComPtr <IMixerPinConfig2> piMixerPinConfig2;
-	if FAILED(hr = piPin->QueryInterface(IID_IMixerPinConfig2, (void **)&piMixerPinConfig2))
-		return (log << "Failed to get IMixerPinConfig2 interface from pin\n").Write(E_FAIL);
+	RENDER_METHOD renderMethod = g_pOSD->GetRenderMethod();
 
-	DDCOLORCONTROL colorControl;
-	colorControl.dwSize = sizeof(DDCOLORCONTROL);
-	colorControl.dwFlags = DDCOLOR_BRIGHTNESS | DDCOLOR_CONTRAST | DDCOLOR_HUE | DDCOLOR_SATURATION | DDCOLOR_GAMMA;
-	colorControl.lBrightness = g_pData->values.video.overlay.brightness;
-	colorControl.lContrast = g_pData->values.video.overlay.contrast;
-	colorControl.lHue = g_pData->values.video.overlay.hue;
-	colorControl.lSaturation = g_pData->values.video.overlay.saturation;
-	colorControl.lGamma = g_pData->values.video.overlay.gamma;
+	if (renderMethod == RENDER_METHOD_OverlayMixer)
+	{
+		CComPtr <IPin> piPin;
+		hr = graphTools.GetOverlayMixerInputPin(m_piGraphBuilder, L"Input0", &piPin);
+		if (FAILED(hr))
+			return hr;
 
-	hr = piMixerPinConfig2->SetOverlaySurfaceColorControls(&colorControl);
-	if FAILED(hr)
-		return (log << "Failed to SetOverlaySurfaceColorControls: " << hr << "\n").Write(hr);
+		CComPtr <IMixerPinConfig2> piMixerPinConfig2;
+		if FAILED(hr = piPin->QueryInterface(IID_IMixerPinConfig2, (void **)&piMixerPinConfig2))
+			return (log << "Failed to get IMixerPinConfig2 interface from pin\n").Write(E_FAIL);
+
+		DDCOLORCONTROL colorControl;
+		colorControl.dwSize = sizeof(DDCOLORCONTROL);
+		colorControl.dwFlags = DDCOLOR_BRIGHTNESS | DDCOLOR_CONTRAST | DDCOLOR_HUE | DDCOLOR_SATURATION | DDCOLOR_GAMMA;
+		colorControl.lBrightness = g_pData->values.video.overlay.brightness;
+		colorControl.lContrast = g_pData->values.video.overlay.contrast;
+		colorControl.lHue = g_pData->values.video.overlay.hue;
+		colorControl.lSaturation = g_pData->values.video.overlay.saturation;
+		colorControl.lGamma = g_pData->values.video.overlay.gamma;
+
+		hr = piMixerPinConfig2->SetOverlaySurfaceColorControls(&colorControl);
+		if FAILED(hr)
+			return (log << "Failed to SetOverlaySurfaceColorControls: " << hr << "\n").Write(hr);
+	}
+	else if ((renderMethod == RENDER_METHOD_VMR9) || 
+			 (renderMethod == RENDER_METHOD_VMR9Windowless) ||
+			 (renderMethod == RENDER_METHOD_VMR9Renderless))
+	{
+		CComPtr <IBaseFilter> piVMR9Filter;
+		hr = graphTools.FindFilterByCLSID(m_piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter);
+		if (hr == S_OK)
+		{
+			CComQIPtr<IVMRMixerControl9> piMixerControl(piVMR9Filter);
+			if (piMixerControl == NULL)
+				return (log << "Error: Failed to get IVMRMixerControl9 interface\n").Show(E_NOINTERFACE);
+
+			VMR9ProcAmpControl control;
+
+			memset(&control, 0, sizeof(VMR9ProcAmpControl));
+			control.dwSize = sizeof(VMR9ProcAmpControl);
+			hr = piMixerControl->GetProcAmpControl(0, &control);
+
+			if (control.dwFlags & ProcAmpControl9_Brightness != 0)
+				GetProcAmpControlValue(&control.Brightness, piMixerControl, ProcAmpControl9_Brightness, g_pData->values.video.overlay.brightness,    0, 10000,   750);
+			if (control.dwFlags & ProcAmpControl9_Contrast   != 0)
+				GetProcAmpControlValue(&control.Contrast  , piMixerControl, ProcAmpControl9_Contrast  , g_pData->values.video.overlay.contrast  ,    0, 20000, 10000);
+			if (control.dwFlags & ProcAmpControl9_Hue        != 0)
+				GetProcAmpControlValue(&control.Hue       , piMixerControl, ProcAmpControl9_Hue       , g_pData->values.video.overlay.hue       , -180,   180,     0);
+			if (control.dwFlags & ProcAmpControl9_Saturation != 0)
+				GetProcAmpControlValue(&control.Saturation, piMixerControl, ProcAmpControl9_Saturation, g_pData->values.video.overlay.saturation,    0, 20000, 10000);
+
+			hr = piMixerControl->SetProcAmpControl(0, &control);
+			if (hr != S_OK)
+				return (log << "Error: Failed to set proc amp controls: " << hr << "\n").Write(hr);
+		}
+	}
 
 	return S_OK;
 }
 
+void DWGraph::GetVideoRect(RECT *rect)
+{
+	CopyRect(rect, &m_videoRect);
+}

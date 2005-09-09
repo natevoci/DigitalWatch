@@ -403,7 +403,7 @@ HRESULT FilterGraphTools::FindFilter(IGraphBuilder* piGraphBuilder, LPCWSTR Id, 
 	return hr;
 }
 
-HRESULT FilterGraphTools::FindFilter(IGraphBuilder* piGraphBuilder, CLSID rclsid, IBaseFilter **ppiFilter)
+HRESULT FilterGraphTools::FindFilterByCLSID(IGraphBuilder* piGraphBuilder, CLSID rclsid, IBaseFilter **ppiFilter)
 {
 	*ppiFilter = NULL;
 	if (piGraphBuilder == NULL)
@@ -758,13 +758,13 @@ HRESULT FilterGraphTools::GetOverlayMixer(IGraphBuilder* piGraphBuilder, IBaseFi
 	HRESULT hr;
 
 	*ppiFilter = NULL;
-	hr = FindFilter(piGraphBuilder, CLSID_OverlayMixer, ppiFilter);
+	hr = FindFilterByCLSID(piGraphBuilder, CLSID_OverlayMixer, ppiFilter);
 	if (hr != S_OK)
 	{
 		//Overlay Mixer 2
 		CLSID clsid = GUID_NULL;
 		CLSIDFromString(L"{A0025E90-E45B-11D1-ABE9-00A0C905F375}", &clsid);
-		hr = FindFilter(piGraphBuilder, clsid, ppiFilter);
+		hr = FindFilterByCLSID(piGraphBuilder, clsid, ppiFilter);
 	}
 
 	return hr;

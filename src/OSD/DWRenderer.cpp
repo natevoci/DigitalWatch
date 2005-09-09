@@ -1,5 +1,5 @@
 /**
- *	DWOSDImage.h
+ *	DWRenderer.cpp
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -20,37 +20,38 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef DWOSDIMAGE_H
-#define DWOSDIMAGE_H
+#include "DWRenderer.h"
 
-#include "StdAfx.h"
-#include "LogMessage.h"
-#include "XMLDocument.h"
-#include "DWSurface.h"
-
-class DWOSDWindows;
-class DWOSDImage : public LogMessageCaller
+DWRenderer::DWRenderer()
 {
-	friend DWOSDWindows;
-public:
-	DWOSDImage();
-	virtual ~DWOSDImage();
+	m_pSurface = new DWSurface();
+}
 
-	LPWSTR Name();
+DWRenderer::~DWRenderer()
+{
+	if (m_pSurface)
+		delete m_pSurface;
+	m_pSurface = NULL;
+}
 
-	HRESULT Draw(DWSurface *pSurface, long x, long y, long width, long height);
+void DWRenderer::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
 
-private:
-	HRESULT LoadFromXML(XMLElement *pElement);
+	m_pSurface->SetLogCallback(callback);
+}
 
-	LPWSTR m_pwszName;
+HRESULT DWRenderer::GetSurface(DWSurface **ppDWSurface)
+{
+	if (!ppDWSurface)
+		return E_POINTER;
 
-	LPWSTR m_pwszFilename;
-	BOOL m_bUseColorKey;
-	COLORREF m_dwColorKey;
-	RECT m_rectStretchArea;
+	*ppDWSurface = m_pSurface;
+	return S_OK;
+}
 
-	DWSurface* m_pImage;
-};
-
-#endif
+HRESULT DWRenderer::SetTickCount(long tickCount)
+{
+	m_tickCount = tickCount;
+	return S_OK;
+}
