@@ -55,8 +55,6 @@ public:
 
 	virtual HRESULT Blt(DWSurfaceRenderer *targetSurface, RECT* lprcDest = NULL, RECT* lprcSrc = NULL);
 
-	//virtual HRESULT DrawImage()
-
 	virtual HRESULT DrawText(DWSurfaceText *text, int x, int y);
 
 protected:

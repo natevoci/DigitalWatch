@@ -230,19 +230,14 @@ DWOSDWindow* DWOnScreenDisplay::Overlay()
 	return m_pOverlayWindow;
 }
 
-
-DWDirectDraw* DWOnScreenDisplay::GetDirectDraw()
+HRESULT DWOnScreenDisplay::GetOSDRenderer(DWRenderer **ppDWRenderer)
 {
+	if (!ppDWRenderer)
+		return E_POINTER;
 	if (!m_pRenderer)
-		return NULL;
-	return ((DWRendererDirectDraw *)m_pRenderer)->m_pDirectDraw;
-}
-
-DWSurface* DWOnScreenDisplay::GetBackSurface()
-{
-	if (!m_pRenderer)
-		return NULL;
-	return ((DWRendererDirectDraw *)m_pRenderer)->GetBackSurface();
+		return E_FAIL;
+	*ppDWRenderer = m_pRenderer;
+	return S_OK;
 }
 
 

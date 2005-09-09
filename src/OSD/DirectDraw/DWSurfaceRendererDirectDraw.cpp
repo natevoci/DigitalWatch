@@ -21,6 +21,7 @@
  */
 
 #include "DWSurface.h"
+#include "DWRendererDirectDraw.h"
 #include "DWSurfaceRendererDirectDraw.h"
 #include "Globals.h"
 #include "GlobalFunctions.h"
@@ -47,7 +48,16 @@ HRESULT DWSurfaceRendererDirectDraw::CreateMainSurface()
 {
 	HRESULT hr = S_OK;
 
-	DWDirectDraw *pDirectDraw = g_pOSD->GetDirectDraw();
+	DWRenderer *pOSDRenderer;
+	hr = g_pOSD->GetOSDRenderer(&pOSDRenderer);
+	if FAILED(hr)
+		return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
+
+	DWRendererDirectDraw *pOSDRendererDirectDraw = dynamic_cast<DWRendererDirectDraw *>(pOSDRenderer);
+	if (!pOSDRendererDirectDraw)
+		return (log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write(E_FAIL);
+
+	DWDirectDraw *pDirectDraw = pOSDRendererDirectDraw->GetDirectDraw();
 	if (pDirectDraw == NULL)
 		return (log << "DWDirectDraw object does not exist\n").Write(E_FAIL);
 
@@ -75,7 +85,16 @@ HRESULT DWSurfaceRendererDirectDraw::Create(long width, long height)
 {
 	HRESULT hr = S_OK;
 
-	DWDirectDraw *pDirectDraw = g_pOSD->GetDirectDraw();
+	DWRenderer *pOSDRenderer;
+	hr = g_pOSD->GetOSDRenderer(&pOSDRenderer);
+	if FAILED(hr)
+		return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
+
+	DWRendererDirectDraw *pOSDRendererDirectDraw = dynamic_cast<DWRendererDirectDraw *>(pOSDRenderer);
+	if (!pOSDRendererDirectDraw)
+		return (log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write(E_FAIL);
+
+	DWDirectDraw *pDirectDraw = pOSDRendererDirectDraw->GetDirectDraw();
 	if (pDirectDraw == NULL)
 		return (log << "DWDirectDraw object does not exist\n").Write(E_FAIL);
 

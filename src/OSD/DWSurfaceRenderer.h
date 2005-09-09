@@ -46,8 +46,6 @@ public:
 
 	virtual HRESULT Blt(DWSurfaceRenderer *targetSurface, RECT* lprcDest = NULL, RECT* lprcSrc = NULL) = 0;
 
-	//virtual HRESULT DrawImage()
-
 	virtual HRESULT DrawText(DWSurfaceText *text, int x, int y) = 0;
 
 	UINT GetWidth();

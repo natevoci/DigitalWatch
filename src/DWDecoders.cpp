@@ -23,6 +23,7 @@
 #include "DWDecoders.h"
 #include "GlobalFunctions.h"
 #include "Globals.h"
+#include "DirectDraw/DWRendererDirectDraw.h"
 
 //TODO: Remove these later once they're included via DWOnScreenDisplay and DWVMR9AllocatorPresenter
 #include <D3d9.h>
@@ -127,7 +128,21 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				if (piDDrawExclMode == NULL)
 					return (log << "Error: Could not QI for IDDrawExclModeVideo\n").Write(hr);
 
-				hr = piDDrawExclMode->SetCallbackInterface(g_pOSD->GetDirectDraw()->GetOverlayCallbackInterface(), 0);
+				DWRenderer *pOSDRenderer;
+				hr = g_pOSD->GetOSDRenderer(&pOSDRenderer);
+				if FAILED(hr)
+					return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
+
+				DWRendererDirectDraw *pOSDRendererDirectDraw = dynamic_cast<DWRendererDirectDraw *>(pOSDRenderer);
+				if (!pOSDRendererDirectDraw)
+					return (log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write(E_FAIL);
+
+				IDDrawExclModeVideoCallback *pOverlayCallback;
+				hr = pOSDRendererDirectDraw->GetDirectDraw()->GetOverlayCallbackInterface(&pOverlayCallback);
+				if FAILED(hr)
+					return (log << "Failed to get overlay callback interface: " << hr << "\n").Write(hr);
+
+				hr = piDDrawExclMode->SetCallbackInterface(pOverlayCallback, 0);
 				if FAILED(hr)
 					return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
 

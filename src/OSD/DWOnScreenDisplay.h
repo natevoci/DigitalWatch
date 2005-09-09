@@ -31,9 +31,6 @@
 #include "DWRenderer.h"
 #include <vector>
 
-//TODO remove after GetDirectDraw() is removed from DWOnScreenDisplay
-#include "DirectDraw/DWDirectDraw.h"
-
 enum RENDER_METHOD
 {
 	RENDER_METHOD_NONE,
@@ -66,12 +63,10 @@ public:
 
 	DWOSDWindow* Overlay();
 
-	DWDirectDraw* GetDirectDraw();
-	DWSurface* GetBackSurface();
-
 	HRESULT GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function);
 	HRESULT ExecuteCommand(ParseLine* command);
 
+	HRESULT GetOSDRenderer(DWRenderer **ppDWRenderer);
 
 	//Stuff for controls to use
 	DWOSDImage* GetImage(LPWSTR pName);

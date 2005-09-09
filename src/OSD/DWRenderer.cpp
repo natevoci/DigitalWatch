@@ -45,7 +45,8 @@ HRESULT DWRenderer::GetSurface(DWSurface **ppDWSurface)
 {
 	if (!ppDWSurface)
 		return E_POINTER;
-
+	if (!m_pSurface)
+		return E_FAIL;
 	*ppDWSurface = m_pSurface;
 	return S_OK;
 }

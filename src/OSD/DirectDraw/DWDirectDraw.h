@@ -33,7 +33,6 @@
 
 class DWDirectDraw : public LogMessageCaller
 {
-	//friend DWSurface;
 	friend DWSurfaceRendererDirectDraw;
 public:
 	DWDirectDraw();
@@ -44,7 +43,7 @@ public:
 
 	void Enum(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, HMONITOR hm);
 
-	IDDrawExclModeVideoCallback* GetOverlayCallbackInterface();
+	HRESULT GetOverlayCallbackInterface(IDDrawExclModeVideoCallback **ppOverlayCallback);
 
 	HRESULT Clear();
 	HRESULT Flip();

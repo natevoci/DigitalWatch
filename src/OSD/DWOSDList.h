@@ -63,8 +63,6 @@ public:
 
 	HRESULT LoadFromXML(XMLElement *pElement);
 
-//	HRESULT Render(long tickCount, int x, int y, int width, int height);
-
 	BOOL Equals(DWOSDListItem* target);
 	void CopyTo(DWOSDListItem* target);
 
@@ -124,8 +122,6 @@ protected:
 	long m_nHeight;
 
 	long m_nHighlightedItem;
-
-
 
 	long m_nYOffset;
 	long m_nLastTickCount;

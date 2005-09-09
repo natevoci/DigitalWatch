@@ -41,12 +41,10 @@ public:
 	virtual HRESULT Clear();
 	virtual HRESULT Present();
 
-	//TODO: Move this back to protected
-	DWDirectDraw* m_pDirectDraw;
-	//TODO: Get rid of this
-	DWSurface* GetBackSurface() { return m_pSurface; };
+	DWDirectDraw* GetDirectDraw() { return m_pDirectDraw; };
 
 protected:
+	DWDirectDraw* m_pDirectDraw;
 
 };
 

@@ -21,6 +21,7 @@
  */
 
 #include "DWSurface.h"
+#include "DirectDraw/DWSurfaceRendererDirectDraw.h"
 #include "Globals.h"
 #include "GlobalFunctions.h"
 

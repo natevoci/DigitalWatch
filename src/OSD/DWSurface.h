@@ -50,8 +50,6 @@ public:
 
 	HRESULT Blt(DWSurface *targetSurface, RECT* lprcDest = NULL, RECT* lprcSrc = NULL);
 
-	//HRESULT DrawImage()
-
 	HRESULT DrawText(DWSurfaceText *text, int x, int y);
 
 	UINT GetWidth();

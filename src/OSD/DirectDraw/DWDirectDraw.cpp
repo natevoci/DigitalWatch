@@ -166,9 +166,14 @@ HRESULT DWDirectDraw::Destroy()
 	return S_OK;
 }
 
-IDDrawExclModeVideoCallback* DWDirectDraw::GetOverlayCallbackInterface()
+HRESULT DWDirectDraw::GetOverlayCallbackInterface(IDDrawExclModeVideoCallback **ppOverlayCallback)
 {
-	return m_pOverlayCallback.p;
+	if (!ppOverlayCallback)
+		return E_POINTER;
+	if (!m_pOverlayCallback.p)
+		return E_FAIL;
+	*ppOverlayCallback = m_pOverlayCallback.p;
+	return S_OK;
 }
 
 HRESULT DWDirectDraw::Clear()

@@ -189,6 +189,7 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 {
 	CAutoLock controlsLock(&m_controlsLock);
 
+	HRESULT hr;
 	XMLAttribute *attr;
 
 	attr = pElement->Attributes.Item(L"name");
@@ -197,6 +198,16 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 	if (attr->value[0] == '\0')
 		return (log << "Cannot have a blank window name\n").Write();
 	strCopy(m_pName, attr->value);
+
+	DWRenderer *pDWRenderer;
+	hr = g_pOSD->GetOSDRenderer(&pDWRenderer);
+	if FAILED(hr)
+		return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
+
+	DWSurface *pBackSurface;
+	hr = pDWRenderer->GetSurface(&pBackSurface);
+	if FAILED(hr)
+		return (log << "Failed to get surface: " << hr << "\n").Write(hr);
 
 	XMLElement *element = NULL;
 
@@ -216,7 +227,7 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"group") == 0)
 		{
-			control = new DWOSDGroup(g_pOSD->GetBackSurface());
+			control = new DWOSDGroup(pBackSurface);
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
@@ -226,7 +237,7 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"label") == 0)
 		{
-			control = new DWOSDLabel(g_pOSD->GetBackSurface());
+			control = new DWOSDLabel(pBackSurface);
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
@@ -236,7 +247,7 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"button") == 0)
 		{
-			control = new DWOSDButton(g_pOSD->GetBackSurface());
+			control = new DWOSDButton(pBackSurface);
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
@@ -246,7 +257,7 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"list") == 0)
 		{
-			control = new DWOSDList(g_pOSD->GetBackSurface());
+			control = new DWOSDList(pBackSurface);
 			control->SetLogCallback(m_pLogCallback);
 			if FAILED(control->LoadFromXML(element))
 			{
