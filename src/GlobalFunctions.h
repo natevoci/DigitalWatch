@@ -236,4 +236,44 @@ __inline int strCmp(LPWSTR string1, LPWSTR string2, BOOL ignoreCase = TRUE)
 		return wcscmp(string1, string2);
 }
 
+// returns < 0 if failed, otherwise returns length of findString
+__inline long strStartsWith(LPWSTR searchString, LPWSTR findString, BOOL ignoreCase = TRUE)
+{
+	if (!searchString || !findString)
+		return -1;
+	long searchLength = wcslen(searchString);
+	long findLength = wcslen(findString);
+
+	if (findLength > searchLength)
+		return -1;
+
+	wchar_t storeChar = searchString[findLength];
+	searchString[findLength] = '\0';
+
+	int cmp;
+	if (ignoreCase)
+		cmp = _wcsicmp(searchString, findString);
+	else
+		cmp = wcscmp(searchString, findString);
+
+	searchString[findLength] = storeChar;
+	return findLength;
+}
+
+class AutoDeletingString
+{
+public:
+	AutoDeletingString()
+	{
+		pStr = NULL;
+	}
+	virtual ~AutoDeletingString()
+	{
+		if (pStr)
+			delete[] pStr;
+	}
+
+	LPWSTR pStr;
+};
+
 #endif

@@ -27,7 +27,8 @@
 
 interface IDWOSDDataList
 {
-	virtual LPWSTR GetListItem(LPWSTR name, long nIndex) = 0;
+	virtual LPWSTR GetListName() = 0;
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0) = 0;
 	virtual long GetListSize() = 0;
 };
 

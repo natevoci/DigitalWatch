@@ -492,6 +492,7 @@ DVBTChannels_Network::DVBTChannels_Network(DVBTChannels *pChannels) :
 	bandwidth = 0;
 	otherFrequencyFlag = 0;
 	networkName = NULL;
+	m_dataListName = NULL;
 	m_dataListString = NULL;
 
 }
@@ -509,6 +510,9 @@ DVBTChannels_Network::~DVBTChannels_Network()
 
 	if (networkName)
 		delete[] networkName;
+
+	if (m_dataListName)
+		delete[] m_dataListName;
 
 	if (m_dataListString)
 		delete[] m_dataListString;
@@ -790,6 +794,19 @@ void DVBTChannels_Network::PrintNetworkDetails()
 	(log << "Network Name        : " << (networkName ? networkName : L"<not set>") << "\n").Write();
 }
 
+// IDWOSDDataList Methods
+LPWSTR DVBTChannels_Network::GetListName()
+{
+	if (!m_dataListName)
+	{
+		LPWSTR listName = new wchar_t[1024];
+		swprintf(listName, L"TVChannels.Services.%i", this->originalNetworkId);
+		strCopy(m_dataListName, listName);
+		delete[] listName;
+	}
+	return m_dataListName;
+}
+
 LPWSTR DVBTChannels_Network::GetListItem(LPWSTR name, long nIndex)
 {
 	CAutoLock lock(&m_servicesLock);
@@ -797,20 +814,26 @@ LPWSTR DVBTChannels_Network::GetListItem(LPWSTR name, long nIndex)
 	if (nIndex >= m_services.size())
 		return NULL;
 
-	DVBTChannels_Service *pService = m_services.at(nIndex);
-	if (_wcsicmp(name, L"TVChannels.Service.Name") == 0)
+	long startsWithLength = strStartsWith(name, m_dataListName);
+	if (startsWithLength > 0)
 	{
-		return pService->serviceName;
-	}
-	else if (_wcsicmp(name, L"TVChannels.Service.ServiceId") == 0)
-	{
-		strCopy(m_dataListString, pService->serviceId);
-		return m_dataListString;
-	}
-	else if (_wcsicmp(name, L"TVChannels.Service.LogicalChannelNumber") == 0)
-	{
-		strCopy(m_dataListString, pService->logicalChannelNumber);
-		return m_dataListString;
+		name += startsWithLength;
+
+		DVBTChannels_Service *pService = m_services.at(nIndex);
+		if (_wcsicmp(name, L".Name") == 0)
+		{
+			return pService->serviceName;
+		}
+		else if (_wcsicmp(name, L".ServiceId") == 0)
+		{
+			strCopy(m_dataListString, pService->serviceId);
+			return m_dataListString;
+		}
+		else if (_wcsicmp(name, L".LogicalChannelNumber") == 0)
+		{
+			strCopy(m_dataListString, pService->logicalChannelNumber);
+			return m_dataListString;
+		}
 	}
 	return NULL;
 }
@@ -1017,6 +1040,7 @@ DVBTChannels::DVBTChannels()
 {
 	m_bandwidth = 7;
 	m_filename = NULL;
+	m_dataListName = NULL;
 	m_dataListString = NULL;
 }
 
@@ -1024,6 +1048,8 @@ DVBTChannels::~DVBTChannels()
 {
 	Destroy();
 
+	if (m_dataListName)
+		delete[] m_dataListName;
 	if (m_dataListString)
 		delete[] m_dataListString;
 }
@@ -1078,10 +1104,7 @@ HRESULT DVBTChannels::LoadChannels(LPWSTR filename)
 			if (pNewNetwork->LoadFromXML(element) == S_OK)
 			{
 				m_networks.push_back(pNewNetwork);
-				LPWSTR listName = new wchar_t[1024];
-				swprintf(listName, L"TVChannels.Services.%i", pNewNetwork->originalNetworkId);
-				g_pOSD->Data()->AddList(listName, pNewNetwork);
-				delete[] listName;
+				g_pOSD->Data()->AddList(pNewNetwork);
 			}
 			else
 				delete pNewNetwork;
@@ -1161,10 +1184,7 @@ BOOL DVBTChannels::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 		CAutoLock lock(&m_networksLock);
 		m_networks.push_back(pNetwork);
 
-		LPWSTR listName = new wchar_t[1024];
-		swprintf(listName, L"TVChannels.Services.%i", pNewNetwork->originalNetworkId);
-		g_pOSD->Data()->AddList(listName, pNetwork);
-		delete[] listName;
+		g_pOSD->Data()->AddList(pNetwork);
 	}
 
 	if (pNetwork->UpdateNetwork(pNewNetwork))
@@ -1224,6 +1244,13 @@ HRESULT DVBTChannels::MoveNetworkDown(long originalNetworkId)
 }
 
 // IDWOSDDataList Methods
+LPWSTR DVBTChannels::GetListName()
+{
+	if (!m_dataListName)
+		strCopy(m_dataListName, L"TVChannels.Networks");
+	return m_dataListName;
+}
+
 LPWSTR DVBTChannels::GetListItem(LPWSTR name, long nIndex)
 {
 	CAutoLock lock(&m_networksLock);
@@ -1231,35 +1258,41 @@ LPWSTR DVBTChannels::GetListItem(LPWSTR name, long nIndex)
 	if (nIndex >= m_networks.size())
 		return NULL;
 
-	DVBTChannels_Network *pNetwork = m_networks.at(nIndex);
-	if (_wcsicmp(name, L"TVChannels.Network.name") == 0)
+	long startsWithLength = strStartsWith(name, m_dataListName);
+	if (startsWithLength > 0)
 	{
-		return pNetwork->networkName;
-	}
-	else if (_wcsicmp(name, L"TVChannels.Network.originalNetworkId") == 0)
-	{
-		strCopy(m_dataListString, pNetwork->originalNetworkId);
-		return m_dataListString;
-	}
-	else if (_wcsicmp(name, L"TVChannels.Network.transportStreamId") == 0)
-	{
-		strCopy(m_dataListString, pNetwork->transportStreamId);
-		return m_dataListString;
-	}
-	else if (_wcsicmp(name, L"TVChannels.Network.networkId") == 0)
-	{
-		strCopy(m_dataListString, pNetwork->networkId);
-		return m_dataListString;
-	}
-	else if (_wcsicmp(name, L"TVChannels.Network.frequency") == 0)
-	{
-		strCopy(m_dataListString, pNetwork->frequency);
-		return m_dataListString;
-	}
-	else if (_wcsicmp(name, L"TVChannels.Network.bandwidth") == 0)
-	{
-		strCopy(m_dataListString, pNetwork->bandwidth);
-		return m_dataListString;
+		name += startsWithLength;
+
+		DVBTChannels_Network *pNetwork = m_networks.at(nIndex);
+		if (_wcsicmp(name, L".name") == 0)
+		{
+			return pNetwork->networkName;
+		}
+		else if (_wcsicmp(name, L".originalNetworkId") == 0)
+		{
+			strCopy(m_dataListString, pNetwork->originalNetworkId);
+			return m_dataListString;
+		}
+		else if (_wcsicmp(name, L".transportStreamId") == 0)
+		{
+			strCopy(m_dataListString, pNetwork->transportStreamId);
+			return m_dataListString;
+		}
+		else if (_wcsicmp(name, L".networkId") == 0)
+		{
+			strCopy(m_dataListString, pNetwork->networkId);
+			return m_dataListString;
+		}
+		else if (_wcsicmp(name, L".frequency") == 0)
+		{
+			strCopy(m_dataListString, pNetwork->frequency);
+			return m_dataListString;
+		}
+		else if (_wcsicmp(name, L".bandwidth") == 0)
+		{
+			strCopy(m_dataListString, pNetwork->bandwidth);
+			return m_dataListString;
+		}
 	}
 	return NULL;
 }

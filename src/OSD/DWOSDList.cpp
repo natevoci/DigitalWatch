@@ -694,7 +694,7 @@ HRESULT DWOSDList::RefreshListItems()
 		{
 			LPWSTR pStr = NULL;
 			g_pOSD->Data()->ReplaceTokens(itemList->m_pSource, pStr);
-			IDWOSDDataList* list = g_pOSD->Data()->GetList(pStr);
+			IDWOSDDataList* list = g_pOSD->Data()->GetListFromListName(pStr);
 			delete[] pStr;
 			pStr = NULL;
 			if (list)
@@ -705,7 +705,7 @@ HRESULT DWOSDList::RefreshListItems()
 				{
 					listItem = *itItemsToRender;
 
-					g_pOSD->Data()->ReplaceTokens(itemList->m_pText, pStr, list, i);
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pText, pStr, i);
 					if (pStr[0] != '\0')
 					{
 						if (!listItem->m_wszText || _wcsicmp(listItem->m_wszText, pStr) != 0)
@@ -723,7 +723,7 @@ HRESULT DWOSDList::RefreshListItems()
 						}
 					}
 
-					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnSelect, pStr, list, i);
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnSelect, pStr, i);
 					if (pStr[0] != '\0')
 					{
 						if (!listItem->m_pwcsOnSelect || _wcsicmp(listItem->m_pwcsOnSelect, pStr) != 0)
@@ -741,7 +741,7 @@ HRESULT DWOSDList::RefreshListItems()
 						}
 					}
 
-					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnLeft, pStr, list, i);
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnLeft, pStr, i);
 					if (pStr[0] != '\0')
 					{
 						if (!listItem->m_pwcsOnLeft || _wcsicmp(listItem->m_pwcsOnLeft, pStr) != 0)
@@ -759,7 +759,7 @@ HRESULT DWOSDList::RefreshListItems()
 						}
 					}
 
-					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnRight, pStr, list, i);
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pOnRight, pStr, i);
 					if (pStr[0] != '\0')
 					{
 						if (!listItem->m_pwcsOnRight || _wcsicmp(listItem->m_pwcsOnRight, pStr) != 0)
@@ -811,7 +811,7 @@ HRESULT DWOSDList::RefreshListItems()
 			{
 				LPWSTR pStr = NULL;
 				g_pOSD->Data()->ReplaceTokens(itemList->m_pSource, pStr);
-				IDWOSDDataList* list = g_pOSD->Data()->GetList(pStr);
+				IDWOSDDataList* list = g_pOSD->Data()->GetListFromListName(pStr);
 				delete[] pStr;
 				pStr = NULL;
 				if (list)
@@ -825,19 +825,19 @@ HRESULT DWOSDList::RefreshListItems()
 
 						m_pListItemTemplate->CopyTo(listItem);
 
-						g_pOSD->Data()->ReplaceTokens(itemList->m_pText, pStr, list, i);
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pText, pStr, i);
 						if (pStr[0] != '\0')
 							strCopy(listItem->m_wszText, pStr);
 
-						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnSelect, pStr, list, i);
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnSelect, pStr, i);
 						if (pStr[0] != '\0')
 							strCopy(listItem->m_pwcsOnSelect, pStr);
 
-						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnLeft, pStr, list, i);
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnLeft, pStr, i);
 						if (pStr[0] != '\0')
 							strCopy(listItem->m_pwcsOnLeft, pStr);
 
-						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnRight, pStr, list, i);
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnRight, pStr, i);
 						if (pStr[0] != '\0')
 							strCopy(listItem->m_pwcsOnRight, pStr);
 

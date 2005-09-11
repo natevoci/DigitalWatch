@@ -56,13 +56,14 @@ public:
 	void SetItem(LPWSTR name, LPWSTR value);
 	LPWSTR GetItem(LPWSTR name);
 
-	void AddList(LPWSTR pListName, IDWOSDDataList* list);
-	IDWOSDDataList* GetList(LPWSTR pListName);
+	void AddList(IDWOSDDataList* list);
+	IDWOSDDataList* GetListFromListName(LPWSTR pName);
+	IDWOSDDataList* GetListFromItemName(LPWSTR pName);
 
-	HRESULT ReplaceTokens(LPWSTR pSource, LPWSTR &pResult, IDWOSDDataList* piDataList = NULL, long ixDataList = 0);
+	HRESULT ReplaceTokens(LPWSTR pSource, LPWSTR &pResult, long ixDataList = 0);
 
 private:
-	HRESULT ReplaceFunction(LPWSTR &pSrc, LPWSTR &result, long resultSize, int dst, IDWOSDDataList* piDataList, long ixDataList);
+	HRESULT ReplaceVariable(LPWSTR pSrc, long *pSrcUsed, LPWSTR pResult, long resultSize, long ixDataList);
 
 	std::vector<DWOSDDataItem *> m_items;
 	CCritSec m_itemsLock;

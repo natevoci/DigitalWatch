@@ -50,14 +50,17 @@ public:
 	virtual HRESULT LoadFrequencyList(LPWSTR filename);
 	virtual HRESULT ChangeOffset(long change);
 
-	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);
+	//IDWOSDDataList Methods
+	virtual LPWSTR GetListName();
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
 	virtual long GetListSize();
 private:
 	std::vector<DVBTFrequencyListItem *> m_list;
 	CCritSec m_listLock;
 
 	long m_offset;
-	LPWSTR m_tmpString;
+
+	LPWSTR m_dataListName;
 };
 
 #endif

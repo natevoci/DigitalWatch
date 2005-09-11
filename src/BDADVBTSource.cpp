@@ -40,8 +40,8 @@ BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 	m_pCurrentService = NULL;
 	m_pDWGraph = NULL;
 
-	g_pOSD->Data()->AddList(L"TVChannels.Networks", &channels);
-	g_pOSD->Data()->AddList(L"FrequencyList", &frequencyList);
+	g_pOSD->Data()->AddList(&channels);
+	g_pOSD->Data()->AddList(&frequencyList);
 }
 
 BDADVBTSource::~BDADVBTSource()

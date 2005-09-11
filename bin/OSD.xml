@@ -360,14 +360,14 @@ $(() - $(
 		-->
 		<itemList>
 			<source>TVChannels.Networks</source>
-			<text>$(TVChannels.Network.name)</text>
-			<onSelect>SetChannel($(TVChannels.Network.originalNetworkId)) ExitMenu()</onSelect>
+			<text>$(TVChannels.Networks.name)</text>
+			<onSelect>SetChannel($(TVChannels.Networks.originalNetworkId)) ExitMenu()</onSelect>
 			<onLeft>
-				MoveNetworkUp($(TVChannels.Network.originalNetworkId))
+				MoveNetworkUp($(TVChannels.Networks.originalNetworkId))
 				Up()
 			</onLeft>
 			<onRight>
-				MoveNetworkDown($(TVChannels.Network.originalNetworkId))
+				MoveNetworkDown($(TVChannels.Networks.originalNetworkId))
 				Down()
 			</onRight>
 		</itemList>
@@ -438,7 +438,7 @@ $(() - $(
 </window>
 
 
-
+<!--
 <window name="ChannelSelect">
 	<keys>
 		<Key code= 13>Select()</>
@@ -519,7 +519,7 @@ $(() - $(
 			<onUp>#NetworkUp</onUp>
 		</highlight>
 	</button>
-</window>
+</window>-->
 
 <window name="NetworkList">
 	<!--
@@ -550,9 +550,9 @@ $(() - $(
 		
 		<itemList>
 			<source>TVChannels.Networks</source>
-			<text>  $(TVChannels.Network.name)</text>
-			<onSelect>SetChannel($(TVChannels.Network.originalNetworkId)) ExitMenu()</onSelect>
-			<onRight>ShowMenu("ServiceList($(TVChannels.Network.originalNetworkId))")</onRight>
+			<text>  $(TVChannels.Networks.name)</text>
+			<onSelect>SetChannel($(TVChannels.Networks.originalNetworkId)) ExitMenu()</onSelect>
+			<onRight>ShowMenu("ServiceList($(TVChannels.Networks.originalNetworkId))")</onRight>
 		</itemList>
 	</list>
 </window>
@@ -583,9 +583,9 @@ $(() - $(
 		
 		<itemList>
 			<source>TVChannels.Services.$(window.ServiceList[0])</source>
-		<!--<text>  $(TVChannels.Service.ServiceId). $(TVChannels.Service.Name)</text>-->
-			<text>  $(TVChannels.Service.LogicalChannelNumber). $(TVChannels.Service.Name)</text>
-			<onSelect>SetChannel($(window.ServiceList[0]), $(TVChannels.Service.ServiceId)) ExitMenu(2)</onSelect>
+		<!--<text>  $(TVChannels.Services.ServiceId). $(TVChannels.Services.Name)</text>-->
+			<text>  $(TVChannels.Services.$(window.ServiceList[0]).LogicalChannelNumber). $(TVChannels.Services.$(window.ServiceList[0]).Name)</text>
+			<onSelect>SetChannel($(window.ServiceList[0]), $(TVChannels.Services.$(window.ServiceList[0]).ServiceId)) ExitMenu(2)</onSelect>
 			<onLeft>ExitMenu()</onLeft>
 		</itemList>
 	</list>

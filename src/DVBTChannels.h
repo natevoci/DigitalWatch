@@ -130,7 +130,8 @@ public:
 	void PrintNetworkDetails();
 
 	//IDWOSDDataList Methods
-	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);
+	virtual LPWSTR GetListName();
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
 	virtual long GetListSize();
 
 public:
@@ -150,6 +151,7 @@ protected:
 
 	std::vector<DVBTChannels_Service *> m_services;
 	CCritSec m_servicesLock;
+	LPWSTR m_dataListName;
 	LPWSTR m_dataListString;
 };
 
@@ -203,12 +205,14 @@ public:
 	HRESULT MoveNetworkDown(long originalNetworkId);
 
 	//IDWOSDDataList Methods
-	virtual LPWSTR GetListItem(LPWSTR name, long nIndex);
+	virtual LPWSTR GetListName();
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
 	virtual long GetListSize();
 
 protected:
 	long m_bandwidth;
 	LPWSTR m_filename;
+	LPWSTR m_dataListName;
 	LPWSTR m_dataListString;
 };
 

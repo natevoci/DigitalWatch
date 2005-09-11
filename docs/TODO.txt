@@ -70,6 +70,7 @@ DigitalWatch TODO
   - Command-line parameters
 
 - Option to diable logging (an option for each file)
+- Move file writing into a separate thread. Just push lines to a queue that the other thread dumps to file.
 
 - Automatically register directx9 filters if they're not registered (like mpg2splt, bdasup, tif, m2s&t, mpeg2decfilter, ffdshow)
 

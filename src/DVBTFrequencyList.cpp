@@ -55,12 +55,14 @@ DVBTFrequencyListItem::~DVBTFrequencyListItem()
 DVBTFrequencyList::DVBTFrequencyList()
 {
 	m_offset = 0;
-	m_tmpString = NULL;
+	m_dataListName = NULL;
 }
 
 DVBTFrequencyList::~DVBTFrequencyList()
 {
 	Destroy();
+	if (m_dataListName)
+		delete[] m_dataListName;
 }
 
 HRESULT DVBTFrequencyList::Destroy()
@@ -143,6 +145,13 @@ HRESULT DVBTFrequencyList::ChangeOffset(long change)
 	return S_OK;
 }
 
+LPWSTR DVBTFrequencyList::GetListName()
+{
+	if (!m_dataListName)
+		strCopy(m_dataListName, L"FrequencyList");
+	return m_dataListName;
+}
+
 LPWSTR DVBTFrequencyList::GetListItem(LPWSTR name, long nIndex)
 {
 	CAutoLock listLock(&m_listLock);
@@ -150,19 +159,25 @@ LPWSTR DVBTFrequencyList::GetListItem(LPWSTR name, long nIndex)
 	if (nIndex >= m_list.size())
 		return NULL;
 
-	DVBTFrequencyListItem *item = m_list.at(nIndex);
-	if (_wcsicmp(name, L"FrequencyList.frequency") == 0)
+	long startsWithLength = strStartsWith(name, m_dataListName);
+	if (startsWithLength > 0)
 	{
-		if (m_offset < 0)
-			return item->frequencyLow;
-		if (m_offset == 0)
-			return item->frequencyCentre;
-		else
-			return item->frequencyHigh;
-	}
-	else if (_wcsicmp(name, L"FrequencyList.bandwidth") == 0)
-	{
-		return item->bandwidth;
+		name += startsWithLength;
+
+		DVBTFrequencyListItem *item = m_list.at(nIndex);
+		if (_wcsicmp(name, L".frequency") == 0)
+		{
+			if (m_offset < 0)
+				return item->frequencyLow;
+			if (m_offset == 0)
+				return item->frequencyCentre;
+			else
+				return item->frequencyHigh;
+		}
+		else if (_wcsicmp(name, L".bandwidth") == 0)
+		{
+			return item->bandwidth;
+		}
 	}
 	return NULL;
 }
