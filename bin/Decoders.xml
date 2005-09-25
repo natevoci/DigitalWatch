@@ -472,6 +472,20 @@
     </>
 </Decoder>
 
+<Decoder name="NVIDIA Audio Decoder">
+	<MediaType name="MPEG Audio" />
+	<MediaType name="MPEG2 Audio" />
+	<MediaType name="AC3 Audio" />
+
+	<LoadFilter clsid="{6C0BDF86-C36A-4D83-8BDB-312D2EAF409E}" name="NVIDIA Audio Decoder" />
+	<AudioRenderer name="Default DirectSound Device" />
+
+	<InputFilter name="NVIDIA Audio Decoder" />
+	<Connect>
+		<From name="NVIDIA Audio Decoder" />
+		<To name="Default DirectSound Device" />
+	</>
+</Decoder>
 
 <!--
   -- Teletext Decoders
