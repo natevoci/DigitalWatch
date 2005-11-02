@@ -25,7 +25,7 @@ DigitalWatch TODO
   - Figure out how to handle OSD.xml files for different sources. *
   - Position slider/percentage bar. seeking/timeshifting/volume/signal
   - Bold text in OSD?
-  - OSD item for Mute, always on top
+  - OSD item for Mute, always on top, signal stats
   - Mouse actions to operate buttons, lists, etc...
   - Menus
     - TV Menu

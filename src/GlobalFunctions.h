@@ -204,7 +204,7 @@ __inline void strCopy(LPWSTR &dest, long value)
 		delete[] dest;
 	BOOL bNegative = (value < 0);
 	value = abs(value);
-	long length = (long)log10(value) + (bNegative ? 2 : 1);
+	long length = (long)log10((double)value) + (bNegative ? 2 : 1);
 	dest = new wchar_t[length + 1];
 
 	for ( int i=length-1 ; i>=0 ; i-- )
