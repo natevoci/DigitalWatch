@@ -1,7 +1,7 @@
 <!-- DigitalWatch Global Keys -->
 
-  <Key code=112>			  	ShowMenu("MainMenu")</>
-  <Key code= 13>				ShowMenu("MainMenu")</>
+  <Key code=112>				ExitMenu(-1) ShowMenu("MainMenu")</>
+  <Key code= 13>				ExitMenu(-1) ShowMenu("MainMenu")</>
   <Key code= 27>				ExitMenu()</>
 
   <Key code='T' shift>			SetSource(BDA)</>
