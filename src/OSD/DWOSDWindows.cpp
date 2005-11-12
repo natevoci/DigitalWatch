@@ -54,6 +54,11 @@ DWOSDWindow::~DWOSDWindow()
 	m_controls.clear();
 }
 
+void DWOSDWindow::SetLogCallback(LogMessageCallback *callback)
+{
+	m_keyMap.SetLogCallback(callback);
+}
+
 LPWSTR DWOSDWindow::Name()
 {
 	return m_pName;

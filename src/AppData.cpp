@@ -39,6 +39,8 @@ AppData::AppData()
 {
 	hWnd = 0;
 
+	this->SetLogCallback(&g_DWLogWriter);
+
 	//APPLICATION
 	application.appPath = new wchar_t[MAX_PATH];
 	GetCommandPath(application.appPath);
@@ -202,7 +204,7 @@ HRESULT AppData::LoadSettings()
 	HRESULT hr;
 
 	XMLDocument file;
-	//file.SetLogCallback(m_pLogCallback);
+	file.SetLogCallback(m_pLogCallback);
 
 	if FAILED(hr = file.Load(filename))
 	{
@@ -428,7 +430,7 @@ HRESULT AppData::SaveSettings()
 	swprintf((LPWSTR)&filename, L"%s%s", application.appPath, L"Settings.xml");
 
 	XMLDocument file;
-	//file.SetLogCallback(m_pLogCallback);
+	file.SetLogCallback(m_pLogCallback);
 
 	LPWSTR pValue = NULL;
 

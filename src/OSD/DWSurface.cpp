@@ -22,6 +22,7 @@
 
 #include "DWSurface.h"
 #include "DirectDraw/DWSurfaceRendererDirectDraw.h"
+#include "VMR9Bitmap/DWSurfaceRendererVMR9Bitmap.h"
 #include "Globals.h"
 #include "GlobalFunctions.h"
 
@@ -39,6 +40,9 @@ DWSurface::DWSurface()
 	m_hInstance = 0;
 	m_nResource = 0;
 	m_szBitmap = NULL;
+
+	m_bColorKey = FALSE;
+	m_dwColorKey = 0x00000000;
 
 	m_lastRenderMethodChangeCount = -1;
 }
@@ -114,18 +118,37 @@ HRESULT DWSurface::LoadBitmap(HINSTANCE hInst, UINT nRes)
 	return LoadBitmap();
 }
 
+HRESULT DWSurface::LoadBitmap(LPCWSTR szBitmap, COLORREF dwColorKey)
+{
+	HRESULT hr = CheckSurface();
+	if FAILED(hr)
+		return hr;
+
+	strCopy(m_szBitmap, szBitmap);
+	m_hInstance = 0;
+	m_nResource = 0;
+
+	m_bColorKey = TRUE;
+	m_dwColorKey = dwColorKey;
+
+	return LoadBitmap();
+}
+
 HRESULT DWSurface::LoadBitmap(LPCWSTR szBitmap)
 {
 	strCopy(m_szBitmap, szBitmap);
 	m_hInstance = 0;
 	m_nResource = 0;
 
+	m_bColorKey = FALSE;
+	m_dwColorKey = 0x00000000;
+
 	return LoadBitmap();
 }
 
 HRESULT DWSurface::Destroy()
 {
-	HRESULT hr;
+	HRESULT hr = S_OK;
 
 	CAutoLock surfacesLock(&m_surfacesLock);
 
@@ -158,26 +181,6 @@ HRESULT DWSurface::Clear()
 		hr = m_pSurfaceRenderer->Clear();
 		if FAILED(hr)
 			return (log << "Failed to clear surface: " << hr << "\n").Write(hr);
-	}
-
-	return hr;
-}
-
-HRESULT DWSurface::SetColorKey(COLORREF dwColorKey)
-{
-	HRESULT hr;
-
-	CAutoLock surfacesLock(&m_surfacesLock);
-
-	hr = CheckSurface();
-	if FAILED(hr)
-		return hr;
-
-	if (m_pSurfaceRenderer)
-	{
-		hr = m_pSurfaceRenderer->SetColorKey(dwColorKey);
-		if FAILED(hr)
-			return (log << "Failed to set color key for surface: " << hr << "\n").Write(hr);
 	}
 
 	return hr;
@@ -251,11 +254,22 @@ HRESULT DWSurface::CreateSurfaceRenderer()
 	}
 	else if ((renderMethod == RENDER_METHOD_VMR9) || (renderMethod == RENDER_METHOD_VMR9Windowless))
 	{
-		//m_pSurfaceRenderer = new DWSurfaceRendererVMR9Bitmap();
+		m_pSurfaceRenderer = new DWSurfaceRendererVMR9Bitmap();
 	}
 	else if (renderMethod == RENDER_METHOD_VMR9Renderless)
 	{
 		//m_pSurfaceRenderer = new DWSurfaceRendererVMRRenderless();
+	}
+
+	if (m_pSurfaceRenderer)
+	{
+		m_pSurfaceRenderer->SetLogCallback(m_pLogCallback);
+		if (m_bColorKey)
+		{
+			HRESULT hr = m_pSurfaceRenderer->SetColorKey(m_dwColorKey);
+			if FAILED(hr)
+				return (log << "Failed to set color key for surface: " << hr << "\n").Write(hr);
+		}
 	}
 
 	return S_OK;

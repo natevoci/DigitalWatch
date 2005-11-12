@@ -2,6 +2,8 @@
 DigitalWatch TODO
 -----------------
 
+- Reenable WM_COPYDATA
+
 - Change ColorControls to use a standard range Br:-100<0<100 Co:-100<0<100 Hu:-180<0<180 Sa:-100<0<100
 
 - Make changing channels not change cards be default in release build
@@ -14,6 +16,7 @@ DigitalWatch TODO
   - Will need to create a new way to store state information about channels
     - Last channel
     - current service for each network
+  - Update SetChannel to take ONID, TSID, and NID
 
 - Data item
   - Add signal strength and quality stats

@@ -25,6 +25,15 @@
 DWRenderer::DWRenderer(DWSurface *pSurface)
 {
 	m_pSurface = pSurface;
+	m_lTickCount = 0;
+	m_bInitialised = FALSE;
+
+	m_fFPS = 0;
+	m_fpsTickCount = 0;
+	m_fpsMultiplier = 1;
+
+	m_backBufferWidth = 768;
+	m_backBufferHeight = 576;
 }
 
 DWRenderer::~DWRenderer()
@@ -48,8 +57,45 @@ HRESULT DWRenderer::GetSurface(DWSurface **ppDWSurface)
 	return S_OK;
 }
 
+long DWRenderer::GetTickCount()
+{
+	return m_lTickCount;
+}
+
 HRESULT DWRenderer::SetTickCount(long tickCount)
 {
-	m_tickCount = tickCount;
+	m_lTickCount = tickCount;
+
+	if (tickCount - m_fpsTickCount > 500)
+	{
+		m_fFPS = m_fpsMultiplier * 1000.0 / (double)(tickCount - m_fpsTickCount);
+		m_fpsTickCount = tickCount;
+		m_fpsMultiplier = 1;
+	}
+	else
+	{
+		m_fpsMultiplier++;
+	}
+
 	return S_OK;
+}
+
+double DWRenderer::GetFPS()
+{
+	return m_fFPS;
+}
+
+BOOL DWRenderer::Initialised()
+{
+	return m_bInitialised;
+}
+
+long DWRenderer::GetBackBufferWidth()
+{
+	return m_backBufferWidth;
+}
+
+long DWRenderer::GetBackBufferHeight()
+{
+	return m_backBufferHeight;
 }

@@ -64,9 +64,12 @@ HRESULT DWOSDImage::Draw(DWSurface *pSurface, long x, long y, long width, long h
 	if (!m_pImage)
 	{
 		m_pImage = new DWSurface();
-		hr = m_pImage->LoadBitmap(m_pwszFilename);
+
 		if (m_bUseColorKey)
-			m_pImage->SetColorKey(m_dwColorKey & 0x00FFFFFF);
+			hr = m_pImage->LoadBitmap(m_pwszFilename, m_dwColorKey);
+		else
+			hr = m_pImage->LoadBitmap(m_pwszFilename);
+
 		if FAILED(hr)
 			return (log << "Failed to load image: " << hr << "\n").Write(hr);
 	}

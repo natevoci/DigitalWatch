@@ -42,11 +42,28 @@ public:
 	virtual HRESULT Present() = 0;
 
 	virtual HRESULT GetSurface(DWSurface **ppDWSurface);
+
+	virtual long GetTickCount();
 	virtual HRESULT SetTickCount(long tickCount);
+	double GetFPS();
+
+	BOOL Initialised();
+
+	long GetBackBufferWidth();
+	long GetBackBufferHeight();
 
 protected:
 	DWSurface* m_pSurface;
-	long m_tickCount;
+	long m_lTickCount;
+	bool m_bInitialised;
+
+	long m_backBufferWidth;
+	long m_backBufferHeight;
+
+private:
+	long m_fFPS;
+	long m_fpsTickCount;
+	long m_fpsMultiplier;
 };
 
 #endif

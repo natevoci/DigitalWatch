@@ -46,9 +46,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	MSG msg;
 	msg.wParam = 0;
 
-	//This is needed before any logging gets done so that g_pData->settings.application.logFilename gets set
-	g_pData = new AppData();
-
 	LogMessage log;
 	g_DWLogWriter.SetFilename(L"DigitalWatch.log");
 	log.AddCallback(&g_DWLogWriter);
@@ -57,6 +54,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	(log << "---------------------\nDigitalWatch starting\n").Write();
 
 	log.LogVersionNumber();
+
+	g_pData = new AppData();
 
 	//--- Initialize COM ---
 	if FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED))

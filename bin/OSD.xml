@@ -80,14 +80,14 @@ $(() - $(
 
 <image name="BrownButton">
 	<filename>images\brown-button.bmp</filename>
-	<colorkey>#000000</colorkey>
+	<colorkey>#FF000000</colorkey>
 	<!--<stretchArea left=17 top=17 right=408 bottom=49 />-->
 	<stretchArea left=17 right=408 />
 </image>
 
 <image name="GreenButton">
 	<filename>images\green-button.bmp</filename>
-	<colorkey>#000000</colorkey>
+	<colorkey>#FF000000</colorkey>
 	<!--<stretchArea left=17 top=17 right=408 bottom=49 />-->
 	<stretchArea left=17 right=408 />
 </image>

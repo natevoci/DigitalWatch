@@ -3,6 +3,16 @@ DigitalWatch History
 --------------------
 ________
 
+v2.0.1.5
+________
+
+  Changes
+  ```````
+  - Added VMR9 Windowsless mode (only tested with the "Mpeg2Dec Video Decoder - VMR9" decoder so far)
+  - Fixed up some logging that wasn't getting written to file.
+
+________
+
 v2.0.1.3
 ________
 

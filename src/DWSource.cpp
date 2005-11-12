@@ -22,6 +22,13 @@
 
 #include "DWSource.h"
 
+void DWSource::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
+
+	m_sourceKeyMap.SetLogCallback(callback);
+}
+
 HRESULT DWSource::GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, LPWSTR *function)
 {
 	return m_sourceKeyMap.GetFunction(keycode, shift, ctrl, alt, function);

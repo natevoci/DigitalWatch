@@ -18,4 +18,7 @@
 #include <stdio.h>
 #include <streams.h>
 #include <math.h>
+#include <d3d9.h>
+#include <vmr9.h>
+#include <ddraw.h>
 

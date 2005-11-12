@@ -140,6 +140,11 @@ void LogMessage::WriteLogMessage()
 	{
 		CAutoLock callbacksLock(&m_callbacksLock);
 
+		if (m_callbacks.size() == 0)
+		{
+			int i=0;	//break here to find messages that aren't getting written to a file
+		}
+
 		vector<LogMessageCallback *>::iterator it = m_callbacks.begin();
 		for ( ; it != m_callbacks.end() ; it++ )
 		{

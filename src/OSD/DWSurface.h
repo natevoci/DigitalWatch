@@ -41,12 +41,12 @@ public:
 	HRESULT CreateMainSurface();
 	HRESULT Create(long width, long height);
 	HRESULT LoadBitmap(HINSTANCE hInst, UINT nRes);
+	HRESULT LoadBitmap(LPCWSTR szBitmap, COLORREF dwColorKey);
 	HRESULT LoadBitmap(LPCWSTR szBitmap);
 
 	HRESULT Destroy();
 
 	HRESULT Clear();
-	HRESULT SetColorKey(COLORREF dwColorKey);
 
 	HRESULT Blt(DWSurface *targetSurface, RECT* lprcDest = NULL, RECT* lprcSrc = NULL);
 
@@ -76,6 +76,9 @@ protected:
 	HINSTANCE	m_hInstance;
 	UINT		m_nResource;
 	LPWSTR		m_szBitmap;
+
+	BOOL m_bColorKey;
+	COLORREF m_dwColorKey;
 
 	int m_lastRenderMethodChangeCount;
 

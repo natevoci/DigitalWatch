@@ -36,8 +36,6 @@ DWDirectDraw::DWDirectDraw()
 	m_hWnd = 0;
 	m_nBackBufferWidth = 768;
 	m_nBackBufferHeight = 576;
-	m_lTickCount = 0;
-	m_fFPS = 0;
 
 	m_bAddEnumeratedDevices = FALSE;
 
@@ -210,31 +208,6 @@ HRESULT DWDirectDraw::Flip()
 	}
 
 	return S_OK;
-}
-
-long DWDirectDraw::GetTickCount()
-{
-	return m_lTickCount;
-}
-
-void DWDirectDraw::SetTickCount(long tickCount)
-{
-	static int multiplier = 1;
-	if (tickCount - m_lTickCount > 500)
-	{
-		m_fFPS = multiplier * 1000.0 / (double)(tickCount - m_lTickCount);
-		m_lTickCount = tickCount;
-		multiplier = 1;
-	}
-	else
-	{
-		multiplier++;
-	}
-}
-
-double DWDirectDraw::GetFPS()
-{
-	return m_fFPS;
 }
 
 void DWDirectDraw::SetOverlayEnabled(BOOL bEnabled)

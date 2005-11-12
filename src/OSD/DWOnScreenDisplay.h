@@ -29,13 +29,7 @@
 #include "LogMessage.h"
 #include "ParseLine.h"
 #include "DWRenderer.h"
-#include "DirectDraw/DWRendererDirectDraw.h"
 #include <vector>
-
-//TODO: Remove these later once they're included by DWVMR9AllocatorPresenter (needed by DWDecoders and DWGraph)
-#include <D3d9.h>
-#include <Vmr9.h>
-
 
 enum RENDER_METHOD
 {
@@ -84,6 +78,7 @@ private:
 
 	DWOSDWindows windows;
 
+	CCritSec m_rendererLock;
 	DWRenderer* m_pRenderer;
 	DWSurface* m_pMainSurface;
 

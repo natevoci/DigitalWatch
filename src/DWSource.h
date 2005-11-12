@@ -31,6 +31,8 @@
 class DWSource : public LogMessageCaller
 {
 public:
+	virtual void SetLogCallback(LogMessageCallback *callback);
+
 	/* General */
 	virtual LPWSTR GetSourceType() = 0;
 

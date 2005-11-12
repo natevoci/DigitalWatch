@@ -39,6 +39,8 @@ public:
 	DWOSDWindow();
 	virtual ~DWOSDWindow();
 
+	virtual void SetLogCallback(LogMessageCallback *callback);
+
 	LPWSTR Name();
 	HRESULT Render(long tickCount);
 

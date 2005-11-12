@@ -54,6 +54,8 @@ HRESULT DWRendererDirectDraw::Initialise()
 	if (FAILED(hr))
 		return (log << "Failed to create DWSurface from directdraw back surface : " << hr << "\n").Write(hr);
 
+	m_bInitialised = TRUE;
+
 	return hr;
 }
 
@@ -76,7 +78,6 @@ HRESULT DWRendererDirectDraw::Clear()
 {
 	HRESULT hr;
 
-	m_pDirectDraw->SetTickCount(m_tickCount);
 	hr = m_pDirectDraw->Clear();
 	if FAILED(hr)
 		return (log << "Failed to clear directdraw: " << hr << "\n").Write(hr);
@@ -94,7 +95,7 @@ HRESULT DWRendererDirectDraw::Present()
 	text.crTextColor = RGB(255, 255, 255);
 
 	wchar_t buffer[30];
-	swprintf((LPWSTR)&buffer, L"FPS - %f", m_pDirectDraw->GetFPS());
+	swprintf((LPWSTR)&buffer, L"FPS - %f", GetFPS());
 	text.SetText(buffer);
 	hr = m_pSurface->DrawText(&text, 0, 560);
 	hr = m_pSurface->DrawText(&text, 700, 560);

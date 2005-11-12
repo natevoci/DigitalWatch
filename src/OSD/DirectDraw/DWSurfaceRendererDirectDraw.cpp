@@ -185,7 +185,7 @@ HRESULT DWSurfaceRendererDirectDraw::SetColorKey(COLORREF dwColorKey)
 		DWScreenSurface* screen = *it;
 
 	    DDCOLORKEY ddck;
-		ddck.dwColorSpaceLowValue = m_dwColorKey;
+		ddck.dwColorSpaceLowValue = m_dwColorKey & 0x00FFFFFF;
 		ddck.dwColorSpaceHighValue = 0;
 		hr = screen->piDDSurface->SetColorKey(DDCKEY_SRCBLT, &ddck);
 		if (FAILED(hr))
@@ -318,7 +318,7 @@ HRESULT DWSurfaceRendererDirectDraw::LoadBitmap()
 {
 	USES_CONVERSION;
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
     HBITMAP hbm;
 	HBITMAP hbmOld;
     BITMAP bm;
@@ -368,7 +368,14 @@ HRESULT DWSurfaceRendererDirectDraw::LoadBitmap()
 
     DeleteObject(hbm);
 
-    return S_OK;
+	if (m_bColorKey)
+	{
+		hr = SetColorKey(m_dwColorKey);
+		if FAILED(hr)
+			return (log << "Failed to set color key: " << hr << "\n").Write(hr);
+	}
+
+    return hr;
 }
 
 void DWSurfaceRendererDirectDraw::Restore()

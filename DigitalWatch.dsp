@@ -54,7 +54,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 ddraw.lib dxguid.lib libcmt.lib libcimt.lib strmbase.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe"
+# ADD LINK32 d3d9.lib d3dx9.lib ddraw.lib dxguid.lib libcmt.lib libcimt.lib strmbase.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe"
 # SUBTRACT LINK32 /nodefaultlib
 
 !ELSEIF  "$(CFG)" == "DigitalWatch - Win32 Debug"
@@ -71,7 +71,8 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I ".\src" /I ".\src\OSD" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /Fr /YX"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I ".\src" /I ".\src\OSD" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX"stdafx.h" /FD /GZ /c
+# SUBTRACT CPP /Fr
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0xc09 /d "_DEBUG"
@@ -81,8 +82,8 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 ddraw.lib dxguid.lib libcmtd.lib libcimtd.lib strmbasd.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib dsnetifc.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe" /pdbtype:sept /libpath:"lib/"
-# SUBTRACT LINK32 /nodefaultlib
+# ADD LINK32 d3d9.lib d3dx9.lib ddraw.lib dxguid.lib libcmtd.lib libcimtd.lib strmbasd.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib dsnetifc.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe" /pdbtype:sept /libpath:"lib/"
+# SUBTRACT LINK32 /profile /incremental:no /nodefaultlib
 
 !ENDIF 
 
@@ -425,6 +426,26 @@ SOURCE=.\src\OSD\DirectDraw\DWSurfaceRendererDirectDraw.cpp
 SOURCE=.\src\OSD\DirectDraw\DWSurfaceRendererDirectDraw.h
 # End Source File
 # End Group
+# Begin Group "VMR9Bitmap"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\OSD\VMR9Bitmap\DWRendererVMR9Bitmap.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\VMR9Bitmap\DWRendererVMR9Bitmap.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\VMR9Bitmap\DWSurfaceRendererVMR9Bitmap.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\OSD\VMR9Bitmap\DWSurfaceRendererVMR9Bitmap.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=.\src\OSD\DWOnScreenDisplay.cpp
@@ -464,6 +485,34 @@ SOURCE=.\src\OSD\DWSurfaceText.cpp
 # Begin Source File
 
 SOURCE=.\src\OSD\DWSurfaceText.h
+# End Source File
+# End Group
+# Begin Group "Driect3D"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\DirectXCommon\d3dfont.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DirectXCommon\d3dfont.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DirectXCommon\d3dutil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DirectXCommon\d3dutil.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DirectXCommon\dxutil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DirectXCommon\dxutil.h
 # End Source File
 # End Group
 # Begin Group "Data"

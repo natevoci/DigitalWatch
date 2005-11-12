@@ -23,6 +23,8 @@
 #include "DWOnScreenDisplay.h"
 #include "Globals.h"
 #include "GlobalFunctions.h"
+#include "DirectDraw/DWRendererDirectDraw.h"
+#include "VMR9Bitmap/DWRendererVMR9Bitmap.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWOSD
@@ -96,6 +98,8 @@ void DWOnScreenDisplay::SetRenderMethod(RENDER_METHOD renderMethod)
 		m_renderMethod = renderMethod;
 		m_renderMethodChangeCount++;
 
+		CAutoLock lock(&m_rendererLock);
+
 		HRESULT hr;
 		if (m_pRenderer)
 		{
@@ -108,12 +112,19 @@ void DWOnScreenDisplay::SetRenderMethod(RENDER_METHOD renderMethod)
 		{
 			m_pRenderer = new DWRendererDirectDraw(m_pMainSurface);
 		}
+		else if (renderMethod == RENDER_METHOD_VMR9)
+		{
+			m_pRenderer = new DWRendererVMR9Bitmap(m_pMainSurface);
+		}
 		else if (renderMethod == RENDER_METHOD_VMR9Windowless)
 		{
 		}
 
 		if (m_pRenderer)
+		{
+			m_pRenderer->SetLogCallback(m_pLogCallback);
 			m_pRenderer->Initialise();
+		}
 	}
 
 }
@@ -122,7 +133,11 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 {
 	HRESULT hr;
 
+	CAutoLock lock(&m_rendererLock);
+
 	if (!m_pRenderer)
+		return S_FALSE;
+	if (!m_pRenderer->Initialised())
 		return S_FALSE;
 
 	m_pRenderer->SetTickCount(tickCount);

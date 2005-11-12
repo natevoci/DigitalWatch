@@ -435,8 +435,6 @@ HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 
 			if FAILED(m_pListSurface->Create(m_nWidth, m_nHeight))
 				(log << "Failed to create surface for OSD List\n").Write();
-			if FAILED(m_pListSurface->SetColorKey(RGB(0, 0, 0)))
-				(log << "Failed to set color key for OSD List surface\n").Write();
 		}
 		else if (_wcsicmp(element->name, L"itemTemplate") == 0)
 		{

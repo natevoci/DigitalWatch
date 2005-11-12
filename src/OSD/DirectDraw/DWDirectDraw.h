@@ -28,7 +28,6 @@
 #include "DWSurface.h"
 #include "DWSurfaceRendererDirectDraw.h"
 #include "DWDirectDrawScreen.h"
-#include <ddraw.h>
 #include <vector>
 
 class DWDirectDraw : public LogMessageCaller
@@ -48,10 +47,6 @@ public:
 	HRESULT Clear();
 	HRESULT Flip();
 
-	long GetTickCount();
-	void SetTickCount(long tickCount);
-	double GetFPS();
-
 	//Methods to be called by DWOverlayCallback
 	void SetOverlayEnabled(BOOL bEnabled);
 	void SetOverlayPosition(const RECT* pRect);
@@ -63,8 +58,6 @@ private:
 	HWND m_hWnd;
 	long m_nBackBufferWidth;
 	long m_nBackBufferHeight;
-	long m_lTickCount;
-	double m_fFPS;
 
 	BOOL m_bAddEnumeratedDevices;
 
