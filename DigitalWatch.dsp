@@ -54,7 +54,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 d3d9.lib d3dx9.lib ddraw.lib dxguid.lib libcmt.lib libcimt.lib strmbase.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe"
+# ADD LINK32 d3d9.lib d3dx9.lib ddraw.lib dxguid.lib libcmt.lib libcimt.lib strmbase.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib comdlg32.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe"
 # SUBTRACT LINK32 /nodefaultlib
 
 !ELSEIF  "$(CFG)" == "DigitalWatch - Win32 Debug"
@@ -82,7 +82,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 d3d9.lib d3dx9.lib ddraw.lib dxguid.lib libcmtd.lib libcimtd.lib strmbasd.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib dsnetifc.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe" /pdbtype:sept /libpath:"lib/"
+# ADD LINK32 d3d9.lib d3dx9.lib ddraw.lib dxguid.lib libcmtd.lib libcimtd.lib strmbasd.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib dsnetifc.lib comdlg32.lib /nologo /subsystem:windows /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe" /pdbtype:sept /libpath:"lib/"
 # SUBTRACT LINK32 /profile /incremental:no /nodefaultlib
 
 !ENDIF 
@@ -100,6 +100,10 @@ SOURCE=.\src\DigitalWatch.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\DWThread.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\stdafx.cpp
 # End Source File
 # End Group
@@ -109,6 +113,10 @@ SOURCE=.\src\stdafx.cpp
 # Begin Source File
 
 SOURCE=.\src\DigitalWatch.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWThread.h
 # End Source File
 # Begin Source File
 
@@ -234,6 +242,22 @@ SOURCE=.\src\DVBTFrequencyList.cpp
 # Begin Source File
 
 SOURCE=.\src\DVBTFrequencyList.h
+# End Source File
+# End Group
+# Begin Group "TSFileSource"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\TSFileSource\TSFileSource.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\TSFileSource\TSFileSource.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\TSFileSource\TSFileSourceGuids.h
 # End Source File
 # End Group
 # Begin Source File

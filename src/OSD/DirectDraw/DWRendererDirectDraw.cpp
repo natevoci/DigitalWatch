@@ -98,7 +98,7 @@ HRESULT DWRendererDirectDraw::Present()
 	swprintf((LPWSTR)&buffer, L"FPS - %f", GetFPS());
 	text.SetText(buffer);
 	hr = m_pSurface->DrawText(&text, 0, 560);
-	hr = m_pSurface->DrawText(&text, 700, 560);
+	hr = m_pSurface->DrawText(&text, 688, 560);
 #endif
 
 	//Flip

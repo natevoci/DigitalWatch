@@ -274,6 +274,14 @@ HRESULT BDACard::GetSignalStatistics(BOOL &locked, BOOL &present, long &strength
 {
 	HRESULT hr;
 
+	locked = FALSE;
+	present = FALSE;
+	strength = 0;
+	quality = 0;
+
+	if (m_pBDATuner == NULL)
+		return S_FALSE;
+
 	//Get IID_IBDA_Topology
 	CComPtr <IBDA_Topology> bdaNetTop;
 	if (FAILED(hr = m_pBDATuner.QueryInterface(&bdaNetTop)))

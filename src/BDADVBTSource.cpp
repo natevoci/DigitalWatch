@@ -124,6 +124,10 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 
 	m_pCurrentTuner = NULL;
 
+	// Start the background thread for updating statistics
+	if FAILED(hr = StartThread())
+		return (log << "Failed to start background thread: " << hr << "\n").Write(hr);
+
 	indent.Release();
 	(log << "Finished Initialising BDA Source\n").Write();
 
@@ -136,6 +140,10 @@ HRESULT BDADVBTSource::Destroy()
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
+
+	// Stop background thread
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
 
 	if (m_pDWGraph)
 	{
@@ -336,6 +344,16 @@ DVBTChannels *BDADVBTSource::GetChannels()
 	return &channels;
 }
 
+void BDADVBTSource::ThreadProc()
+{
+	while (!ThreadIsStopping())
+	{
+		UpdateData();
+		Sleep(100);
+	}
+}
+
+
 
 HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
 {
@@ -510,6 +528,10 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 	// Do data stuff
 	UpdateData(frequency, bandwidth);
+	if (m_pCurrentNetwork)
+		g_pTv->ShowOSDItem(L"Channel", 10);
+	else
+		g_pTv->ShowOSDItem(L"Channel", 300);
 	// End data stuff
 
 	if FAILED(hr = m_pDWGraph->Stop())
@@ -826,6 +848,7 @@ HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long
 
 void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 {
+	HRESULT hr;
 	LPWSTR str = NULL;
 	strCopy(str, L"");
 
@@ -872,12 +895,27 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 		g_pOSD->Data()->SetItem(L"CurrentService", L"");
 	}
 
-	delete[] str;
+	// Set Signal Statistics
+	if (m_pCurrentTuner)
+	{
+		BOOL locked;
+		long strength, quality;
+		if SUCCEEDED(hr = m_pCurrentTuner->GetSignalStats(locked, strength, quality))
+		{
+			if (locked)
+				g_pOSD->Data()->SetItem(L"SignalLocked", L"Locked");
+			else
+				g_pOSD->Data()->SetItem(L"SignalLocked", L"Not Locked");
 
-	if (m_pCurrentNetwork)
-		g_pTv->ShowOSDItem(L"Channel", 10);
-	else
-		g_pTv->ShowOSDItem(L"Channel", 300);
+			strCopy(str, strength);
+			g_pOSD->Data()->SetItem(L"SignalStrength", str);
+
+			strCopy(str, quality);
+			g_pOSD->Data()->SetItem(L"SignalQuality", str);
+		}
+	}
+
+	delete[] str;
 }
 
 HRESULT BDADVBTSource::UpdateChannels()
@@ -908,6 +946,10 @@ HRESULT BDADVBTSource::UpdateChannels()
 		//       m_pCurrentService won't be valid any more so we'll need to clone it.
 
 		UpdateData();
+		if (m_pCurrentNetwork)
+			g_pTv->ShowOSDItem(L"Channel", 10);
+		else
+			g_pTv->ShowOSDItem(L"Channel", 300);
 	}
 	return S_OK;
 }

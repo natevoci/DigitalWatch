@@ -121,6 +121,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		//KillTimer(appData->hWnd, 998);
 	}
 
+	g_pTv->UnloadSource();
 	delete g_pOSD;
 	g_pOSD = NULL;
 	delete g_pDWWindow;

@@ -61,6 +61,7 @@ public:
 	HRESULT Fullscreen(int nFullScreen = 1);	//0=off, 1=on, 2=toggle
 
 	HRESULT SetSource(LPWSTR wszSourceName);
+	HRESULT UnloadSource();
 
 	HRESULT VolumeUp(int value);
 	HRESULT VolumeDown(int value);

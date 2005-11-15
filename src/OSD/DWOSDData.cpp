@@ -206,6 +206,7 @@ HRESULT DWOSDData::ReplaceTokens(LPWSTR pSource, LPWSTR &pResult, long ixDataLis
 		result[dst+srcLength] = '\0';
 
 		pSrc += srcLength;
+		dst += srcLength;
 
 		if (pBackslash)
 		{

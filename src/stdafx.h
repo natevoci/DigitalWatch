@@ -10,6 +10,7 @@
 // Windows Header Files:
 #include <windows.h>
 #include <windowsx.h>
+#include <Commdlg.h>
 // C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>

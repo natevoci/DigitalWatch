@@ -377,7 +377,13 @@ HRESULT BDADVBTSourceTuner::StartScanning()
 
 HRESULT BDADVBTSourceTuner::GetSignalStats(BOOL &locked, long &strength, long &quality)
 {
-	return E_FAIL;
+	HRESULT hr;
+	BOOL present;
+
+	if FAILED(hr = m_pBDACard->GetSignalStatistics(locked, present, strength, quality))
+		return hr;
+
+	return S_OK;
 }
 
 BOOL BDADVBTSourceTuner::IsActive()

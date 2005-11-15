@@ -30,9 +30,10 @@
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
 #include "DVBTFrequencyList.h"
+#include "DWThread.h"
 #include <vector>
 
-class BDADVBTSource : public DWSource
+class BDADVBTSource : public DWSource, public DWThread
 {
 public:
 	BDADVBTSource();
@@ -51,6 +52,8 @@ public:
 	virtual HRESULT Play();
 
 	DVBTChannels *GetChannels();
+
+	virtual void ThreadProc();
 
 protected:
 	virtual HRESULT SetChannel(long originalNetworkId, long serviceId);

@@ -28,6 +28,7 @@
 #include "GlobalFunctions.h"
 #include "DWSource.h"
 #include "BDADVBTSource.h"
+#include "TSFileSource/TSFileSource.h"
 
 #include <process.h>
 #include <math.h>
@@ -100,10 +101,10 @@ HRESULT TVControl::Initialise()
 	m_sources.push_back(source);
 	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
 
-//	source = new TSFileSource();
-//	source->SetLogCallback(m_pLogCallback);
-//	m_sources.push_back(source);
-//	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
+	source = new TSFileSource();
+	source->SetLogCallback(m_pLogCallback);
+	m_sources.push_back(source);
+	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
 
 	hr = ShowMenu(L"MainMenu");
 	(log << "Showing Main Menu : " << hr << "\n").Write();
@@ -246,6 +247,17 @@ HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 	}
 
 	return S_FALSE;
+}
+
+HRESULT TVControl::UnloadSource()
+{
+	if (m_pActiveSource)
+	{
+		//TODO: create a m_pActiveSource->DisconnectFromGraph() method
+		m_pActiveSource->Destroy();
+		m_pActiveSource = NULL;
+	}
+	return S_OK;
 }
 
 HRESULT TVControl::VolumeUp(int value)

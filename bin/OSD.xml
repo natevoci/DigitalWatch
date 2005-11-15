@@ -142,6 +142,15 @@ $(() - $(
 				<padding left=10 top=0 right=10 bottom=3 />
 			</background>
 		</label>
+		<label>
+			<pos x=20 y=526 />
+			<text>$(SignalLocked) - $(SignalStrength) - $(SignalQuality)</text>
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=0 />
+			</background>
+		</label>
 	</group>
 	<group name="Scanning">
 		<label>
@@ -163,6 +172,17 @@ $(() - $(
 			<background>
 				<image>BrownButton</image>
 				<padding left=10 top=0 right=10 bottom=3 />
+			</background>
+		</label>
+	</group>
+	<group name="Position">
+		<label>
+			<pos x=20 y=526 />
+			<text>$(PositionEarliest) - $(PositionCurrent) - $(PositionLatest)</text>
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=0 />
 			</background>
 		</label>
 	</group>
@@ -256,6 +276,14 @@ $(() - $(
 			<onSelect>
 				ExitMenu(-1)
 				SetSource(BDA)
+			</onSelect>
+		</item>
+		<item>
+			<text>Play File</text>
+			<onSelect>
+				ExitMenu(-1)
+				SetSource(TSFileSource)
+				LoadFile()
 			</onSelect>
 		</item>
 		<item>
