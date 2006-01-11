@@ -44,7 +44,10 @@ public:
 	virtual HRESULT ExecuteCommand(ParseLine* command) = 0;
 	//Keys, ControlBar, OSD, Menu, etc...
 
-	virtual HRESULT Play() = 0;
+	virtual HRESULT Start() = 0;
+
+	virtual BOOL CanLoad(LPWSTR pCmdLine);
+	virtual HRESULT Load(LPWSTR pCmdLine);
 
 	/* Filtergraph */
 /*	virtual HRESULT AddFilters() = 0;

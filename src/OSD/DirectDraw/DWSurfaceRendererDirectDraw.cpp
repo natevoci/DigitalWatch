@@ -35,6 +35,9 @@ DWSurfaceRendererDirectDraw::DWSurfaceRendererDirectDraw()
 	m_hInstance = 0;
 	m_nResource = 0;
 	m_szBitmap = NULL;
+
+	m_bColorKey = TRUE;
+	m_dwColorKey = 0x00040404;
 }
 
 DWSurfaceRendererDirectDraw::~DWSurfaceRendererDirectDraw()
@@ -119,6 +122,13 @@ HRESULT DWSurfaceRendererDirectDraw::Create(long width, long height)
 		m_surfaces.push_back(screen);
 	}
 
+	if (m_bColorKey)
+	{
+		hr = SetColorKey(m_dwColorKey);
+		if FAILED(hr)
+			return (log << "Failed to set color key: " << hr << "\n").Write(hr);
+	}
+
 	return hr;
 }
 
@@ -163,7 +173,7 @@ HRESULT DWSurfaceRendererDirectDraw::Clear()
 		DDBLTFX ddbfx;
 		ZeroMemory(&ddbfx, sizeof(ddbfx));
 		ddbfx.dwSize = sizeof( ddbfx );
-		ddbfx.dwFillColor = (DWORD)RGB(0, 0, 0);
+		ddbfx.dwFillColor = m_dwColorKey;
 		hr = screen->piDDSurface->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &ddbfx);
 		if FAILED(hr)
 			return (log << "Failed to clear surface : " << hr << "\n").Write(hr);

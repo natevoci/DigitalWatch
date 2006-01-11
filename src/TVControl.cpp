@@ -157,6 +157,8 @@ HRESULT TVControl::Destroy()
 	(log << "Cleaning up sources\n").Write();
 	CAutoLock sourcesLock(&m_sourcesLock);
 
+	UnloadSource();
+
 	std::vector<DWSource *>::iterator it = m_sources.begin();
 	for ( ; it != m_sources.end() ; it++ )
 	{
@@ -177,6 +179,70 @@ HRESULT TVControl::Destroy()
 	(log << "Finished Destroying TVControl\n").Write();
 
 	return S_OK;
+}
+
+HRESULT TVControl::Load(LPWSTR pCmdLine)
+{
+	CAutoLock sourcesLock(&m_sourcesLock);
+	HRESULT hr;
+
+	if (pCmdLine[0] == '\0')
+	{
+		(log << "No Command line arguments specified\n").Write();
+		return S_FALSE;
+	}
+
+	(log << "Loading Command line: " << pCmdLine << "\n").Write();
+
+	// Check for quotes and trim them if they're there.
+	if (pCmdLine[0] == L'"')
+	{
+		pCmdLine++;
+
+		int i=0;
+		while ((pCmdLine[i] != L'"') && (pCmdLine[i] != 0))
+		{
+			if (pCmdLine[i] == L'\\')
+				i++;
+			i++;
+		}
+		pCmdLine[i] = 0;
+
+		(log << "After quotes trimmed: " << pCmdLine << "\n").Write();
+	}
+
+	std::vector<DWSource *>::iterator it = m_sources.begin();
+	for ( ; it < m_sources.end() ; it++ )
+	{
+		DWSource *source = *it;
+		if (source->CanLoad(pCmdLine))
+		{
+			if (source != m_pActiveSource)
+			{
+				if (m_pActiveSource)
+				{
+					//TODO: create a m_pActiveSource->DisconnectFromGraph() method
+					m_pActiveSource->Destroy();
+					m_pActiveSource = NULL;
+				}
+
+				if FAILED(hr = source->Initialise(m_pFilterGraph))
+					return (log << "Failed to initialise new active source: " << hr << "\n").Write();
+
+				m_pActiveSource = source;
+				if FAILED(hr = m_pActiveSource->Start())
+					return (log << "Failed to play new active source: " << hr << "\n").Write();
+			}
+			if FAILED(hr = source->Load(pCmdLine))
+				return (log << "Failed to load command \"" << pCmdLine << "\" in new active source: " << hr << "\n").Write();
+
+			ExitMenu(-1);
+
+			return S_OK;
+		}
+	}
+
+	return S_FALSE;
 }
 
 HRESULT TVControl::AlwaysOnTop(int nAlwaysOnTop)
@@ -221,6 +287,7 @@ HRESULT TVControl::Fullscreen(int nFullScreen)
 HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 {
 	CAutoLock sourcesLock(&m_sourcesLock);
+	HRESULT hr;
 
 	std::vector<DWSource *>::iterator it = m_sources.begin();
 	for ( ; it < m_sources.end() ; it++ )
@@ -237,12 +304,17 @@ HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 				m_pActiveSource = NULL;
 			}
 
-			if SUCCEEDED(source->Initialise(m_pFilterGraph))
-			{
-				m_pActiveSource = source;
-				return m_pActiveSource->Play();
-			}
-			return E_FAIL;
+			if FAILED(hr = source->Initialise(m_pFilterGraph))
+				return (log << "Failed to initialise source: " << hr << "\n").Write();
+
+			m_pActiveSource = source;
+			if FAILED(hr = m_pActiveSource->Start())
+				return (log << "Failed to play source: " << hr << "\n").Write();
+
+			if FAILED(hr = source->Load(NULL))
+				return (log << "Failed to load NULL command: " << hr << "\n").Write();
+
+			return S_OK;
 		}
 	}
 
@@ -1809,12 +1881,19 @@ void TVControl::StartCommandQueueThread()
 		}
 		else
 		{
-			if (m_commandQueue.size() > 0)
+			try
 			{
-				LPWSTR command = m_commandQueue.front();
-				ExecuteCommandsImmediate(command);
-				m_commandQueue.pop_front();
-				delete[] command;
+				if (m_commandQueue.size() > 0)
+				{
+					LPWSTR command = m_commandQueue.front();
+					ExecuteCommandsImmediate(command);
+					m_commandQueue.pop_front();
+					delete[] command;
+				}
+			}
+			catch (LPWSTR str)
+			{
+				(log << "Error caught in command queue thread: " << str << "\n").Show();
 			}
 		}
 		result = WaitForSingleObject(m_hCommandProcessingStopEvent, 10);

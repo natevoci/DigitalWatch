@@ -3,13 +3,31 @@ DigitalWatch History
 --------------------
 ________
 
-v2.0.1.5
+v2.0.2.2
 ________
 
   Changes
   ```````
+  - New OSD renderer architecture to support other video rendering methods (VMR9, VMR9 Windowless, VMR9 Renderless)
   - Added VMR9 Windowsless mode (only tested with the "Mpeg2Dec Video Decoder - VMR9" decoder so far)
-  - Fixed up some logging that wasn't getting written to file.
+  - Fixed DWOSDList highlighting problem when switching to another list with less items
+  - Added Override option for AspectRatio
+  - Added AspectRatio detection to be used if AR isn't overridden
+  - Added ProgramUp and ProgramDown to BDA_DVB-T/Keys.xml
+  - Added ffdshow decoder entries
+  - Added nVidia Audio Decoder entry
+  - Added an UpdateData thread to BDADVBTSource to get Signal Statistics
+  - Added a TSFileSource source
+  - Added command line processing.
+    - To start watching tv:
+        digitalwatch.exe tv://[originalNetworkId:transportStreamId:networkId[/serviceId]]
+        eg.
+          tv:// will load the default channel
+          tv://0x1014:0x603:0x321F will load the default service of this network
+          tv://0x1014:0x603:0x321F/0x632 will load a specific service
+    - To start playing a file with TSFileSource
+        digitalwatch.exe <*.ts|*.tsbuffer|*.mpg>
+
 
 ________
 

@@ -33,3 +33,13 @@ HRESULT DWSource::GetKeyFunction(int keycode, BOOL shift, BOOL ctrl, BOOL alt, L
 {
 	return m_sourceKeyMap.GetFunction(keycode, shift, ctrl, alt, function);
 }
+
+BOOL DWSource::CanLoad(LPWSTR pCmdLine)
+{
+	return FALSE;
+}
+
+HRESULT DWSource::Load(LPWSTR pCmdLine)
+{
+	return S_FALSE;
+}

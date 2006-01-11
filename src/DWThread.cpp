@@ -39,6 +39,7 @@ DWThread::DWThread()
 {
 	m_hStopEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 	m_hDoneEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
+	m_threadHandle = INVALID_HANDLE_VALUE;
 }
 
 DWThread::~DWThread()
@@ -51,9 +52,8 @@ DWThread::~DWThread()
 HRESULT DWThread::StartThread()
 {
 	ResetEvent(m_hStopEvent);
-	ResetEvent(m_hDoneEvent);
-	unsigned long result = _beginthread(&DWThread::thread_function, 0, (void *) this);
-	if (result == -1L)
+	unsigned long m_threadHandle = _beginthread(&DWThread::thread_function, 0, (void *) this);
+	if (m_threadHandle == (unsigned long)INVALID_HANDLE_VALUE)
 		return E_FAIL;
 
 	return S_OK;
@@ -61,16 +61,26 @@ HRESULT DWThread::StartThread()
 
 HRESULT DWThread::StopThread(DWORD dwTimeoutMilliseconds)
 {
+	HRESULT hr = S_OK;
+
 	SetEvent(m_hStopEvent);
 	DWORD result = WaitForSingleObject(m_hDoneEvent, dwTimeoutMilliseconds);
 
-	if (result != WAIT_OBJECT_0)
+	if ((result == WAIT_TIMEOUT) && (m_threadHandle != INVALID_HANDLE_VALUE))
+	{
+		TerminateThread(m_threadHandle, -1);
+		CloseHandle(m_threadHandle);
+		hr = S_FALSE;
+	}
+	else if (result != WAIT_OBJECT_0)
 	{
 		DWORD err = GetLastError();
 		return HRESULT_FROM_WIN32(err);
 	}
 
-	return S_OK;
+	m_threadHandle = INVALID_HANDLE_VALUE;
+
+	return hr;
 }
 
 BOOL DWThread::ThreadIsStopping()
@@ -81,7 +91,15 @@ BOOL DWThread::ThreadIsStopping()
 
 void DWThread::InternalThreadProc()
 {
-	ThreadProc();
+	ResetEvent(m_hDoneEvent);
+	try
+	{
+		ThreadProc();
+	}
+	catch (LPWSTR pStr)
+	{
+		pStr = NULL;
+	}
 	SetEvent(m_hDoneEvent);
 }
 

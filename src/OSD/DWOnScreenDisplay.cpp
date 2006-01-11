@@ -90,11 +90,18 @@ int DWOnScreenDisplay::GetRenderMethodChangeCount()
 
 void DWOnScreenDisplay::SetRenderMethod(RENDER_METHOD renderMethod)
 {
-	if (renderMethod == RENDER_METHOD_DEFAULT)
-		renderMethod = RENDER_METHOD_OverlayMixer;
+//	if (renderMethod == RENDER_METHOD_DEFAULT)
+//		renderMethod = RENDER_METHOD_OverlayMixer;
 
 	if ((m_renderMethod != renderMethod) /*|| (m_renderMethod == RENDER_METHOD_NONE)*/)
 	{
+		if (((m_renderMethod == RENDER_METHOD_OverlayMixer) && (renderMethod == RENDER_METHOD_DEFAULT)) ||
+			((renderMethod == RENDER_METHOD_OverlayMixer) && (m_renderMethod == RENDER_METHOD_DEFAULT)))
+		{
+			m_renderMethod = renderMethod;
+			return;
+		}
+
 		m_renderMethod = renderMethod;
 		m_renderMethodChangeCount++;
 
@@ -108,7 +115,7 @@ void DWOnScreenDisplay::SetRenderMethod(RENDER_METHOD renderMethod)
 			m_pRenderer = NULL;
 		}
 
-		if (renderMethod == RENDER_METHOD_OverlayMixer)
+		if ((renderMethod == RENDER_METHOD_OverlayMixer) || (renderMethod == RENDER_METHOD_DEFAULT))
 		{
 			m_pRenderer = new DWRendererDirectDraw(m_pMainSurface);
 		}

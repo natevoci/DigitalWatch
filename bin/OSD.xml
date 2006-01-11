@@ -142,6 +142,7 @@ $(() - $(
 				<padding left=10 top=0 right=10 bottom=3 />
 			</background>
 		</label>
+		<!--
 		<label>
 			<pos x=20 y=526 />
 			<text>$(SignalLocked) - $(SignalStrength) - $(SignalQuality)</text>
@@ -151,6 +152,7 @@ $(() - $(
 				<padding left=10 top=0 right=10 bottom=0 />
 			</background>
 		</label>
+		-->
 	</group>
 	<group name="Scanning">
 		<label>
@@ -249,12 +251,6 @@ $(() - $(
 		<text>Main Menu</text>
 		<font height=40 weight=700 color="#FFFFFF" />
 		<align horizontal="centre"/>
-		<!--
-		<background>
-			<image>BrownBackground</image>
-			<padding left=250 right=250 top=20 bottom=470 />
-		</background>
-		-->
 	</label>
 	<list name="MenuOptions">
 		<pos x=100 y=100 />
@@ -283,7 +279,6 @@ $(() - $(
 			<onSelect>
 				ExitMenu(-1)
 				SetSource(TSFileSource)
-				LoadFile()
 			</onSelect>
 		</item>
 		<item>

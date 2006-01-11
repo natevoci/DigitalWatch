@@ -57,6 +57,8 @@ public:
 	HRESULT Initialise();
 	HRESULT Destroy();
 
+	HRESULT Load(LPWSTR pCmdLine);
+
 	HRESULT AlwaysOnTop(int nAlwaysOnTop = 1);	//0=off, 1=on, 2=toggle
 	HRESULT Fullscreen(int nFullScreen = 1);	//0=off, 1=on, 2=toggle
 

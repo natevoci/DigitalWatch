@@ -49,7 +49,10 @@ public:
 	virtual HRESULT ExecuteCommand(ParseLine* command);
 	//Keys, ControlBar, OSD, Menu, etc...
 
-	virtual HRESULT Play();
+	virtual HRESULT Start();
+
+	virtual BOOL CanLoad(LPWSTR pCmdLine);
+	virtual HRESULT Load(LPWSTR pCmdLine);
 
 	DVBTChannels *GetChannels();
 
@@ -57,6 +60,7 @@ public:
 
 protected:
 	virtual HRESULT SetChannel(long originalNetworkId, long serviceId);
+	virtual HRESULT SetChannel(long originalNetworkId, long transportStreamId, long networkId, long serviceId);
 	virtual HRESULT SetFrequency(long frequency, long bandwidth = 0);
 	virtual HRESULT NetworkUp();
 	virtual HRESULT NetworkDown();

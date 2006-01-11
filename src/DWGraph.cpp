@@ -76,6 +76,8 @@ DWGraph::DWGraph()
 	m_piGraphBuilder = NULL;
 	m_piMediaControl = NULL;
 	m_bInitialised = FALSE;
+	m_bPlaying = FALSE;
+	m_bPaused = FALSE;
 	SetRect(&m_videoRect, 0, 0, 0, 0);
 	m_rotEntry = 0;
 }
@@ -246,6 +248,9 @@ HRESULT DWGraph::Start()
 			(log << "Failed to get filter info: " << hr << "\n").Write();
 	} while (FALSE);
 
+	m_bPlaying = TRUE;
+	m_bPaused = FALSE;
+
 	indent.Release();
 	(log << "Finished Starting DW Graph : " << hr << "\n").Write();
 
@@ -257,6 +262,9 @@ HRESULT DWGraph::Stop()
 	(log << "Stopping DW Graph\n").Write();
 	LogMessageIndent indent(&log);
 
+	m_bPlaying = FALSE;
+	m_bPaused = FALSE;
+
 	HRESULT hr = m_piMediaControl->Stop();
 	if FAILED(hr)
 		return (log << "Failed to stop graph: " << hr << "\n").Write(hr);
@@ -267,6 +275,36 @@ HRESULT DWGraph::Stop()
 
 	indent.Release();
 	(log << "Finished Stopping DW Graph : " << hr << "\n").Write();
+
+	return hr;
+}
+
+HRESULT DWGraph::Pause(BOOL bPause)
+{
+	HRESULT hr;
+	LPWSTR pStr;
+	if (bPause)
+		pStr = L"Pause";
+	else
+		pStr = L"Unpause";
+
+	if (m_bPaused == bPause)
+		return (log << "Graph already in " << pStr << " state\n").Write();
+
+	(log << pStr << " DW Graph\n").Write();
+	LogMessageIndent indent(&log);
+
+	m_bPaused = bPause;
+
+	if (m_bPaused)
+		hr = m_piMediaControl->Pause();
+	else
+		hr = m_piMediaControl->Run();
+
+	if FAILED(hr)
+		return (log << "Failed to " << pStr << " graph: " << hr << "\n").Write(hr);
+
+	indent.Release();
 
 	return hr;
 }
@@ -449,7 +487,7 @@ HRESULT DWGraph::RefreshVideoPosition()
 	else if (renderMethod == RENDER_METHOD_VMR9Renderless)
 	{
 	}
-	else
+	else if (renderMethod == RENDER_METHOD_OverlayMixer)
 	{
 		CComQIPtr <IVideoWindow> piVideoWindow(m_piGraphBuilder);
 		if (!piVideoWindow)
@@ -687,3 +725,14 @@ void DWGraph::GetVideoRect(RECT *rect)
 {
 	CopyRect(rect, &m_videoRect);
 }
+
+BOOL DWGraph::IsPlaying()
+{
+	return m_bPlaying;
+}
+
+BOOL DWGraph::IsPaused()
+{
+	return m_bPaused;
+}
+

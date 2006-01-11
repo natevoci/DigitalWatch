@@ -90,6 +90,8 @@ HRESULT TSFileSource::Destroy()
 	// Stop background thread
 	if FAILED(hr = StopThread())
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
 
 	if (m_pDWGraph)
 	{
@@ -98,6 +100,9 @@ HRESULT TSFileSource::Destroy()
 
 		if FAILED(hr = m_pDWGraph->Cleanup())
 			(log << "Failed to cleanup DWGraph\n").Write();
+
+		if FAILED(hr = UnloadFilters())
+			(log << "Failed to unload filters\n").Write();
 	}
 
 	m_pDWGraph = NULL;
@@ -128,6 +133,13 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 		else
 			return LoadFile(NULL);
 	}
+	else if (_wcsicmp(pCurr, L"PlayPause") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return PlayPause();
+	}
 	else if (_wcsicmp(pCurr, L"Seek") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -155,7 +167,7 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 	return S_FALSE;
 }
 
-HRESULT TSFileSource::Play()
+HRESULT TSFileSource::Start()
 {
 	(log << "Playing TSFileSource Source\n").Write();
 	LogMessageIndent indent(&log);
@@ -168,12 +180,33 @@ HRESULT TSFileSource::Play()
 	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
 		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
 
-	//LoadFile(L"F:\\Webscheduler\\Hillsong.ts");
-
 	indent.Release();
 	(log << "Finished Playing TSFileSource Source : " << hr << "\n").Write();
 
 	return hr;
+}
+
+BOOL TSFileSource::CanLoad(LPWSTR pCmdLine)
+{
+	long length = wcslen(pCmdLine);
+	if ((length >= 9) && (_wcsicmp(pCmdLine+length-9, L".tsbuffer") == 0))
+	{
+		return TRUE;
+	}
+	if ((length >= 4) && (_wcsicmp(pCmdLine+length-4, L".mpg") == 0))
+	{
+		return TRUE;
+	}
+	if ((length >= 3) && (_wcsicmp(pCmdLine+length-3, L".ts") == 0))
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
+HRESULT TSFileSource::Load(LPWSTR pCmdLine)
+{
+	return LoadFile(pCmdLine);
 }
 
 void TSFileSource::ThreadProc()
@@ -222,8 +255,8 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename)
 	if FAILED(hr = m_pDWGraph->Stop())
 		return (log << "Failed to stop DWGraph\n").Write(hr);
 
-	if FAILED(hr = m_pDWGraph->Cleanup())
-		return (log << "Failed to cleanup DWGraph\n").Write(hr);
+	if FAILED(hr = UnloadFilters())
+		return (log << "Failed to unload previous filters\n").Write(hr);
 
 	// TSFileSource
 	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_TSFileSource, &m_piTSFileSource, L"TSFileSource"))
@@ -271,7 +304,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename)
 	}
 
 	if FAILED(hr = m_pDWGraph->Start())
-		return (log << "Failed to Start Graph. Possibly tuner already in use.\n").Write(hr);
+		return (log << "Failed to Start Graph.\n").Write(hr);
 
 	indent.Release();
 	(log << "Finished Loading File\n").Write();
@@ -279,6 +312,55 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename)
 	UpdateData();
 	g_pTv->ShowOSDItem(L"Position", 10);
 
+	// If it's a .tsbuffer file then seek to the end
+	long length = wcslen(pFilename);
+	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0))
+	{
+		SeekTo(100);
+	}
+
+	return S_OK;
+}
+
+HRESULT TSFileSource::UnloadFilters()
+{
+	HRESULT hr;
+
+	if FAILED(hr = m_pDWGraph->Cleanup())
+		return (log << "Failed to cleanup DWGraph\n").Write(hr);
+
+	m_piTSFileSource.Release();
+	m_piBDAMpeg2Demux.Release();
+	m_piMpeg2Demux.Release();
+
+	return S_OK;
+}
+
+HRESULT TSFileSource::PlayPause()
+{
+	HRESULT hr;
+
+	if (!m_pDWGraph)
+		return S_FALSE;
+
+	if (!m_pDWGraph->IsPlaying())
+	{
+		if FAILED(hr = m_pDWGraph->Start())
+			return (log << "Failed to Unpause Graph.\n").Write(hr);
+	}
+	else
+	{
+		if (m_pDWGraph->IsPaused())
+		{
+			if FAILED(hr = m_pDWGraph->Pause(FALSE))
+				return (log << "Failed to Unpause Graph.\n").Write(hr);
+		}
+		else
+		{
+			if FAILED(hr = m_pDWGraph->Pause(TRUE))
+				return (log << "Failed to Pause Graph.\n").Write(hr);
+		}
+	}
 	return S_OK;
 }
 
@@ -331,6 +413,7 @@ HRESULT TSFileSource::SeekTo(long percentage)
 	rtNow = rtLatest - rtEarliest;
 	rtNow *= (__int64)percentage;
 	rtNow /= (__int64)100;
+	rtNow += rtEarliest;
 
 	if FAILED(piMediaSeeking->SetPositions(&rtNow, AM_SEEKING_AbsolutePositioning, &rtStop, AM_SEEKING_NoPositioning))
 		return (log << "Failed to set positions: " << hr << "\n").Write(hr);
@@ -343,6 +426,9 @@ HRESULT TSFileSource::SeekTo(long percentage)
 HRESULT TSFileSource::UpdateData()
 {
 	HRESULT hr;
+
+	if (!m_pDWGraph->IsPlaying())
+		return S_OK;
 
 	CComQIPtr<IMediaSeeking> piMediaSeeking(m_piGraphBuilder);
 

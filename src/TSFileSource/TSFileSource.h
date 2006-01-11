@@ -41,10 +41,14 @@ public:
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph);
 	virtual HRESULT Destroy();
+	virtual HRESULT UnloadFilters();
 
 	virtual HRESULT ExecuteCommand(ParseLine* command);
 
-	virtual HRESULT Play();
+	virtual HRESULT Start();
+
+	virtual BOOL CanLoad(LPWSTR pCmdLine);
+	virtual HRESULT Load(LPWSTR pCmdLine);
 
 	virtual void ThreadProc();
 
@@ -52,6 +56,7 @@ protected:
 	// graph building methods
 	HRESULT LoadFile(LPWSTR pFilename);
 
+	virtual HRESULT PlayPause();
 	virtual HRESULT Skip(long seconds);
 	virtual HRESULT SeekTo(long percentage);
 

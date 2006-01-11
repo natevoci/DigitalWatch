@@ -31,7 +31,7 @@ public:
 
 	virtual void ThreadProc() = 0;
 	HRESULT StartThread();
-	HRESULT StopThread(DWORD dwTimeoutMilliseconds = 10000);
+	HRESULT StopThread(DWORD dwTimeoutMilliseconds = 1000);
 
 	BOOL ThreadIsStopping();
 
@@ -41,7 +41,7 @@ protected:
 private:
 	HANDLE m_hDoneEvent;
 	HANDLE m_hStopEvent;
-
+	HANDLE m_threadHandle;
 	static void thread_function(void* p);
 };
 

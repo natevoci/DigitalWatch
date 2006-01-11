@@ -244,7 +244,7 @@ HRESULT DWSurface::CreateSurfaceRenderer()
 	RENDER_METHOD renderMethod = g_pOSD->GetRenderMethod();
 	m_lastRenderMethodChangeCount = g_pOSD->GetRenderMethodChangeCount();
 
-	if (renderMethod == RENDER_METHOD_OverlayMixer)
+	if ((renderMethod == RENDER_METHOD_OverlayMixer) || (renderMethod == RENDER_METHOD_DEFAULT))
 	{
 		m_pSurfaceRenderer = new DWSurfaceRendererDirectDraw();
 	}

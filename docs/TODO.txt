@@ -2,6 +2,8 @@
 DigitalWatch TODO
 -----------------
 
+- BDADVBTSource.cpp, Fix UpdateData to not actually retrieve signal stats. That should happen in another thread that updates local properties.
+
 - Reenable WM_COPYDATA
 
 - Change ColorControls to use a standard range Br:-100<0<100 Co:-100<0<100 Hu:-180<0<180 Sa:-100<0<100

@@ -81,6 +81,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		if FAILED(g_pTv->Initialise())
 			return -1;
 
+		USES_CONVERSION;
+		if FAILED(g_pTv->Load(A2W(lpCmdLine)))
+			return -1;
+
 		//appData->StoreGlobalValues();
 		//if (appSettings->startLastChannel != 0)
 		/*{
@@ -121,7 +125,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		//KillTimer(appData->hWnd, 998);
 	}
 
-	g_pTv->UnloadSource();
+	g_pTv->Destroy();
 	delete g_pOSD;
 	g_pOSD = NULL;
 	delete g_pDWWindow;

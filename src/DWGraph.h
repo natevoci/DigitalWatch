@@ -46,6 +46,7 @@ public:
 	
 	HRESULT Start();
 	HRESULT Stop();
+	HRESULT Pause(BOOL bPause);
 
 	HRESULT Cleanup();
 
@@ -61,6 +62,9 @@ public:
 
 	void GetVideoRect(RECT *rect);
 
+	BOOL IsPlaying();
+	BOOL IsPaused();
+
 protected:
 	void CalculateVideoRect(double aspectRatio = 0);
 	HRESULT ApplyColorControls();
@@ -72,6 +76,8 @@ private:
 	CComPtr <IMediaControl> m_piMediaControl;
 
 	BOOL m_bInitialised;
+	BOOL m_bPlaying;
+	BOOL m_bPaused;
 
 	RECT m_videoRect;
 

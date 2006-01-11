@@ -5,7 +5,7 @@
   <Key code= 27>				ExitMenu()</>
 
   <Key code='T' shift>			SetSource("BDA")</>
-  <Key code='F' shift>			SetSource("TSFILESOURCE") LoadFile()</>
+  <Key code='F' shift>			SetSource("TSFILESOURCE")</>
 
   <!-- Cursor-Up and Cursor-Down with shift option. Vol+ Vol- on VP remote -->
   <Key code= 38 shift>			ProgramUp()</>
