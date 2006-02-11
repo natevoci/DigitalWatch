@@ -500,11 +500,15 @@ HRESULT TVControl::ExitMenu(long nNumberOfMenusToExit)
 
 HRESULT TVControl::ShowOSDItem(LPWSTR szName, long secondsToShowFor)
 {
-	DWOSDControl *control = g_pOSD->Overlay()->GetControl(szName);
-	if (control)
+	DWOSDWindow *overlay = g_pOSD->Overlay();
+	if (overlay)
 	{
-		control->Show(secondsToShowFor);
-		return S_OK;
+		DWOSDControl *control = overlay->GetControl(szName);
+		if (control)
+		{
+			control->Show(secondsToShowFor);
+			return S_OK;
+		}
 	}
 
 	return S_FALSE;
@@ -512,11 +516,15 @@ HRESULT TVControl::ShowOSDItem(LPWSTR szName, long secondsToShowFor)
 
 HRESULT TVControl::HideOSDItem(LPWSTR szName)
 {
-	DWOSDControl *control = g_pOSD->Overlay()->GetControl(szName);
-	if (control)
+	DWOSDWindow *overlay = g_pOSD->Overlay();
+	if (overlay)
 	{
-		control->Hide();
-		return S_OK;
+		DWOSDControl *control = overlay->GetControl(szName);
+		if (control)
+		{
+			control->Hide();
+			return S_OK;
+		}
 	}
 
 	return S_FALSE;
@@ -524,11 +532,15 @@ HRESULT TVControl::HideOSDItem(LPWSTR szName)
 
 HRESULT TVControl::ToggleOSDItem(LPWSTR szName)
 {
-	DWOSDControl *control = g_pOSD->Overlay()->GetControl(szName);
-	if (control)
+	DWOSDWindow *overlay = g_pOSD->Overlay();
+	if (overlay)
 	{
-		control->Toggle();
-		return S_OK;
+		DWOSDControl *control = overlay->GetControl(szName);
+		if (control)
+		{
+			control->Toggle();
+			return S_OK;
+		}
 	}
 
 	return S_FALSE;
