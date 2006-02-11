@@ -50,15 +50,15 @@
   <Key code='9' shift>			SetColorControls(10000, 10000, 0, 10000, 1)</>
 
   <Key code='X'>				Exit()</>
-  <Key code=117 shift ctrl alt>	Exit()</>
+  <Key code=117 shift ctrl alt>		Exit()</>
 
 
 <!-- Mouse settings -->
 
   <!-- left double click -->
-  <Mouse code=2>Fullscreen(2)</>
+  <Mouse code=2>				Fullscreen(2)</>
 
-  <!-- right click -->
+  <!-- right click -->				
 
   <!-- middle click -->
 

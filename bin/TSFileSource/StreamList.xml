@@ -1,0 +1,12 @@
+<Stream Index="0" Media="MPEG2" Lcid="0" Group="0" Name="  Nine Network Australia Program Information" Ltext="44" />
+
+<Stream Index="1" Media="MPEG2" Lcid="0" Group="0" Name="-> 9 : Nine Digital [Nine Network Australia]" Ltext="44" />
+
+<Stream Index="2" Media="MPEG2" Lcid="9" Group="0" Name="        Mpeg Audio Track" Ltext="24" />
+
+<Stream Index="3" Media="MPEG2" Lcid="9" Group="0" Name="->      AC3 Audio Track" Ltext="23" />
+
+<Stream Index="4" Media="MPEG2" Lcid="0" Group="1" Name="  File Menu:" Ltext="12" />
+
+<Stream Index="5" Media="MPEG2" Lcid="0" Group="1" Name="  Open Browse Window" Ltext="20" />
+

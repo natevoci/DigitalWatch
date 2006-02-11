@@ -635,6 +635,40 @@ $(() - $(
 	</button>
 </window>
 
+<window name="StreamList">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	
+	<list name="Stream">
+		<pos x=100 y=100 />
+		<size width=568 height=426 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+		
+		<itemList>
+			<source>StreamInfo</source>
+			<text> $(StreamInfo.Name)</text>
+			<onSelect>SetStream($(StreamInfo.index)) ExitMenu()</onSelect>
+			<onLeft>ExitMenu()</onLeft>
+			<onRight>SetStream($(StreamInfo.index)) ExitMenu() GetStreamList() ShowMenu("StreamList")</onRight>
+		</itemList>
+	</list>
+</window>
+
 <!--
 Event(ShowAll)
   DrawBitmap("images\background.bmp",  0, 94, -1, -1, 100, 6)

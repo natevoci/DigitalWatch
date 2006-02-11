@@ -1,6 +1,6 @@
 <!-- DigitalWatch BDA Source Keys -->
 
-  <Key code= 13>				ShowMenu("NetworkList")</>
+  <Key code= 13>				GetStreamList() ShowMenu("StreamList")</>
 
   <!-- F2 and Preview button on VP remote -->
   <Key code=113>				ExitMenu(-1) ShowMenu("TVMenu")</>
@@ -73,6 +73,9 @@
 <!-- Mouse settings -->
 
   <!-- left double click -->
+
+  <!-- Right click -->
+  <Mouse code=3>				ExitMenu(-1) GetStreamList() ShowMenu("StreamList")</>
 
   <!-- scroll up -->
   <Mouse code=5>				Seek(5)</>

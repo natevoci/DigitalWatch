@@ -27,6 +27,7 @@
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
 #include "DWThread.h"
+#include "TSFileStreamList.h"
 #include <vector>
 
 class TSFileSource : public DWSource, public DWThread
@@ -61,6 +62,10 @@ protected:
 	virtual HRESULT SeekTo(long percentage);
 
 	virtual HRESULT UpdateData();
+	virtual HRESULT SetStream(long index);
+	virtual HRESULT ShowMenu(LPWSTR szMenuName);
+	virtual HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
+	virtual HRESULT GetStreamList(void);
 
 private:
 	const LPWSTR m_strSourceType;
@@ -71,6 +76,8 @@ private:
 	CComPtr <IBaseFilter> m_piTSFileSource;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
+
+	TSFileStreamList streamList;
 
 	FilterGraphTools graphTools;
 };

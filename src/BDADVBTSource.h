@@ -84,6 +84,7 @@ protected:
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 
 	void UpdateData(long frequency = 0, long bandwidth = 0);
+
 	HRESULT UpdateChannels();
 
 	HRESULT ChangeFrequencySelectionOffset(long change);

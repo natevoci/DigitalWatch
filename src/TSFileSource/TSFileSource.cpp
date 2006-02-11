@@ -37,6 +37,7 @@
 TSFileSource::TSFileSource() : m_strSourceType(L"TSFileSource")
 {
 	m_pDWGraph = NULL;
+	g_pOSD->Data()->AddList(&streamList);
 }
 
 TSFileSource::~TSFileSource()
@@ -47,6 +48,7 @@ TSFileSource::~TSFileSource()
 void TSFileSource::SetLogCallback(LogMessageCallback *callback)
 {
 	DWSource::SetLogCallback(callback);
+	streamList.SetLogCallback(callback);
 
 	graphTools.SetLogCallback(callback);
 }
@@ -62,13 +64,19 @@ HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
+
 	m_pDWGraph = pFilterGraph;
-	
+	streamList.Initialise(pFilterGraph);
+
 	wchar_t file[MAX_PATH];
 
 	swprintf((LPWSTR)&file, L"%sTSFileSource\\Keys.xml", g_pData->application.appPath);
 	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
 		return hr;
+
+//	swprintf((LPWSTR)&file, L"%sTSFileSource\\StreamList.xml", g_pData->application.appPath);
+//	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
+//		return hr;
 
 	// Start the background thread for updating statistics
 	if FAILED(hr = StartThread())
@@ -108,6 +116,7 @@ HRESULT TSFileSource::Destroy()
 	m_pDWGraph = NULL;
 
 	m_piGraphBuilder.Release();
+	streamList.Destroy();
 
 	indent.Release();
 	(log << "Finished Destroying TSFileSource Source\n").Write();
@@ -158,6 +167,44 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 
 		return SeekTo(n1);
 	}
+	if (_wcsicmp(pCurr, L"SetStream") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		return SetStream(n1);
+	}
+	else if (_wcsicmp(pCurr, L"ShowMenu") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return ShowMenu(command->LHS.Parameter[0]);
+	}
+	else if (_wcsicmp(pCurr, L"ExitMenu") == 0)
+	{
+		if ((command->LHS.ParameterCount != 0) && (command->LHS.ParameterCount != 1))
+			return (log << "Expecting 0 or 1 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount == 0)
+		{
+			return ExitMenu();
+		}
+		else
+		{
+			n1 = StringToLong(command->LHS.Parameter[0]);
+			return ExitMenu(n1);
+		}
+	}
+	else if (_wcsicmp(pCurr, L"GetStreamList") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return GetStreamList();
+	}
 
 	//Just referencing these variables to stop warnings.
 	n1 = 0;
@@ -197,6 +244,10 @@ BOOL TSFileSource::CanLoad(LPWSTR pCmdLine)
 	{
 		return TRUE;
 	}
+	if ((length >= 4) && (_wcsicmp(pCmdLine+length-4, L".vob") == 0))
+	{
+		return TRUE;
+	}
 	if ((length >= 3) && (_wcsicmp(pCmdLine+length-3, L".ts") == 0))
 	{
 		return TRUE;
@@ -230,7 +281,8 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename)
 
 		// Setup the OPENFILENAME structure
 		OPENFILENAME ofn = { sizeof(OPENFILENAME), g_pData->hWnd, NULL,
-							 TEXT("Transport Stream Files (*.ts, *.tsbuffer)\0*.ts;*.tsbuffer\0All Files\0*.*\0\0"), NULL,
+							 TEXT("Transport Stream Files (*.mpg, *.ts, *.tsbuffer, *.vob)\0*.mpg;*.ts;*.tsbuffer;*.vob\0All Files\0*.*\0\0"), NULL,
+//							 TEXT("Transport Stream Files (*.ts, *.tsbuffer)\0*.ts;*.tsbuffer\0All Files\0*.*\0\0"), NULL,
 							 0, 1,
 							 ptFilename, MAX_PATH,
 							 NULL, 0,
@@ -473,5 +525,104 @@ HRESULT TSFileSource::UpdateData()
 	swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
 	g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
 
+	wchar_t file[MAX_PATH];
+
+	swprintf((LPWSTR)&file, L"%sTSFileSource\\StreamList.xml", g_pData->application.appPath);
+	if (!streamList.GetListSize())
+		if FAILED(hr = streamList.LoadStreamList((LPWSTR)&file))
+			return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);
+
 	return S_OK;
+}
+
+HRESULT TSFileSource::ShowMenu(LPWSTR szMenuName)
+{
+	HRESULT hr = S_FALSE;
+	hr = g_pOSD->ShowMenu(szMenuName);
+	return hr;
+}
+
+HRESULT TSFileSource::ExitMenu(long nNumberOfMenusToExit)
+{
+	HRESULT hr = S_FALSE;
+	hr = g_pOSD->ExitMenu(nNumberOfMenusToExit);
+	return hr;
+}
+
+HRESULT TSFileSource::SetStream(long index)
+{
+	IAMStreamSelect *pIAMStreamSelect;
+	HRESULT hr = m_piTSFileSource->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
+	if (SUCCEEDED(hr))
+	{
+		hr = pIAMStreamSelect->Enable((index & 0xff), AMSTREAMSELECTENABLE_ENABLE);
+		pIAMStreamSelect->Release();
+	}
+	return hr;
+}
+
+/*
+HRESULT TSFileSource::ShowStreamMenu(HWND hwnd)
+{
+	POINT mouse;
+	GetCursorPos(&mouse);
+
+	HMENU hMenu = CreatePopupMenu();
+	if (hMenu)
+	{
+
+		IAMStreamSelect *pIAMStreamSelect;
+		HRESULT hr = m_piTSFileSource->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
+		if (SUCCEEDED(hr))
+		{
+			ULONG count;
+			pIAMStreamSelect->Count(&count);
+
+			ULONG flags, group, lastgroup = -1;
+				
+			for(UINT i = 0; i < count; i++)
+			{
+				WCHAR* pStreamName = NULL;
+
+				if(S_OK == pIAMStreamSelect->Info(i, 0, &flags, 0, &group, &pStreamName, 0, 0))
+				{
+					if(lastgroup != group && i) 
+						::AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
+
+					lastgroup = group;
+
+					if(pStreamName)
+					{
+						UINT uFlags = (flags?MF_CHECKED:MF_UNCHECKED) | MF_STRING | MF_ENABLED;
+						::AppendMenuW(hMenu, uFlags, (i + 0x100), LPCWSTR(pStreamName));
+						CoTaskMemFree(pStreamName);
+					}
+				}
+			}
+
+			SetForegroundWindow(hwnd);
+			UINT index = ::TrackPopupMenu(hMenu, TPM_LEFTBUTTON|TPM_RETURNCMD, mouse.x, mouse.y, 0, hwnd, 0);
+			PostMessage(hwnd, NULL, 0, 0);
+
+			if(index & 0x100) 
+				pIAMStreamSelect->Enable((index & 0xff), AMSTREAMSELECTENABLE_ENABLE);
+
+		}
+		DestroyMenu(hMenu);
+	}
+	return S_OK;
+}
+*/
+
+HRESULT TSFileSource::GetStreamList(void)
+{
+	HRESULT hr = S_OK;
+
+	wchar_t file[MAX_PATH];
+
+	swprintf((LPWSTR)&file, L"%sTSFileSource\\StreamList.xml", g_pData->application.appPath);
+	if FAILED(hr = streamList.LoadStreamList((LPWSTR)&file))
+		return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);
+
+	return hr;
 }
