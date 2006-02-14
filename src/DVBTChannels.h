@@ -40,6 +40,7 @@ enum DVBTChannels_Service_PID_Types
 	mp2,
 	ac3,
 	teletext,
+	ts,
 	DVBTChannels_Service_PID_Types_Count
 };
 
@@ -49,7 +50,8 @@ static const LPWSTR DVBTChannels_Service_PID_Types_String[] =
 	L"Video",
 	L"MPEG-2 Audio",
 	L"AC3 Audio",
-	L"Teletext"
+	L"Teletext",
+	L"TS"
 };
 
 //Stream
@@ -63,6 +65,7 @@ public:
 	void PrintStreamDetails();
 
 	long PID;
+	long PIDARRAY[20];
 	DVBTChannels_Service_PID_Types Type;
 	//char Lang[4];
 	LPWSTR Language;

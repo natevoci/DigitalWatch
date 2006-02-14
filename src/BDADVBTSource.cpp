@@ -53,6 +53,7 @@ BDADVBTSource::~BDADVBTSource()
 void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 {
 	CAutoLock tunersLock(&m_tunersLock);
+	CAutoLock sinksLock(&m_sinksLock);
 
 	DWSource::SetLogCallback(callback);
 
@@ -61,11 +62,15 @@ void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 	frequencyList.SetLogCallback(callback);
 	cardList.SetLogCallback(callback);
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+//	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+	std::vector<TUNERINFO>::iterator it = m_tuners.begin();
 	for ( ; it != m_tuners.end() ; it++ )
 	{
-		BDADVBTSourceTuner *tuner = *it;
+		BDADVBTSourceTuner *tuner = (*it).tuners;
 		tuner->SetLogCallback(callback);
+		BDADVBTSink *sink = (*it).sinks;
+		if (sink)
+			sink->SetLogCallback(callback);
 	}
 }
 
@@ -101,6 +106,7 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	if (cardList.cards.size() == 0)
 		return (log << "Could not find any BDA cards\n").Show(E_FAIL);
 	
+	CAutoLock sinksLock(&m_sinksLock);
 	CAutoLock tunersLock(&m_tunersLock);
 
 	std::vector<BDACard *>::iterator it = cardList.cards.begin();
@@ -110,20 +116,39 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		if (tmpCard->bActive)
 		{
 			m_pCurrentTuner = new BDADVBTSourceTuner(this, tmpCard);
+
 			m_pCurrentTuner->SetLogCallback(m_pLogCallback);
 			if SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph))
 			{
-				m_tuners.push_back(m_pCurrentTuner);
+//				m_tuners.push_back(m_pCurrentTuner);
+
+				TUNERINFO itInfo;
+				itInfo.tuners = m_pCurrentTuner;
+
+				m_pCurrentSink = new BDADVBTSink(this, m_pCurrentTuner);
+				m_pCurrentSink->SetLogCallback(m_pLogCallback);
+				if SUCCEEDED(m_pCurrentSink->Initialise(pFilterGraph))
+				{
+					itInfo.sinks = m_pCurrentSink;
+					m_tuners.push_back(itInfo);
+					continue;
+				}
+				delete m_pCurrentSink;
+				m_pCurrentSink = NULL;
+				itInfo.sinks = m_pCurrentSink;
+
+				m_tuners.push_back(itInfo);
 				continue;
 			}
 			delete m_pCurrentTuner;
 			m_pCurrentTuner = NULL;
 		}
-	}
+	};
 	if (m_tuners.size() == 0)
 		return (log << "There are no active BDA cards\n").Show(E_FAIL);
 
 	m_pCurrentTuner = NULL;
+	m_pCurrentSink = NULL;
 
 	indent.Release();
 	(log << "Finished Initialising BDA Source\n").Write();
@@ -149,19 +174,30 @@ HRESULT BDADVBTSource::Destroy()
 		if FAILED(hr = m_pDWGraph->Stop())
 			(log << "Failed to stop DWGraph\n").Write();
 
+		if FAILED(hr = UnloadSink())
+			(log << "Failed to unload Sink Filters\n").Write();
+
 		if FAILED(hr = UnloadTuner())
 			(log << "Failed to unload tuner\n").Write();
 
 		if FAILED(hr = m_pDWGraph->Cleanup())
 			(log << "Failed to cleanup DWGraph\n").Write();
 
+		CAutoLock sinksLock(&m_sinksLock);
 		CAutoLock tunersLock(&m_tunersLock);
 
-		std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+//		std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+		std::vector<TUNERINFO>::iterator it = m_tuners.begin();
 		for ( ; it != m_tuners.end() ; it++ )
 		{
-			BDADVBTSourceTuner *tuner = *it;
-			delete tuner;
+//			BDADVBTSourceTuner *tuner = *it;
+//			delete tuner;
+			TUNERINFO *itInfo = it;
+			if(itInfo->sinks)
+				delete itInfo->sinks;
+
+			if(itInfo->tuners)
+				delete itInfo->tuners;
 		}
 		m_tuners.clear();
 	}
@@ -641,11 +677,14 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 	if FAILED(hr = m_pDWGraph->Stop())
 		(log << "Failed to stop DWGraph\n").Write();
 
+	CAutoLock sinksLock(&m_sinksLock);
 	CAutoLock tunersLock(&m_tunersLock);
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+//	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+	std::vector<TUNERINFO>::iterator it = m_tuners.begin();
 	for ( ; TRUE /*check for end of list done after graph is cleaned up*/ ; it++ )
 	{
+		hr = UnloadSink();
 		hr = UnloadTuner();
 
 		if FAILED(hr = m_pDWGraph->Cleanup())
@@ -655,7 +694,8 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		if (it == m_tuners.end())
 			break;
 
-		m_pCurrentTuner = *it;
+		m_pCurrentTuner = (*it).tuners;
+		m_pCurrentSink = (*it).sinks;
 
 		if FAILED(hr = LoadTuner())
 		{
@@ -674,6 +714,15 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			if FAILED(hr = AddDemuxPins(m_pCurrentService))
 			{
 				(log << "Failed to Add Demux Pins\n").Write();
+				continue;
+			}
+		}
+
+		if (m_pCurrentService)
+		{
+			if FAILED(hr = LoadSink())
+			{
+				(log << "Failed to load Sink Filters\n").Write();
 				continue;
 			}
 		}
@@ -697,8 +746,13 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		}
 
 		//Move current tuner to back of list so that other cards will be used next
+//		m_tuners.erase(it);
+//		m_tuners.push_back(m_pCurrentTuner);
+		TUNERINFO itInfo;
+		itInfo.sinks = m_pCurrentSink;
+		itInfo.tuners = m_pCurrentTuner;
 		m_tuners.erase(it);
-		m_tuners.push_back(m_pCurrentTuner);
+		m_tuners.push_back(itInfo);
 		
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 
@@ -783,6 +837,51 @@ HRESULT BDADVBTSource::UnloadTuner()
 
 	indent.Release();
 	(log << "Finished Unloading Tuner\n").Write();
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSource::LoadSink()
+{
+	(log << "Loading Sink Filters\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr = S_OK;
+
+	if (!m_pCurrentSink)
+		return (log << "No Sink Filters loaded: " << hr << "\n").Write(hr);
+
+	CComPtr <IPin> piTSPin;
+	if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
+		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
+
+	m_pCurrentSink->SetTransportStreamPin(piTSPin);
+
+	if FAILED(hr = m_pCurrentSink->AddSinkFilters(m_pCurrentService))
+		return (log << "Failed to add Sink filters: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Finished Loading Tuner\n").Write();
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSource::UnloadSink()
+{
+	(log << "Unloading Sink Filters\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+	if (m_pCurrentSink)
+	{
+		if FAILED(hr = m_pCurrentSink->RemoveSinkFilters())
+			return (log << "Failed to remove Sink filters: " << hr << "\n").Write(hr);
+		m_pCurrentSink = NULL;
+	}
+
+	indent.Release();
+	(log << "Finished Unloading Sink Filters\n").Write();
 
 	return S_OK;
 }

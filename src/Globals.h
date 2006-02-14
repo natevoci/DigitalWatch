@@ -37,5 +37,4 @@ extern TVControl* g_pTv;
 extern DWOnScreenDisplay* g_pOSD;
 extern LogMessageWriter g_DWLogWriter;
 
-
 #endif

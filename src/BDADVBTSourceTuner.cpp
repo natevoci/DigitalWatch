@@ -30,9 +30,10 @@
 #include <ksmedia.h>
 #include <bdamedia.h>
 #include "dsnetifc.h"
+#include "TSFileSinkGuids.h"
+#include "Winsock.h"
 
 #define toIPAddress(a, b, c, d) (a + (b << 8) + (c << 16) + (d << 24))
-
 
 //////////////////////////////////////////////////////////////////////
 // BDADVBTSourceTuner
@@ -218,12 +219,6 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 		return (log << "Cannot load MPEG-2 Sections and Tables: " << hr << "\n").Write(hr);
 	}
 
-/*	if FAILED(hr = AddFilterByName(m_piGraphBuilder, &m_piDSNetworkSink, CLSID_LegacyAmFilterCategory, L"MPEG-2 Multicast Sender (DigitalWatch)"))
-	{
-		DestroyAll();
-		return (log << "Cannot load MPEG-2 Multicast Sender: " << hr << "\n").Write(hr);
-	}
-*/
 	//--- Now connect up all the filters ---
 	
 
@@ -249,26 +244,20 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 	if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piBDAMpeg2Demux, m_piBDASecTab))
 		return (log << "Failed to connect BDA Demux to MPEG-2 Sections and Tables: " << hr << "\n").Write(hr);
 
-/*	
-	if FAILED(hr = ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piDSNetworkSink)))
-		return (log << "Failed to connect Infinite Pin Tee Filter to DSNetwork Sender filter: " << hr << "\n").Write(hr);
-
-  //Setup dsnet sender
-	IMulticastConfig *piMulticastConfig = NULL;
-	if FAILED(hr = m_piDSNetworkSink->QueryInterface(IID_IMulticastConfig, reinterpret_cast<void**>(&piMulticastConfig)))
-		return (log << "Failed to query Sink filter for IMulticastConfig: " << hr << "\n").Write(hr);
-	if FAILED(hr = piMulticastConfig->SetNetworkInterface(0)) //0 == INADDR_ANY
-		return (log << "Failed to set network interface for Sink filter: " << hr << "\n").Write(hr);
-
-    ULONG ulIP = toIPAddress(224,0,0,1);
-	if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons(1234)))
-		return (log << "Failed to set multicast group for Sink filter: " << hr << "\n").Write(hr);
-	piMulticastConfig->Release();
-*/
-
 	m_bActive = TRUE;
 	return S_OK;
 }
+
+void BDADVBTSourceTuner::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
+{
+	if (pFilter)
+	{
+		m_piGraphBuilder->RemoveFilter(pFilter);
+		pFilter.Release();
+	}
+}
+
+
 
 HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 {
@@ -276,7 +265,7 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 
 	if (m_pMpeg2DataParser)
 		m_pMpeg2DataParser->ReleaseFilter();
-
+/*
 	if (m_piBDASecTab)
 	{
 		m_piGraphBuilder->RemoveFilter(m_piBDASecTab);
@@ -300,6 +289,15 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 		m_piGraphBuilder->RemoveFilter(m_piInfinitePinTee);
 		m_piInfinitePinTee.Release();
 	}
+*/
+
+	if (m_pMpeg2DataParser)
+		m_pMpeg2DataParser->ReleaseFilter();
+
+	DestroyFilter(m_piBDASecTab);
+	DestroyFilter(m_piBDATIF);
+	DestroyFilter(m_piBDAMpeg2Demux);
+	DestroyFilter(m_piInfinitePinTee);
 
 	m_pBDACard->RemoveFilters();
 
@@ -308,6 +306,7 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 		m_piGraphBuilder->RemoveFilter(m_piBDANetworkProvider);
 		m_piBDANetworkProvider.Release();
 	}
+
 	return S_OK;
 }
 

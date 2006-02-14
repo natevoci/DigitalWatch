@@ -25,6 +25,7 @@
 
 #include "DWSource.h"
 #include "BDADVBTSourceTuner.h"
+#include "BDADVBTSink.h"
 #include "DVBTChannels.h"
 #include "BDACardCollection.h"
 #include "LogMessage.h"
@@ -32,6 +33,13 @@
 #include "DVBTFrequencyList.h"
 #include "DWThread.h"
 #include <vector>
+
+typedef struct TunerInfo
+{
+	BDADVBTSourceTuner *tuners;
+	BDADVBTSink *sinks;
+
+} TUNERINFO;
 
 class BDADVBTSource : public DWSource, public DWThread
 {
@@ -73,6 +81,8 @@ protected:
 
 	HRESULT LoadTuner();
 	HRESULT UnloadTuner();
+	HRESULT LoadSink();
+	HRESULT UnloadSink();
 
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService);
 
@@ -96,8 +106,13 @@ private:
 	const LPWSTR m_strSourceType;
 
 	BDADVBTSourceTuner *m_pCurrentTuner;
-	std::vector<BDADVBTSourceTuner *> m_tuners;
+	std::vector<TUNERINFO> m_tuners;
+//	std::vector<BDADVBTSourceTuner *> m_tuners;
 	CCritSec m_tunersLock;
+
+	BDADVBTSink *m_pCurrentSink;
+	CCritSec m_sinksLock;
+
 	//Recorder
 	DVBTChannels channels;
 	DVBTChannels_Network *m_pCurrentNetwork;

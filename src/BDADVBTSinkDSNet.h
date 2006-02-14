@@ -1,6 +1,7 @@
 /**
- *	BDADVBTSourceTuner.h
+ *	BDADVBTSinkDSNet.h
  *	Copyright (C) 2004 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,9 +21,10 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BDADVBTSOURCETUNER_H
-#define BDADVBTSOURCETUNER_H
+#ifndef BDADVBTSINKDSNET_H
+#define BDADVBTSINKDSNET_H
 
+#include "BDADVBTSink.h"
 #include "StdAfx.h"
 #include <bdatif.h>
 #include "BDACardCollection.h"
@@ -31,76 +33,62 @@
 #include "FilterGraphTools.h"
 #include "DVBMpeg2DataParser.h"
 
-class BDADVBTSource;
-class BDADVBTSourceTuner : public LogMessageCaller
+//{A07E6137-6C07-45D9-A00C-7DE7A7E6319B}
+EXTERN_GUID(CLSID_DSNetworkSender,
+0xA07E6137, 0x6C07, 0x45D9, 0xA0, 0x0C, 0x7D, 0xE7, 0xA7, 0xE6, 0x31, 0x9B);
+
+class BDADVBTSink;
+class BDADVBTSinkDSNet : public LogMessageCaller
 {
 public:
-	BDADVBTSourceTuner(BDADVBTSource *pBDADVBTSource, BDACard *pBDACard);
-	virtual ~BDADVBTSourceTuner();
+	BDADVBTSinkDSNet(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *pCurrentTuner);
+	virtual ~BDADVBTSinkDSNet();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT Initialise(DWGraph *pDWGraph);
+	HRESULT Initialise(DWGraph *pDWGraph, int intSinkType);
 	HRESULT DestroyAll();
 
-	HRESULT AddSourceFilters();
+	HRESULT AddSinkFilters(DVBTChannels_Service* pService);
 	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
-	HRESULT RemoveSourceFilters();
+	HRESULT RemoveSinkFilters();
 
-	HRESULT QueryTransportStreamPin(IPin** piPin);
-
-	HRESULT LockChannel(long frequency, long bandwidth);
-	long GetCurrentFrequency();
-
-	HRESULT StartScanning();
-	
-	HRESULT GetSignalStats(BOOL &locked, long &strength, long &quality);
+	HRESULT SetTransportStreamPin(IPin* piPin);
 
 	BOOL IsActive();
 
-	/*
-	GetNowAndNext(...);
-	*/
-
-	/*
 	BOOL SetRecordingFullTS();
 	BOOL SetRecordingTSMux(long PIDs[]);
 	BOOL StartRecording(LPWSTR filename);
 	BOOL PauseRecording(BOOL bPause);
 	BOOL StopRecording();
 	BOOL IsRecording();
-	*/
+
 	BOOL SupportsRecording() { return FALSE; }
 
-	//IBaseFilter*  m_piDWTSRedirect;
-	//DWTSRedirect* m_pfDWTSRedirect;
-
-	LPWSTR GetCardName();
-
 private:
-	BDADVBTSource *m_pBDADVBTSource;
-
-	BDACard *m_pBDACard;
+	BDADVBTSink *m_pBDADVBTSink;
+	BDADVBTSourceTuner *m_pCurrentTuner;
 	DWGraph *m_pDWGraph;
 
 	BOOL m_bInitialised;
 	BOOL m_bActive;
 
-	long m_lFrequency;
-	long m_lBandwidth;
 
-	//BOOL m_bRecording;
+	BOOL m_bRecording;
 
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IMediaControl> m_piMediaControl;
 
-	CComPtr <IBaseFilter> m_piBDANetworkProvider;
 	CComPtr <IBaseFilter> m_piInfinitePinTee;
-	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
-	CComPtr <IBaseFilter> m_piBDATIF;
-	CComPtr <IBaseFilter> m_piBDASecTab;
 
-	CComPtr <ITuningSpace> m_piTuningSpace;
+	int m_intSinkType;
+	CComPtr <IBaseFilter> m_piMPGSink;
+	CComPtr <IBaseFilter> m_piMPGMpeg2Mux;
+	CComPtr <IBaseFilter> m_piMPGMpeg2Demux;
+	CComPtr <IBaseFilter> m_piTSSink;
+	CComPtr <IBaseFilter> m_piTSMpeg2Demux;
+	CComPtr <IBaseFilter> m_piFTSSink;
 
 	/*
 	CComPtr <IGuideData> m_piGuideData;
