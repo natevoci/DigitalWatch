@@ -220,7 +220,6 @@ LPWSTR TSFileStreamList::GetListName()
 
 LPWSTR TSFileStreamList::GetListItem(LPWSTR name, long nIndex)
 {
-(log << "GetListItem: " "\n").Write();
 	CAutoLock listLock(&m_listLock);
 
 	if (nIndex >= m_list.size())

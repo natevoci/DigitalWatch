@@ -75,10 +75,10 @@ HRESULT BDADVBTSinkFile::Initialise(DWGraph *pDWGraph, int intSinkType)
 {
 	HRESULT hr;
 	if (m_bInitialised)
-		return (log << "DVB-T Source Tuner tried to initialise a second time\n").Write(E_FAIL);
+		return (log << "DVB-T File Sink tried to initialise a second time\n").Write(E_FAIL);
 
 	if (!pDWGraph)
-		return (log << "Must pass a valid DWGraph object to Initialise a tuner\n").Write(E_FAIL);
+		return (log << "Must pass a valid DWGraph object to Initialise a Sink\n").Write(E_FAIL);
 
 	m_pDWGraph = pDWGraph;
 

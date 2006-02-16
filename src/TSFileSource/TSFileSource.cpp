@@ -176,28 +176,6 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 
 		return SetStream(n1);
 	}
-	else if (_wcsicmp(pCurr, L"ShowMenu") == 0)
-	{
-		if (command->LHS.ParameterCount != 1)
-			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
-
-		return ShowMenu(command->LHS.Parameter[0]);
-	}
-	else if (_wcsicmp(pCurr, L"ExitMenu") == 0)
-	{
-		if ((command->LHS.ParameterCount != 0) && (command->LHS.ParameterCount != 1))
-			return (log << "Expecting 0 or 1 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
-
-		if (command->LHS.ParameterCount == 0)
-		{
-			return ExitMenu();
-		}
-		else
-		{
-			n1 = StringToLong(command->LHS.Parameter[0]);
-			return ExitMenu(n1);
-		}
-	}
 	else if (_wcsicmp(pCurr, L"GetStreamList") == 0)
 	{
 		if (command->LHS.ParameterCount != 0)
@@ -535,20 +513,6 @@ HRESULT TSFileSource::UpdateData()
 	return S_OK;
 }
 
-HRESULT TSFileSource::ShowMenu(LPWSTR szMenuName)
-{
-	HRESULT hr = S_FALSE;
-	hr = g_pOSD->ShowMenu(szMenuName);
-	return hr;
-}
-
-HRESULT TSFileSource::ExitMenu(long nNumberOfMenusToExit)
-{
-	HRESULT hr = S_FALSE;
-	hr = g_pOSD->ExitMenu(nNumberOfMenusToExit);
-	return hr;
-}
-
 HRESULT TSFileSource::SetStream(long index)
 {
 	IAMStreamSelect *pIAMStreamSelect;
@@ -560,59 +524,6 @@ HRESULT TSFileSource::SetStream(long index)
 	}
 	return hr;
 }
-
-/*
-HRESULT TSFileSource::ShowStreamMenu(HWND hwnd)
-{
-	POINT mouse;
-	GetCursorPos(&mouse);
-
-	HMENU hMenu = CreatePopupMenu();
-	if (hMenu)
-	{
-
-		IAMStreamSelect *pIAMStreamSelect;
-		HRESULT hr = m_piTSFileSource->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
-		if (SUCCEEDED(hr))
-		{
-			ULONG count;
-			pIAMStreamSelect->Count(&count);
-
-			ULONG flags, group, lastgroup = -1;
-				
-			for(UINT i = 0; i < count; i++)
-			{
-				WCHAR* pStreamName = NULL;
-
-				if(S_OK == pIAMStreamSelect->Info(i, 0, &flags, 0, &group, &pStreamName, 0, 0))
-				{
-					if(lastgroup != group && i) 
-						::AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
-
-					lastgroup = group;
-
-					if(pStreamName)
-					{
-						UINT uFlags = (flags?MF_CHECKED:MF_UNCHECKED) | MF_STRING | MF_ENABLED;
-						::AppendMenuW(hMenu, uFlags, (i + 0x100), LPCWSTR(pStreamName));
-						CoTaskMemFree(pStreamName);
-					}
-				}
-			}
-
-			SetForegroundWindow(hwnd);
-			UINT index = ::TrackPopupMenu(hMenu, TPM_LEFTBUTTON|TPM_RETURNCMD, mouse.x, mouse.y, 0, hwnd, 0);
-			PostMessage(hwnd, NULL, 0, 0);
-
-			if(index & 0x100) 
-				pIAMStreamSelect->Enable((index & 0xff), AMSTREAMSELECTENABLE_ENABLE);
-
-		}
-		DestroyMenu(hMenu);
-	}
-	return S_OK;
-}
-*/
 
 HRESULT TSFileSource::GetStreamList(void)
 {

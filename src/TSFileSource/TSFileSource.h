@@ -63,8 +63,8 @@ protected:
 
 	virtual HRESULT UpdateData();
 	virtual HRESULT SetStream(long index);
-	virtual HRESULT ShowMenu(LPWSTR szMenuName);
-	virtual HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
+//	virtual HRESULT ShowMenu(LPWSTR szMenuName);
+//	virtual HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
 	virtual HRESULT GetStreamList(void);
 
 private:

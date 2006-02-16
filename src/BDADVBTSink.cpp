@@ -443,28 +443,21 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 
 	HRESULT hr = S_OK;
 
-	long count = pService->GetStreamCount(streamType);
 	long renderedStreams = 0;
-	BOOL bMultipleStreams = (pService->GetStreamCount(streamType) > 1) ? 1 : 0;
 
-	for ( long currentStream=0 ; currentStream<count ; currentStream++ )
+	if (!wcsicmp(pPinName, L"TS"))
 	{
-		ULONG Pid = pService->GetStreamPID(streamType, currentStream);
+		long count = pService->GetStreamCount();
 
 		wchar_t text[16];
 		swprintf((wchar_t*)&text, pPinName);
-		if (bMultipleStreams)
-			swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
-
-		(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
-		LogMessageIndent indent(&log);
 
 		// Create the Pin
 		CComPtr <IPin> piPin;
 		if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
 		{
 			(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
-			continue;
+			return hr;
 		}
 
 		// Map the PID.
@@ -472,25 +465,78 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 		if FAILED(hr = piPin.QueryInterface(&piPidMap))
 		{
 			(log << "Failed to query demux " << pPinName << " pin : " << hr << "\n").Write();
-			continue;	//it's safe to not piPin.Release() because it'll go out of scope
+			return hr;	//it's safe to not piPin.Release() because it'll go out of scope
 		}
 
-		if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
+		for ( long currentStream=0 ; currentStream<count ; currentStream++ )
 		{
-			(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
-			continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+			ULONG Pid = pService->GetStreamPID(currentStream);
+			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+			{
+				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+			}
+
+			renderedStreams++;
 		}
 
-		if (renderedStreams != 0)
-			continue;
-
-//		if FAILED(hr = m_pDWGraph->RenderPin(piPin))
-//		{
-//			(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
-//			continue;
-//		}
+		ULONG Pidarray[6] = {0x00, 0x10, 0x11, 0x12, 0x13, 0x14};
+		if FAILED(hr = piPidMap->MapPID(6, &Pidarray[0], MEDIA_TRANSPORT_PACKET))
+		{
+			(log << "Failed to map demux " << pPinName << " pin Fixed Pids : " << hr << "\n").Write();
+		}
 
 		renderedStreams++;
+	}
+	else
+	{
+		long count = pService->GetStreamCount(streamType);
+		BOOL bMultipleStreams = (pService->GetStreamCount(streamType) > 1) ? 1 : 0;
+
+		for ( long currentStream=0 ; currentStream<count ; currentStream++ )
+		{
+			ULONG Pid = pService->GetStreamPID(streamType, currentStream);
+
+			wchar_t text[16];
+			swprintf((wchar_t*)&text, pPinName);
+			if (bMultipleStreams)
+				swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
+
+			(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
+			LogMessageIndent indent(&log);
+
+			// Create the Pin
+			CComPtr <IPin> piPin;
+			if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+			{
+				(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;
+			}
+
+			// Map the PID.
+			CComPtr <IMPEG2PIDMap> piPidMap;
+			if FAILED(hr = piPin.QueryInterface(&piPidMap))
+			{
+				(log << "Failed to query demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;	//it's safe to not piPin.Release() because it'll go out of scope
+			}
+
+			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
+			{
+				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+			}
+
+			if (renderedStreams != 0)
+				continue;
+
+//			if FAILED(hr = m_pDWGraph->RenderPin(piPin))
+//			{
+//				(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
+//				continue;
+//			}
+			renderedStreams++;
+		}
 	}
 
 	if (streamsRendered)
@@ -578,6 +624,6 @@ HRESULT BDADVBTSink::AddDemuxPinsTS(DVBTChannels_Service* pService, long *stream
 	mediaType.subtype = KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT; 
 	mediaType.formattype = FORMAT_None; 
 
-	return AddDemuxPins(pService, ts, L"TS", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, unknown, L"TS", &mediaType, streamsRendered);
 }
 

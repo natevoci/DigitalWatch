@@ -33,7 +33,6 @@
 DVBTChannels_Stream::DVBTChannels_Stream()
 {
 	PID = 0;
-	for (int i; i < 20; i++) PIDARRAY[i] = 0;
 	Type = unknown;
 	Language = NULL;
 	bActive = TRUE;

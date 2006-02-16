@@ -967,6 +967,24 @@ void DVBMpeg2DataParser::ParsePMT(unsigned char *buf, int sectionLength, int ser
 
 	pService->pcrPid = ((buf[0] & 0x1f) << 8) | buf[1];
 
+	if(pService->pmtPid)
+	{
+		DVBStream *pStream = new DVBStream();
+		pStream->Type = pmt;
+		pStream->MpegStreamType = 0;
+		pStream->PID = pService->pmtPid;
+		pService->m_streams.push_back(pStream);
+	}
+
+	if(pService->pcrPid)
+	{
+		DVBStream *pStream = new DVBStream();
+		pStream->Type = pcr;
+		pStream->MpegStreamType = 0;
+		pStream->PID = pService->pcrPid;
+		pService->m_streams.push_back(pStream);
+	}
+
 	log.showf("serviceId 0x%04x, transportStreamId=0x%04x\n", pService->serviceId, pService->transportStreamId);
 	LogMessageIndent indent(&log);
 
