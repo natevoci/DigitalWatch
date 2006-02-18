@@ -40,6 +40,12 @@ BDADVBTSinkFile::BDADVBTSinkFile(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *
 	m_pCurrentTuner = pCurrentTuner;
 
 	m_pDWGraph = NULL;
+	m_piTelexDWDump = NULL;
+	m_piVideoDWDump = NULL;
+	m_piAudioDWDump = NULL;
+	m_piMPGDWDump = NULL;
+	m_piTSDWDump = NULL;
+	m_piFTSDWDump = NULL;
 
 	m_bInitialised = 0;
 	m_bActive = FALSE;
@@ -48,9 +54,13 @@ BDADVBTSinkFile::BDADVBTSinkFile(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *
 	m_pMpeg2DataParser = NULL;
 	m_pMpeg2DataParser = new DVBMpeg2DataParser();
 
+
 	m_rotEntry = 0;
 
 	m_intSinkType = 0;
+	m_bRecording = FALSE;
+	m_bPaused = FALSE;
+
 }
 
 BDADVBTSinkFile::~BDADVBTSinkFile()
@@ -98,40 +108,6 @@ HRESULT BDADVBTSinkFile::Initialise(DWGraph *pDWGraph, int intSinkType)
 HRESULT BDADVBTSinkFile::DestroyAll()
 {
     HRESULT hr = S_OK;
-	/*
-    CComPtr <IBaseFilter> pFilter;
-    CComPtr <IEnumFilters> pFilterEnum;
-
-    hr = m_piGraphBuilder->EnumFilters(&pFilterEnum);
-	switch (hr)
-	{
-	case S_OK:
-		break;
-	case E_OUTOFMEMORY:
-		return (log << "Insufficient memory to create the enumerator.\n").Write(hr);
-	case E_POINTER:
-		return (log << "Null pointer argument.\n").Write(hr);
-	default:
-		return (log << "Unknown Error enumerating graph: " << hr << "\n").Write(hr);
-	}
-
-    if FAILED(hr = pFilterEnum->Reset())
-		return (log << "Failed to reset graph enumerator: " << hr << "\n").Write(hr);
-
-	while (pFilterEnum->Next(1, &pFilter, 0) == S_OK) // addrefs filter
-	{
-		if FAILED(hr = m_piGraphBuilder->RemoveFilter(pFilter))
-		{
-			FILTER_INFO info;
-			pFilter->QueryFilterInfo(&info);
-			if (info.pGraph)
-				info.pGraph->Release();
-            return (log << "Failed to remove filter: " << info.achName << " : " << hr << "\n").Write(hr);
-		}
-		pFilter.Release();
-	}
-	pFilterEnum.Release();
-	*/
 
 	RemoveSinkFilters();
 
@@ -141,19 +117,15 @@ HRESULT BDADVBTSinkFile::DestroyAll()
 	return S_OK;
 }
 
+//--- Add & connect the Sink filters ---
 HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 {
 	HRESULT hr;
 
-
-	//--- Add & connect the Sink filters ---
-
-
-	
 	if (m_intSinkType& 0x1)
 	{
 		//FileWriter (Full TS Sink's)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_FileWriterDump, &m_piFTSSink, L"Full TS Sink FileWriter"))
+		if FAILED(hr = AddDWDumpFilter(L"Full TS Sink FileWriter", &m_piFTSDWDump, m_piFTSSink))
 		{
 			(log << "Failed to add Full TS Sink FileWriter to the graph: " << hr << "\n").Write(hr);
 		}
@@ -161,14 +133,8 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 			if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piFTSSink))
 			{
 				(log << "Failed to connect Infinite Pin Tee Filter to Full TS Sink FileWriter: " << hr << "\n").Write(hr);
-				DestroyFilter(m_piFTSSink);
+				DestroyFTSFilters();
 			}
-			else	//Add Demux Pins (Full TS Sink's)
-				if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piFTSSink, 2))
-				{
-					(log << "Failed to Set the File Name on the Full TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
-					DestroyFilter(m_piFTSSink);
-				}
 	}
 
 	if (m_intSinkType& 0x2)
@@ -179,40 +145,32 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 			(log << "Failed to add TS Sink MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
 		else	//FileWriter (TS Sink's)
-			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_FileWriterDump, &m_piTSSink, L"TS Sink FileWriter"))
+			if FAILED(hr = AddDWDumpFilter(L"TS Sink FileWriter", &m_piTSDWDump, m_piTSSink))
 			{
 				(log << "Failed to add Full TS Sink FileWriter to the graph: " << hr << "\n").Write(hr);
-				DestroyFilter(m_piTSMpeg2Demux);
+				DestroyTSFilters();
 			}
 			else	//Connect Demux (TS Sink's)
 				if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piTSMpeg2Demux))
 				{
 					(log << "Failed to connect Infinite Pin Tee Filter to TS Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-					DestroyFilter(m_piTSSink);
-					DestroyFilter(m_piTSMpeg2Demux);
+					DestroyTSFilters();
 				}
 				else	//Add Demux Pins (TS Sink's)
 					if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piTSMpeg2Demux, 1))
 					{
 						(log << "Failed to Add Output Pins to TS Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-							DestroyFilter(m_piTSSink);
-							DestroyFilter(m_piTSMpeg2Demux);
+							DestroyTSFilters();
 					}
 					else	//Connect FileWriter (TS Sink's)
 						if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piTSMpeg2Demux, m_piTSSink))
 						{
 							(log << "Failed to connect TS Sink MPEG-2 Demultiplexer to TS Sink FileWriter: " << hr << "\n").Write(hr);
-							DestroyFilter(m_piTSSink);
-							DestroyFilter(m_piTSMpeg2Demux);
+							DestroyTSFilters();
 						}
-						else	//Add Demux Pins (TS Sink's)
-							if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piTSSink, 22))
-							{
-								(log << "Failed to Set the File Name on the TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
-								DestroyFilter(m_piTSSink);
-								DestroyFilter(m_piTSMpeg2Demux);
-							}
-	};
+						else
+							m_pBDADVBTSink->ClearDemuxPids(m_piTSMpeg2Demux);
+	}
 
 	if (m_intSinkType& 0x4)
 	{
@@ -225,63 +183,47 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Multiplexer, &m_piMPGMpeg2Mux, L"MPG Sink MPEG-2 Multiplexer"))
 			{
 				(log << "Failed to add MPEG-2 Multiplexer to the graph: " << hr << "\n").Write(hr);
-				DestroyFilter(m_piMPGMpeg2Demux);
+				DestroyMPGFilters();
 			}
 			else //FileWriter (MPG Sink's)
-				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_FileWriterDump, &m_piMPGSink, L"MPG Sink FileWriter"))
+				if FAILED(hr = AddDWDumpFilter(L"MPG Sink FileWriter", &m_piMPGDWDump, m_piMPGSink))
 				{
 					(log << "Failed to add Full MPG Sink FileWriter to the graph: " << hr << "\n").Write(hr);
-					DestroyFilter(m_piMPGMpeg2Mux);
-					DestroyFilter(m_piMPGMpeg2Demux);
+					DestroyMPGFilters();
 				}
 				else	//Connect Demux (MPG Sink's)
 					if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piMPGMpeg2Demux))
 					{
 						(log << "Failed to connect Infinite Pin Tee Filter to MPG Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-						DestroyFilter(m_piMPGSink);
-						DestroyFilter(m_piMPGMpeg2Mux);
-						DestroyFilter(m_piMPGMpeg2Demux);
+						DestroyMPGFilters();
 					}
 					else	//Add Demux Pins (MPG Sink's)
 						if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piMPGMpeg2Demux))
 						{
 							(log << "Failed to Add Output Pins to MPG Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-								DestroyFilter(m_piMPGSink);
-								DestroyFilter(m_piMPGMpeg2Mux);
-								DestroyFilter(m_piMPGMpeg2Demux);
+							DestroyMPGFilters();
 						}
 						else	//Connect Mux (MPG Sink's)
 							if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piMPGMpeg2Demux, m_piMPGMpeg2Mux))
 							{
 								(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Audio to MPG Sink MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
-								DestroyFilter(m_piMPGSink);
-								DestroyFilter(m_piMPGMpeg2Mux);
-								DestroyFilter(m_piMPGMpeg2Demux);
+								DestroyMPGFilters();
 							}
 							else	//Connect Mux (MPG Sink's)
 								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piMPGMpeg2Demux, m_piMPGMpeg2Mux))
 								{
 									(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Video to MPG Sink MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
-									DestroyFilter(m_piMPGSink);
-									DestroyFilter(m_piMPGMpeg2Mux);
-									DestroyFilter(m_piMPGMpeg2Demux);
+									DestroyMPGFilters();
 								}
 								else	//Connect FileWriter (MPG Sink's)
 									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piMPGMpeg2Mux, m_piMPGSink))
 									{
 										(log << "Failed to connect MPG Sink MPEG-2 Multiplexer to MPG Sink FileWriter: " << hr << "\n").Write(hr);
-										DestroyFilter(m_piMPGSink);
-										DestroyFilter(m_piMPGMpeg2Mux);
-										DestroyFilter(m_piMPGMpeg2Demux);
+										DestroyMPGFilters();
 									}
-									else	//Add Demux Pins (MPG Sink's)
-										if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piMPGSink, 3))
-										{
-											(log << "Failed to Set the File Name on the MPG Sink FileWriter Interface: " << hr << "\n").Write(hr);
-											DestroyFilter(m_piMPGSink);
-											DestroyFilter(m_piMPGMpeg2Mux);
-											DestroyFilter(m_piMPGMpeg2Demux);
-										}
+//									else
+//										m_pBDADVBTSink->ClearDemuxPids(m_piMPGMpeg2Demux);
+
 	}
 
 	if (m_intSinkType& 0x8)
@@ -292,105 +234,93 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 			(log << "Failed to add A/V Sink MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
 		else	//FileWriter (Seperate A/V Sink's) Audio
-			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_FileWriterDump, &m_piAudioSink, L"A/V Audio Sink FileWriter"))
+			if FAILED(hr = AddDWDumpFilter(L"A/V Audio Sink FileWriter", &m_piAudioDWDump, m_piAudioSink))
 			{
 				(log << "Failed to add Audio Sink FileWriter to the graph: " << hr << "\n").Write(hr);
-				DestroyFilter(m_piAVMpeg2Demux);
+				DestroyAVFilters();
 			}
 			else		//FileWriter (Seperate A/V Sink's) Teletext
-				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_FileWriterDump, &m_piTelexSink, L"A/V Teletext Sink FileWriter"))
+				if FAILED(hr = AddDWDumpFilter(L"A/V Teletext Sink FileWriter", &m_piTelexDWDump, m_piTelexSink))
 				{
 					(log << "Failed to add Teletext Sink FileWriter to the graph: " << hr << "\n").Write(hr);
-					DestroyFilter(m_piAudioSink);
-					DestroyFilter(m_piAVMpeg2Demux);
+					DestroyAVFilters();
 				}
 				else		//FileWriter (Seperate A/V Sink's) Video
-					if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_FileWriterDump, &m_piVideoSink, L"A/V Video Sink FileWriter"))
+					if FAILED(hr = AddDWDumpFilter(L"A/V Video Sink FileWriter", &m_piVideoDWDump, m_piVideoSink))
 					{
 						(log << "Failed to add Video Sink FileWriter to the graph: " << hr << "\n").Write(hr);
-						DestroyFilter(m_piTelexSink);
-						DestroyFilter(m_piAudioSink);
-						DestroyFilter(m_piAVMpeg2Demux);
+						DestroyAVFilters();
 					}
 					else		//Connect Demux (Seperate A/V Sink's)
 					if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piAVMpeg2Demux))
 					{
 						(log << "Failed to connect Infinite Pin Tee Filter to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-						DestroyFilter(m_piVideoSink);
-						DestroyFilter(m_piTelexSink);
-						DestroyFilter(m_piAudioSink);
-						DestroyFilter(m_piAVMpeg2Demux);
+						DestroyAVFilters();
 					}
 					else	//Add Demux Pins (Seperate A/V Sink's)
 						if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piAVMpeg2Demux))
 						{
 							(log << "Failed to Add Output Pins to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-								DestroyFilter(m_piVideoSink);
-								DestroyFilter(m_piTelexSink);
-								DestroyFilter(m_piAudioSink);
-								DestroyFilter(m_piAVMpeg2Demux);
+							DestroyAVFilters();
 						}
 						else		//Connect FileWriter (Seperate A/V Sink's) Audio
 							if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piAVMpeg2Demux, m_piAudioSink))
 							{
 								(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Audio Sink FileWriter: " << hr << "\n").Write(hr);
-								DestroyFilter(m_piVideoSink);
-								DestroyFilter(m_piTelexSink);
-								DestroyFilter(m_piAudioSink);
-								DestroyFilter(m_piAVMpeg2Demux);
+								DestroyAVFilters();
 							}
 							else		//Connect FileWriter (Seperate A/V Sink's) Teletext
 								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piAVMpeg2Demux, m_piTelexSink))
 								{
 									(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Teletext Sink FileWriter: " << hr << "\n").Write(hr);
-									DestroyFilter(m_piVideoSink);
-									DestroyFilter(m_piTelexSink);
-									DestroyFilter(m_piAudioSink);
-									DestroyFilter(m_piAVMpeg2Demux);
+									DestroyAVFilters();
 								}
 								else		//Connect FileWriter (Seperate A/V Sink's) Video
 									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piAVMpeg2Demux, m_piVideoSink))
 									{
 										(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Video Sink FileWriter: " << hr << "\n").Write(hr);
-										DestroyFilter(m_piVideoSink);
-										DestroyFilter(m_piTelexSink);
-										DestroyFilter(m_piAudioSink);
-										DestroyFilter(m_piAVMpeg2Demux);
+										DestroyAVFilters();
 									}
-									else	//Add Demux Pins (Seperate A/V Sink's) Video
-										if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piVideoSink, 4))
-										{
-											(log << "Failed to Set the File Name on the Video Sink FileWriter Interface: " << hr << "\n").Write(hr);
-											DestroyFilter(m_piVideoSink);
-											DestroyFilter(m_piTelexSink);
-											DestroyFilter(m_piAudioSink);
-											DestroyFilter(m_piAVMpeg2Demux);
-										}
-										else	//Add Demux Pins (Seperate A/V Sink's) Teletext
-											if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piTelexSink, 6))
-											{
-												(log << "Failed to Set the File Name on the Teletext Sink FileWriter Interface: " << hr << "\n").Write(hr);
-												DestroyFilter(m_piVideoSink);
-												DestroyFilter(m_piTelexSink);
-												DestroyFilter(m_piAudioSink);
-												DestroyFilter(m_piAVMpeg2Demux);
-											}
-											else	//Add Demux Pins (Seperate A/V Sink's) Audio
-												if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piAudioSink, 5))
-												{
-													(log << "Failed to Set the File Name on the Audio Sink FileWriter Interface: " << hr << "\n").Write(hr);
-													DestroyFilter(m_piVideoSink);
-													DestroyFilter(m_piTelexSink);
-													DestroyFilter(m_piAudioSink);
-													DestroyFilter(m_piAVMpeg2Demux);
-												}
+									else
+										m_pBDADVBTSink->ClearDemuxPids(m_piAVMpeg2Demux);
 	}
-
-
 
 	m_bActive = TRUE;
 	return S_OK;
 }
+
+void BDADVBTSinkFile::DestroyFTSFilters()
+{
+	DestroyFilter(m_piFTSSink);
+	DeleteFilter(&m_piFTSDWDump);
+}
+
+void BDADVBTSinkFile::DestroyTSFilters()
+{
+	DeleteFilter(&m_piTSDWDump);
+	DestroyFilter(m_piTSSink);
+	DestroyFilter(m_piTSMpeg2Demux);
+}
+
+void BDADVBTSinkFile::DestroyMPGFilters()
+{
+	DeleteFilter(&m_piMPGDWDump);
+	DestroyFilter(m_piMPGSink);
+	DestroyFilter(m_piMPGMpeg2Mux);
+	DestroyFilter(m_piMPGMpeg2Demux);
+}
+
+void BDADVBTSinkFile::DestroyAVFilters()
+{
+	DeleteFilter(&m_piVideoDWDump);
+	DestroyFilter(m_piVideoSink);
+	DeleteFilter(&m_piTelexDWDump);
+	DestroyFilter(m_piTelexSink);
+	DeleteFilter(&m_piAudioDWDump);
+	DestroyFilter(m_piAudioSink);
+	DestroyFilter(m_piAVMpeg2Demux);
+}
+
 
 void BDADVBTSinkFile::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 {
@@ -400,8 +330,6 @@ void BDADVBTSinkFile::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 		pFilter.Release();
 	}
 }
-
-
 
 HRESULT BDADVBTSinkFile::RemoveSinkFilters()
 {
@@ -420,10 +348,29 @@ HRESULT BDADVBTSinkFile::RemoveSinkFilters()
 	DestroyFilter(m_piTSMpeg2Demux);
 	DestroyFilter(m_piFTSSink);
 
+	DeleteFilter(&m_piTelexDWDump);
+	DeleteFilter(&m_piVideoDWDump);
+	DeleteFilter(&m_piAudioDWDump);
+	DeleteFilter(&m_piMPGDWDump);
+	DeleteFilter(&m_piTSDWDump);
+	DeleteFilter(&m_piFTSDWDump);
+
 	if (m_pMpeg2DataParser)
 		m_pMpeg2DataParser->ReleaseFilter();
 
 	return S_OK;
+}
+
+void BDADVBTSinkFile::DeleteFilter(DWDump **pfDWDump)
+{
+	if (pfDWDump)
+		return;
+
+	if (*pfDWDump)
+		delete *pfDWDump;
+
+	*pfDWDump = NULL;
+
 }
 
 HRESULT BDADVBTSinkFile::SetTransportStreamPin(IPin* piPin)
@@ -446,4 +393,240 @@ BOOL BDADVBTSinkFile::IsActive()
 	return m_bActive;
 }
 
+HRESULT BDADVBTSinkFile::AddDWDumpFilter(LPWSTR name, DWDump **pfDWDump, CComPtr <IBaseFilter> &pFilter)
+{
+	HRESULT hr = S_OK;
+
+	// Dump filter for recording
+	*pfDWDump = new DWDump(&hr);
+	if (FAILED(hr))
+	{
+		(log << "Failed to Create the DWDump Filter Instance on the " << name << " : " << hr << "\n").Write(hr);
+		return hr;
+	}
+
+	if FAILED(hr = (*pfDWDump)->QueryInterface(IID_IBaseFilter, reinterpret_cast<void **>(&pFilter)))
+	{
+		(log << "Failed to Get the DWDump Filter IBaseFilter Interface on the " << name << " : " << hr << "\n").Write(hr);
+		delete *pfDWDump;
+		*pfDWDump = NULL;
+		return hr;
+	}
+
+	return m_piGraphBuilder->AddFilter(pFilter, name);
+}
+
+HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService)
+{
+	(log << "Recording Starting on Sink FileWriter \n").Write();
+
+	HRESULT hr = S_OK;
+
+	if ((m_intSinkType& 0x1) && m_piFTSSink)
+	{
+		//Add Demux Pins (Full TS Sink's)
+		if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piFTSSink, 2))
+			(log << "Failed to Set the File Name on the Full TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
+
+		m_piFTSDWDump->Record();
+	}
+
+	if ((m_intSinkType& 0x2) && m_piTSSink)
+	{
+		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piTSMpeg2Demux, 1))
+			(log << "Failed to Add Output Pins to TS Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
+
+		if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piTSSink, 22))
+			(log << "Failed to Set the File Name on the TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
+
+		m_piTSDWDump->Record();
+	}
+
+	if ((m_intSinkType& 0x4) && m_piMPGSink)
+	{
+		if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piMPGSink, 3))
+			(log << "Failed to Set the File Name on the MPG Sink FileWriter Interface: " << hr << "\n").Write(hr);
+
+		if FAILED(hr = m_piMPGDWDump->Record())
+			(log << "Failed to Start Recording on the MPG Sink Filter: " << hr << "\n").Write(hr);
+
+		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piMPGMpeg2Demux))
+			(log << "Failed to Add Output Pins to MPG Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
+
+	}
+
+	if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
+	{
+		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piAVMpeg2Demux))
+			(log << "Failed to Add Output Pins to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
+
+		//Add Demux Pins (Seperate A/V Sink's) Video
+		if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piVideoSink, 4))
+			(log << "Failed to Set the File Name on the Video Sink FileWriter Interface: " << hr << "\n").Write(hr);
+		else	//Add Demux Pins (Seperate A/V Sink's) Teletext
+			if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piTelexSink, 6))
+				(log << "Failed to Set the File Name on the Teletext Sink FileWriter Interface: " << hr << "\n").Write(hr);
+			else	//Add Demux Pins (Seperate A/V Sink's) Audio
+				if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piAudioSink, 5))
+					(log << "Failed to Set the File Name on the Audio Sink FileWriter Interface: " << hr << "\n").Write(hr);
+
+		m_piVideoDWDump->Record();
+		m_piTelexDWDump->Record();
+		m_piAudioDWDump->Record();
+	}
+
+	m_bRecording = TRUE;
+
+	return hr;
+}
+
+HRESULT BDADVBTSinkFile::StopRecording(void)
+{
+	(log << "Recording Stopping on Sink FileWriter \n").Write();
+
+	HRESULT hr = S_OK;
+
+	if ((m_intSinkType& 0x1) && m_piFTSSink)
+	{
+		m_piFTSDWDump->Record();
+		m_pBDADVBTSink->NullFileName(m_piFTSSink, m_intSinkType);
+	}
+
+	if ((m_intSinkType& 0x2) && m_piTSSink)
+	{
+		m_piTSDWDump->Record();
+		m_pBDADVBTSink->NullFileName(m_piTSSink, m_intSinkType);
+		m_pBDADVBTSink->ClearDemuxPids(m_piTSMpeg2Demux);
+	}
+
+	if ((m_intSinkType& 0x4) && m_piMPGSink)
+	{
+		m_piMPGDWDump->Record();
+		m_pBDADVBTSink->NullFileName(m_piMPGSink, m_intSinkType);
+//		m_pBDADVBTSink->ClearDemuxPids(m_piMPGMpeg2Demux);
+	}
+
+	if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
+	{
+		m_piVideoDWDump->Record();
+		m_piTelexDWDump->Record();
+		m_piAudioDWDump->Record();
+		m_pBDADVBTSink->ClearDemuxPids(m_piAVMpeg2Demux);
+		m_pBDADVBTSink->NullFileName(m_piVideoSink, m_intSinkType);
+		m_pBDADVBTSink->NullFileName(m_piTelexSink, m_intSinkType);
+		m_pBDADVBTSink->NullFileName(m_piAudioSink, m_intSinkType);
+	}
+
+	m_bRecording = FALSE;
+	return hr;
+}
+
+HRESULT BDADVBTSinkFile::PauseRecording(void)
+{
+	(log << "Pausing Recording on Sink FileWriter \n").Write();
+
+	HRESULT hr = S_OK;
+
+	if ((m_intSinkType& 0x1) && m_piFTSSink)
+		hr = m_piFTSDWDump->Pause();
+
+	if ((m_intSinkType& 0x2) && m_piTSSink)
+	{
+		hr = m_piTSDWDump->Pause();
+//		m_pBDADVBTSink->ClearDemuxPids(m_piTSMpeg2Demux);
+	}
+
+	if ((m_intSinkType& 0x4) && m_piMPGSink)
+	{
+		hr = m_piMPGDWDump->Pause();
+//		m_pBDADVBTSink->ClearDemuxPids(m_piMPGMpeg2Demux);
+	}
+	
+	if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
+	{
+		hr = m_piVideoDWDump->Pause();
+		hr = m_piTelexDWDump->Pause();
+		hr = m_piAudioDWDump->Pause();
+//		m_pBDADVBTSink->ClearDemuxPids(m_piAVMpeg2Demux);
+	}
+
+	m_bPaused = TRUE;
+
+	return hr;
+}
+
+HRESULT BDADVBTSinkFile::UnPauseRecording(DVBTChannels_Service* pService)
+{
+	(log << "UnPausing Recording on Sink FileWriter \n").Write();
+
+	HRESULT hr = S_OK;
+
+	if ((m_intSinkType& 0x1) && m_piFTSSink)
+	{
+		hr = m_piFTSDWDump->Pause();
+	}
+
+	if ((m_intSinkType& 0x2) && m_piTSSink)
+	{
+//		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piTSMpeg2Demux))
+//			(log << "Failed to Add Output Pins to TS Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
+
+		hr = m_piTSDWDump->Pause();
+	}
+
+	if ((m_intSinkType& 0x4) && m_piMPGSink)
+	{
+//		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piMPGMpeg2Demux))
+//			(log << "Failed to Add Output Pins to MPG Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
+
+		hr = m_piMPGDWDump->Pause();
+	}
+	
+	if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
+	{
+//		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piAVMpeg2Demux))
+//			(log << "Failed to Add Output Pins to AV Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
+
+		hr = m_piVideoDWDump->Pause();
+		hr = m_piTelexDWDump->Pause();
+		hr = m_piAudioDWDump->Pause();
+	}
+
+
+	m_bPaused = FALSE;
+
+	return hr;
+}
+
+BOOL BDADVBTSinkFile::IsRecording(void)
+{
+	if ((m_intSinkType& 0x1) && m_piFTSSink)
+		return m_piFTSDWDump->IsRecording();
+	else if ((m_intSinkType& 0x2) && m_piTSSink)
+		return m_piTSDWDump->IsRecording();
+	else if ((m_intSinkType& 0x4) && m_piMPGSink)
+		return m_piMPGDWDump->IsRecording();
+	else if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
+		return 	m_piVideoDWDump->IsRecording() |
+				m_piTelexDWDump->IsRecording() |
+				m_piAudioDWDump->IsRecording();
+
+	return m_bRecording;
+}
+
+BOOL BDADVBTSinkFile::IsPaused(void)
+{
+	if ((m_intSinkType& 0x1) && m_piFTSSink)
+		return m_piFTSDWDump->IsPaused();
+	else if ((m_intSinkType& 0x2) && m_piTSSink)
+		return m_piTSDWDump->IsPaused();
+	else if ((m_intSinkType& 0x4) && m_piMPGSink)
+		return m_piMPGDWDump->IsPaused();
+	else if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
+		return 	m_piVideoDWDump->IsPaused() |
+				m_piTelexDWDump->IsPaused() |
+				m_piAudioDWDump->IsPaused();
+
+	return m_bPaused;
+}
 

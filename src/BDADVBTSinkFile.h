@@ -32,10 +32,16 @@
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
 #include "DVBMpeg2DataParser.h"
+#include "DWDump.h"
+
 
 //{36A5F770-FE4C-11CE-A8ED-00AA002FEAB5}
-EXTERN_GUID(CLSID_FileWriterDump,
-0x36A5F770, 0xFE4C, 0x11CE, 0xA8, 0xED, 0x00, 0xAA, 0x00, 0x2F, 0xEA, 0xB5);
+//EXTERN_GUID(CLSID_FileWriterDump,
+//0x36A5F770, 0xFE4C, 0x11CE, 0xA8, 0xED, 0x00, 0xAA, 0x00, 0x2F, 0xEA, 0xB5);
+
+//{C16F5100-FD54-448E-BD99-E10CA5C088BC} hdtvpump
+//EXTERN_GUID(CLSID_FileWriterDump,
+//0xC16F5100, 0xFD54, 0x448E, 0xBD, 0x99, 0xE1, 0x0C, 0xA5, 0xC0, 0x88, 0xBC);
 
 class BDADVBTSink;
 class BDADVBTSinkFile : public LogMessageCaller
@@ -50,19 +56,31 @@ public:
 	HRESULT DestroyAll();
 
 	HRESULT AddSinkFilters(DVBTChannels_Service* pService);
+	void DestroyFTSFilters();
+	void DestroyTSFilters();
+	void DestroyMPGFilters();
+	void DestroyAVFilters();
 	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 	HRESULT RemoveSinkFilters();
+	void DeleteFilter(DWDump **pfDWDump);
 
 	HRESULT SetTransportStreamPin(IPin* piPin);
 
 	BOOL IsActive();
+	HRESULT AddDWDumpFilter(LPWSTR name, DWDump **pfDWDump, CComPtr <IBaseFilter> &pFilter);
+	HRESULT StartRecording(DVBTChannels_Service* pService);
+	HRESULT StopRecording(void);
+	HRESULT PauseRecording(void);
+	HRESULT UnPauseRecording(DVBTChannels_Service* pService);
+	BOOL IsRecording(void);
+	BOOL IsPaused(void);
 
-	BOOL SetRecordingFullTS();
-	BOOL SetRecordingTSMux(long PIDs[]);
-	BOOL StartRecording(LPWSTR filename);
-	BOOL PauseRecording(BOOL bPause);
-	BOOL StopRecording();
-	BOOL IsRecording();
+////	BOOL SetRecordingFullTS();
+//	BOOL SetRecordingTSMux(long PIDs[]);
+//	BOOL StartRecording(LPWSTR filename);
+//	BOOL PauseRecording(BOOL bPause);
+//	BOOL StopRecording();
+//	BOOL IsRecording();
 
 	BOOL SupportsRecording() { return FALSE; }
 
@@ -76,6 +94,7 @@ private:
 
 
 	BOOL m_bRecording;
+	BOOL m_bPaused;
 
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IMediaControl> m_piMediaControl;
@@ -83,16 +102,23 @@ private:
 	CComPtr <IBaseFilter> m_piInfinitePinTee;
 
 	int m_intSinkType;
+
 	CComPtr <IBaseFilter> m_piTelexSink;
+	DWDump *m_piTelexDWDump;
 	CComPtr <IBaseFilter> m_piVideoSink;
+	DWDump *m_piVideoDWDump;
 	CComPtr <IBaseFilter> m_piAudioSink;
+	DWDump *m_piAudioDWDump;
 	CComPtr <IBaseFilter> m_piAVMpeg2Demux;
 	CComPtr <IBaseFilter> m_piMPGSink;
+	DWDump *m_piMPGDWDump;
 	CComPtr <IBaseFilter> m_piMPGMpeg2Mux;
 	CComPtr <IBaseFilter> m_piMPGMpeg2Demux;
 	CComPtr <IBaseFilter> m_piTSSink;
+	DWDump *m_piTSDWDump;
 	CComPtr <IBaseFilter> m_piTSMpeg2Demux;
 	CComPtr <IBaseFilter> m_piFTSSink;
+	DWDump *m_piFTSDWDump;
 
 	/*
 	CComPtr <IGuideData> m_piGuideData;

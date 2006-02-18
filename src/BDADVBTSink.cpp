@@ -110,7 +110,7 @@ HRESULT BDADVBTSink::Initialise(DWGraph *pDWGraph)
 	if FAILED(hr = m_pDWGraph->QueryMediaControl(&m_piMediaControl))
 		return (log << "Failed to get media control: " << hr << "\n").Write(hr);
 
-	m_intTimeShiftType = 0;
+	m_intTimeShiftType = g_pData->settings.timeshift.format;
 	if(m_intTimeShiftType)
 	{
 		m_pCurrentTShiftSink = new BDADVBTSinkTShift(this, m_pCurrentTuner);
@@ -119,7 +119,7 @@ HRESULT BDADVBTSink::Initialise(DWGraph *pDWGraph)
 			return (log << "Failed to Initalise the TimeShift Sink Filters: " << hr << "\n").Write(hr);
 	}
 
-	m_intFileSinkType = 0;
+	m_intFileSinkType = g_pData->settings.capture.format;
 	if(m_intFileSinkType)
 	{
 		m_pCurrentFileSink = new BDADVBTSinkFile(this, m_pCurrentTuner);
@@ -128,7 +128,7 @@ HRESULT BDADVBTSink::Initialise(DWGraph *pDWGraph)
 			return (log << "Failed to Initalise the File Sink Filters: " << hr << "\n").Write(hr);
 	}
 
-	m_intDSNetworkType = 0;
+	m_intDSNetworkType = g_pData->settings.dsnetwork.format;
 	if(m_intDSNetworkType)
 	{
 		m_pCurrentDSNetSink = new BDADVBTSinkDSNet(this, m_pCurrentTuner);
@@ -309,38 +309,53 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 			return E_FAIL;
 		}
 
-//		WCHAR fileName[MAX_PATH] = L"G:\\Capture\\"; 
-		WCHAR fileName[MAX_PATH] = L""; 
 		//
 		// Add the Date/Time Stamp to the FileName 
 		//
+		WCHAR wPathName[MAX_PATH] = L""; 
+		WCHAR wTimeStamp[MAX_PATH] = L"";
 		WCHAR wfileName[MAX_PATH] = L"";
+		WCHAR fileName[MAX_PATH] = L"";
+		WCHAR wServiceName[MAX_PATH] = L"";
+
+		lstrcpyW(wServiceName, pService->serviceName);
 	
 		_tzset();
 		struct tm *tmTime;
 		time_t lTime = timeGetTime();
 		time(&lTime);
 		tmTime = localtime(&lTime);
-		wcsftime(wfileName, 32, L"(%Y-%m-%d %H-%M)", tmTime);
+		wcsftime(wTimeStamp, 32, L"(%Y-%m-%d %H-%M-%S)", tmTime);
+
+
+		if ((intSinkType == 1 || intSinkType == 11 || intSinkType == 111) &&
+				g_pData->settings.timeshift.folder)
+			lstrcpyW(wPathName, g_pData->settings.timeshift.folder);
+		else
+		{
+			lstrcpyW(wPathName, g_pData->settings.capture.folder);
+			if (wcslen(g_pData->settings.capture.fileName))
+				lstrcpyW(wServiceName, g_pData->settings.capture.fileName);
+		}
 
 		if (intSinkType == 1)
-			wsprintfW(fileName, L"%S%S%S.full.tsbuffer", fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.full.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 11)
-			wsprintfW(fileName, L"%S%S%S.tsbuffer", fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 111)
-			wsprintfW(fileName, L"%S%S%S.mpg.tsbuffer", fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 2) 
-			wsprintfW(fileName, L"%S%S%S.full.ts", fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.full.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 22) 
-			wsprintfW(fileName, L"%S%S%S.ts",	fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 3) 
-			wsprintfW(fileName, L"%S%S%S.mpg", fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.mpg", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 4) 
-			wsprintfW(fileName, L"%S%S%S.mv2", fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.mv2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 5) 
-			wsprintfW(fileName, L"%S%S%S.mp2", fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.mp2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 6)
-			wsprintfW(fileName, L"%S%S%S.txt", fileName, wfileName, pService->serviceName);
+			wsprintfW(fileName, L"%S%S%S.txt", wPathName, wTimeStamp, wServiceName);
 
 		//
 		// Set the Sink Filter File Name 
@@ -358,17 +373,75 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 		if FAILED(hr = pFilter->QueryInterface(IID_IMulticastConfig, reinterpret_cast<void**>(&piMulticastConfig)))
 			return (log << "Failed to query Sink filter for IMulticastConfig: " << hr << "\n").Write(hr);
 
-//		if FAILED(hr = piMulticastConfig->SetNetworkInterface(inet_addr ("192.168.0.1"))) //0 == INADDR_ANY
-		if FAILED(hr = piMulticastConfig->SetNetworkInterface(inet_addr ("127.0.0.1"))) //0 == INADDR_ANY
+		TCHAR sz[32];
+		sprintf(sz,"%S",g_pData->settings.dsnetwork.nicaddr);
+		if FAILED(hr = piMulticastConfig->SetNetworkInterface(inet_addr (sz))) //0 == INADDR_ANY
 			return (log << "Failed to set network interface for Sink filter: " << hr << "\n").Write(hr);
 
-		ULONG ulIP = toIPAddress(224,0,0,1);
-		if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons(1234)))
+		sprintf(sz,"%S",g_pData->settings.dsnetwork.ipaddr);
+		ULONG ulIP = inet_addr(sz);
+		if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons(g_pData->settings.dsnetwork.port)))
 			return (log << "Failed to set multicast group for Sink filter: " << hr << "\n").Write(hr);
 		piMulticastConfig->Release();
 	}
+		indent.Release();
+
 	return S_OK;
 } 
+
+HRESULT BDADVBTSink::NullFileName(CComPtr<IBaseFilter>& pFilter, int intSinkType)
+{
+	if (pFilter == NULL)
+	{
+		(log << "Skipping Null Set File Name. No Sink Filter passed.\n").Write();
+		return E_INVALIDARG;
+	}
+
+	(log << "Nulling the Sink Demux File Name\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+	if (intSinkType)
+	{
+		if (m_piFileSink)
+			m_piFileSink.Release();
+
+		if FAILED(hr = pFilter->QueryInterface(&m_piFileSink))
+		{
+			(log << "Failed to get the IFileSinkFilter Interface on the Sink Filter.\n").Write(hr);
+			return E_FAIL;
+		}
+
+		//
+		// Set the Sink Filter File Name 
+		//
+		if FAILED(hr = m_piFileSink->SetFileName(L"", NULL))
+		{
+			(log << "Failed to Set the IFileSinkFilter Interface with a Null filename.\n").Write(hr);
+			return hr;
+		}
+	}
+	else
+	{
+		//Setup dsnet sender
+		IMulticastConfig *piMulticastConfig = NULL;
+		if FAILED(hr = pFilter->QueryInterface(IID_IMulticastConfig, reinterpret_cast<void**>(&piMulticastConfig)))
+			return (log << "Failed to query Sink filter for IMulticastConfig: " << hr << "\n").Write(hr);
+
+//		if FAILED(hr = piMulticastConfig->SetNetworkInterface(inet_addr ("192.168.0.1"))) //0 == INADDR_ANY
+		if FAILED(hr = piMulticastConfig->SetNetworkInterface(NULL)) //0 == INADDR_ANY
+			return (log << "Failed to set network interface for Sink filter: " << hr << "\n").Write(hr);
+
+		ULONG ulIP = NULL;
+		if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons(0)))
+			return (log << "Failed to set multicast group for Sink filter: " << hr << "\n").Write(hr);
+		piMulticastConfig->Release();
+	}
+	indent.Release();
+
+	return S_OK;
+}
 
 HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType)
 {
@@ -429,8 +502,8 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseF
 
 	indent.Release();
 	(log << "Finished Adding Demux Pins\n").Write();
-TCHAR sz[128];
-sprintf(sz, "%u", 0);
+//TCHAR sz[128];
+//sprintf(sz, "%u", 0);
 //MessageBox(NULL, sz,"test", NULL);
 
 	return S_OK;
@@ -452,12 +525,32 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 		wchar_t text[16];
 		swprintf((wchar_t*)&text, pPinName);
 
-		// Create the Pin
 		CComPtr <IPin> piPin;
-		if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+
+		// Get the Pin
+		CComPtr<IBaseFilter>pFilter;
+		if SUCCEEDED(hr = m_piIMpeg2Demux->QueryInterface(&pFilter))
 		{
-			(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
-			return hr;
+			if FAILED(hr = pFilter->FindPin(pPinName, &piPin))
+			{
+				// Create the Pin
+				if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+				{
+					(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+					return hr;
+				}
+			}
+//			else
+//(log << "Demux pin already exists " << pPinName << " pin : " << hr << "\n").Write();
+		}
+		else
+		{
+			// Create the Pin
+			if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+			{
+				(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+				return hr;
+			}
 		}
 
 		// Map the PID.
@@ -476,6 +569,7 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
+//(log << "Mapping demux " << pPinName << " pin : " << hr << "\n").Write();
 
 			renderedStreams++;
 		}
@@ -502,15 +596,41 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 			if (bMultipleStreams)
 				swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
 
-			(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
-			LogMessageIndent indent(&log);
-
-			// Create the Pin
 			CComPtr <IPin> piPin;
-			if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+
+			// Get the Pin
+			CComPtr<IBaseFilter>pFilter;
+			if SUCCEEDED(hr = m_piIMpeg2Demux->QueryInterface(&pFilter))
 			{
-				(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
-				continue;
+				if FAILED(hr = pFilter->FindPin(pPinName, &piPin))
+				{
+					// Create the Pin
+					(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
+					LogMessageIndent indent(&log);
+
+					if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+					{
+						(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+						return hr;
+					}
+					indent.Release();
+				}
+//				else
+//(log << "Demux pin already exists " << pPinName << " pin : " << hr << "\n").Write();
+
+			}
+			else
+			{
+				(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
+				LogMessageIndent indent(&log);
+
+				// Create the Pin
+				if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+				{
+					(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+					return hr;
+				}
+				indent.Release();
 			}
 
 			// Map the PID.
@@ -526,15 +646,11 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
+//(log << "Mapping demux " << pPinName << " pin : " << hr << "\n").Write();
 
 			if (renderedStreams != 0)
 				continue;
 
-//			if FAILED(hr = m_pDWGraph->RenderPin(piPin))
-//			{
-//				(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
-//				continue;
-//			}
 			renderedStreams++;
 		}
 	}
@@ -627,3 +743,212 @@ HRESULT BDADVBTSink::AddDemuxPinsTS(DVBTChannels_Service* pService, long *stream
 	return AddDemuxPins(pService, unknown, L"TS", &mediaType, streamsRendered);
 }
 
+HRESULT BDADVBTSink::ClearDemuxPids(CComPtr<IBaseFilter>& pFilter)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pFilter == NULL)
+		return hr;
+
+	CComPtr<IPin> pOPin;
+	PIN_DIRECTION  direction;
+	// Enumerate the Demux pins
+	CComPtr<IEnumPins> pIEnumPins;
+	if (SUCCEEDED(pFilter->EnumPins(&pIEnumPins)))
+	{
+		ULONG pinfetch(0);
+		while(pIEnumPins->Next(1, &pOPin, &pinfetch) == S_OK)
+		{
+			pOPin->QueryDirection(&direction);
+			if(direction == PINDIR_OUTPUT)
+			{
+				WCHAR *pinName;
+				pOPin->QueryId(&pinName);
+				if FAILED(hr = ClearDemuxPins(pOPin))
+					(log << "Failed to Clear demux Pin" << pinName << " pin : " << hr << "\n").Write();
+			}
+			pOPin.Release();
+			pOPin = NULL;
+		}
+	}
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::ClearDemuxPins(IPin *pIPin)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pIPin == NULL)
+		return hr;
+
+	IMPEG2PIDMap* muxMapPid;
+	if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid))){
+
+		IEnumPIDMap *pIEnumPIDMap;
+		if (SUCCEEDED(muxMapPid->EnumPIDMap(&pIEnumPIDMap))){
+			ULONG pNumb = 0;
+			PID_MAP pPidMap;
+			while(pIEnumPIDMap->Next(1, &pPidMap, &pNumb) == S_OK){
+				ULONG pid = pPidMap.ulPID;
+				hr = muxMapPid->UnmapPID(1, &pid);
+			}
+		}
+		muxMapPid->Release();
+	}
+	else {
+
+		IMPEG2StreamIdMap* muxStreamMap;
+		if(SUCCEEDED(pIPin->QueryInterface (&muxStreamMap))){
+
+			IEnumStreamIdMap *pIEnumStreamMap;
+			if (SUCCEEDED(muxStreamMap->EnumStreamIdMap(&pIEnumStreamMap))){
+				ULONG pNumb = 0;
+				STREAM_ID_MAP pStreamIdMap;
+				while(pIEnumStreamMap->Next(1, &pStreamIdMap, &pNumb) == S_OK){
+					ULONG pid = pStreamIdMap.stream_id;
+					hr = muxStreamMap->UnmapStreamId(1, &pid);
+				}
+			}
+			muxStreamMap->Release();
+		}
+	}
+/*
+	CComPtr <IPin> pOPin;
+	if SUCCEEDED(pIPin->ConnectedTo(&pOPin))
+	{
+		pOPin->BeginFlush();
+		pOPin->EndFlush();
+		pOPin->EndOfStream();
+		pOPin->NewSegment(0,0,1);
+	}
+
+*/
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pFilterStart == NULL)
+		return hr;
+
+	CComPtr<IFilterChain>pIFilterChain;
+	if FAILED(hr = m_piGraphBuilder->QueryInterface(&pIFilterChain))
+	{
+		(log << "Failed to the IFilterChain Interface" << hr << "\n").Write();
+		return hr;
+	}
+
+	FILTER_INFO filterInfoStart;
+	FILTER_INFO filterInfoEnd;
+	pFilterStart->QueryFilterInfo(&filterInfoStart);
+	pFilterEnd->QueryFilterInfo(&filterInfoEnd);
+
+	if FAILED(hr = pIFilterChain->StartChain(pFilterEnd, NULL))
+		(log << "Failed to Start Filter Chain:" << filterInfoStart.achName << " to : " << filterInfoEnd.achName << "\n").Write();
+
+	return hr;
+}
+
+HRESULT BDADVBTSink::StopSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pFilterStart == NULL)
+		return hr;
+
+	CComPtr<IFilterChain>pIFilterChain;
+	if FAILED(hr = m_piGraphBuilder->QueryInterface(&pIFilterChain))
+	{
+		(log << "Failed to the IFilterChain Interface" << hr << "\n").Write();
+		return hr;
+	}
+
+	FILTER_INFO filterInfoStart;
+	FILTER_INFO filterInfoEnd;
+	pFilterStart->QueryFilterInfo(&filterInfoStart);
+	pFilterEnd->QueryFilterInfo(&filterInfoEnd);
+	
+	if FAILED(hr = pIFilterChain->StopChain(pFilterStart, pFilterEnd))
+		(log << "Failed to Stop Filter Chain:" << filterInfoStart.achName << " to : " << filterInfoEnd.achName << "\n").Write();
+
+	return hr;
+}
+
+HRESULT BDADVBTSink::PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pFilterStart == NULL)
+		return hr;
+
+	CComPtr<IFilterChain>pIFilterChain;
+	if FAILED(hr = m_piGraphBuilder->QueryInterface(&pIFilterChain))
+	{
+		(log << "Failed to the IFilterChain Interface" << hr << "\n").Write();
+		return hr;
+	}
+
+	FILTER_INFO filterInfoStart;
+	FILTER_INFO filterInfoEnd;
+	pFilterStart->QueryFilterInfo(&filterInfoStart);
+	pFilterEnd->QueryFilterInfo(&filterInfoEnd);
+	
+	if FAILED(hr = pIFilterChain->PauseChain(pFilterStart, pFilterEnd))
+		(log << "Failed to Pause Filter Chain:" << filterInfoStart.achName << " to : " << filterInfoEnd.achName << "\n").Write();
+
+	return hr;
+}
+
+
+HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService)
+{
+	HRESULT hr = S_FALSE;
+
+	if(m_intFileSinkType)
+		return m_pCurrentFileSink->StartRecording(pService);
+
+	return hr;
+}
+
+HRESULT BDADVBTSink::StopRecording(void)
+{
+	HRESULT hr = S_OK;
+
+	if(m_intFileSinkType)
+		return m_pCurrentFileSink->StopRecording();
+
+	return hr;
+}
+
+HRESULT BDADVBTSink::PauseRecording(void)
+{
+	HRESULT hr = S_OK;
+
+	if(m_intFileSinkType)
+		return m_pCurrentFileSink->PauseRecording();
+
+	return hr;
+}
+
+HRESULT BDADVBTSink::UnPauseRecording(DVBTChannels_Service* pService)
+{
+	HRESULT hr = S_OK;
+
+	if(m_intFileSinkType)
+		return m_pCurrentFileSink->UnPauseRecording(pService);
+
+	return hr;
+}
+
+BOOL BDADVBTSink::IsRecording(void)
+{
+	return m_pCurrentFileSink->IsRecording();
+}
+
+BOOL BDADVBTSink::IsPaused(void)
+{
+	return m_pCurrentFileSink->IsPaused();
+}

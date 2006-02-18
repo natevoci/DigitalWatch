@@ -75,7 +75,7 @@
   <!-- left double click -->
 
   <!-- Right click -->
-  <Mouse code=3>				ExitMenu(-1) GetStreamList() ShowMenu("StreamList")</>
+  <Mouse code=3>				<!--ExitMenu(-1) GetStreamList() ShowMenu("StreamList")</>-->
 
   <!-- scroll up -->
   <Mouse code=5>				Seek(5)</>

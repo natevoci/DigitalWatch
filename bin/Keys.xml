@@ -14,7 +14,7 @@
   <Key code='V'>				VideoDecoderEntry(-1)</>
   <Key code='D'>				AudioDecoderEntry(-1)</>
   <Key code='B'>				ResolutionEntry(-1)</>
-
+  
   <!-- Full Screen on VP remote -->
   <Key code='Z'>				Fullscreen(2)</>
   <Key code='Y'>				AlwaysOnTop(2)</>

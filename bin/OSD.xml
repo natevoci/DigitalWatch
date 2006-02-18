@@ -188,10 +188,17 @@ $(() - $(
 			</background>
 		</label>
 	</group>
-	<!--
 	<group name="Recording">
+		<label>
+			<pos x=20 y=526 />
+			<text>$(RecordingStatus)</text>
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=0 />
+			</background>
+		</label>
 	</group>
-	-->
 	<!--
 	<group name="VideoDecoder">
 	</group>

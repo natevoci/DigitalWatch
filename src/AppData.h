@@ -115,6 +115,7 @@ public:
 		struct SETTINGS_CAPTURE
 		{
 			LPWSTR fileName;
+			LPWSTR folder;
 			int format;
 		} capture;
 
@@ -122,7 +123,16 @@ public:
 		{
 			LPWSTR folder;
 			int bufferMinutes;
+			int format;
 		} timeshift;
+
+		struct SETTINGS_DSNETWORK
+		{
+			int format;
+			LPWSTR ipaddr;
+			long port;
+			LPWSTR nicaddr;
+		} dsnetwork;
 
 		int loadedFromFile;
 	} settings;
@@ -179,6 +189,23 @@ public:
 				long gamma;
 			} overlay;
 		} video;
+
+		struct SETTINGS_CAPTURE
+		{
+			long format;
+		} capture;
+
+		struct SETTINGS_TIMESHIFT
+		{
+			long format;
+			long bufferMinutes;
+		} timeshift;
+
+		struct SETTINGS_DSNETWORK
+		{
+			long format;
+		} dsnetwork;
+
 	} values;
 
 	void RestoreMarkedChanges();

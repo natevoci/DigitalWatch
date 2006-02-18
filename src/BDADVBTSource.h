@@ -101,6 +101,8 @@ protected:
 
 	HRESULT MoveNetworkUp(long transportStreamId);
 	HRESULT MoveNetworkDown(long transportStreamId);
+	HRESULT ToggleRecording(long mode);
+	HRESULT TogglePauseRecording(long mode);
 
 private:
 	const LPWSTR m_strSourceType;

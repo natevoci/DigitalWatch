@@ -83,11 +83,23 @@ AppData::AppData()
 	settings.video.overlay.saturation = 10000;
 	settings.video.overlay.gamma = 1;
 
-	settings.capture.fileName = NULL;
+	settings.capture.fileName = new wchar_t[MAX_PATH];
+	wcscpy(settings.capture.fileName, L"");
+	settings.capture.folder = new wchar_t[MAX_PATH];
+	wcscpy(settings.capture.folder, L"");
 	settings.capture.format = 0;
 
-	settings.timeshift.folder = NULL;
+	settings.timeshift.folder = new wchar_t[MAX_PATH];
+	wcscpy(settings.timeshift.folder, L"");
 	settings.timeshift.bufferMinutes = 30;
+	settings.timeshift.format = 0;
+
+	settings.dsnetwork.format = 0;
+	settings.dsnetwork.ipaddr = new wchar_t[MAX_PATH];
+	wcscpy(settings.dsnetwork.ipaddr, L"224.0.0.1");
+	settings.dsnetwork.port = 0;
+	settings.dsnetwork.nicaddr = new wchar_t[MAX_PATH];
+	wcscpy(settings.dsnetwork.nicaddr, L"127.0.0.1");
 
 	HRESULT hr = LoadSettings();
 	settings.loadedFromFile = SUCCEEDED(hr);
@@ -135,6 +147,13 @@ AppData::AppData()
 	values.video.overlay.saturation = settings.video.overlay.saturation;
 	values.video.overlay.gamma = settings.video.overlay.gamma;
 
+	values.capture.format =	settings.capture.format;
+
+	values.timeshift.format =	settings.timeshift.format;
+	values.timeshift.bufferMinutes = settings.timeshift.bufferMinutes;
+
+	values.dsnetwork.format = settings.dsnetwork.format;
+
 	ZeroMemory(&markedValues, sizeof(VALUES));
 	ZeroMemory(&globalValues, sizeof(VALUES));
 }
@@ -145,6 +164,21 @@ AppData::~AppData()
 
 	if (application.appPath)
 		delete[] application.appPath;
+
+	if (settings.capture.fileName)
+		delete[] settings.capture.fileName;
+
+	if (settings.capture.folder)
+		delete[] settings.capture.folder;
+
+	if (settings.timeshift.folder)
+		delete[] settings.timeshift.folder;
+
+	if (settings.dsnetwork.ipaddr)
+		delete[] settings.dsnetwork.ipaddr;
+
+	if (settings.dsnetwork.nicaddr)
+		delete[] settings.dsnetwork.nicaddr;
 }
 
 void AppData::RestoreMarkedChanges()
@@ -419,6 +453,105 @@ HRESULT AppData::LoadSettings()
 			} // for ( int subItem=0 ; subItem<subCount ; subItem++ )
 			continue;
 		}
+
+		if (_wcsicmp(element->name, L"Capture") == 0)
+		{
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"Format") == 0)
+				{
+					settings.capture.format = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"Filename") == 0)
+				{
+					if (pSubElement->value)
+						wcscpy(settings.capture.fileName, pSubElement->value);
+
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"Folder") == 0)
+				{
+					if (pSubElement->value)
+						wcscpy(settings.capture.folder, pSubElement->value);
+
+					continue;
+				}
+			}
+			continue;
+		}
+
+		if (_wcsicmp(element->name, L"TimeShift") == 0)
+		{
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"Format") == 0)
+				{
+					settings.timeshift.format = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"BufferMinutes") == 0)
+				{
+					settings.timeshift.bufferMinutes = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"Folder") == 0)
+				{
+					if (pSubElement->value)
+						wcscpy(settings.timeshift.folder, pSubElement->value);
+
+					continue;
+				}
+			}
+			continue;
+		}
+
+		if (_wcsicmp(element->name, L"DSNetwork") == 0)
+		{
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"Format") == 0)
+				{
+					settings.dsnetwork.format = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"Port") == 0)
+				{
+					settings.dsnetwork.port = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"IP-Addr") == 0)
+				{
+					if (pSubElement->value)
+						wcscpy(settings.dsnetwork.ipaddr, pSubElement->value);
+
+					continue;
+				}
+
+				if (_wcsicmp(pSubElement->name, L"Nic-Addr") == 0)
+				{
+					if (pSubElement->value)
+						wcscpy(settings.dsnetwork.nicaddr, pSubElement->value);
+
+					continue;
+				}
+			}
+			continue;
+		}
+
+
+
+
+
+
+
+
 	} // for ( int item=0 ; item<elementCount ; item++ )
 
 	return S_OK;
@@ -548,24 +681,38 @@ HRESULT AppData::SaveSettings()
 		}
 
 	}
-/*
+
 	XMLElement *pCapture = new XMLElement(L"Capture");
 	file.Elements.Add(pCapture);
 	{
 		pCapture->Elements.Add(new XMLElement(L"Filename", settings.capture.fileName));
-		strCopy(pValue, settings.capture.fileName);
+		pCapture->Elements.Add(new XMLElement(L"Folder", settings.capture.folder));
+		strCopy(pValue, settings.capture.format);
 		pCapture->Elements.Add(new XMLElement(L"Format", pValue));
 	}
-*/
-/*
+
+
 	XMLElement *pTimeshift = new XMLElement(L"Timeshift");
 	file.Elements.Add(pTimeshift);
 	{
 		pTimeshift->Elements.Add(new XMLElement(L"Folder", settings.timeshift.folder));
 		strCopy(pValue, settings.timeshift.bufferMinutes);
 		pTimeshift->Elements.Add(new XMLElement(L"BufferMinutes", pValue));
+		strCopy(pValue, settings.timeshift.format);
+		pTimeshift->Elements.Add(new XMLElement(L"Format", pValue));
 	}
-*/
+
+	XMLElement *pDSNetwork = new XMLElement(L"DSNetwork");
+	file.Elements.Add(pDSNetwork);
+	{
+		strCopy(pValue, settings.dsnetwork.format);
+		pDSNetwork->Elements.Add(new XMLElement(L"Format", pValue));
+		pDSNetwork->Elements.Add(new XMLElement(L"IP-Addr", settings.dsnetwork.ipaddr));
+		strCopy(pValue, settings.dsnetwork.port);
+		pDSNetwork->Elements.Add(new XMLElement(L"Port", pValue));
+		pDSNetwork->Elements.Add(new XMLElement(L"Nic-Addr", settings.dsnetwork.nicaddr));
+	}
+
 	if (pValue)
 	{
 		delete pValue;

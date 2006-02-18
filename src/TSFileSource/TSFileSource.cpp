@@ -184,6 +184,7 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 		return GetStreamList();
 	}
 
+
 	//Just referencing these variables to stop warnings.
 	n1 = 0;
 	n2 = 0;
@@ -537,3 +538,4 @@ HRESULT TSFileSource::GetStreamList(void)
 
 	return hr;
 }
+

@@ -63,7 +63,9 @@ public:
 	HRESULT SetTransportStreamPin(IPin* piPin);
 
 	BOOL IsActive();
+
 	HRESULT AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType = 0);
+	HRESULT NullFileName(CComPtr<IBaseFilter>& pFilter, int intSinkType);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
@@ -71,13 +73,17 @@ public:
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsTS(DVBTChannels_Service* pService, long *streamsRendered);
-
-	BOOL SetRecordingFullTS();
-	BOOL SetRecordingTSMux(long PIDs[]);
-	BOOL StartRecording(LPWSTR filename);
-	BOOL PauseRecording(BOOL bPause);
-	BOOL StopRecording();
-	BOOL IsRecording();
+	HRESULT ClearDemuxPids(CComPtr<IBaseFilter>& pFilter);
+	HRESULT ClearDemuxPins(IPin *pIPin);
+	HRESULT StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
+	HRESULT StopSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
+	HRESULT PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
+	HRESULT StartRecording(DVBTChannels_Service* pService);
+	HRESULT StopRecording(void);
+	HRESULT PauseRecording(void);
+	HRESULT UnPauseRecording(DVBTChannels_Service* pService);
+	BOOL IsRecording(void);
+	BOOL IsPaused(void);
 
 	BOOL SupportsRecording() { return FALSE; }
 

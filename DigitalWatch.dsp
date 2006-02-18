@@ -345,6 +345,18 @@ SOURCE=.\src\DWMediaTypes.cpp
 SOURCE=.\src\DWMediaTypes.h
 # End Source File
 # End Group
+# Begin Group "Filters"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\DWDump.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWDump.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=.\src\dsnetifc.h

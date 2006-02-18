@@ -334,6 +334,31 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 
 		return MoveNetworkDown(n1);
 	}
+	else if (_wcsicmp(pCurr, L"Recording") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 1)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		return ToggleRecording(n1);
+	}
+	else if (_wcsicmp(pCurr, L"RecordingPause") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 1)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		return TogglePauseRecording(n1);
+	}
+
 
 	//Just referencing these variables to stop warnings.
 	n3 = 0;
@@ -1196,5 +1221,54 @@ HRESULT BDADVBTSource::MoveNetworkUp(long originalNetworkId)
 HRESULT BDADVBTSource::MoveNetworkDown(long originalNetworkId)
 {
 	return channels.MoveNetworkDown(originalNetworkId);
+}
+
+HRESULT BDADVBTSource::ToggleRecording(long mode)
+{
+	HRESULT hr = S_OK;
+
+	WCHAR sz[32];
+
+	if(m_pCurrentSink->IsRecording())
+	{
+
+		hr = m_pCurrentSink->StopRecording();
+		lstrcpyW(sz, L"Recording Stopped");
+	}
+	else
+	{
+		hr = m_pCurrentSink->StartRecording(m_pCurrentService);
+		lstrcpyW(sz, L"Recording");
+	}
+
+	g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
+	g_pTv->ShowOSDItem(L"Recording", 5);
+
+	return hr;
+}
+
+HRESULT BDADVBTSource::TogglePauseRecording(long mode)
+{
+	HRESULT hr = S_OK;
+
+	WCHAR sz[32];
+
+	if(m_pCurrentSink->IsPaused())
+	{
+		m_pCurrentSink->UnPauseRecording(m_pCurrentService);
+		lstrcpyW(sz, L"Recording");
+		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
+		g_pTv->ShowOSDItem(L"Recording", 5);
+	}
+	else
+	{
+		m_pCurrentSink->PauseRecording();
+		lstrcpyW(sz, L"Recording Paused");
+		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
+		g_pTv->ShowOSDItem(L"Recording", 10000);
+	}
+
+
+	return hr;
 }
 
