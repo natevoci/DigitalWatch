@@ -905,7 +905,15 @@ HRESULT BDADVBTSink::PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<
 
 HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService)
 {
-	HRESULT hr = S_FALSE;
+	if (!m_pCurrentFileSink)
+	{
+		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Recording", 5);
+
+		return E_FAIL;
+	}
+
+	HRESULT hr = S_OK;
 
 	if(m_intFileSinkType)
 		return m_pCurrentFileSink->StartRecording(pService);
@@ -915,6 +923,14 @@ HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService)
 
 HRESULT BDADVBTSink::StopRecording(void)
 {
+	if (!m_pCurrentFileSink)
+	{
+		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Recording", 5);
+
+		return E_FAIL;
+	}
+
 	HRESULT hr = S_OK;
 
 	if(m_intFileSinkType)
@@ -925,6 +941,14 @@ HRESULT BDADVBTSink::StopRecording(void)
 
 HRESULT BDADVBTSink::PauseRecording(void)
 {
+	if (!m_pCurrentFileSink)
+	{
+		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Recording", 5);
+
+		return E_FAIL;
+	}
+
 	HRESULT hr = S_OK;
 
 	if(m_intFileSinkType)
@@ -935,6 +959,14 @@ HRESULT BDADVBTSink::PauseRecording(void)
 
 HRESULT BDADVBTSink::UnPauseRecording(DVBTChannels_Service* pService)
 {
+	if (!m_pCurrentFileSink)
+	{
+		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Recording", 5);
+
+		return E_FAIL;
+	}
+
 	HRESULT hr = S_OK;
 
 	if(m_intFileSinkType)
@@ -945,10 +977,16 @@ HRESULT BDADVBTSink::UnPauseRecording(DVBTChannels_Service* pService)
 
 BOOL BDADVBTSink::IsRecording(void)
 {
+	if(!m_pCurrentFileSink)
+		return FALSE;
+
 	return m_pCurrentFileSink->IsRecording();
 }
 
 BOOL BDADVBTSink::IsPaused(void)
 {
+	if(!m_pCurrentFileSink)
+		return FALSE;
+
 	return m_pCurrentFileSink->IsPaused();
 }

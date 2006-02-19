@@ -1225,6 +1225,14 @@ HRESULT BDADVBTSource::MoveNetworkDown(long originalNetworkId)
 
 HRESULT BDADVBTSource::ToggleRecording(long mode)
 {
+	if (!m_pCurrentSink)
+	{
+		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Recording", 5);
+
+		return E_FAIL;
+	}
+
 	HRESULT hr = S_OK;
 
 	WCHAR sz[32];
@@ -1232,12 +1240,16 @@ HRESULT BDADVBTSource::ToggleRecording(long mode)
 	if(m_pCurrentSink->IsRecording())
 	{
 
-		hr = m_pCurrentSink->StopRecording();
+		if FAILED(hr = m_pCurrentSink->StopRecording())
+			return hr;
+
 		lstrcpyW(sz, L"Recording Stopped");
 	}
 	else
 	{
-		hr = m_pCurrentSink->StartRecording(m_pCurrentService);
+		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService))
+			return hr;
+
 		lstrcpyW(sz, L"Recording");
 	}
 
@@ -1249,20 +1261,32 @@ HRESULT BDADVBTSource::ToggleRecording(long mode)
 
 HRESULT BDADVBTSource::TogglePauseRecording(long mode)
 {
+	if (!m_pCurrentSink)
+	{
+		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Recording", 5);
+
+		return E_FAIL;
+	}
+
 	HRESULT hr = S_OK;
 
 	WCHAR sz[32];
 
 	if(m_pCurrentSink->IsPaused())
 	{
-		m_pCurrentSink->UnPauseRecording(m_pCurrentService);
+		if FAILED(hr = m_pCurrentSink->UnPauseRecording(m_pCurrentService))
+			return hr;
+
 		lstrcpyW(sz, L"Recording");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
 		g_pTv->ShowOSDItem(L"Recording", 5);
 	}
 	else
 	{
-		m_pCurrentSink->PauseRecording();
+		if FAILED(hr = m_pCurrentSink->PauseRecording())
+			return hr;
+
 		lstrcpyW(sz, L"Recording Paused");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
 		g_pTv->ShowOSDItem(L"Recording", 10000);

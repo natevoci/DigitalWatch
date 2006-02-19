@@ -1,12 +1,10 @@
-<Stream Index="0" Media="MPEG2" Lcid="0" Group="0" Name="  Network TEN Program Information" Ltext="33" />
+<Stream Index="0" Media="MPEG2" Lcid="0" Group="0" Name="  Program Info Unavailable" Ltext="26" />
 
-<Stream Index="1" Media="MPEG2" Lcid="0" Group="0" Name="-> 1 : TEN Digital [Ten Brisbane]" Ltext="33" />
+<Stream Index="1" Media="MPEG2" Lcid="0" Group="0" Name="-> Program 1 [Network Unknown]" Ltext="30" />
 
-<Stream Index="2" Media="MPEG2" Lcid="9" Group="0" Name="        Mpeg Audio Track" Ltext="24" />
+<Stream Index="2" Media="MPEG2" Lcid="9" Group="0" Name="->      Mpeg Audio Track" Ltext="24" />
 
-<Stream Index="3" Media="MPEG2" Lcid="9" Group="0" Name="->      AC3 Audio Track" Ltext="23" />
+<Stream Index="3" Media="MPEG2" Lcid="0" Group="1" Name="  File Menu:" Ltext="12" />
 
-<Stream Index="4" Media="MPEG2" Lcid="0" Group="1" Name="  File Menu:" Ltext="12" />
-
-<Stream Index="5" Media="MPEG2" Lcid="0" Group="1" Name="  Open Browse Window" Ltext="20" />
+<Stream Index="4" Media="MPEG2" Lcid="0" Group="1" Name="  Open Browse Window" Ltext="20" />
 
