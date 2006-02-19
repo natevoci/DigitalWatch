@@ -102,40 +102,14 @@ private:
 	BOOL m_bInitialised;
 	BOOL m_bActive;
 
-
-	BOOL m_bRecording;
-
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IMediaControl> m_piMediaControl;
 
 	CComPtr <IBaseFilter> m_piInfinitePinTee;
 
 	long m_intTimeShiftType;
-	CComPtr <IBaseFilter> m_piMPGTShiftFileWriter;
-	CComPtr <IBaseFilter> m_piMPGTShiftMpeg2Mux;
-	CComPtr <IBaseFilter> m_piMPGTShiftMpeg2Demux;
-	CComPtr <IBaseFilter> m_piTShiftFileWriter;
-	CComPtr <IBaseFilter> m_piTShiftMpeg2Demux;
-	CComPtr <IBaseFilter> m_piFTShiftFileWriter;
-
 	long m_intFileSinkType;
-	CComPtr <IBaseFilter> m_piVideoCapFileWriter;
-	CComPtr <IBaseFilter> m_piAudioCapFileWriter;
-	CComPtr <IBaseFilter> m_piAVCapMpeg2Demux;
-	CComPtr <IBaseFilter> m_piMPGCapFileWriter;
-	CComPtr <IBaseFilter> m_piMPGCapMpeg2Mux;
-	CComPtr <IBaseFilter> m_piMPGCapMpeg2Demux;
-	CComPtr <IBaseFilter> m_piTSCapFileWriter;
-	CComPtr <IBaseFilter> m_piTSCapMpeg2Demux;
-	CComPtr <IBaseFilter> m_piFTSCapFileWriter;
-
 	long m_intDSNetworkType;
-	CComPtr <IBaseFilter> m_piMPGDSNetworkSink;
-	CComPtr <IBaseFilter> m_piMPGDSNetworkMpeg2Mux;
-	CComPtr <IBaseFilter> m_piMPGDSNetworkMpeg2Demux;
-	CComPtr <IBaseFilter> m_piTSDSNetworkSink;
-	CComPtr <IBaseFilter> m_piTSDSNetworkMpeg2Demux;
-	CComPtr <IBaseFilter> m_piFTSDSNetworkSink;
 
 	/*
 	CComPtr <IGuideData> m_piGuideData;

@@ -312,9 +312,6 @@ HRESULT BDADVBTSinkDSNet::RemoveSinkFilters()
 	DestroyFilter(m_piTSMpeg2Demux);
 	DestroyFilter(m_piFTSSink);
 
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
-
 	return S_OK;
 }
 

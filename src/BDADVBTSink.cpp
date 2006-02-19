@@ -210,39 +210,21 @@ void BDADVBTSink::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 	}
 }
 
-
-
 HRESULT BDADVBTSink::RemoveSinkFilters()
 {
 	m_bActive = FALSE;
+	
+	//--- Remove the Sink filters ---
+	if (m_intFileSinkType && m_pCurrentFileSink)
+		m_pCurrentFileSink->RemoveSinkFilters();
 
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
+	//--- Remove the TimeShifting filters ---
+	if (m_intTimeShiftType && m_pCurrentTShiftSink)
+		m_pCurrentTShiftSink->RemoveSinkFilters();
 
-	DestroyFilter(m_piMPGDSNetworkSink);
-	DestroyFilter(m_piMPGDSNetworkMpeg2Mux);
-	DestroyFilter(m_piMPGDSNetworkMpeg2Demux);
-	DestroyFilter(m_piTSDSNetworkSink);
-	DestroyFilter(m_piTSDSNetworkMpeg2Demux);
-	DestroyFilter(m_piFTSDSNetworkSink);
-	DestroyFilter(m_piMPGTShiftFileWriter);
-	DestroyFilter(m_piMPGTShiftMpeg2Mux);
-	DestroyFilter(m_piMPGTShiftMpeg2Demux);
-	DestroyFilter(m_piTShiftFileWriter);
-	DestroyFilter(m_piTShiftMpeg2Demux);
-	DestroyFilter(m_piFTShiftFileWriter);
-	DestroyFilter(m_piVideoCapFileWriter);
-	DestroyFilter(m_piAudioCapFileWriter);
-	DestroyFilter(m_piAVCapMpeg2Demux);
-	DestroyFilter(m_piMPGCapFileWriter);
-	DestroyFilter(m_piMPGCapMpeg2Mux);
-	DestroyFilter(m_piMPGCapMpeg2Demux);
-	DestroyFilter(m_piTSCapFileWriter);
-	DestroyFilter(m_piTSCapMpeg2Demux);
-	DestroyFilter(m_piFTSCapFileWriter);
-
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
+	//--- Remove the DSNetworking filters ---
+	if (m_intDSNetworkType && m_pCurrentDSNetSink)
+		m_pCurrentDSNetSink->RemoveSinkFilters();
 
 	return S_OK;
 }
@@ -716,6 +698,17 @@ HRESULT BDADVBTSink::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *strea
 	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
 	mediaType.pbFormat = g_MPEG1AudioFormat;
 
+/*
+	mediaType.majortype = MEDIATYPE_Audio;
+	mediaType.subtype = MEDIASUBTYPE_DOLBY_AC3;
+	mediaType.cbFormat = sizeof(MPEG1AudioFormat);//sizeof(AC3AudioFormat); //
+	mediaType.pbFormat = MPEG1AudioFormat;//AC3AudioFormat; //
+	mediaType.bFixedSizeSamples = TRUE;
+	mediaType.bTemporalCompression = 0;
+	mediaType.lSampleSize = 1;
+	mediaType.formattype = FORMAT_WaveFormatEx;
+	mediaType.pUnk = NULL;
+*/
 	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
 }
 

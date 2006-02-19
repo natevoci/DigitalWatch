@@ -871,10 +871,10 @@ HRESULT BDADVBTSource::LoadSink()
 	(log << "Loading Sink Filters\n").Write();
 	LogMessageIndent indent(&log);
 
-	HRESULT hr = S_OK;
-
 	if (!m_pCurrentSink)
-		return (log << "No Sink Filters loaded: " << hr << "\n").Write(hr);
+		return (log << "No Main Sink Class loaded.\n").Write();
+
+	HRESULT hr = S_OK;
 
 	CComPtr <IPin> piTSPin;
 	if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
@@ -896,14 +896,15 @@ HRESULT BDADVBTSource::UnloadSink()
 	(log << "Unloading Sink Filters\n").Write();
 	LogMessageIndent indent(&log);
 
+	if (!m_pCurrentSink)
+		return (log << "No Main Sink Class loaded.\n").Write();
+
 	HRESULT hr;
 
-	if (m_pCurrentSink)
-	{
-		if FAILED(hr = m_pCurrentSink->RemoveSinkFilters())
-			return (log << "Failed to remove Sink filters: " << hr << "\n").Write(hr);
-		m_pCurrentSink = NULL;
-	}
+	if FAILED(hr = m_pCurrentSink->RemoveSinkFilters())
+		return (log << "Failed to remove Sink filters: " << hr << "\n").Write(hr);
+
+	m_pCurrentSink = NULL;
 
 	indent.Release();
 	(log << "Finished Unloading Sink Filters\n").Write();

@@ -428,7 +428,8 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService)
 		if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piFTSSink, 2))
 			(log << "Failed to Set the File Name on the Full TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
-		m_piFTSDWDump->Record();
+		if FAILED(hr = m_piFTSDWDump->Record())
+			(log << "Failed to Start Recording on the Full TS Sink Filter: " << hr << "\n").Write(hr);
 	}
 
 	if ((m_intSinkType& 0x2) && m_piTSSink)
@@ -439,7 +440,8 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService)
 		if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piTSSink, 22))
 			(log << "Failed to Set the File Name on the TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
-		m_piTSDWDump->Record();
+		if FAILED(hr = m_piTSDWDump->Record())
+			(log << "Failed to Start Recording on the TS Sink Filter: " << hr << "\n").Write(hr);
 	}
 
 	if ((m_intSinkType& 0x4) && m_piMPGSink)
@@ -447,12 +449,19 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService)
 		if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piMPGSink, 3))
 			(log << "Failed to Set the File Name on the MPG Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
-		if FAILED(hr = m_piMPGDWDump->Record())
-			(log << "Failed to Start Recording on the MPG Sink Filter: " << hr << "\n").Write(hr);
-
 		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piMPGMpeg2Demux))
 			(log << "Failed to Add Output Pins to MPG Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 
+		if FAILED(hr = m_piMPGDWDump->Record())
+			(log << "Failed to Start Recording on the MPG Sink Filter: " << hr << "\n").Write(hr);
+/*
+		IReferenceClock *piReferenceClock;
+		m_piMPGMpeg2Demux->SetSyncSource(NULL);
+		Sleep(100);
+		m_piMPGMpeg2Demux->GetSyncSource(&piReferenceClock);
+		m_piMPGMpeg2Demux->SetSyncSource(piReferenceClock);
+		m_piMPGMpeg2Mux->SetSyncSource(piReferenceClock);
+*/
 	}
 
 	if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
@@ -470,9 +479,14 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService)
 				if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piAudioSink, 5))
 					(log << "Failed to Set the File Name on the Audio Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
-		m_piVideoDWDump->Record();
-		m_piTelexDWDump->Record();
-		m_piAudioDWDump->Record();
+		if FAILED(hr = m_piVideoDWDump->Record())
+			(log << "Failed to Start Recording on the Video AV Sink Filter: " << hr << "\n").Write(hr);
+
+		if FAILED(hr = m_piTelexDWDump->Record())
+			(log << "Failed to Start Recording on the Teletext AV Sink Filter: " << hr << "\n").Write(hr);
+
+		if FAILED(hr = m_piAudioDWDump->Record())
+			(log << "Failed to Start Recording on the Audio AV Sink Filter: " << hr << "\n").Write(hr);
 	}
 
 	m_bRecording = TRUE;

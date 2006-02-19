@@ -289,15 +289,6 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 		m_piGraphBuilder->RemoveFilter(m_piInfinitePinTee);
 		m_piInfinitePinTee.Release();
 	}
-*/
-
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
-
-	DestroyFilter(m_piBDASecTab);
-	DestroyFilter(m_piBDATIF);
-	DestroyFilter(m_piBDAMpeg2Demux);
-	DestroyFilter(m_piInfinitePinTee);
 
 	m_pBDACard->RemoveFilters();
 
@@ -306,6 +297,14 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 		m_piGraphBuilder->RemoveFilter(m_piBDANetworkProvider);
 		m_piBDANetworkProvider.Release();
 	}
+*/
+
+	DestroyFilter(m_piBDASecTab);
+	DestroyFilter(m_piBDATIF);
+	DestroyFilter(m_piBDAMpeg2Demux);
+	DestroyFilter(m_piInfinitePinTee);
+	m_pBDACard->RemoveFilters();
+	DestroyFilter(m_piBDANetworkProvider);
 
 	return S_OK;
 }
