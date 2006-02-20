@@ -193,8 +193,8 @@ HRESULT DWSurfaceRendererVMR9Bitmap::Blt(DWSurfaceRenderer *targetSurface, RECT*
 	FixRects(rcSrc, rcDest, desc.Width, desc.Height);
 
 	//If the coordinates are off screen then return ok
-	if ((rcDest.left >= desc.Width) ||
-		(rcDest.top >= desc.Height) ||
+	if ((rcDest.left >= (long)desc.Width) ||
+		(rcDest.top >= (long)desc.Height) ||
 		(rcDest.right <= 0) ||
 		(rcDest.bottom <= 0))
 		return S_OK;
@@ -263,7 +263,7 @@ HRESULT DWSurfaceRendererVMR9Bitmap::DrawText(DWSurfaceText *text, int x, int y)
 
 		DeleteObject( hFont );
 #else
-		pFont = new CD3DFont( text->font.lfFaceName, text->font.lfHeight/1.5f);
+		pFont = new CD3DFont( text->font.lfFaceName, (DWORD)(text->font.lfHeight/1.5f));
 		pFont->InitDeviceObjects(m_pD3DDevice);
 		pFont->RestoreDeviceObjects();
 #endif
@@ -299,7 +299,7 @@ HRESULT DWSurfaceRendererVMR9Bitmap::DrawText(DWSurfaceText *text, int x, int y)
 	if FAILED(hr)
 		return hr;
 #else
-	hr = pFont->DrawText(x, y, text->crTextColor, W2T(pString), D3DFONT_FILTERED);
+	hr = pFont->DrawText((float)x, (float)y, text->crTextColor, W2T(pString), D3DFONT_FILTERED);
 #endif
 
 	hr = m_pD3DDevice->EndScene();

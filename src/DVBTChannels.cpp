@@ -271,7 +271,7 @@ DVBTChannels_Service_PID_Types DVBTChannels_Service::GetStreamType(int index)
 {
 	CAutoLock lock(&m_streamsLock);
 
-	if ((index >= 0) && (index < m_streams.size()))
+	if ((index >= 0) && (index < (int)m_streams.size()))
 	{
 		DVBTChannels_Stream *pStream = m_streams.at(index);
 		return pStream->Type;
@@ -283,7 +283,7 @@ long DVBTChannels_Service::GetStreamPID(int index)
 {
 	CAutoLock lock(&m_streamsLock);
 
-	if ((index >= 0) && (index < m_streams.size()))
+	if ((index >= 0) && (index < (int)m_streams.size()))
 	{
 		DVBTChannels_Stream *pStream = m_streams.at(index);
 		return pStream->PID;
@@ -811,7 +811,7 @@ LPWSTR DVBTChannels_Network::GetListItem(LPWSTR name, long nIndex)
 {
 	CAutoLock lock(&m_servicesLock);
 
-	if (nIndex >= m_services.size())
+	if (nIndex >= (long)m_services.size())
 		return NULL;
 
 	long startsWithLength = strStartsWith(name, m_dataListName);
@@ -1255,7 +1255,7 @@ LPWSTR DVBTChannels::GetListItem(LPWSTR name, long nIndex)
 {
 	CAutoLock lock(&m_networksLock);
 
-	if (nIndex >= m_networks.size())
+	if (nIndex >= (long)m_networks.size())
 		return NULL;
 
 	long startsWithLength = strStartsWith(name, m_dataListName);

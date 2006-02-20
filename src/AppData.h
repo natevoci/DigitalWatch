@@ -95,8 +95,8 @@ public:
 			struct SETTINGS_ASPECT_RATIO
 			{
 				long bOverride;
-				float width;
-				float height;
+				long width;
+				long height;
 			} aspectRatio;
 
 			int zoom;
@@ -173,8 +173,8 @@ public:
 			struct VALUES_ASPECT_RATIO
 			{
 				long bOverride;
-				float width;
-				float height;
+				long width;
+				long height;
 			} aspectRatio;
 
 			long zoom;

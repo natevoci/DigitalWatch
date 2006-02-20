@@ -192,12 +192,12 @@ HRESULT BDADVBTSource::Destroy()
 		{
 //			BDADVBTSourceTuner *tuner = *it;
 //			delete tuner;
-			TUNERINFO *itInfo = it;
-			if(itInfo->sinks)
-				delete itInfo->sinks;
+			TUNERINFO itInfo = *it;
+			if(itInfo.sinks)
+				delete itInfo.sinks;
 
-			if(itInfo->tuners)
-				delete itInfo->tuners;
+			if(itInfo.tuners)
+				delete itInfo.tuners;
 		}
 		m_tuners.clear();
 	}

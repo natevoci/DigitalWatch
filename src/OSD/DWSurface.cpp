@@ -34,7 +34,7 @@ DWSurface::DWSurface()
 {
 	m_pSurfaceRenderer = NULL;
 
-	m_surfaceType = CM_NONE;
+	m_surfaceType = SCM_NONE;
 	m_Width = 0;
 	m_Height = 0;
 	m_hInstance = 0;
@@ -60,7 +60,7 @@ HRESULT DWSurface::CreateMainSurface()
 
 	CAutoLock surfacesLock(&m_surfacesLock);
 
-	m_surfaceType = CM_CREATEMAINSURFACE;
+	m_surfaceType = SCM_CREATEMAINSURFACE;
 
 	hr = Destroy();
 	hr = CreateSurfaceRenderer();
@@ -85,7 +85,7 @@ HRESULT DWSurface::Create(long width, long height)
 
 	hr = Destroy();
 
-	m_surfaceType = CM_CREATE;
+	m_surfaceType = SCM_CREATE;
 	m_Width = width;
 	m_Height = height;
 
@@ -161,7 +161,7 @@ HRESULT DWSurface::Destroy()
 		delete m_pSurfaceRenderer;
 		m_pSurfaceRenderer = NULL;
 	}
-	m_surfaceType = CM_NONE;
+	m_surfaceType = SCM_NONE;
 
 	return hr;
 }
@@ -294,16 +294,16 @@ HRESULT DWSurface::CheckSurface()
 
 		switch (currentSurfaceType)
 		{
-		case CM_CREATEMAINSURFACE:
+		case SCM_CREATEMAINSURFACE:
 			hr = CreateMainSurface();
 			break;
-		case CM_CREATE:
+		case SCM_CREATE:
 			hr = Create(m_Width, m_Height);
 			break;
-		case CM_LOADBITMAP_RESOURCE:
+		case SCM_LOADBITMAP_RESOURCE:
 			hr = LoadBitmap(m_hInstance, m_nResource);
 			break;
-		case CM_LOADBITMAP_FILE:
+		case SCM_LOADBITMAP_FILE:
 			hr = LoadBitmap();
 			break;
 		};
@@ -321,7 +321,7 @@ HRESULT DWSurface::LoadBitmap()
 
 	hr = Destroy();
 
-	m_surfaceType = (m_szBitmap) ? CM_LOADBITMAP_FILE : CM_LOADBITMAP_RESOURCE;
+	m_surfaceType = (m_szBitmap) ? SCM_LOADBITMAP_FILE : SCM_LOADBITMAP_RESOURCE;
 
 	hr = CreateSurfaceRenderer();
 

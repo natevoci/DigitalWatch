@@ -65,11 +65,11 @@ protected:
 
 	enum DWSurfaceCreateMethod
 	{
-		CM_NONE,
-		CM_CREATEMAINSURFACE,
-		CM_CREATE,
-		CM_LOADBITMAP_RESOURCE,
-		CM_LOADBITMAP_FILE
+		SCM_NONE = 0,
+		SCM_CREATEMAINSURFACE,
+		SCM_CREATE,
+		SCM_LOADBITMAP_RESOURCE,
+		SCM_LOADBITMAP_FILE
 	} m_surfaceType;
 	long		m_Width;
 	long		m_Height;

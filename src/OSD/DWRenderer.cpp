@@ -68,7 +68,7 @@ HRESULT DWRenderer::SetTickCount(long tickCount)
 
 	if (tickCount - m_fpsTickCount > 500)
 	{
-		m_fFPS = m_fpsMultiplier * 1000.0 / (double)(tickCount - m_fpsTickCount);
+		m_fFPS = (long)(m_fpsMultiplier * 1000.0 / (double)(tickCount - m_fpsTickCount));
 		m_fpsTickCount = tickCount;
 		m_fpsMultiplier = 1;
 	}

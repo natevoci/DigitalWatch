@@ -474,7 +474,7 @@ HRESULT TSFileSource::UpdateData()
 	WCHAR sz[MAX_PATH];
 	long milli, secs, mins, hours;
 
-	milli = rtEarliest / 10000;
+	milli = (long)(rtEarliest / 10000);
 	secs = milli / 1000;
 	mins = secs / 60;
 	hours = mins / 60;
@@ -484,7 +484,7 @@ HRESULT TSFileSource::UpdateData()
 	swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
 	g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
 
-	milli = rtCurrent / 10000;
+	milli = (long)(rtCurrent / 10000);
 	secs = milli / 1000;
 	mins = secs / 60;
 	hours = mins / 60;
@@ -494,7 +494,7 @@ HRESULT TSFileSource::UpdateData()
 	swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
 	g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
 
-	milli = rtLatest / 10000;
+	milli = (long)(rtLatest / 10000);
 	secs = milli / 1000;
 	mins = secs / 60;
 	hours = mins / 60;

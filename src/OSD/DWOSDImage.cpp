@@ -143,7 +143,7 @@ HRESULT DWOSDImage::Draw(DWSurface *pSurface, long x, long y, long width, long h
 	else if ((m_rectStretchArea.left >= 0) && (m_rectStretchArea.right >= 0))
 	{
 		double fract = height / (double)srcHeight;
-		long leftoffset  = x + (m_rectStretchArea.left * fract);
+		long leftoffset  = x + (long)(m_rectStretchArea.left * fract);
 		long rightoffset = x + width + (long)((m_rectStretchArea.right - srcWidth) * fract);
 
 		//left

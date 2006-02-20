@@ -185,7 +185,7 @@ LPWSTR DWOSDWindow::GetParameter(long nIndex)
 {
 	CAutoLock parametersLock(&m_parametersLock);
 
-	if ((nIndex < 0) || (nIndex >= m_parameters.size()))
+	if ((nIndex < 0) || (nIndex >= (long)m_parameters.size()))
 		return NULL;
 	return m_parameters.at(nIndex);
 }

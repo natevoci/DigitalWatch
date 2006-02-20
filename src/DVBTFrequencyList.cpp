@@ -156,7 +156,7 @@ LPWSTR DVBTFrequencyList::GetListItem(LPWSTR name, long nIndex)
 {
 	CAutoLock listLock(&m_listLock);
 
-	if (nIndex >= m_list.size())
+	if (nIndex >= (long)m_list.size())
 		return NULL;
 
 	long startsWithLength = strStartsWith(name, m_dataListName);

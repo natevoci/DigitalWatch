@@ -324,7 +324,7 @@ void LogMessage::showf(LPSTR sz,...)
 
     va_end(va);
 
-	if (length >= m_lStrLength)
+	if (length >= (int)m_lStrLength)
 	{
 		LPWSTR newStr = new wchar_t[length + 1];
 		ZeroMemory(newStr, (length+1)*sizeof(wchar_t));

@@ -362,7 +362,7 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 
 		sprintf(sz,"%S",g_pData->settings.dsnetwork.ipaddr);
 		ULONG ulIP = inet_addr(sz);
-		if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons(g_pData->settings.dsnetwork.port)))
+		if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons((unsigned short)g_pData->settings.dsnetwork.port)))
 			return (log << "Failed to set multicast group for Sink filter: " << hr << "\n").Write(hr);
 		piMulticastConfig->Release();
 	}

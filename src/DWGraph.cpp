@@ -703,13 +703,13 @@ HRESULT DWGraph::ApplyColorControls()
 			control.dwSize = sizeof(VMR9ProcAmpControl);
 			hr = piMixerControl->GetProcAmpControl(0, &control);
 
-			if (control.dwFlags & ProcAmpControl9_Brightness != 0)
+			if ((control.dwFlags & ProcAmpControl9_Brightness) != 0)
 				GetProcAmpControlValue(&control.Brightness, piMixerControl, ProcAmpControl9_Brightness, g_pData->values.video.overlay.brightness,    0, 10000,   750);
-			if (control.dwFlags & ProcAmpControl9_Contrast   != 0)
+			if ((control.dwFlags & ProcAmpControl9_Contrast)   != 0)
 				GetProcAmpControlValue(&control.Contrast  , piMixerControl, ProcAmpControl9_Contrast  , g_pData->values.video.overlay.contrast  ,    0, 20000, 10000);
-			if (control.dwFlags & ProcAmpControl9_Hue        != 0)
+			if ((control.dwFlags & ProcAmpControl9_Hue)        != 0)
 				GetProcAmpControlValue(&control.Hue       , piMixerControl, ProcAmpControl9_Hue       , g_pData->values.video.overlay.hue       , -180,   180,     0);
-			if (control.dwFlags & ProcAmpControl9_Saturation != 0)
+			if ((control.dwFlags & ProcAmpControl9_Saturation) != 0)
 				GetProcAmpControlValue(&control.Saturation, piMixerControl, ProcAmpControl9_Saturation, g_pData->values.video.overlay.saturation,    0, 20000, 10000);
 
 			hr = piMixerControl->SetProcAmpControl(0, &control);

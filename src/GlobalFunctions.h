@@ -209,7 +209,7 @@ __inline void strCopy(LPWSTR &dest, long value)
 
 	for ( int i=length-1 ; i>=0 ; i-- )
 	{
-		dest[i] = '0' + (value % 10);
+		dest[i] = (wchar_t)('0' + (value % 10));
 		value /= 10;
 	}
 	if (bNegative)

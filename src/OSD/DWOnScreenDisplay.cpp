@@ -161,7 +161,7 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 		std::vector <DWOSDWindow *>::iterator it_end = m_windowStack.end();
 		long it_count = m_windowStack.size();
 		std::vector <DWOSDWindow *>::iterator it = m_windowStack.end();
-		while (it && (it > m_windowStack.begin()))
+		while ((it != NULL) && (it > m_windowStack.begin()))
 		{
 			it--;
 			if ((*it)->HideWindowsBehindThisOne())

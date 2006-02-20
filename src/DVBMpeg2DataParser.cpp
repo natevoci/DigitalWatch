@@ -674,7 +674,7 @@ HRESULT DVBMpeg2DataParser::ReadSection(DVBSection *pSection)
 #ifdef SECTION_STREAM
 
 	CComPtr <IMpeg2Stream> pStream;
-	if FAILED(hr = m_piMpeg2Data->GetStreamOfSections(pSection->pid, pSection->tableId, NULL, m_hScanningStopEvent[1], &pStream))
+	if FAILED(hr = m_piMpeg2Data->GetStreamOfSections((PID)pSection->pid, (TID)pSection->tableId, NULL, m_hScanningStopEvent[1], &pStream))
 		return (log << "Failed to get stream of sections : " << hr << "\n").Write(hr);
 	(log << "Got IMpeg2Stream\n").Write();
 

@@ -517,7 +517,7 @@ LPWSTR DWOSDList::OnDown()
 {
 	CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
 
-	if (m_nHighlightedItem >= m_itemsToRender.size()-1)
+	if (m_nHighlightedItem >= (long)m_itemsToRender.size()-1)
 		return DWOSDControl::OnDown();
 
 	m_nHighlightedItem++;
@@ -847,7 +847,7 @@ HRESULT DWOSDList::RefreshListItems()
 				}
 			}
 		}
-		if (m_nHighlightedItem >= m_itemsToRender.size())
+		if (m_nHighlightedItem >= (long)m_itemsToRender.size())
 			m_nHighlightedItem = m_itemsToRender.size()-1;
 		UpdateScrolling();
 	}
