@@ -123,14 +123,29 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 
 	switch (message) 
 	{
-/*	case WM_COPYDATA:
+	case WM_COPYDATA:
+		/* This is an example of how you call it from another application
+
+			char command[256];
+			sprintf((char*)&command, "SetChannel(%i)", m_serviceId);
+			COPYDATASTRUCT cds;
+			cds.dwData = 1;
+			cds.lpData = (void *) &command;
+			cds.cbData = strlen((char *) cds.lpData)+1; // include space for null char
+			SendMessage(m_hWndDW, WM_COPYDATA, 0, (LPARAM)&cds);
+
+		*/
 		cds = (COPYDATASTRUCT*) lParam;
 		switch (cds->dwData)
 		{
 		case 1:
-			return m_pTv->ExecuteFunction((char*)cds->lpData);
+			{
+				USES_CONVERSION;
+				g_pTv->ExecuteCommandsQueue(A2W((char*)cds->lpData));
+				return 0;
+			}
 		}
-		break;*/
+		break;
 	case WM_PAINT:
 		//if (m_pTv == NULL)
 			lResult = DefWindowProc(hWnd, message, wParam, lParam);
