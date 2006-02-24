@@ -1,6 +1,7 @@
 /**
  *	BDADVBTSinkFile.cpp
  *	Copyright (C) 2004 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -22,7 +23,6 @@
 
 
 #include "BDADVBTSinkFile.h"
-#include "BDADVBTSink.h"
 #include "Globals.h"
 #include "LogMessage.h"
 
@@ -34,10 +34,9 @@
 // BDADVBTSinkFile
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTSinkFile::BDADVBTSinkFile(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *pCurrentTuner) :
+BDADVBTSinkFile::BDADVBTSinkFile(BDADVBTSink *pBDADVBTSink) :
 	m_pBDADVBTSink(pBDADVBTSink)
 {
-	m_pCurrentTuner = pCurrentTuner;
 
 	m_pDWGraph = NULL;
 	m_piTelexDWDump = NULL;
@@ -50,11 +49,6 @@ BDADVBTSinkFile::BDADVBTSinkFile(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *
 	m_bInitialised = 0;
 	m_bActive = FALSE;
 
-
-	m_pMpeg2DataParser = NULL;
-	m_pMpeg2DataParser = new DVBMpeg2DataParser();
-
-
 	m_rotEntry = 0;
 
 	m_intSinkType = 0;
@@ -66,12 +60,6 @@ BDADVBTSinkFile::BDADVBTSinkFile(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *
 BDADVBTSinkFile::~BDADVBTSinkFile()
 {
 	DestroyAll();
-	if (m_pMpeg2DataParser)
-	{
-		m_pMpeg2DataParser->ReleaseFilter();
-		delete m_pMpeg2DataParser;
-		m_pMpeg2DataParser = NULL;
-	}
 }
 
 void BDADVBTSinkFile::SetLogCallback(LogMessageCallback *callback)
@@ -120,7 +108,7 @@ HRESULT BDADVBTSinkFile::DestroyAll()
 //--- Add & connect the Sink filters ---
 HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 {
-	HRESULT hr;
+	HRESULT hr = E_FAIL;
 
 	if (m_intSinkType& 0x1)
 	{
@@ -286,7 +274,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 	}
 
 	m_bActive = TRUE;
-	return S_OK;
+	return hr;
 }
 
 void BDADVBTSinkFile::DestroyFTSFilters()
@@ -335,28 +323,10 @@ HRESULT BDADVBTSinkFile::RemoveSinkFilters()
 {
 	m_bActive = FALSE;
 
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
-
-	DestroyFilter(m_piVideoSink);
-	DestroyFilter(m_piAudioSink);
-	DestroyFilter(m_piAVMpeg2Demux);
-	DestroyFilter(m_piMPGSink);
-	DestroyFilter(m_piMPGMpeg2Mux);
-	DestroyFilter(m_piMPGMpeg2Demux);
-	DestroyFilter(m_piTSSink);
-	DestroyFilter(m_piTSMpeg2Demux);
-	DestroyFilter(m_piFTSSink);
-
-	DeleteFilter(&m_piTelexDWDump);
-	DeleteFilter(&m_piVideoDWDump);
-	DeleteFilter(&m_piAudioDWDump);
-	DeleteFilter(&m_piMPGDWDump);
-	DeleteFilter(&m_piTSDWDump);
-	DeleteFilter(&m_piFTSDWDump);
-
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
+	DestroyFTSFilters();
+	DestroyTSFilters();
+	DestroyMPGFilters();
+	DestroyAVFilters();
 
 	return S_OK;
 }
@@ -614,33 +584,85 @@ HRESULT BDADVBTSinkFile::UnPauseRecording(DVBTChannels_Service* pService)
 
 BOOL BDADVBTSinkFile::IsRecording(void)
 {
-	if ((m_intSinkType& 0x1) && m_piFTSSink)
-		return m_piFTSDWDump->IsRecording();
-	else if ((m_intSinkType& 0x2) && m_piTSSink)
-		return m_piTSDWDump->IsRecording();
-	else if ((m_intSinkType& 0x4) && m_piMPGSink)
-		return m_piMPGDWDump->IsRecording();
-	else if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
-		return 	m_piVideoDWDump->IsRecording() |
-				m_piTelexDWDump->IsRecording() |
-				m_piAudioDWDump->IsRecording();
+	if ((m_intSinkType & 0x1))
+	{
+		if (m_piFTSSink)
+			return m_piFTSDWDump->IsRecording();
+	}
+	else if ((m_intSinkType & 0x2))
+	{
+		if (m_piTSSink)
+			return m_piTSDWDump->IsRecording();
+	}
+	else if ((m_intSinkType & 0x4))
+	{
+		if (m_piMPGSink)
+			return m_piMPGDWDump->IsRecording();
+	}
+	else if ((m_intSinkType & 0x8))
+	{
+		if (m_piVideoSink || m_piAudioSink || m_piTelexSink)
+			return 	m_piVideoDWDump->IsRecording() |
+					m_piTelexDWDump->IsRecording() |
+					m_piAudioDWDump->IsRecording();
+	}
 
 	return m_bRecording;
 }
 
 BOOL BDADVBTSinkFile::IsPaused(void)
 {
-	if ((m_intSinkType& 0x1) && m_piFTSSink)
-		return m_piFTSDWDump->IsPaused();
-	else if ((m_intSinkType& 0x2) && m_piTSSink)
-		return m_piTSDWDump->IsPaused();
-	else if ((m_intSinkType& 0x4) && m_piMPGSink)
-		return m_piMPGDWDump->IsPaused();
-	else if ((m_intSinkType& 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
-		return 	m_piVideoDWDump->IsPaused() |
-				m_piTelexDWDump->IsPaused() |
-				m_piAudioDWDump->IsPaused();
+	if ((m_intSinkType & 0x1) && m_piFTSSink)
+	{
+		if (m_piFTSSink)
+			return m_piFTSDWDump->IsPaused();
+	}
+	else if ((m_intSinkType & 0x2) && m_piTSSink)
+	{
+		if (m_piTSSink)
+			return m_piTSDWDump->IsPaused();
+	}
+	else if ((m_intSinkType & 0x4) && m_piMPGSink)
+	{
+		if (m_piMPGSink)
+			return m_piMPGDWDump->IsPaused();
+	}
+	else if ((m_intSinkType & 0x8) && (m_piVideoSink || m_piAudioSink || m_piTelexSink))
+	{
+		if (m_piVideoSink || m_piAudioSink || m_piTelexSink)
+			return 	m_piVideoDWDump->IsPaused() |
+					m_piTelexDWDump->IsPaused() |
+					m_piAudioDWDump->IsPaused();
+	}
 
 	return m_bPaused;
 }
 
+HRESULT BDADVBTSinkFile::GetCurFile(LPOLESTR *ppszFileName)
+{
+	if (!ppszFileName)
+		return E_INVALIDARG;
+
+	CComPtr <IFileSinkFilter> piFileSinkFilter;
+
+	if ((m_intSinkType & 0x1))
+	{
+		if (m_piFTSSink)
+			m_piFTSSink->QueryInterface(&piFileSinkFilter);
+	}
+	else if ((m_intSinkType & 0x2) && m_piTSSink)
+	{
+		if (m_piTSSink)
+			m_piTSSink->QueryInterface(&piFileSinkFilter);
+	}
+	else if ((m_intSinkType & 0x4) && m_piMPGSink)
+	{
+		if (m_piMPGSink)
+			m_piMPGSink->QueryInterface(&piFileSinkFilter);
+	}
+
+	if (piFileSinkFilter)
+		return piFileSinkFilter->GetCurFile(ppszFileName, NULL);
+
+	return E_FAIL;
+}

@@ -1,6 +1,7 @@
 /**
  *	BDADVBTSinkDSNet.cpp
  *	Copyright (C) 2004 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -22,7 +23,6 @@
 
 
 #include "BDADVBTSinkDSNet.h"
-#include "BDADVBTSink.h"
 #include "Globals.h"
 #include "LogMessage.h"
 
@@ -38,19 +38,19 @@
 // BDADVBTSinkDSNet
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTSinkDSNet::BDADVBTSinkDSNet(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *pCurrentTuner) :
+BDADVBTSinkDSNet::BDADVBTSinkDSNet(BDADVBTSink *pBDADVBTSink) :
 	m_pBDADVBTSink(pBDADVBTSink)
 {
-	m_pCurrentTuner = pCurrentTuner;
-
 	m_pDWGraph = NULL;
+	m_piTelexDWDump = NULL;
+	m_piVideoDWDump = NULL;
+	m_piAudioDWDump = NULL;
+	m_piMPGDWDump = NULL;
+	m_piTSDWDump = NULL;
+	m_piFTSDWDump = NULL;
 
 	m_bInitialised = 0;
 	m_bActive = FALSE;
-
-
-	m_pMpeg2DataParser = NULL;
-	m_pMpeg2DataParser = new DVBMpeg2DataParser();
 
 	m_rotEntry = 0;
 
@@ -60,12 +60,6 @@ BDADVBTSinkDSNet::BDADVBTSinkDSNet(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner
 BDADVBTSinkDSNet::~BDADVBTSinkDSNet()
 {
 	DestroyAll();
-	if (m_pMpeg2DataParser)
-	{
-		m_pMpeg2DataParser->ReleaseFilter();
-		delete m_pMpeg2DataParser;
-		m_pMpeg2DataParser = NULL;
-	}
 }
 
 void BDADVBTSinkDSNet::SetLogCallback(LogMessageCallback *callback)
@@ -102,40 +96,6 @@ HRESULT BDADVBTSinkDSNet::Initialise(DWGraph *pDWGraph, int intSinkType)
 HRESULT BDADVBTSinkDSNet::DestroyAll()
 {
     HRESULT hr = S_OK;
-	/*
-    CComPtr <IBaseFilter> pFilter;
-    CComPtr <IEnumFilters> pFilterEnum;
-
-    hr = m_piGraphBuilder->EnumFilters(&pFilterEnum);
-	switch (hr)
-	{
-	case S_OK:
-		break;
-	case E_OUTOFMEMORY:
-		return (log << "Insufficient memory to create the enumerator.\n").Write(hr);
-	case E_POINTER:
-		return (log << "Null pointer argument.\n").Write(hr);
-	default:
-		return (log << "Unknown Error enumerating graph: " << hr << "\n").Write(hr);
-	}
-
-    if FAILED(hr = pFilterEnum->Reset())
-		return (log << "Failed to reset graph enumerator: " << hr << "\n").Write(hr);
-
-	while (pFilterEnum->Next(1, &pFilter, 0) == S_OK) // addrefs filter
-	{
-		if FAILED(hr = m_piGraphBuilder->RemoveFilter(pFilter))
-		{
-			FILTER_INFO info;
-			pFilter->QueryFilterInfo(&info);
-			if (info.pGraph)
-				info.pGraph->Release();
-            return (log << "Failed to remove filter: " << info.achName << " : " << hr << "\n").Write(hr);
-		}
-		pFilter.Release();
-	}
-	pFilterEnum.Release();
-	*/
 
 	RemoveSinkFilters();
 
@@ -147,7 +107,7 @@ HRESULT BDADVBTSinkDSNet::DestroyAll()
 
 HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 {
-	HRESULT hr;
+	HRESULT hr = E_FAIL;
 
 	//--- Add & connect the DSNetworking filters ---
 
@@ -286,7 +246,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 										}
 	}
 	m_bActive = TRUE;
-	return S_OK;
+	return hr;
 }
 
 void BDADVBTSinkDSNet::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
@@ -298,19 +258,58 @@ void BDADVBTSinkDSNet::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 	}
 }
 
+void BDADVBTSinkDSNet::DestroyFTSFilters()
+{
+	DestroyFilter(m_piFTSSink);
+	DeleteFilter(&m_piFTSDWDump);
+}
+
+void BDADVBTSinkDSNet::DestroyTSFilters()
+{
+	DeleteFilter(&m_piTSDWDump);
+	DestroyFilter(m_piTSSink);
+	DestroyFilter(m_piTSMpeg2Demux);
+}
+
+void BDADVBTSinkDSNet::DestroyMPGFilters()
+{
+	DeleteFilter(&m_piMPGDWDump);
+	DestroyFilter(m_piMPGSink);
+	DestroyFilter(m_piMPGMpeg2Mux);
+	DestroyFilter(m_piMPGMpeg2Demux);
+}
+
+void BDADVBTSinkDSNet::DestroyAVFilters()
+{
+	DeleteFilter(&m_piVideoDWDump);
+	DestroyFilter(m_piVideoSink);
+	DeleteFilter(&m_piTelexDWDump);
+	DestroyFilter(m_piTelexSink);
+	DeleteFilter(&m_piAudioDWDump);
+	DestroyFilter(m_piAudioSink);
+	DestroyFilter(m_piAVMpeg2Demux);
+}
+
+void BDADVBTSinkDSNet::DeleteFilter(DWDump **pfDWDump)
+{
+	if (pfDWDump)
+		return;
+
+	if (*pfDWDump)
+		delete *pfDWDump;
+
+	*pfDWDump = NULL;
+
+}
+
 HRESULT BDADVBTSinkDSNet::RemoveSinkFilters()
 {
 	m_bActive = FALSE;
 
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
-
-	DestroyFilter(m_piMPGSink);
-	DestroyFilter(m_piMPGMpeg2Mux);
-	DestroyFilter(m_piMPGMpeg2Demux);
-	DestroyFilter(m_piTSSink);
-	DestroyFilter(m_piTSMpeg2Demux);
-	DestroyFilter(m_piFTSSink);
+	DestroyFTSFilters();
+	DestroyTSFilters();
+	DestroyMPGFilters();
+	DestroyAVFilters();
 
 	return S_OK;
 }

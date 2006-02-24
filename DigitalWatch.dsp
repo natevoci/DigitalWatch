@@ -70,8 +70,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I ".\src" /I ".\src\OSD" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX"stdafx.h" /FD /GZ /c
-# SUBTRACT CPP /Fr
+# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I ".\src" /I ".\src\OSD" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /Fr /YX"stdafx.h" /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0xc09 /d "_DEBUG"
@@ -269,6 +268,26 @@ SOURCE=.\src\TSFileSource\TSFileStreamList.cpp
 # Begin Source File
 
 SOURCE=.\src\TSFileSource\TSFileStreamList.h
+# End Source File
+# End Group
+# Begin Group "TimeShifting"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\BDADVBTimeShift.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\BDADVBTimeShift.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\BDADVBTimeShiftTuner.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\BDADVBTimeShiftTuner.h
 # End Source File
 # End Group
 # Begin Source File

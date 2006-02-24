@@ -63,6 +63,7 @@ public:
 	*/
 
 	/*
+	BOOL IsRecording();
 	BOOL SetRecordingFullTS();
 	BOOL SetRecordingTSMux(long PIDs[]);
 	BOOL StartRecording(LPWSTR filename);

@@ -1,6 +1,7 @@
 /**
- *	BDADVBTSource.h
+ *	BDADVBTimeShift.h
  *	Copyright (C) 2004 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,11 +21,11 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BDADVBTSOURCE_H
-#define BDADVBTSOURCE_H
+#ifndef BDADVBTIMESHIFT_H
+#define BDADVBTIMESHIFT_H
 
 #include "DWSource.h"
-#include "BDADVBTSourceTuner.h"
+#include "BDADVBTimeShiftTuner.h"
 #include "BDADVBTSink.h"
 #include "DVBTChannels.h"
 #include "BDACardCollection.h"
@@ -33,20 +34,24 @@
 #include "DVBTFrequencyList.h"
 #include "DWThread.h"
 #include <vector>
+#include "TSFileSource/TSFileSource.h"
 
-class BDADVBTSource : public DWSource, public DWThread
+class TSFileSource;
+class BDADVBTimeShift : public DWSource, public DWThread
 {
 
 typedef struct TunerInfo
 {
-	BDADVBTSourceTuner *tuners;
+	BDADVBTimeShiftTuner *tuners;
 	BDADVBTSink *sinks;
+	TSFileSource *fileSources;
+	DWGraph *graphs;
 
 } TUNERINFO;
 
 public:
-	BDADVBTSource();
-	virtual ~BDADVBTSource();
+	BDADVBTimeShift();
+	virtual ~BDADVBTimeShift();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
@@ -86,6 +91,8 @@ protected:
 	HRESULT UnloadTuner();
 	HRESULT LoadSink();
 	HRESULT UnloadSink();
+	HRESULT LoadFileSource();
+	HRESULT UnloadFileSource();
 
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService);
 
@@ -111,11 +118,15 @@ protected:
 private:
 	const LPWSTR m_strSourceType;
 
-	BDADVBTSourceTuner *m_pCurrentTuner;
-	std::vector<BDADVBTSourceTuner *> m_tuners;
+	std::vector<BDADVBTimeShiftTuner*> m_tuners;
+
+	BDADVBTimeShiftTuner *m_pCurrentTuner;
 	CCritSec m_tunersLock;
 
 	BDADVBTSink *m_pCurrentSink;
+	TSFileSource *m_pCurrentFileSource;
+	DWGraph *m_pCurrentDWGraph;
+	BOOL m_bFileSourceActive;
 
 	//Recorder
 	DVBTChannels channels;
@@ -125,6 +136,7 @@ private:
 	//NaN
 
 	DWGraph *m_pDWGraph;
+
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;

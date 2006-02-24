@@ -1,6 +1,7 @@
 /**
  *	BDADVBTSink.cpp
  *	Copyright (C) 2004 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -22,7 +23,6 @@
 
 
 #include "BDADVBTSink.h"
-#include "BDADVBTSource.h"
 #include "BDADVBTSinkTShift.h"
 #include "BDADVBTSinkDSNet.h"
 #include "BDADVBTSinkFile.h"
@@ -48,10 +48,8 @@
 // BDADVBTSink
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTSink::BDADVBTSink(BDADVBTSource *pBDADVBTSource, BDADVBTSourceTuner *pCurrentTuner) :
-	m_pBDADVBTSource(pBDADVBTSource)
+BDADVBTSink::BDADVBTSink()
 {
-	m_pCurrentTuner = pCurrentTuner;
 
 	m_pDWGraph = NULL;
 
@@ -61,10 +59,6 @@ BDADVBTSink::BDADVBTSink(BDADVBTSource *pBDADVBTSource, BDADVBTSourceTuner *pCur
 
 	m_bInitialised = 0;
 	m_bActive = FALSE;
-
-
-	m_pMpeg2DataParser = NULL;
-	m_pMpeg2DataParser = new DVBMpeg2DataParser();
 
 	m_rotEntry = 0;
 
@@ -76,12 +70,6 @@ BDADVBTSink::BDADVBTSink(BDADVBTSource *pBDADVBTSource, BDADVBTSourceTuner *pCur
 BDADVBTSink::~BDADVBTSink()
 {
 	DestroyAll();
-	if (m_pMpeg2DataParser)
-	{
-		m_pMpeg2DataParser->ReleaseFilter();
-		delete m_pMpeg2DataParser;
-		m_pMpeg2DataParser = NULL;
-	}
 }
 
 void BDADVBTSink::SetLogCallback(LogMessageCallback *callback)
@@ -110,28 +98,28 @@ HRESULT BDADVBTSink::Initialise(DWGraph *pDWGraph)
 	if FAILED(hr = m_pDWGraph->QueryMediaControl(&m_piMediaControl))
 		return (log << "Failed to get media control: " << hr << "\n").Write(hr);
 
-	m_intTimeShiftType = g_pData->settings.timeshift.format;
+	m_intTimeShiftType = g_pData->values.timeshift.format;
 	if(m_intTimeShiftType)
 	{
-		m_pCurrentTShiftSink = new BDADVBTSinkTShift(this, m_pCurrentTuner);
+		m_pCurrentTShiftSink = new BDADVBTSinkTShift(this);
 		m_pCurrentTShiftSink->SetLogCallback(m_pLogCallback);
 		if FAILED(hr = m_pCurrentTShiftSink->Initialise(m_pDWGraph, m_intTimeShiftType))
 			return (log << "Failed to Initalise the TimeShift Sink Filters: " << hr << "\n").Write(hr);
 	}
 
-	m_intFileSinkType = g_pData->settings.capture.format;
+	m_intFileSinkType = g_pData->values.capture.format;
 	if(m_intFileSinkType)
 	{
-		m_pCurrentFileSink = new BDADVBTSinkFile(this, m_pCurrentTuner);
+		m_pCurrentFileSink = new BDADVBTSinkFile(this);
 		m_pCurrentFileSink->SetLogCallback(m_pLogCallback);
 		if FAILED(hr = m_pCurrentFileSink->Initialise(m_pDWGraph, m_intFileSinkType))
 			return (log << "Failed to Initalise the File Sink Filters: " << hr << "\n").Write(hr);
 	}
 
-	m_intDSNetworkType = g_pData->settings.dsnetwork.format;
+	m_intDSNetworkType = g_pData->values.dsnetwork.format;
 	if(m_intDSNetworkType)
 	{
-		m_pCurrentDSNetSink = new BDADVBTSinkDSNet(this, m_pCurrentTuner);
+		m_pCurrentDSNetSink = new BDADVBTSinkDSNet(this);
 		m_pCurrentDSNetSink->SetLogCallback(m_pLogCallback);
 		if FAILED(hr = m_pCurrentDSNetSink->Initialise(m_pDWGraph, m_intDSNetworkType))
 			return (log << "Failed to Initalise the DSNetwork Sink Filters: " << hr << "\n").Write(hr);
@@ -172,7 +160,7 @@ HRESULT BDADVBTSink::DestroyAll()
 
 HRESULT BDADVBTSink::AddSinkFilters(DVBTChannels_Service* pService)
 {
-	HRESULT hr;
+	HRESULT hr = E_FAIL;
 
 
 	//--- Add & connect the Sink filters ---
@@ -198,7 +186,7 @@ HRESULT BDADVBTSink::AddSinkFilters(DVBTChannels_Service* pService)
 
 
 	m_bActive = TRUE;
-	return S_OK;
+	return hr;
 }
 
 void BDADVBTSink::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
@@ -272,7 +260,7 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 		return E_INVALIDARG;
 	}
 
-	(log << "Adding Sink Demux File Name\n").Write();
+	(log << "Adding The Sink File Name\n").Write();
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
@@ -321,23 +309,23 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 		}
 
 		if (intSinkType == 1)
-			wsprintfW(fileName, L"%S%S%S.full.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.full.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 11)
-			wsprintfW(fileName, L"%S%S%S.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 111)
-			wsprintfW(fileName, L"%S%S%S.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 2) 
-			wsprintfW(fileName, L"%S%S%S.full.ts", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.full.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 22) 
-			wsprintfW(fileName, L"%S%S%S.ts", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 3) 
-			wsprintfW(fileName, L"%S%S%S.mpg", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.mpg", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 4) 
-			wsprintfW(fileName, L"%S%S%S.mv2", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.mv2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 5) 
-			wsprintfW(fileName, L"%S%S%S.mp2", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.mp2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 6)
-			wsprintfW(fileName, L"%S%S%S.txt", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(fileName, L"%S%S %S.txt", wPathName, wTimeStamp, wServiceName);
 
 		//
 		// Set the Sink Filter File Name 
@@ -350,6 +338,9 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 	}
 	else
 	{
+		(log << "Setting The DSNetwork Configeration\n").Write();
+		LogMessageIndent indent(&log);
+
 		//Setup dsnet sender
 		IMulticastConfig *piMulticastConfig = NULL;
 		if FAILED(hr = pFilter->QueryInterface(IID_IMulticastConfig, reinterpret_cast<void**>(&piMulticastConfig)))
@@ -365,8 +356,13 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 		if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons((unsigned short)g_pData->settings.dsnetwork.port)))
 			return (log << "Failed to set multicast group for Sink filter: " << hr << "\n").Write(hr);
 		piMulticastConfig->Release();
-	}
+
 		indent.Release();
+		(log << "Finished Setting The DSNetwork Configeration\n").Write();
+	}
+
+	indent.Release();
+	(log << "Finished Adding The Sink File Name\n").Write();
 
 	return S_OK;
 } 
@@ -478,7 +474,19 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseF
 		if (audioStreamsRendered == 0)
 			hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
 	}
+/*
+	//Set reference clock
+	CComQIPtr<IReferenceClock> piRefClock(pFilter);
+	if (!piRefClock)
+		return (log << "Failed to get reference clock interface on Sink demux filter: " << hr << "\n").Write(hr);
 
+	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
+	if (!piMediaFilter)
+		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
+		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
+*/
 	if (m_piIMpeg2Demux)
 		m_piIMpeg2Demux.Release();
 
@@ -522,8 +530,6 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 					return hr;
 				}
 			}
-//			else
-//(log << "Demux pin already exists " << pPinName << " pin : " << hr << "\n").Write();
 		}
 		else
 		{
@@ -551,8 +557,6 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
-//(log << "Mapping demux " << pPinName << " pin : " << hr << "\n").Write();
-
 			renderedStreams++;
 		}
 
@@ -597,9 +601,6 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 					}
 					indent.Release();
 				}
-//				else
-//(log << "Demux pin already exists " << pPinName << " pin : " << hr << "\n").Write();
-
 			}
 			else
 			{
@@ -628,7 +629,6 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
-//(log << "Mapping demux " << pPinName << " pin : " << hr << "\n").Write();
 
 			if (renderedStreams != 0)
 				continue;
@@ -698,8 +698,8 @@ HRESULT BDADVBTSink::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *strea
 	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
 	mediaType.pbFormat = g_MPEG1AudioFormat;
 
-/*
-	mediaType.majortype = MEDIATYPE_Audio;
+
+/*	mediaType.majortype = MEDIATYPE_Audio;
 	mediaType.subtype = MEDIASUBTYPE_DOLBY_AC3;
 	mediaType.cbFormat = sizeof(MPEG1AudioFormat);//sizeof(AC3AudioFormat); //
 	mediaType.pbFormat = MPEG1AudioFormat;//AC3AudioFormat; //
@@ -805,18 +805,6 @@ HRESULT BDADVBTSink::ClearDemuxPins(IPin *pIPin)
 			muxStreamMap->Release();
 		}
 	}
-/*
-	CComPtr <IPin> pOPin;
-	if SUCCEEDED(pIPin->ConnectedTo(&pOPin))
-	{
-		pOPin->BeginFlush();
-		pOPin->EndFlush();
-		pOPin->EndOfStream();
-		pOPin->NewSegment(0,0,1);
-	}
-
-*/
-
 	return S_OK;
 }
 
@@ -895,18 +883,26 @@ HRESULT BDADVBTSink::PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<
 	return hr;
 }
 
-
-HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService)
+HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename)
 {
 	if (!m_pCurrentFileSink)
 	{
-		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Recording", 5);
+
+//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+//		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Warnings", 5);
 
 		return E_FAIL;
 	}
 
 	HRESULT hr = S_OK;
+/*
+	if (wcslen(g_pData->settings.capture.fileName))
+		g_pOSD->Data()->ReplaceTokens(g_pData->settings.capture.fileName, pFilename);
+	else
+		g_pOSD->Data()->ReplaceTokens(L"$(CurrentService)", pFilename);
+*/			
 
 	if(m_intFileSinkType)
 		return m_pCurrentFileSink->StartRecording(pService);
@@ -918,8 +914,10 @@ HRESULT BDADVBTSink::StopRecording(void)
 {
 	if (!m_pCurrentFileSink)
 	{
-		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Recording", 5);
+//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+//		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Warnings", 5);
 
 		return E_FAIL;
 	}
@@ -936,8 +934,10 @@ HRESULT BDADVBTSink::PauseRecording(void)
 {
 	if (!m_pCurrentFileSink)
 	{
-		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Recording", 5);
+//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+//		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Warnings", 5);
 
 		return E_FAIL;
 	}
@@ -954,8 +954,10 @@ HRESULT BDADVBTSink::UnPauseRecording(DVBTChannels_Service* pService)
 {
 	if (!m_pCurrentFileSink)
 	{
-		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Recording", 5);
+//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
+//		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
+		g_pTv->ShowOSDItem(L"Warnings", 5);
 
 		return E_FAIL;
 	}
@@ -983,3 +985,19 @@ BOOL BDADVBTSink::IsPaused(void)
 
 	return m_pCurrentFileSink->IsPaused();
 }
+
+HRESULT BDADVBTSink::GetCurFile(LPOLESTR *ppszFileName)
+{
+	if (!ppszFileName)
+		return E_INVALIDARG;
+
+	if(m_intTimeShiftType && m_pCurrentTShiftSink)
+		return m_pCurrentTShiftSink->GetCurFile(ppszFileName);
+
+	if((m_intFileSinkType & 0x07) && m_pCurrentFileSink)
+		return m_pCurrentFileSink->GetCurFile(ppszFileName);
+
+	return FALSE;
+
+}
+

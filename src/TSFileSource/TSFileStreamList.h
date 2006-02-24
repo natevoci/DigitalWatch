@@ -1,10 +1,7 @@
-//Here's the places in the code you need to look to add recording.
-//In BDADVBTSourceTuner::AddSourceFilters add code to insert the extra demux and dump filter.
-//Implement recording methods on BDADVBTSourceTuner. A list of the one's i thought would be needed are commented out in BDADVBTSourceTuner.h.
-//Add code to the BDADVBTSource::ExecuteCommand method to handle the key functions defined in bin/BDA_DVB-T/keys.xml and call the methods you implemented on m_pCurrentTuner.
 /**
  *	TSFileStreamList.h
  *	Copyright (C) 2005 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -43,6 +40,7 @@ public:
 	virtual ~TSFileStreamListItem();
 
 	LPWSTR index;
+	LPWSTR flags;
 	LPWSTR media;
 	LPWSTR lcid;
 	LPWSTR group;
@@ -65,6 +63,9 @@ public:
 	virtual LPWSTR GetListName();
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
 	virtual long GetListSize();
+
+	virtual LPWSTR GetServiceName();
+
 private:
 	std::vector<TSFileStreamListItem *> m_list;
 	CCritSec m_listLock;

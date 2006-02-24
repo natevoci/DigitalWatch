@@ -21,8 +21,8 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BDADVBTSinkTShift_H
-#define BDADVBTSinkTShift_H
+#ifndef BDADVBTSINKSHIFT_H
+#define BDADVBTSINKSHIFT_H
 
 #include "BDADVBTSink.h"
 #include "StdAfx.h"
@@ -32,16 +32,21 @@
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
 #include "DVBMpeg2DataParser.h"
+#include "DWDump.h"
 
 // {5cdd5c68-80dc-43e1-9e44-c849ca8026e7}
 EXTERN_GUID(CLSID_TSFileSink,
 0x5cdd5c68, 0x80dc, 0x43e1, 0x9e, 0x44, 0xc8, 0x49, 0xca, 0x80, 0x26, 0xe7);
 
+//{B07560B4-94BD-49F9-8F84-A738A58809B5}
+//EXTERN_GUID(CLSID_TSFileSink,
+//0xB07560B4, 0x94BD, 0x49F9, 0x8F, 0x84, 0xA7, 0x38, 0xA5, 0x88, 0x09, 0xB5);
+
 class BDADVBTSink;
 class BDADVBTSinkTShift : public LogMessageCaller
 {
 public:
-	BDADVBTSinkTShift(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *pCurrentTuner);
+	BDADVBTSinkTShift(BDADVBTSink *pBDADVBTSink);
 	virtual ~BDADVBTSinkTShift();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
@@ -50,7 +55,6 @@ public:
 	HRESULT DestroyAll();
 
 	HRESULT AddSinkFilters(DVBTChannels_Service* pService);
-	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 	HRESULT RemoveSinkFilters();
 
 	HRESULT SetTransportStreamPin(IPin* piPin);
@@ -63,12 +67,19 @@ public:
 	BOOL PauseRecording(BOOL bPause);
 	BOOL StopRecording();
 	BOOL IsRecording();
+	HRESULT GetCurFile(LPOLESTR *ppszFileName);
 
 	BOOL SupportsRecording() { return FALSE; }
 
 private:
+	void DestroyFTSFilters();
+	void DestroyTSFilters();
+	void DestroyMPGFilters();
+	void DestroyAVFilters();
+	void DeleteFilter(DWDump **pfDWDump);
+	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
+
 	BDADVBTSink *m_pBDADVBTSink;
-	BDADVBTSourceTuner *m_pCurrentTuner;
 	DWGraph *m_pDWGraph;
 
 	BOOL m_bInitialised;
@@ -83,19 +94,23 @@ private:
 	CComPtr <IBaseFilter> m_piInfinitePinTee;
 
 	int m_intSinkType;
+
+	CComPtr <IBaseFilter> m_piTelexSink;
+	DWDump *m_piTelexDWDump;
+	CComPtr <IBaseFilter> m_piVideoSink;
+	DWDump *m_piVideoDWDump;
+	CComPtr <IBaseFilter> m_piAudioSink;
+	DWDump *m_piAudioDWDump;
+	CComPtr <IBaseFilter> m_piAVMpeg2Demux;
 	CComPtr <IBaseFilter> m_piMPGSink;
+	DWDump *m_piMPGDWDump;
 	CComPtr <IBaseFilter> m_piMPGMpeg2Mux;
 	CComPtr <IBaseFilter> m_piMPGMpeg2Demux;
 	CComPtr <IBaseFilter> m_piTSSink;
+	DWDump *m_piTSDWDump;
 	CComPtr <IBaseFilter> m_piTSMpeg2Demux;
 	CComPtr <IBaseFilter> m_piFTSSink;
-
-
-	/*
-	CComPtr <IGuideData> m_piGuideData;
-	DWGuideDataEvent* m_poGuideDataEvent;
-	*/
-	DVBMpeg2DataParser *m_pMpeg2DataParser;
+	DWDump *m_piFTSDWDump;
 
 	DWORD m_rotEntry;
 

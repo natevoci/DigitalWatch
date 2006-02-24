@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\Media Type\Extensions\.ts]
+"Source Filter"="{4F8BF30C-3BEB-43A3-8BF2-10096FD28CF2}"
+[HKEY_CLASSES_ROOT\Media Type\Extensions\.tp]
+"Source Filter"="{4F8BF30C-3BEB-43A3-8BF2-10096FD28CF2}"
+[HKEY_CLASSES_ROOT\Media Type\Extensions\.tsbuffer]
+"Source Filter"="{4F8BF30C-3BEB-43A3-8BF2-10096FD28CF2}"

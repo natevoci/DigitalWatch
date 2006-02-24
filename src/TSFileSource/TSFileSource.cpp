@@ -58,10 +58,31 @@ LPWSTR TSFileSource::GetSourceType()
 	return m_strSourceType;
 }
 
+DWGraph *TSFileSource::GetFilterGraph(void)
+{
+//	if(m_pCurrentDWGraph && m_bFileSourceActive)
+//		*ppDWGraph = m_pCurrentDWGraph;
+//	else
+		return m_pDWGraph;
+}
+
+
 HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 {
 	(log << "Initialising TSFileSource Source\n").Write();
 	LogMessageIndent indent(&log);
+
+	for (int i = 0; i < g_pOSD->Data()->GetListCount(streamList.GetListName()); i++)
+	{
+		if (g_pOSD->Data()->GetListFromListName(streamList.GetListName()) != &streamList)
+		{
+			(log << "Streams List is not the same, Rotating List\n").Write();
+			g_pOSD->Data()->RotateList(g_pOSD->Data()->GetListFromListName(streamList.GetListName()));
+			continue;
+		}
+		(log << "Streams List found to be the same\n").Write();
+		break;
+	};
 
 	HRESULT hr;
 
@@ -73,10 +94,6 @@ HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 	swprintf((LPWSTR)&file, L"%sTSFileSource\\Keys.xml", g_pData->application.appPath);
 	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
 		return hr;
-
-//	swprintf((LPWSTR)&file, L"%sTSFileSource\\StreamList.xml", g_pData->application.appPath);
-//	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
-//		return hr;
 
 	// Start the background thread for updating statistics
 	if FAILED(hr = StartThread())
@@ -106,8 +123,8 @@ HRESULT TSFileSource::Destroy()
 		if FAILED(hr = m_pDWGraph->Stop())
 			(log << "Failed to stop DWGraph\n").Write();
 
-		if FAILED(hr = m_pDWGraph->Cleanup())
-			(log << "Failed to cleanup DWGraph\n").Write();
+//		if FAILED(hr = m_pDWGraph->Cleanup())
+//			(log << "Failed to cleanup DWGraph\n").Write();
 
 		if FAILED(hr = UnloadFilters())
 			(log << "Failed to unload filters\n").Write();
@@ -239,6 +256,11 @@ HRESULT TSFileSource::Load(LPWSTR pCmdLine)
 	return LoadFile(pCmdLine);
 }
 
+HRESULT TSFileSource::ReLoad(LPWSTR pCmdLine)
+{
+	return ReLoadFile(pCmdLine);
+}
+
 void TSFileSource::ThreadProc()
 {
 	while (!ThreadIsStopping())
@@ -342,20 +364,56 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename)
 
 	UpdateData();
 	g_pTv->ShowOSDItem(L"Position", 10);
-
+/*
 	// If it's a .tsbuffer file then seek to the end
 	long length = wcslen(pFilename);
 	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0))
 	{
 		SeekTo(100);
 	}
+*/
 
 	return S_OK;
 }
 
+HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
+{
+	(log << "Reloading the FileSource Filter with fileName : (" << pFilename << ")\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr = E_FAIL;
+
+	if (m_piTSFileSource)
+	{
+//		Sleep(2000);
+		// Set Filename
+		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_piTSFileSource);
+		if (!piFileSourceFilter)
+			return (log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write(hr);
+
+		if FAILED(hr = piFileSourceFilter->Load(pFilename, NULL))
+			return (log << "Failed to load filename: " << hr << "\n").Write(hr);
+
+//		Sleep(2000);
+
+		indent.Release();
+		(log << "Finished Reloading File\n").Write();
+
+		return hr;
+	}
+	return hr;
+}
+
+
 HRESULT TSFileSource::UnloadFilters()
 {
 	HRESULT hr;
+
+	DestroyFilter(m_piTSFileSource);
+	DestroyFilter(m_piBDAMpeg2Demux);
+	if (m_piMpeg2Demux)
+		m_piMpeg2Demux.Release();
+
 
 	if FAILED(hr = m_pDWGraph->Cleanup())
 		return (log << "Failed to cleanup DWGraph\n").Write(hr);
@@ -365,6 +423,15 @@ HRESULT TSFileSource::UnloadFilters()
 	m_piMpeg2Demux.Release();
 
 	return S_OK;
+}
+
+void TSFileSource::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
+{
+	if (pFilter)
+	{
+		m_piGraphBuilder->RemoveFilter(pFilter);
+		pFilter.Release();
+	}
 }
 
 HRESULT TSFileSource::PlayPause()
@@ -378,6 +445,9 @@ HRESULT TSFileSource::PlayPause()
 	{
 		if FAILED(hr = m_pDWGraph->Start())
 			return (log << "Failed to Unpause Graph.\n").Write(hr);
+
+		g_pOSD->Data()->SetItem(L"warnings", L"Playing");
+		g_pTv->ShowOSDItem(L"Warnings", 5);
 	}
 	else
 	{
@@ -385,11 +455,17 @@ HRESULT TSFileSource::PlayPause()
 		{
 			if FAILED(hr = m_pDWGraph->Pause(FALSE))
 				return (log << "Failed to Unpause Graph.\n").Write(hr);
+
+			g_pOSD->Data()->SetItem(L"warnings", L"Playing");
+			g_pTv->ShowOSDItem(L"Warnings", 5);
 		}
 		else
 		{
 			if FAILED(hr = m_pDWGraph->Pause(TRUE))
 				return (log << "Failed to Pause Graph.\n").Write(hr);
+
+			g_pOSD->Data()->SetItem(L"warnings", L"Paused");
+			g_pTv->ShowOSDItem(L"Warnings", 10000);
 		}
 	}
 	return S_OK;
@@ -510,6 +586,14 @@ HRESULT TSFileSource::UpdateData()
 	if (!streamList.GetListSize())
 		if FAILED(hr = streamList.LoadStreamList((LPWSTR)&file))
 			return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);
+		else
+		{
+			if (streamList.GetServiceName())
+			{
+				g_pOSD->Data()->SetItem(L"CurrentService", streamList.GetServiceName() + 2);
+				g_pTv->ShowOSDItem(L"Channel", 5);
+			}
+		}
 
 	return S_OK;
 }
@@ -537,5 +621,10 @@ HRESULT TSFileSource::GetStreamList(void)
 		return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);
 
 	return hr;
+}
+
+BOOL TSFileSource::IsRecording()
+{
+		return FALSE;
 }
 

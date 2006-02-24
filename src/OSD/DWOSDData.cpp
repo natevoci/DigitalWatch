@@ -105,6 +105,61 @@ void DWOSDData::AddList(IDWOSDDataList* list)
 	}
 }
 
+void DWOSDData::RotateList(IDWOSDDataList* list)
+{
+	CAutoLock lock(&m_listsLock);
+
+	//look for existing list of same name
+	std::vector<DWOSDDataList *>::iterator it = m_lists.begin();
+	for ( ; it < m_lists.end() ; it++ )
+	{
+		if (list == (*it)->list)
+		{
+			DWOSDDataList *newList = *it;
+			m_lists.erase(it);
+			m_lists.push_back(newList);
+			return;
+		}
+	}
+}
+
+void DWOSDData::ClearAllListNames(LPWSTR pName)
+{
+	CAutoLock lock(&m_listsLock);
+
+	//look for existing list of same name
+	std::vector<DWOSDDataList *>::iterator it = m_lists.begin();
+	for ( ; it < m_lists.end() ; it++ )
+	{
+		LPWSTR pListName = (*it)->name;
+		if (_wcsnicmp(pListName, pName, wcslen(pName)) == 0)
+		{
+			m_lists.erase(it);
+			it = m_lists.begin();
+		}
+	}
+	return;
+}
+
+int DWOSDData::GetListCount(LPWSTR pName)
+{
+	if(!pName || !m_lists.end())
+		return 0;
+
+	int count = 0;
+	//look for existing list of same name
+	std::vector<DWOSDDataList *>::iterator it = m_lists.begin();
+	for ( ; it < m_lists.end() ; it++ )
+	{
+		LPWSTR pListName = (*it)->name;
+		if (_wcsicmp(pListName, pName) == 0)
+		{
+			count++;
+		}
+	}
+	return count;
+}
+
 IDWOSDDataList* DWOSDData::GetListFromListName(LPWSTR pName)
 {
 	CAutoLock lock(&m_listsLock);

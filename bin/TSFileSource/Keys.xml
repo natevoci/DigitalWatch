@@ -1,10 +1,13 @@
-<!-- DigitalWatch BDA Source Keys -->
+<!-- DigitalWatch TSFileSource Keys -->
 
-  <Key code= 13>				GetStreamList() ShowMenu("StreamList")</>
+  <Key code= 13>				ShowMenu("NetworkList")</>				
 
   <!-- F2 and Preview button on VP remote -->
   <Key code=113>				ExitMenu(-1) ShowMenu("TVMenu")</>
-  <Key code='K'>				ExitMenu(-1) ShowMenu("TVMenu")</>
+  <Key code=114>				ShowMenu("NetworkList")</>
+  <Key code=115>				GetStreamList() ShowMenu("StreamList")</>
+  <Key code='U'>				GetStreamList() ShowMenu("StreamList")</>
+ <Key code='K'>				ExitMenu(-1) ShowMenu("TVMenu")</>
 
   <!-- keyboard numbers -->
   <Key code='0'>				SeekTo(100)</>
@@ -75,7 +78,7 @@
   <!-- left double click -->
 
   <!-- Right click -->
-  <Mouse code=3>				<!--ExitMenu(-1) GetStreamList() ShowMenu("StreamList")</>-->
+  <!--Mouse code=3-->	
 
   <!-- scroll up -->
   <Mouse code=5>				Seek(5)</>

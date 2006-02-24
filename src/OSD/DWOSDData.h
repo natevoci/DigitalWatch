@@ -57,6 +57,10 @@ public:
 	LPWSTR GetItem(LPWSTR name);
 
 	void AddList(IDWOSDDataList* list);
+	void RotateList(IDWOSDDataList* list);
+	void ClearAllListNames(LPWSTR pName);
+
+	int GetListCount(LPWSTR pName);
 	IDWOSDDataList* GetListFromListName(LPWSTR pName);
 	IDWOSDDataList* GetListFromItemName(LPWSTR pName);
 

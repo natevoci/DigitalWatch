@@ -1,6 +1,7 @@
 /**
  *	TSFileStreamList.cpp
  *	Copyright (C) 2005 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -31,6 +32,7 @@ TSFileStreamListItem::TSFileStreamListItem()
 {
 	index = NULL;
 	media = NULL;
+	flags = NULL;
 	lcid = NULL;
 	group = NULL;
 	name = NULL;
@@ -43,6 +45,8 @@ TSFileStreamListItem::~TSFileStreamListItem()
 		delete[] index;
 	if (media)
 		delete[] media;
+	if (flags)
+		delete[] flags;
 	if (lcid)
 		delete[] lcid;
 	if (group)
@@ -88,6 +92,8 @@ HRESULT TSFileStreamList::Initialise(DWGraph* pFilterGraph)
 	(log << "Initialising the Stream List \n").Write();
 
 	m_pDWGraph = pFilterGraph;
+
+	(log << "Finished Initialising the Stream List \n").Write();
 	
 	return S_OK;
 
@@ -120,7 +126,7 @@ HRESULT TSFileStreamList::LoadStreamList(LPWSTR filename)
 	if (SUCCEEDED(hr))
 	{
 
-		ULONG count;
+		ULONG count = 0;
 		pIAMStreamSelect->Count(&count);
 		(log << "Number of selections found : " << (int)count << "\n").Write();
 
@@ -149,6 +155,7 @@ HRESULT TSFileStreamList::LoadStreamList(LPWSTR filename)
 						(log << "Name of Stream found : " << pStreamName << "\n").Write();
 						strCopy(item->index, (long)i);
 						strCopy(item->media, L"MPEG2");
+						strCopy(item->flags, (long)flags);
 						strCopy(item->lcid, (long)lcid);
 						strCopy(item->group, (long)group);
 						strCopy(item->name, (LPWSTR)pStreamName);
@@ -190,6 +197,7 @@ HRESULT TSFileStreamList::LoadStreamList(LPWSTR filename)
 					XMLElement *pStreamElement = new XMLElement(L"Stream");
 					pStreamElement->Attributes.Add(new XMLAttribute(L"Index", (pStreams->index ? (LPWSTR)pStreams->index : L"")));
 					pStreamElement->Attributes.Add(new XMLAttribute(L"Media", (pStreams->media ? (LPWSTR)pStreams->media : L"")));
+					pStreamElement->Attributes.Add(new XMLAttribute(L"Flag", (pStreams->flags ? (LPWSTR)pStreams->flags : L"")));
 					pStreamElement->Attributes.Add(new XMLAttribute(L"Lcid", (pStreams->lcid ? (LPWSTR)pStreams->lcid : L"")));
 					pStreamElement->Attributes.Add(new XMLAttribute(L"Group", (pStreams->group ? (LPWSTR)pStreams->group : L"")));
 					pStreamElement->Attributes.Add(new XMLAttribute(L"Name", (pStreams->name ? (LPWSTR)pStreams->name : L"")));
@@ -235,6 +243,8 @@ LPWSTR TSFileStreamList::GetListItem(LPWSTR name, long nIndex)
 			return item->index;
 		if (_wcsicmp(name, L".media") == 0)
 			return item->media;
+		else if (_wcsicmp(name, L".flags") == 0)
+			return item->flags;
 		else if (_wcsicmp(name, L".lcid") == 0)
 			return item->lcid;
 		else if (_wcsicmp(name, L".group") == 0)
@@ -252,5 +262,19 @@ long TSFileStreamList::GetListSize()
 	CAutoLock listLock(&m_listLock);
 
 	return m_list.size();
+}
+
+LPWSTR TSFileStreamList::GetServiceName()
+{
+	if (!m_list.size())
+		return NULL;
+
+	for (int index = 0; index < m_list.size(); index++)
+	{
+		if (!_wcsnicmp(m_list[index]->name, L"->", 2))
+			return m_list[index]->name;
+	}
+
+	return NULL;
 }
 

@@ -1,6 +1,7 @@
 /**
  *	BDADVBTSinkTShift.cpp
  *	Copyright (C) 2004 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -22,7 +23,6 @@
 
 
 #include "BDADVBTSinkTShift.h"
-#include "BDADVBTSink.h"
 #include "Globals.h"
 #include "LogMessage.h"
 
@@ -36,19 +36,19 @@
 // BDADVBTSinkTShift
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTSinkTShift::BDADVBTSinkTShift(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *pCurrentTuner) :
+BDADVBTSinkTShift::BDADVBTSinkTShift(BDADVBTSink *pBDADVBTSink) :
 	m_pBDADVBTSink(pBDADVBTSink)
 {
-	m_pCurrentTuner = pCurrentTuner;
-
 	m_pDWGraph = NULL;
+	m_piTelexDWDump = NULL;
+	m_piVideoDWDump = NULL;
+	m_piAudioDWDump = NULL;
+	m_piMPGDWDump = NULL;
+	m_piTSDWDump = NULL;
+	m_piFTSDWDump = NULL;
 
 	m_bInitialised = 0;
 	m_bActive = FALSE;
-
-
-	m_pMpeg2DataParser = NULL;
-	m_pMpeg2DataParser = new DVBMpeg2DataParser();
 
 	m_rotEntry = 0;
 
@@ -58,12 +58,6 @@ BDADVBTSinkTShift::BDADVBTSinkTShift(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTun
 BDADVBTSinkTShift::~BDADVBTSinkTShift()
 {
 	DestroyAll();
-	if (m_pMpeg2DataParser)
-	{
-		m_pMpeg2DataParser->ReleaseFilter();
-		delete m_pMpeg2DataParser;
-		m_pMpeg2DataParser = NULL;
-	}
 }
 
 void BDADVBTSinkTShift::SetLogCallback(LogMessageCallback *callback)
@@ -100,40 +94,6 @@ HRESULT BDADVBTSinkTShift::Initialise(DWGraph *pDWGraph, int intSinkType)
 HRESULT BDADVBTSinkTShift::DestroyAll()
 {
     HRESULT hr = S_OK;
-	/*
-    CComPtr <IBaseFilter> pFilter;
-    CComPtr <IEnumFilters> pFilterEnum;
-
-    hr = m_piGraphBuilder->EnumFilters(&pFilterEnum);
-	switch (hr)
-	{
-	case S_OK:
-		break;
-	case E_OUTOFMEMORY:
-		return (log << "Insufficient memory to create the enumerator.\n").Write(hr);
-	case E_POINTER:
-		return (log << "Null pointer argument.\n").Write(hr);
-	default:
-		return (log << "Unknown Error enumerating graph: " << hr << "\n").Write(hr);
-	}
-
-    if FAILED(hr = pFilterEnum->Reset())
-		return (log << "Failed to reset graph enumerator: " << hr << "\n").Write(hr);
-
-	while (pFilterEnum->Next(1, &pFilter, 0) == S_OK) // addrefs filter
-	{
-		if FAILED(hr = m_piGraphBuilder->RemoveFilter(pFilter))
-		{
-			FILTER_INFO info;
-			pFilter->QueryFilterInfo(&info);
-			if (info.pGraph)
-				info.pGraph->Release();
-            return (log << "Failed to remove filter: " << info.achName << " : " << hr << "\n").Write(hr);
-		}
-		pFilter.Release();
-	}
-	pFilterEnum.Release();
-	*/
 
 	RemoveSinkFilters();
 
@@ -145,7 +105,7 @@ HRESULT BDADVBTSinkTShift::DestroyAll()
 
 HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 {
-	HRESULT hr;
+	HRESULT hr = E_FAIL;
 
 	//--- Add & connect the TimeShifting filters ---
 
@@ -160,13 +120,13 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 			if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piFTSSink))
 			{
 				(log << "Failed to connect Infinite Pin Tee Filter to Full TS TimeShift FileWriter: " << hr << "\n").Write(hr);
-				DestroyFilter(m_piFTSSink);
+				DestroyFTSFilters();
 			}
 			else	//Add Demux Pins (TS TimeShifting)
 				if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piFTSSink, 1))
 				{
 					(log << "Failed to Set the File Name on the Full TS TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
-					DestroyFilter(m_piFTSSink);
+					DestroyFTSFilters();
 				}
 	}
 	else if (m_intSinkType& 0x2)
@@ -180,35 +140,31 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_TSFileSink, &m_piTSSink, L"TS TimeShift FileWriter"))
 			{
 				(log << "Failed to add TS TimeShift FileWriter to the graph: " << hr << "\n").Write(hr);
-				DestroyFilter(m_piTSMpeg2Demux);
+				DestroyTSFilters();
 			}
 			else		//Connect Demux (TS TimeShifting)
 				if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piTSMpeg2Demux))
 				{
 					(log << "Failed to connect Infinite Pin Tee Filter to TS TimeShift MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-					DestroyFilter(m_piTSSink);
-					DestroyFilter(m_piTSMpeg2Demux);
+					DestroyTSFilters();
 				}
 				else	//Add Demux Pins (TS TimeShifting)
 					if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piTSMpeg2Demux, 1))
 					{
 						(log << "Failed to Add Output Pins to TS TimeShift MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-							DestroyFilter(m_piTSSink);
-							DestroyFilter(m_piTSMpeg2Demux);
+						DestroyTSFilters();
 					}
 					else		//Connect FileWriter (TS TimeShifting)
 						if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piTSMpeg2Demux, m_piTSSink))
 						{
 							(log << "Failed to connect TS TimeShift MPEG-2 Demultiplexer to TS TimeShift FileWriter: " << hr << "\n").Write(hr);
-							DestroyFilter(m_piTSSink);
-							DestroyFilter(m_piTSMpeg2Demux);
+							DestroyTSFilters();
 						}
 						else	//Add Demux Pins (TS TimeShifting)
 							if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piTSSink, 11))
 							{
 								(log << "Failed to Set the File Name on the TS TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
-								DestroyFilter(m_piTSSink);
-								DestroyFilter(m_piTSMpeg2Demux);
+								DestroyTSFilters();
 							}
 	}
 	else if (m_intSinkType& 0x4)
@@ -222,68 +178,55 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Multiplexer, &m_piMPGMpeg2Mux, L"MPG TimeShift MPEG-2 Multiplexer"))
 			{
 				(log << "Failed to add MPG TimeShift MPEG-2 Multiplexer to the graph: " << hr << "\n").Write(hr);
-				DestroyFilter(m_piMPGMpeg2Demux);
+				DestroyMPGFilters();
 			}
 			else //FileWriter (MPG TimeShifting)
 				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_TSFileSink, &m_piMPGSink, L"MPG TimeShift FileWriter"))
 				{
 					(log << "Failed to add MPG TimeShift  FileWriter to the graph: " << hr << "\n").Write(hr);
-					DestroyFilter(m_piMPGMpeg2Mux);
-					DestroyFilter(m_piMPGMpeg2Demux);
+					DestroyMPGFilters();
 				}
 				else	//Connect Demux (MPG TimeShifting)
 					if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piInfinitePinTee, m_piMPGMpeg2Demux))
 					{
 						(log << "Failed to connect Infinite Pin Tee Filter to MPG TimeShift MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-						DestroyFilter(m_piMPGSink);
-						DestroyFilter(m_piMPGMpeg2Mux);
-						DestroyFilter(m_piMPGMpeg2Demux);
+						DestroyMPGFilters();
 					}
 					else	//Add Demux Pins (MPG TimeShifting)
 						if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_piMPGMpeg2Demux))
 						{
 							(log << "Failed to Add Output Pins to MPG TimeShift MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-								DestroyFilter(m_piMPGSink);
-								DestroyFilter(m_piMPGMpeg2Mux);
-								DestroyFilter(m_piMPGMpeg2Demux);
+								DestroyMPGFilters();
 						}
 						else	//Connect Mux (MPG TimeShifting)
 							if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piMPGMpeg2Demux, m_piMPGMpeg2Mux))
 							{
 								(log << "Failed to connect MPG TimeShift MPEG-2 Demultiplexer Audio to MPG TimeShift MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
-								DestroyFilter(m_piMPGSink);
-								DestroyFilter(m_piMPGMpeg2Mux);
-								DestroyFilter(m_piMPGMpeg2Demux);
+								DestroyMPGFilters();
 							}
 							else	//Connect Mux (MPG TimeShifting)
 								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piMPGMpeg2Demux, m_piMPGMpeg2Mux))
 								{
 									(log << "Failed to connect MPG TimeShift MPEG-2 Demultiplexer Video to MPG TimeShift MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
-									DestroyFilter(m_piMPGSink);
-									DestroyFilter(m_piMPGMpeg2Mux);
-									DestroyFilter(m_piMPGMpeg2Demux);
+									DestroyMPGFilters();
 								}
 								else	//Connect FileWriter (MPG TimeShifting)
 									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piMPGMpeg2Mux, m_piMPGSink))
 									{
 										(log << "Failed to connect MPG TimeShift MPEG-2 Multiplexer to MPG TimeShift FileWriter: " << hr << "\n").Write(hr);
-										DestroyFilter(m_piMPGSink);
-										DestroyFilter(m_piMPGMpeg2Mux);
-										DestroyFilter(m_piMPGMpeg2Demux);
+										DestroyMPGFilters();
 									}
 									else	//Add Demux Pins (MPG TimeShifting)
 										if FAILED(hr = m_pBDADVBTSink->AddFileName(pService, m_piMPGSink, 111))
 										{
 											(log << "Failed to Set the File Name on the MPG TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
-											DestroyFilter(m_piMPGSink);
-											DestroyFilter(m_piMPGMpeg2Mux);
-											DestroyFilter(m_piMPGMpeg2Demux);
+											DestroyMPGFilters();
 										}
 	}
 
 
 	m_bActive = TRUE;
-	return S_OK;
+	return hr;
 }
 
 void BDADVBTSinkTShift::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
@@ -295,24 +238,58 @@ void BDADVBTSinkTShift::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 	}
 }
 
+void BDADVBTSinkTShift::DestroyFTSFilters()
+{
+	DestroyFilter(m_piFTSSink);
+	DeleteFilter(&m_piFTSDWDump);
+}
 
+void BDADVBTSinkTShift::DestroyTSFilters()
+{
+	DeleteFilter(&m_piTSDWDump);
+	DestroyFilter(m_piTSSink);
+	DestroyFilter(m_piTSMpeg2Demux);
+}
+
+void BDADVBTSinkTShift::DestroyMPGFilters()
+{
+	DeleteFilter(&m_piMPGDWDump);
+	DestroyFilter(m_piMPGSink);
+	DestroyFilter(m_piMPGMpeg2Mux);
+	DestroyFilter(m_piMPGMpeg2Demux);
+}
+
+void BDADVBTSinkTShift::DestroyAVFilters()
+{
+	DeleteFilter(&m_piVideoDWDump);
+	DestroyFilter(m_piVideoSink);
+	DeleteFilter(&m_piTelexDWDump);
+	DestroyFilter(m_piTelexSink);
+	DeleteFilter(&m_piAudioDWDump);
+	DestroyFilter(m_piAudioSink);
+	DestroyFilter(m_piAVMpeg2Demux);
+}
+
+void BDADVBTSinkTShift::DeleteFilter(DWDump **pfDWDump)
+{
+	if (pfDWDump)
+		return;
+
+	if (*pfDWDump)
+		delete *pfDWDump;
+
+	*pfDWDump = NULL;
+
+}
 
 HRESULT BDADVBTSinkTShift::RemoveSinkFilters()
 {
 	m_bActive = FALSE;
 
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
-
-	DestroyFilter(m_piMPGSink);
-	DestroyFilter(m_piMPGMpeg2Mux);
-	DestroyFilter(m_piMPGMpeg2Demux);
-	DestroyFilter(m_piTSSink);
-	DestroyFilter(m_piTSMpeg2Demux);
-	DestroyFilter(m_piFTSSink);
-
-	if (m_pMpeg2DataParser)
-		m_pMpeg2DataParser->ReleaseFilter();
+	DestroyFTSFilters();
+	DestroyTSFilters();
+	DestroyMPGFilters();
+	DestroyAVFilters();
 
 	return S_OK;
 }
@@ -337,4 +314,32 @@ BOOL BDADVBTSinkTShift::IsActive()
 	return m_bActive;
 }
 
+HRESULT BDADVBTSinkTShift::GetCurFile(LPOLESTR *ppszFileName)
+{
+	if (!ppszFileName)
+		return E_INVALIDARG;
+
+	CComPtr <IFileSinkFilter> piFileSinkFilter;
+
+	if ((m_intSinkType & 0x1))
+	{
+		if (m_piFTSSink)
+			m_piFTSSink->QueryInterface(&piFileSinkFilter);
+	}
+	else if ((m_intSinkType & 0x2) && m_piTSSink)
+	{
+		if (m_piTSSink)
+			m_piTSSink->QueryInterface(&piFileSinkFilter);
+	}
+	else if ((m_intSinkType & 0x4) && m_piMPGSink)
+	{
+		if (m_piMPGSink)
+			m_piMPGSink->QueryInterface(&piFileSinkFilter);
+	}
+
+	if (piFileSinkFilter)
+		return piFileSinkFilter->GetCurFile(ppszFileName, NULL);
+
+	return E_FAIL;
+}
 

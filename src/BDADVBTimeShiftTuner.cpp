@@ -1,6 +1,7 @@
 /**
- *	BDADVBTSourceTuner.cpp
+ *	BDADVBTimeShiftTuner.cpp
  *	Copyright (C) 2004 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -21,8 +22,8 @@
  */
 
 
-#include "BDADVBTSourceTuner.h"
-#include "BDADVBTSource.h"
+#include "BDADVBTimeShiftTuner.h"
+#include "BDADVBTimeShift.h"
 #include "Globals.h"
 #include "LogMessage.h"
 
@@ -36,11 +37,11 @@
 #define toIPAddress(a, b, c, d) (a + (b << 8) + (c << 16) + (d << 24))
 
 //////////////////////////////////////////////////////////////////////
-// BDADVBTSourceTuner
+// BDADVBTimeShiftTuner
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTSourceTuner::BDADVBTSourceTuner(BDADVBTSource *pBDADVBTSource, BDACard *pBDACard) :
-	m_pBDADVBTSource(pBDADVBTSource),
+BDADVBTimeShiftTuner::BDADVBTimeShiftTuner(BDADVBTimeShift *pBDADVBTimeShift, BDACard *pBDACard) :
+	m_pBDADVBTimeShift(pBDADVBTimeShift),
 	m_pBDACard(pBDACard)
 {
 	m_pDWGraph = NULL;
@@ -53,12 +54,12 @@ BDADVBTSourceTuner::BDADVBTSourceTuner(BDADVBTSource *pBDADVBTSource, BDACard *p
 
 	m_pMpeg2DataParser = NULL;
 	m_pMpeg2DataParser = new DVBMpeg2DataParser();
-	m_pMpeg2DataParser->SetDVBTChannels(m_pBDADVBTSource->GetChannels());
+	m_pMpeg2DataParser->SetDVBTChannels(m_pBDADVBTimeShift->GetChannels());
 
 	m_rotEntry = 0;
 }
 
-BDADVBTSourceTuner::~BDADVBTSourceTuner()
+BDADVBTimeShiftTuner::~BDADVBTimeShiftTuner()
 {
 	DestroyAll();
 	if (m_pMpeg2DataParser)
@@ -69,14 +70,14 @@ BDADVBTSourceTuner::~BDADVBTSourceTuner()
 	}
 }
 
-void BDADVBTSourceTuner::SetLogCallback(LogMessageCallback *callback)
+void BDADVBTimeShiftTuner::SetLogCallback(LogMessageCallback *callback)
 {
 	LogMessageCaller::SetLogCallback(callback);
 
 	graphTools.SetLogCallback(callback);
 }
 
-HRESULT BDADVBTSourceTuner::Initialise(DWGraph *pDWGraph)
+HRESULT BDADVBTimeShiftTuner::Initialise(DWGraph *pDWGraph)
 {
 	HRESULT hr;
 	if (m_bInitialised)
@@ -103,7 +104,7 @@ HRESULT BDADVBTSourceTuner::Initialise(DWGraph *pDWGraph)
 	return S_OK;
 }
 
-HRESULT BDADVBTSourceTuner::DestroyAll()
+HRESULT BDADVBTimeShiftTuner::DestroyAll()
 {
     HRESULT hr = S_OK;
 	/*
@@ -150,7 +151,7 @@ HRESULT BDADVBTSourceTuner::DestroyAll()
 	return S_OK;
 }
 
-HRESULT BDADVBTSourceTuner::AddSourceFilters()
+HRESULT BDADVBTimeShiftTuner::AddSourceFilters()
 {
 	HRESULT hr;
 
@@ -248,7 +249,7 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 	return S_OK;
 }
 
-void BDADVBTSourceTuner::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
+void BDADVBTimeShiftTuner::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 {
 	if (pFilter)
 	{
@@ -259,7 +260,7 @@ void BDADVBTSourceTuner::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 
 
 
-HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
+HRESULT BDADVBTimeShiftTuner::RemoveSourceFilters()
 {
 	m_bActive = FALSE;
 
@@ -299,7 +300,6 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 	}
 */
 
-	
 	DestroyFilter(m_piBDASecTab);
 	DestroyFilter(m_piBDATIF);
 	DestroyFilter(m_piBDAMpeg2Demux);
@@ -310,7 +310,7 @@ HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 	return S_OK;
 }
 
-HRESULT BDADVBTSourceTuner::QueryTransportStreamPin(IPin** piPin)
+HRESULT BDADVBTimeShiftTuner::QueryTransportStreamPin(IPin** piPin)
 {
 	HRESULT hr;
 	if FAILED(hr = graphTools.FindFirstFreePin(m_piInfinitePinTee, piPin, PINDIR_OUTPUT))
@@ -318,7 +318,7 @@ HRESULT BDADVBTSourceTuner::QueryTransportStreamPin(IPin** piPin)
 	return S_OK;
 }
 
-HRESULT BDADVBTSourceTuner::LockChannel(long frequency, long bandwidth)
+HRESULT BDADVBTimeShiftTuner::LockChannel(long frequency, long bandwidth)
 {
 	if(m_lFrequency == frequency)
 		return S_OK;
@@ -357,12 +357,12 @@ HRESULT BDADVBTSourceTuner::LockChannel(long frequency, long bandwidth)
 	return (log << "Error while locking channel (3 attempts failed)\n").Write(E_FAIL);
 }
 
-long BDADVBTSourceTuner::GetCurrentFrequency()
+long BDADVBTimeShiftTuner::GetCurrentFrequency()
 {
 	return m_lFrequency;
 }
 
-HRESULT BDADVBTSourceTuner::StartScanning()
+HRESULT BDADVBTimeShiftTuner::StartScanning()
 {
 	if (m_pMpeg2DataParser)
 	{
@@ -374,7 +374,7 @@ HRESULT BDADVBTSourceTuner::StartScanning()
 }
 
 
-HRESULT BDADVBTSourceTuner::GetSignalStats(BOOL &locked, long &strength, long &quality)
+HRESULT BDADVBTimeShiftTuner::GetSignalStats(BOOL &locked, long &strength, long &quality)
 {
 	HRESULT hr;
 	BOOL present;
@@ -385,12 +385,12 @@ HRESULT BDADVBTSourceTuner::GetSignalStats(BOOL &locked, long &strength, long &q
 	return S_OK;
 }
 
-BOOL BDADVBTSourceTuner::IsActive()
+BOOL BDADVBTimeShiftTuner::IsActive()
 {
 	return m_bActive;
 }
 
-LPWSTR BDADVBTSourceTuner::GetCardName()
+LPWSTR BDADVBTimeShiftTuner::GetCardName()
 {
 	return m_pBDACard->tunerDevice.strFriendlyName;
 }

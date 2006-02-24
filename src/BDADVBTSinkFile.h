@@ -47,7 +47,7 @@ class BDADVBTSink;
 class BDADVBTSinkFile : public LogMessageCaller
 {
 public:
-	BDADVBTSinkFile(BDADVBTSink *pBDADVBTSink, BDADVBTSourceTuner *pCurrentTuner);
+	BDADVBTSinkFile(BDADVBTSink *pBDADVBTSink);
 	virtual ~BDADVBTSinkFile();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
@@ -56,13 +56,7 @@ public:
 	HRESULT DestroyAll();
 
 	HRESULT AddSinkFilters(DVBTChannels_Service* pService);
-	void DestroyFTSFilters();
-	void DestroyTSFilters();
-	void DestroyMPGFilters();
-	void DestroyAVFilters();
-	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 	HRESULT RemoveSinkFilters();
-	void DeleteFilter(DWDump **pfDWDump);
 
 	HRESULT SetTransportStreamPin(IPin* piPin);
 
@@ -74,19 +68,19 @@ public:
 	HRESULT UnPauseRecording(DVBTChannels_Service* pService);
 	BOOL IsRecording(void);
 	BOOL IsPaused(void);
-
-////	BOOL SetRecordingFullTS();
-//	BOOL SetRecordingTSMux(long PIDs[]);
-//	BOOL StartRecording(LPWSTR filename);
-//	BOOL PauseRecording(BOOL bPause);
-//	BOOL StopRecording();
-//	BOOL IsRecording();
+	HRESULT GetCurFile(LPOLESTR *ppszFileName);
 
 	BOOL SupportsRecording() { return FALSE; }
 
 private:
+	void DestroyFTSFilters();
+	void DestroyTSFilters();
+	void DestroyMPGFilters();
+	void DestroyAVFilters();
+	void DeleteFilter(DWDump **pfDWDump);
+	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
+
 	BDADVBTSink *m_pBDADVBTSink;
-	BDADVBTSourceTuner *m_pCurrentTuner;
 	DWGraph *m_pDWGraph;
 
 	BOOL m_bInitialised;
@@ -119,12 +113,6 @@ private:
 	CComPtr <IBaseFilter> m_piTSMpeg2Demux;
 	CComPtr <IBaseFilter> m_piFTSSink;
 	DWDump *m_piFTSDWDump;
-
-	/*
-	CComPtr <IGuideData> m_piGuideData;
-	DWGuideDataEvent* m_poGuideDataEvent;
-	*/
-	DVBMpeg2DataParser *m_pMpeg2DataParser;
 
 	DWORD m_rotEntry;
 

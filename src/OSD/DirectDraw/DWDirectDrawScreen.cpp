@@ -203,6 +203,14 @@ HRESULT DWDirectDrawScreen::Clear(BOOL bOverlayEnabled, RECT *rectOverlayPositio
 
 		hr = m_piBackSurface->Blt(rectOverlayPosition, NULL, NULL, DDBLT_COLORFILL | DDBLT_WAIT, &ddbfx);
 		if FAILED(hr)
+//			return (log << "Failed to blt video key to back surface : " << hr << "\n").Write(hr);
+		if (hr == 0x88760096) // DDERR_INVALIDRECT 
+			return (log << "Failed to blt video key to back surface. Invalid Rect : ("
+						<< rectOverlayPosition->left << ", "
+						<< rectOverlayPosition->top << ", "
+						<< rectOverlayPosition->right << ", "
+						<< rectOverlayPosition->bottom << ")\n").Write(hr);
+		else
 			return (log << "Failed to blt video key to back surface : " << hr << "\n").Write(hr);
 	}
 

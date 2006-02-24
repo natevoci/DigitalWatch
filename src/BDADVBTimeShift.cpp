@@ -1,6 +1,7 @@
 /**
- *	BDADVBTSource.cpp
+ *	BDADVBTimeShift.cpp
  *	Copyright (C) 2004 Nate
+ *	Copyright (C) 2006 Bear
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
  *	program for the VisionPlus DVB-T.
@@ -20,7 +21,7 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "BDADVBTSource.h"
+#include "BDADVBTimeShift.h"
 #include "Globals.h"
 #include "GlobalFunctions.h"
 #include "LogMessage.h"
@@ -31,27 +32,30 @@
 #include "bdamedia.h"
 
 //////////////////////////////////////////////////////////////////////
-// BDADVBTSource
+// BDADVBTimeShift
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
+BDADVBTimeShift::BDADVBTimeShift() : m_strSourceType(L"BDATimeShift")
 {
 	m_pCurrentTuner = NULL;
 	m_pCurrentSink  = NULL;
+	m_pCurrentFileSource = NULL;
+	m_pCurrentDWGraph = NULL;
 	m_pCurrentNetwork = NULL;
 	m_pCurrentService = NULL;
 	m_pDWGraph = NULL;
+	m_bFileSourceActive = FALSE;
 
 	g_pOSD->Data()->AddList(&channels);
 	g_pOSD->Data()->AddList(&frequencyList);
 }
 
-BDADVBTSource::~BDADVBTSource()
+BDADVBTimeShift::~BDADVBTimeShift()
 {
 	Destroy();
 }
 
-void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
+void BDADVBTimeShift::SetLogCallback(LogMessageCallback *callback)
 {
 	CAutoLock tunersLock(&m_tunersLock);
 
@@ -62,34 +66,43 @@ void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 	frequencyList.SetLogCallback(callback);
 	cardList.SetLogCallback(callback);
 
+	std::vector<BDADVBTimeShiftTuner*>::iterator it = m_tuners.begin();
+	for ( ; it != m_tuners.end() ; it++ )
+	{
+		BDADVBTimeShiftTuner *tuner = *it;
+		tuner->SetLogCallback(callback);
+	}
+	
 	if (m_pCurrentSink)
 		m_pCurrentSink->SetLogCallback(callback);
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
-	for ( ; it != m_tuners.end() ; it++ )
-	{
-		BDADVBTSourceTuner *tuner = *it;
-		tuner->SetLogCallback(callback);
-	}
+	if (m_pCurrentDWGraph)
+		m_pCurrentDWGraph->SetLogCallback(callback);
+
+	if (m_pCurrentFileSource)
+		m_pCurrentFileSource->SetLogCallback(callback);
+
 }
 
-LPWSTR BDADVBTSource::GetSourceType()
+LPWSTR BDADVBTimeShift::GetSourceType()
 {
 	return m_strSourceType;
 }
 
-DWGraph *BDADVBTSource::GetFilterGraph(void)
+DWGraph *BDADVBTimeShift::GetFilterGraph(void)
 {
-//	if(m_pCurrentDWGraph && m_bFileSourceActive)
-//		*ppDWGraph = m_pCurrentDWGraph;
-//	else
+	if(m_pCurrentDWGraph && m_bFileSourceActive)
+		return m_pCurrentDWGraph;
+	else
 		return m_pDWGraph;
 }
 
-HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
+HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 {
-	(log << "Initialising BDA Source\n").Write();
+	(log << "Initialising BDATimeShift Source\n").Write();
 	LogMessageIndent indent(&log);
+
+	m_bFileSourceActive = FALSE;
 
 	for (int i = 0; i < g_pOSD->Data()->GetListCount(channels.GetListName()); i++)
 	{
@@ -117,15 +130,25 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 
 	HRESULT hr;
 	m_pDWGraph = pFilterGraph;
-	
+
+	g_pData->values.timeshift.format = g_pData->settings.timeshift.format;
 	g_pData->values.capture.format = g_pData->settings.capture.format;
-	g_pData->values.timeshift.format = 0;
 	g_pData->values.dsnetwork.format = g_pData->settings.dsnetwork.format;
 
 	m_pCurrentSink = new BDADVBTSink();
 	m_pCurrentSink->SetLogCallback(m_pLogCallback);
 	if FAILED(hr = m_pCurrentSink->Initialise(pFilterGraph))
 		return (log << "Failed to Initialise Sink Filters" << hr << "\n").Write(hr);
+
+	m_pCurrentDWGraph = new DWGraph();
+	m_pCurrentDWGraph->SetLogCallback(m_pLogCallback);
+	if FAILED(hr = m_pCurrentDWGraph->Initialise())
+		return (log << "Failed to Initialise the filtergraph for the TSFileSource" << hr << "\n").Write(hr);
+
+	m_pCurrentFileSource = new TSFileSource();
+	m_pCurrentFileSource->SetLogCallback(m_pLogCallback);
+	if FAILED(hr = m_pCurrentFileSource->Initialise(m_pCurrentDWGraph))
+		return (log << "Failed to Initialise the TSFileSource Filters" << hr << "\n").Write(hr);
 
 	wchar_t file[MAX_PATH];
 
@@ -135,7 +158,7 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\FrequencyList.xml", g_pData->application.appPath);
 	hr = frequencyList.LoadFrequencyList((LPWSTR)&file);
 
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Keys.xml", g_pData->application.appPath);
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\TimeShiftKeys.xml", g_pData->application.appPath);
 	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
 		return hr;
 
@@ -154,7 +177,8 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		BDACard *tmpCard = *it;
 		if (tmpCard->bActive)
 		{
-			m_pCurrentTuner = new BDADVBTSourceTuner(this, tmpCard);
+			m_pCurrentTuner = new BDADVBTimeShiftTuner(this, tmpCard);
+
 			m_pCurrentTuner->SetLogCallback(m_pLogCallback);
 			if SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph))
 			{
@@ -173,15 +197,16 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		return (log << "There are no active BDA cards\n").Show(E_FAIL);
 	}
 
+
 	m_pCurrentTuner = NULL;
 
 	indent.Release();
-	(log << "Finished Initialising BDA Source\n").Write();
+	(log << "Finished Initialising BDATimeShift Source\n").Write();
 
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::Destroy()
+HRESULT BDADVBTimeShift::Destroy()
 {
 	(log << "Destroying BDA Source\n").Write();
 	LogMessageIndent indent(&log);
@@ -196,6 +221,9 @@ HRESULT BDADVBTSource::Destroy()
 
 	if (m_pDWGraph)
 	{
+		if FAILED(hr = UnloadFileSource())
+			(log << "Failed to unload Sink Filters\n").Write();
+
 		if FAILED(hr = m_pDWGraph->Stop())
 			(log << "Failed to stop DWGraph\n").Write();
 
@@ -208,11 +236,17 @@ HRESULT BDADVBTSource::Destroy()
 		if FAILED(hr = m_pDWGraph->Cleanup())
 			(log << "Failed to cleanup DWGraph\n").Write();
 
+		if (m_pCurrentFileSource)
+			delete m_pCurrentFileSource;
+
+		if (m_pCurrentDWGraph)
+			delete m_pCurrentDWGraph;
+
 		if (m_pCurrentSink)
 			delete m_pCurrentSink;
 
 		CAutoLock tunersLock(&m_tunersLock);
-		std::vector<BDADVBTSourceTuner*>::iterator it = m_tuners.begin();
+		std::vector<BDADVBTimeShiftTuner*>::iterator it = m_tuners.begin();
 		for ( ; it != m_tuners.end() ; it++ )
 		{
 			if(*it)	delete *it;
@@ -234,9 +268,9 @@ HRESULT BDADVBTSource::Destroy()
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
+HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 {
-	(log << "BDADVBTSource::ExecuteCommand - " << command->LHS.Function << "\n").Write();
+	(log << "BDADVBTimeShift::ExecuteCommand - " << command->LHS.Function << "\n").Write();
 	LogMessageIndent indent(&log);
 
 	int n1, n2, n3, n4;
@@ -357,20 +391,12 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount <= 0)
 			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		if (command->LHS.ParameterCount > 2)
+		if (command->LHS.ParameterCount > 1)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = StringToLong(command->LHS.Parameter[0]);
 
-		n2 = 0;
-		if (command->LHS.ParameterCount >= 2)
-		{
-			n2 = (int)command->LHS.Parameter[1];
-			return ToggleRecording(n1, (LPWSTR)n2);
-		}
-		else
-			return ToggleRecording(n1);
-
+		return ToggleRecording(n1);
 	}
 	else if (_wcsicmp(pCurr, L"RecordingPause") == 0)
 	{
@@ -385,6 +411,8 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		return TogglePauseRecording(n1);
 	}
 
+	if (m_pCurrentFileSource)
+		return m_pCurrentFileSource->ExecuteCommand(command);
 
 	//Just referencing these variables to stop warnings.
 	n3 = 0;
@@ -392,16 +420,19 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 	return S_FALSE;
 }
 
-HRESULT BDADVBTSource::Start()
+HRESULT BDADVBTimeShift::Start()
 {
-	(log << "Playing BDA Source\n").Write();
+	(log << "Playing BDATimeShift Source\n").Write();
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
 
 	if (!m_pDWGraph)
-		return (log << "Filter graph not set in BDADVBTSource::Play\n").Write(E_FAIL);
+		return (log << "Filter graph not set in BDADVBTimeShift::Play\n").Write(E_FAIL);
 
+	if FAILED(hr = m_pCurrentFileSource->Start())
+		return (log << "Failed to Start FileSource class: " << hr << "\n").Write(hr);
+	
 	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
 		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
 
@@ -420,12 +451,12 @@ HRESULT BDADVBTSource::Start()
 	}
 
 	indent.Release();
-	(log << "Finished Playing BDA Source : " << hr << "\n").Write();
+	(log << "Finished Playing BDATimeShift Source : " << hr << "\n").Write();
 
 	return hr;
 }
 
-BOOL BDADVBTSource::CanLoad(LPWSTR pCmdLine)
+BOOL BDADVBTimeShift::CanLoad(LPWSTR pCmdLine)
 {
 	long length = wcslen(pCmdLine);
 	if ((length >= 5) && (_wcsnicmp(pCmdLine, L"tv://", 5) == 0))
@@ -435,12 +466,12 @@ BOOL BDADVBTSource::CanLoad(LPWSTR pCmdLine)
 	return FALSE;
 }
 
-HRESULT BDADVBTSource::Load(LPWSTR pCmdLine)
+HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 {
 	if (!pCmdLine)
 		return S_FALSE;
 
-	if (_wcsnicmp(pCmdLine, L"tv://", 5) != 0)
+	if (_wcsnicmp(pCmdLine, L"tstv://", 7) != 0)
 		return S_FALSE;
 
 	pCmdLine += 5;
@@ -494,12 +525,12 @@ HRESULT BDADVBTSource::Load(LPWSTR pCmdLine)
 	return SetChannel(originalNetworkId, transportStreamId, networkId, serviceId);
 }
 
-DVBTChannels *BDADVBTSource::GetChannels()
+DVBTChannels *BDADVBTimeShift::GetChannels()
 {
 	return &channels;
 }
 
-void BDADVBTSource::ThreadProc()
+void BDADVBTimeShift::ThreadProc()
 {
 	while (!ThreadIsStopping())
 	{
@@ -508,13 +539,13 @@ void BDADVBTSource::ThreadProc()
 	}
 }
 
-HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
+HRESULT BDADVBTimeShift::SetChannel(long originalNetworkId, long serviceId)
 {
 	(log << "Setting Channel (" << originalNetworkId << ", " << serviceId << ")\n").Write();
 	LogMessageIndent indent(&log);
 
 	//TODO: Check if recording
-	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
+	if (m_pCurrentSink && g_pData->values.timeshift.format && m_pCurrentSink->IsRecording())
 	{
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
@@ -549,15 +580,14 @@ HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
 	return RenderChannel(pNetwork, pService);
 }
 
-HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long transportStreamId, long networkId, long serviceId)
+HRESULT BDADVBTimeShift::SetChannel(long originalNetworkId, long transportStreamId, long networkId, long serviceId)
 {
 	(log << "Setting Channel (" << originalNetworkId << ", " << serviceId << ")\n").Write();
 	LogMessageIndent indent(&log);
 
 	//TODO: Check if recording
-	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
+	if (m_pCurrentSink && g_pData->values.timeshift.format && m_pCurrentSink->IsRecording())
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
@@ -591,22 +621,21 @@ HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long transportStreamId
 	return RenderChannel(pNetwork, pService);
 }
 
-HRESULT BDADVBTSource::SetFrequency(long frequency, long bandwidth)
+HRESULT BDADVBTimeShift::SetFrequency(long frequency, long bandwidth)
 {
 	(log << "Setting Frequency (" << frequency << ", " << bandwidth << ")\n").Write();
 	LogMessageIndent indent(&log);
 
 	//TODO: Check if recording
-	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
+	if (m_pCurrentSink && g_pData->values.timeshift.format && m_pCurrentSink->IsRecording())
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
 
-		(log << "Unable to SetFrequency, Recording Still in Progress\n").Write();
+		(log << "Unable to SetChannel, Recording Still in Progress\n").Write();
 		indent.Release();
-		(log << "Finished Setting Frequency\n").Write();
+		(log << "Finished Setting Channel\n").Write();
 		return S_OK;
 	}
 
@@ -648,7 +677,7 @@ HRESULT BDADVBTSource::SetFrequency(long frequency, long bandwidth)
 	return RenderChannel(frequency, bandwidth);
 }
 
-HRESULT BDADVBTSource::NetworkUp()
+HRESULT BDADVBTimeShift::NetworkUp()
 {
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
@@ -665,7 +694,7 @@ HRESULT BDADVBTSource::NetworkUp()
 	return RenderChannel(pNetwork, pService);
 }
 
-HRESULT BDADVBTSource::NetworkDown()
+HRESULT BDADVBTimeShift::NetworkDown()
 {
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
@@ -682,7 +711,7 @@ HRESULT BDADVBTSource::NetworkDown()
 	return RenderChannel(pNetwork, pService);
 }
 
-HRESULT BDADVBTSource::ProgramUp()
+HRESULT BDADVBTimeShift::ProgramUp()
 {
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
@@ -702,7 +731,7 @@ HRESULT BDADVBTSource::ProgramUp()
 	return RenderChannel(pNetwork, pService);
 }
 
-HRESULT BDADVBTSource::ProgramDown()
+HRESULT BDADVBTimeShift::ProgramDown()
 {
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
@@ -727,7 +756,7 @@ HRESULT BDADVBTSource::ProgramDown()
 // graph building methods
 //////////////////////////////////////////////////////////////////////
 
-HRESULT BDADVBTSource::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService)
+HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService)
 {
 	m_pCurrentNetwork = pNetwork;
 	m_pCurrentService = pService;
@@ -735,24 +764,23 @@ HRESULT BDADVBTSource::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannel
 	return RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
 }
 
-HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
+HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 {
-	(log << "Building Graph (" << frequency << ", " << bandwidth << ")\n").Write();
+	(log << "Building BDATimeShift Graph (" << frequency << ", " << bandwidth << ")\n").Write();
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
 
 	//TODO: Check if recording
-	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
+	if (m_pCurrentSink && g_pData->values.timeshift.format && m_pCurrentSink->IsRecording())
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
 
-		(log << "Unable to RenderChannel, Recording Still in Progress\n").Write();
+		(log << "Unable to SetChannel, Recording Still in Progress\n").Write();
 		indent.Release();
-		(log << "Finished Building Graph\n").Write();
+		(log << "Finished Setting Channel\n").Write();
 		return S_OK;
 	}
 
@@ -772,9 +800,12 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 	CAutoLock tunersLock(&m_tunersLock);
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+	std::vector<BDADVBTimeShiftTuner*>::iterator it = m_tuners.begin();
 	for ( ; TRUE /*check for end of list done after graph is cleaned up*/ ; it++ )
 	{
+		if FAILED(hr = UnloadFileSource())
+			(log << "Failed to Unload the File Source Filters\n").Write();
+
 		if FAILED(hr = m_pDWGraph->Stop())
 			(log << "Failed to stop DWGraph\n").Write();
 
@@ -805,29 +836,49 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			continue;
 		}
 
-		if (m_pCurrentService)
-		{
-			if FAILED(hr = AddDemuxPins(m_pCurrentService))
-			{
-				(log << "Failed to Add Demux Pins\n").Write();
-				continue;
-			}
-		}
-
+		BOOL sinkFail = TRUE;
 		if (m_pCurrentService)
 		{
 			if FAILED(hr = LoadSink())
 			{
-				(log << "Failed to load Sink Filters\n").Write();
-				if (g_pData->values.capture.format)
+				if (!g_pData->values.capture.format || !g_pData->values.timeshift.format )
+				{
+					g_pOSD->Data()->SetItem(L"warnings", L"No Capture or TimeShift format set");
+					g_pTv->ShowOSDItem(L"Warnings", 5);
+					(log << "No Capture or TimeShift format set\n").Write();
+					if FAILED(hr = AddDemuxPins(m_pCurrentService))
+					{
+						(log << "Failed to Add Demux Pins\n").Write();
+						continue;
+					}
+					else
+						m_bFileSourceActive = FALSE;
+				}
+				else
+				{
+					(log << "Failed to Load Sink\n").Write();
 					continue;
+				}
 			}
+			else
+				sinkFail = FALSE;
 		}
 
 		if FAILED(hr = m_pDWGraph->Start())
 		{
 			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
 			continue;
+		}
+
+		if (SUCCEEDED(hr) && m_pCurrentService && !sinkFail)
+		{
+			if FAILED(hr = LoadFileSource())
+			{
+				(log << "Failed to load File Source Filters\n").Write();
+				continue;
+			}
+			else
+				m_pCurrentFileSource->SeekTo(0);
 		}
 
 		if FAILED(hr = m_pCurrentTuner->StartScanning())
@@ -857,7 +908,7 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
 
-HRESULT BDADVBTSource::LoadTuner()
+HRESULT BDADVBTimeShift::LoadTuner()
 {
 	(log << "Loading Tuner\n").Write();
 	LogMessageIndent indent(&log);
@@ -905,7 +956,7 @@ HRESULT BDADVBTSource::LoadTuner()
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::UnloadTuner()
+HRESULT BDADVBTimeShift::UnloadTuner()
 {
 	(log << "Unloading Tuner\n").Write();
 	LogMessageIndent indent(&log);
@@ -924,6 +975,7 @@ HRESULT BDADVBTSource::UnloadTuner()
 	{
 		if FAILED(hr = m_pCurrentTuner->RemoveSourceFilters())
 			return (log << "Failed to remove source filters: " << hr << "\n").Write(hr);
+
 		m_pCurrentTuner = NULL;
 	}
 
@@ -933,7 +985,7 @@ HRESULT BDADVBTSource::UnloadTuner()
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::LoadSink()
+HRESULT BDADVBTimeShift::LoadSink()
 {
 	(log << "Loading Sink Filters\n").Write();
 	LogMessageIndent indent(&log);
@@ -958,7 +1010,7 @@ HRESULT BDADVBTSource::LoadSink()
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::UnloadSink()
+HRESULT BDADVBTimeShift::UnloadSink()
 {
 	(log << "Unloading Sink Filters\n").Write();
 	LogMessageIndent indent(&log);
@@ -977,7 +1029,100 @@ HRESULT BDADVBTSource::UnloadSink()
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService)
+HRESULT BDADVBTimeShift::LoadFileSource()
+{
+	(log << "Loading File Source Filters\n").Write();
+	LogMessageIndent indent(&log);
+
+	if (!m_pCurrentFileSource)
+		return (log << "No Main Sink Class loaded.\n").Write();
+
+	m_bFileSourceActive = FALSE;
+
+	HRESULT hr = S_OK;
+/*
+	CComPtr <IPin> piTSPin;
+	if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
+		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
+
+	m_pCurrentSink->SetTransportStreamPin(piTSPin);
+*/
+
+	if(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x07))
+		m_pCurrentSink->StartRecording(m_pCurrentService);
+
+	LPOLESTR filename = NULL;
+	if(m_pCurrentSink)
+		m_pCurrentSink->GetCurFile(&filename);
+
+	if (!filename)
+	{
+		hr = E_FAIL;
+		return (log << "Failed to Get Sink Filter File Name: " << hr << "\n").Write(hr);
+	}
+
+	Sleep(3000);
+
+	if FAILED(hr = m_pCurrentFileSource->Load(filename))
+		return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
+
+	if((g_pData->values.timeshift.format & 0x04) ||	(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x04)))
+		if FAILED(hr = m_pCurrentFileSource->ReLoad(filename))
+			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
+
+	m_bFileSourceActive = TRUE;
+
+	indent.Release();
+	(log << "Finished Loading File Source Filters\n").Write();
+
+	return S_OK;
+}
+
+HRESULT BDADVBTimeShift::UnloadFileSource()
+{
+	(log << "Unloading File Source Filters\n").Write();
+	LogMessageIndent indent(&log);
+
+	if (!m_pCurrentFileSource)
+		return (log << "No Main Sink Class loaded.\n").Write();
+
+	m_bFileSourceActive = FALSE;
+
+	HRESULT hr;
+
+	if(m_pCurrentDWGraph)
+	{
+		if FAILED(hr = m_pCurrentDWGraph->Stop())
+			(log << "Failed to stop DWGraph\n").Write();
+
+		if FAILED(hr = m_pCurrentFileSource->UnloadFilters())
+		return (log << "Failed to remove Sink filters: " << hr << "\n").Write(hr);
+
+		IGraphBuilder *piGraphBuilder;
+		if FAILED(hr = m_pCurrentDWGraph->QueryGraphBuilder(&piGraphBuilder))
+			return (log << "Failed to get the filtergraph's IGraphBuilder Interface : " << hr << "\n").Write(hr);
+
+		CComQIPtr<IMediaFilter> piMediaFilter(piGraphBuilder);
+		if (!piMediaFilter)
+		{
+			piGraphBuilder->Release();
+			return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
+		}
+
+		piGraphBuilder->Release();
+
+		if FAILED(hr = piMediaFilter->SetSyncSource(NULL))
+			return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
+
+	}
+
+	indent.Release();
+	(log << "Finished Unloading File Source Filters\n").Write();
+
+	return S_OK;
+}
+
+HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService)
 {
 	if (pService == NULL)
 	{
@@ -1013,7 +1158,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService)
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered)
+HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered)
 {
 	if (pService == NULL)
 		return E_INVALIDARG;
@@ -1077,7 +1222,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels
 }
 
 
-HRESULT BDADVBTSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered)
+HRESULT BDADVBTimeShift::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
@@ -1095,7 +1240,7 @@ HRESULT BDADVBTSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *s
 	return AddDemuxPins(pService, video, L"Video", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
+HRESULT BDADVBTimeShift::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
@@ -1115,7 +1260,7 @@ HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *str
 	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered)
+HRESULT BDADVBTimeShift::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
@@ -1134,7 +1279,7 @@ HRESULT BDADVBTSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *str
 	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
+HRESULT BDADVBTimeShift::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
@@ -1146,7 +1291,7 @@ HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
 }
 
-void BDADVBTSource::UpdateData(long frequency, long bandwidth)
+void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 {
 //	HRESULT hr;
 	LPWSTR str = NULL;
@@ -1194,6 +1339,7 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 	{
 		g_pOSD->Data()->SetItem(L"CurrentService", L"");
 	}
+
 /*
 	// Set Signal Statistics
 	BOOL locked;
@@ -1201,10 +1347,10 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 
 	REFERENCE_TIME rtStart = timeGetTime();
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
+	std::vector<BDADVBTimeShiftTuner *>::iterator it = m_tuners.begin();
 	for ( ; it != m_tuners.end() ; it++ )
 	{
-		BDADVBTSourceTuner *tuner = *it;
+		BDADVBTimeShiftTuner *tuner = *it;
 		tuner->GetSignalStats(locked, strength, quality);
 	}
 
@@ -1233,7 +1379,7 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 	delete[] str;
 }
 
-HRESULT BDADVBTSource::UpdateChannels()
+HRESULT BDADVBTimeShift::UpdateChannels()
 {
 	if (channels.GetListSize() <= 0)
 		return S_OK;
@@ -1274,23 +1420,23 @@ HRESULT BDADVBTSource::UpdateChannels()
 	return S_OK;
 }
 
-HRESULT BDADVBTSource::ChangeFrequencySelectionOffset(long change)
+HRESULT BDADVBTimeShift::ChangeFrequencySelectionOffset(long change)
 {
 	return frequencyList.ChangeOffset(change);
 }
 
-HRESULT BDADVBTSource::MoveNetworkUp(long originalNetworkId)
+HRESULT BDADVBTimeShift::MoveNetworkUp(long originalNetworkId)
 {
 	return channels.MoveNetworkUp(originalNetworkId);
 }
 
-HRESULT BDADVBTSource::MoveNetworkDown(long originalNetworkId)
+HRESULT BDADVBTimeShift::MoveNetworkDown(long originalNetworkId)
 {
 	return channels.MoveNetworkDown(originalNetworkId);
 }
 
-//HRESULT BDADVBTSource::ToggleRecording(long mode)
-HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename)
+//HRESULT BDADVBTimeShift::ToggleRecording(long mode)
+HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename)
 {
 	if (!m_pCurrentSink)
 	{
@@ -1331,7 +1477,7 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename)
 	return hr;
 }
 
-HRESULT BDADVBTSource::TogglePauseRecording(long mode)
+HRESULT BDADVBTimeShift::TogglePauseRecording(long mode)
 {
 	if (!m_pCurrentSink)
 	{
@@ -1370,9 +1516,9 @@ HRESULT BDADVBTSource::TogglePauseRecording(long mode)
 	return hr;
 }
 
-BOOL BDADVBTSource::IsRecording()
+BOOL BDADVBTimeShift::IsRecording()
 {
-	if (m_pCurrentSink)
+	if (m_pCurrentSink && g_pData->values.timeshift.format)
 		return m_pCurrentSink->IsRecording();
 	else
 		return FALSE;

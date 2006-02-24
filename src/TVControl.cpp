@@ -29,6 +29,7 @@
 #include "DWSource.h"
 #include "BDADVBTSource.h"
 #include "TSFileSource/TSFileSource.h"
+#include "BDADVBTimeShift.h"
 
 #include <process.h>
 #include <math.h>
@@ -49,6 +50,7 @@ TVControl::TVControl()
 	m_hCommandProcessingStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_hCommandProcessingDoneEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_pFilterGraph = NULL;
+	m_pActiveSource = NULL;
 
 	m_windowInitialiseState = WIS_UNDEFINED;
 }
@@ -102,6 +104,11 @@ HRESULT TVControl::Initialise()
 	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
 
 	source = new TSFileSource();
+	source->SetLogCallback(m_pLogCallback);
+	m_sources.push_back(source);
+	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
+
+	source = new BDADVBTimeShift();
 	source->SetLogCallback(m_pLogCallback);
 	m_sources.push_back(source);
 	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
@@ -336,11 +343,13 @@ HRESULT TVControl::VolumeUp(int value)
 {
 	HRESULT hr;
 	long volume;
-	hr = m_pFilterGraph->GetVolume(volume);
+//	hr = m_pFilterGraph->GetVolume(volume);
+	hr = m_pActiveSource->GetFilterGraph()->GetVolume(volume);
 	if FAILED(hr)
 		return (log << "Failed to retrieve volume: " << hr << "\n").Write(hr);
 
-	hr = m_pFilterGraph->SetVolume(volume+value);
+//	hr = m_pFilterGraph->SetVolume(volume+value);
+	hr = m_pActiveSource->GetFilterGraph()->SetVolume(volume+value);
 	if FAILED(hr)
 		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
 
@@ -352,11 +361,13 @@ HRESULT TVControl::VolumeDown(int value)
 {
 	HRESULT hr;
 	long volume;
-	hr = m_pFilterGraph->GetVolume(volume);
+//	hr = m_pFilterGraph->GetVolume(volume);
+	hr = m_pActiveSource->GetFilterGraph()->GetVolume(volume);
 	if FAILED(hr)
 		return (log << "Failed to retrieve volume: " << hr << "\n").Write(hr);
 
-	hr = m_pFilterGraph->SetVolume(volume-value);
+//	hr = m_pFilterGraph->SetVolume(volume-value);
+	hr = m_pActiveSource->GetFilterGraph()->SetVolume(volume-value);
 	if FAILED(hr)
 		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
 
@@ -366,7 +377,8 @@ HRESULT TVControl::VolumeDown(int value)
 
 HRESULT TVControl::SetVolume(int value)
 {
-	HRESULT hr = m_pFilterGraph->SetVolume(value);
+//	HRESULT hr = m_pFilterGraph->SetVolume(value);
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->SetVolume(value);
 	if FAILED(hr)
 		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
 
@@ -377,7 +389,8 @@ HRESULT TVControl::SetVolume(int value)
 HRESULT TVControl::Mute(int nMute)
 {
 	g_pData->values.audio.bMute = ((nMute == 1) || ((nMute == 2) && !g_pData->values.audio.bMute));
-	HRESULT hr = m_pFilterGraph->Mute(g_pData->values.audio.bMute);
+//	HRESULT hr = m_pFilterGraph->Mute(g_pData->values.audio.bMute);
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->Mute(g_pData->values.audio.bMute);
 	if FAILED(hr)
 		return (log << "Failed to set mute: " << hr << "\n").Write(hr);
 
@@ -398,7 +411,8 @@ HRESULT TVControl::SetColorControls(int nBrightness, int nContrast, int nHue, in
 	if (nGamma      <     1) nGamma      =     1;
 	if (nGamma      >   500) nGamma      =   500;
 
-	HRESULT hr = m_pFilterGraph->SetColorControls(nBrightness, nContrast, nHue, nSaturation, nGamma);
+//	HRESULT hr = m_pFilterGraph->SetColorControls(nBrightness, nContrast, nHue, nSaturation, nGamma);
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->SetColorControls(nBrightness, nContrast, nHue, nSaturation, nGamma);
 	if FAILED(hr)
 		return (log << "Failed to set color controls: " << hr << "\n").Write(hr);
 
@@ -411,7 +425,8 @@ HRESULT TVControl::Zoom(int percentage)
 	g_pData->values.video.zoom = percentage;
 	if (g_pData->values.video.zoom < 10)	//Limit the smallest zoom to 10%
 		g_pData->values.video.zoom = 10;
-	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+//	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
 
@@ -422,7 +437,8 @@ HRESULT TVControl::Zoom(int percentage)
 HRESULT TVControl::ZoomIn(int percentage)
 {
 	g_pData->values.video.zoom += percentage;
-	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+//	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
 
@@ -435,7 +451,8 @@ HRESULT TVControl::ZoomOut(int percentage)
 	g_pData->values.video.zoom -= percentage;
 	if (g_pData->values.video.zoom < 10)	//Limit the smallest zoom to 10%
 		g_pData->values.video.zoom = 10;
-	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+//	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
 
@@ -455,7 +472,8 @@ HRESULT TVControl::ZoomMode(int mode)
 			mode = 0;
 	}
 	g_pData->values.video.zoomMode = mode;
-	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+//	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
 
@@ -476,7 +494,8 @@ HRESULT TVControl::AspectRatio(int nOverride, int width, int height)
 	g_pData->values.video.aspectRatio.bOverride = nOverride;
 	g_pData->values.video.aspectRatio.width = width;
 	g_pData->values.video.aspectRatio.height = height;
-	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+//	HRESULT hr = m_pFilterGraph->RefreshVideoPosition();
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
 	if FAILED(hr)
 		return (log << "Failed to RefreshVideoPosition: " << hr << "\n").Write(hr);
 
@@ -590,6 +609,14 @@ HRESULT TVControl::SetWindowPos(int nLeft, int nTop, int nWidth, int nHeight, BO
 
 HRESULT TVControl::Exit()
 {
+
+	if (m_pActiveSource && m_pActiveSource->IsRecording())
+	{
+		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
+		g_pTv->ShowOSDItem(L"Warnings", 5);
+		return S_FALSE;
+	}
 /*
 	if (m_pFilterGraph->IsRecording())
 	{
@@ -1801,7 +1828,9 @@ HRESULT TVControl::OnSizing(long fwSide, LPRECT rect)
 HRESULT TVControl::OnSize()
 {
 	HRESULT hr = OnMove();
-	if (m_pFilterGraph)
+	if (m_pActiveSource)
+		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
+	else if (m_pFilterGraph)
 		hr = m_pFilterGraph->RefreshVideoPosition();
 	return hr;
 }
@@ -1923,6 +1952,7 @@ HRESULT TVControl::GetFilterGraph(DWGraph **ppDWGraph)
 {
 	if (!ppDWGraph)
 		return E_POINTER;
-	*ppDWGraph = m_pFilterGraph;
+//	*ppDWGraph = m_pFilterGraph;
+	*ppDWGraph = m_pActiveSource->GetFilterGraph();
 	return S_OK;
 }

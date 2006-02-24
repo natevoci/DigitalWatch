@@ -1,5 +1,5 @@
 /**
- *	BDADVBTSinkDSNet.h
+ *	BDADVBTimeShiftTuner.h
  *	Copyright (C) 2004 Nate
  *	Copyright (C) 2006 Bear
  *
@@ -21,10 +21,9 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef BDADVBTSINKDSNET_H
-#define BDADVBTSINKDSNET_H
+#ifndef BDADVBTIMESHIFTTUNER_H
+#define BDADVBTIMESHIFTTUNER_H
 
-#include "BDADVBTSink.h"
 #include "StdAfx.h"
 #include <bdatif.h>
 #include "BDACardCollection.h"
@@ -32,84 +31,83 @@
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
 #include "DVBMpeg2DataParser.h"
-#include "DWDump.h"
 
-//{A07E6137-6C07-45D9-A00C-7DE7A7E6319B}
-EXTERN_GUID(CLSID_DSNetworkSender,
-0xA07E6137, 0x6C07, 0x45D9, 0xA0, 0x0C, 0x7D, 0xE7, 0xA7, 0xE6, 0x31, 0x9B);
-
-//{1CB42CC8-D32C-4f73-9267-C114DA470378}
-EXTERN_GUID(IID_IMulticastConfig,
-0x1CB42CC8, 0xD32C, 0x4f73, 0x92, 0x67, 0xC1, 0x14, 0xDA, 0x47, 0x03, 0x78);
-
-class BDADVBTSink;
-class BDADVBTSinkDSNet : public LogMessageCaller
+class BDADVBTimeShift;
+class BDADVBTimeShiftTuner : public LogMessageCaller
 {
 public:
-	BDADVBTSinkDSNet(BDADVBTSink *pBDADVBTSink);
-	virtual ~BDADVBTSinkDSNet();
+	BDADVBTimeShiftTuner(BDADVBTimeShift *pBDADVBTimeShift, BDACard *pBDACard);
+	virtual ~BDADVBTimeShiftTuner();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT Initialise(DWGraph *pDWGraph, int intSinkType);
+	HRESULT Initialise(DWGraph *pDWGraph);
 	HRESULT DestroyAll();
 
-	HRESULT AddSinkFilters(DVBTChannels_Service* pService);
-	HRESULT RemoveSinkFilters();
+	HRESULT AddSourceFilters();
+	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
+	HRESULT RemoveSourceFilters();
 
-	HRESULT SetTransportStreamPin(IPin* piPin);
+	HRESULT QueryTransportStreamPin(IPin** piPin);
+
+	HRESULT LockChannel(long frequency, long bandwidth);
+	long GetCurrentFrequency();
+
+	HRESULT StartScanning();
+	
+	HRESULT GetSignalStats(BOOL &locked, long &strength, long &quality);
 
 	BOOL IsActive();
 
+	/*
+	GetNowAndNext(...);
+	*/
+
+	/*
 	BOOL SetRecordingFullTS();
 	BOOL SetRecordingTSMux(long PIDs[]);
 	BOOL StartRecording(LPWSTR filename);
 	BOOL PauseRecording(BOOL bPause);
 	BOOL StopRecording();
 	BOOL IsRecording();
-
+	*/
 	BOOL SupportsRecording() { return FALSE; }
 
-private:
-	void DestroyFTSFilters();
-	void DestroyTSFilters();
-	void DestroyMPGFilters();
-	void DestroyAVFilters();
-	void DeleteFilter(DWDump **pfDWDump);
-	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
+	//IBaseFilter*  m_piDWTSRedirect;
+	//DWTSRedirect* m_pfDWTSRedirect;
 
-	BDADVBTSink *m_pBDADVBTSink;
+	LPWSTR GetCardName();
+
+private:
+	BDADVBTimeShift *m_pBDADVBTimeShift;
+
+	BDACard *m_pBDACard;
 	DWGraph *m_pDWGraph;
 
 	BOOL m_bInitialised;
 	BOOL m_bActive;
 
+	long m_lFrequency;
+	long m_lBandwidth;
 
-	BOOL m_bRecording;
+	//BOOL m_bRecording;
 
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IMediaControl> m_piMediaControl;
 
+	CComPtr <IBaseFilter> m_piBDANetworkProvider;
 	CComPtr <IBaseFilter> m_piInfinitePinTee;
+	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
+	CComPtr <IBaseFilter> m_piBDATIF;
+	CComPtr <IBaseFilter> m_piBDASecTab;
 
-	int m_intSinkType;
+	CComPtr <ITuningSpace> m_piTuningSpace;
 
-	CComPtr <IBaseFilter> m_piTelexSink;
-	DWDump *m_piTelexDWDump;
-	CComPtr <IBaseFilter> m_piVideoSink;
-	DWDump *m_piVideoDWDump;
-	CComPtr <IBaseFilter> m_piAudioSink;
-	DWDump *m_piAudioDWDump;
-	CComPtr <IBaseFilter> m_piAVMpeg2Demux;
-	CComPtr <IBaseFilter> m_piMPGSink;
-	DWDump *m_piMPGDWDump;
-	CComPtr <IBaseFilter> m_piMPGMpeg2Mux;
-	CComPtr <IBaseFilter> m_piMPGMpeg2Demux;
-	CComPtr <IBaseFilter> m_piTSSink;
-	DWDump *m_piTSDWDump;
-	CComPtr <IBaseFilter> m_piTSMpeg2Demux;
-	CComPtr <IBaseFilter> m_piFTSSink;
-	DWDump *m_piFTSDWDump;
+	/*
+	CComPtr <IGuideData> m_piGuideData;
+	DWGuideDataEvent* m_poGuideDataEvent;
+	*/
+	DVBMpeg2DataParser *m_pMpeg2DataParser;
 
 	DWORD m_rotEntry;
 

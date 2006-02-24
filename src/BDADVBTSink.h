@@ -41,14 +41,21 @@
 EXTERN_GUID(CLSID_MPEG2Multiplexer,
 0x4DF35815, 0x79C5, 0x44C8, 0x87, 0x53, 0x84, 0x7D, 0x5C, 0x9C, 0x3C, 0xF5);
 
-class BDADVBTSource;
+//{BC650178-0DE4-47DF-AF50-BBD9C7AEF5A9}
+//EXTERN_GUID(CLSID_MPEG2Multiplexer,
+//0xBC650178, 0x0DE4, 0x47DF, 0xAF, 0x50, 0xBB, 0xD9, 0xC7, 0xAE, 0xF5, 0xA9);
+
+//{6770E328-9B73-40C5-91E6-E2F321AEDE57}
+//EXTERN_GUID(CLSID_MPEG2Multiplexer,
+//0x6770E328, 0x9B73, 0x40C5, 0x91, 0xE6, 0xE2, 0xF3, 0x21, 0xAE, 0xDE, 0x57);
+
 class BDADVBTSinkTShift;
 class BDADVBTSinkFile;
 class BDADVBTSinkDSNet;
 class BDADVBTSink : public LogMessageCaller
 {
 public:
-	BDADVBTSink(BDADVBTSource *pBDADVBTSource, BDADVBTSourceTuner *pCurrentTuner);
+	BDADVBTSink();
 	virtual ~BDADVBTSink();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
@@ -78,18 +85,17 @@ public:
 	HRESULT StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
 	HRESULT StopSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
 	HRESULT PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
-	HRESULT StartRecording(DVBTChannels_Service* pService);
+	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL);
 	HRESULT StopRecording(void);
 	HRESULT PauseRecording(void);
 	HRESULT UnPauseRecording(DVBTChannels_Service* pService);
 	BOOL IsRecording(void);
 	BOOL IsPaused(void);
+	HRESULT GetCurFile(LPOLESTR *ppszFileName);
 
 	BOOL SupportsRecording() { return FALSE; }
 
 private:
-	BDADVBTSource *m_pBDADVBTSource;
-	BDADVBTSourceTuner *m_pCurrentTuner;
 	DWGraph *m_pDWGraph;
 
 	BDADVBTSinkTShift *m_pCurrentTShiftSink;
@@ -110,12 +116,6 @@ private:
 	long m_intTimeShiftType;
 	long m_intFileSinkType;
 	long m_intDSNetworkType;
-
-	/*
-	CComPtr <IGuideData> m_piGuideData;
-	DWGuideDataEvent* m_poGuideDataEvent;
-	*/
-	DVBMpeg2DataParser *m_pMpeg2DataParser;
 
 	DWORD m_rotEntry;
 

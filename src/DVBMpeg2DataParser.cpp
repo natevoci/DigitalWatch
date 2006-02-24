@@ -560,7 +560,10 @@ void DVBMpeg2DataParser::StartScanThread()
 			// Make sure the filter is running
 			if (!IsFilterRunning())
 			{
-				Sleep(100);
+				DWORD dwWait = WaitForSingleObject(m_hScanningStopEvent[0], 100);
+				if (dwWait != WAIT_TIMEOUT)
+					break;
+//				Sleep(100);
 				continue;
 			}
 

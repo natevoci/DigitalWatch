@@ -6,6 +6,7 @@
 
   <Key code='T' shift>			SetSource("BDA")</>
   <Key code='F' shift>			SetSource("TSFILESOURCE")</>
+  <Key code='S' shift>			SetSource("BDATIMESHIFT")</>
 
   <!-- Cursor-Up and Cursor-Down with shift option. Vol+ Vol- on VP remote -->
   <Key code= 38 shift>			ProgramUp()</>

@@ -39,6 +39,7 @@ public:
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	virtual LPWSTR GetSourceType();
+	virtual DWGraph *GetFilterGraph(void);
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph);
 	virtual HRESULT Destroy();
@@ -47,24 +48,26 @@ public:
 	virtual HRESULT ExecuteCommand(ParseLine* command);
 
 	virtual HRESULT Start();
+	virtual BOOL IsRecording();
+	virtual HRESULT SeekTo(long percentage);
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
+	virtual HRESULT ReLoad(LPWSTR pCmdLine);
 
 	virtual void ThreadProc();
 
 protected:
 	// graph building methods
 	HRESULT LoadFile(LPWSTR pFilename);
+	HRESULT ReLoadFile(LPWSTR pFilename);
+	virtual void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 
 	virtual HRESULT PlayPause();
 	virtual HRESULT Skip(long seconds);
-	virtual HRESULT SeekTo(long percentage);
 
 	virtual HRESULT UpdateData();
 	virtual HRESULT SetStream(long index);
-//	virtual HRESULT ShowMenu(LPWSTR szMenuName);
-//	virtual HRESULT ExitMenu(long nNumberOfMenusToExit = 1);
 	virtual HRESULT GetStreamList(void);
 
 private:

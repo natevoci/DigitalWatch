@@ -149,7 +149,7 @@ AppData::AppData()
 
 	values.capture.format =	settings.capture.format;
 
-	values.timeshift.format =	settings.timeshift.format;
+	values.timeshift.format = settings.timeshift.format;
 	values.timeshift.bufferMinutes = settings.timeshift.bufferMinutes;
 
 	values.dsnetwork.format = settings.dsnetwork.format;
