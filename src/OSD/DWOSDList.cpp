@@ -619,7 +619,6 @@ HRESULT DWOSDList::Draw(long tickCount)
 
 	m_pListSurface->Clear();
 
-//	int i=0;
 	{
 		CAutoLock itemsToRenderLock(&m_itemsToRenderLock);
 
@@ -636,11 +635,7 @@ HRESULT DWOSDList::Draw(long tickCount)
 				item->Render(tickCount);
 			}
 			nYOffset += item->m_nHeight + item->m_nGap;
-/*
-			i++;
-			if (i >= 1)
-				break;
-*/
+
 			itemID++;
 		}
 	}
