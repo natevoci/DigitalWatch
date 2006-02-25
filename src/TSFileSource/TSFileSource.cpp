@@ -385,7 +385,6 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 
 	if (m_piTSFileSource)
 	{
-//		Sleep(2000);
 		// Set Filename
 		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_piTSFileSource);
 		if (!piFileSourceFilter)
@@ -393,8 +392,6 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 
 		if FAILED(hr = piFileSourceFilter->Load(pFilename, NULL))
 			return (log << "Failed to load filename: " << hr << "\n").Write(hr);
-
-//		Sleep(2000);
 
 		indent.Release();
 		(log << "Finished Reloading File\n").Write();

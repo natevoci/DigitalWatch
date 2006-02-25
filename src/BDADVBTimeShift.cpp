@@ -877,8 +877,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				(log << "Failed to load File Source Filters\n").Write();
 				continue;
 			}
-			else
-				m_pCurrentFileSource->SeekTo(0);
+//			else
+//				m_pCurrentFileSource->SeekTo(0);
 		}
 
 		if FAILED(hr = m_pCurrentTuner->StartScanning())
@@ -1051,24 +1051,61 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	if(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x07))
 		m_pCurrentSink->StartRecording(m_pCurrentService);
 
-	LPOLESTR filename = NULL;
+	LPOLESTR pFileName = NULL;
 	if(m_pCurrentSink)
-		m_pCurrentSink->GetCurFile(&filename);
+		m_pCurrentSink->GetCurFile(&pFileName);
 
-	if (!filename)
+	if (!pFileName)
 	{
 		hr = E_FAIL;
 		return (log << "Failed to Get Sink Filter File Name: " << hr << "\n").Write(hr);
 	}
 
-	Sleep(3000);
+	// Wait up to 5 sec for file to grow
+	int count =0;
+	__int64 fileSize = 0;
+	(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
+	while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
+				fileSize < (__int64)2000000 && count < 10)
+	{
+		Sleep(500);
+		(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
+		count++;
+	}
 
-	if FAILED(hr = m_pCurrentFileSource->Load(filename))
+	g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+	g_pTv->ShowOSDItem(L"Warnings", 2);
+
+	if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
 		return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 
-	if((g_pData->values.timeshift.format & 0x04) ||	(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x04)))
+	if FAILED(hr = m_pCurrentDWGraph->Pause(TRUE))
+	{
+		(log << "Failed to Pause Graph.\n").Write();
+	}
+	
+	m_pCurrentFileSource->SeekTo(0);
+
+	Sleep(500);
+/*
+	count = 0;
+	while ( FAILED(hr = m_pCurrentFileSource->GetStreamList()) && count < 6)
+	{
+		Sleep(500);
 		if FAILED(hr = m_pCurrentFileSource->ReLoad(filename))
 			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
+
+		count++;
+	}
+*/
+	if FAILED(hr = m_pCurrentDWGraph->Pause(FALSE))
+	{
+		(log << "Failed to Pause Graph.\n").Write();
+	}
+
+//	if((g_pData->values.timeshift.format & 0x04) ||	(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x04)))
+//		if FAILED(hr = m_pCurrentFileSource->ReLoad(filename))
+//			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
 
 	m_bFileSourceActive = TRUE;
 

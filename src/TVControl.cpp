@@ -306,6 +306,14 @@ HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 		{
 			if (m_pActiveSource)
 			{
+				if (m_pActiveSource && m_pActiveSource->IsRecording())
+				{
+					g_pTv->ShowOSDItem(L"Recording", 5);
+					g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
+					g_pTv->ShowOSDItem(L"Warnings", 5);
+					return S_FALSE;
+				}
+
 				//TODO: create a m_pActiveSource->DisconnectFromGraph() method
 				m_pActiveSource->Destroy();
 				m_pActiveSource = NULL;

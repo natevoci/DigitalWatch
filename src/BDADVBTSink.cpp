@@ -246,8 +246,14 @@ BOOL BDADVBTSink::IsActive()
 	return m_bActive;
 }
 
-HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType)
+HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType)
 {
+	if (ppFileName == NULL)
+	{
+		(log << "Skipping Add File Name. No Valid Pointer passed.\n").Write();
+		return E_INVALIDARG;
+	}
+
 	if (pService == NULL)
 	{
 		(log << "Skipping Add File Name. No service passed.\n").Write();
@@ -279,13 +285,18 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 			return E_FAIL;
 		}
 
+		if(*ppFileName)
+			delete[] *ppFileName;
+
+		*ppFileName = new WCHAR[MAX_PATH];
+		lstrcpyW(*ppFileName, L"");
+
 		//
 		// Add the Date/Time Stamp to the FileName 
 		//
 		WCHAR wPathName[MAX_PATH] = L""; 
 		WCHAR wTimeStamp[MAX_PATH] = L"";
 		WCHAR wfileName[MAX_PATH] = L"";
-		WCHAR fileName[MAX_PATH] = L"";
 		WCHAR wServiceName[MAX_PATH] = L"";
 
 		lstrcpyW(wServiceName, pService->serviceName);
@@ -309,28 +320,28 @@ HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFi
 		}
 
 		if (intSinkType == 1)
-			wsprintfW(fileName, L"%S%S %S.full.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.full.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 11)
-			wsprintfW(fileName, L"%S%S %S.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 111)
-			wsprintfW(fileName, L"%S%S %S.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 2) 
-			wsprintfW(fileName, L"%S%S %S.full.ts", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.full.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 22) 
-			wsprintfW(fileName, L"%S%S %S.ts", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 3) 
-			wsprintfW(fileName, L"%S%S %S.mpg", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.mpg", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 4) 
-			wsprintfW(fileName, L"%S%S %S.mv2", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.mv2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 5) 
-			wsprintfW(fileName, L"%S%S %S.mp2", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.mp2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 6)
-			wsprintfW(fileName, L"%S%S %S.txt", wPathName, wTimeStamp, wServiceName);
+			wsprintfW(*ppFileName, L"%S%S %S.txt", wPathName, wTimeStamp, wServiceName);
 
 		//
 		// Set the Sink Filter File Name 
 		//
-		if FAILED(hr = m_piFileSink->SetFileName(fileName, NULL))
+		if FAILED(hr = m_piFileSink->SetFileName(*ppFileName, NULL))
 		{
 			(log << "Failed to Set the IFileSinkFilter Interface with a filename.\n").Write(hr);
 			return hr;
@@ -998,6 +1009,143 @@ HRESULT BDADVBTSink::GetCurFile(LPOLESTR *ppszFileName)
 		return m_pCurrentFileSink->GetCurFile(ppszFileName);
 
 	return FALSE;
-
 }
 
+HRESULT BDADVBTSink::GetCurFileSize(__int64 *pllFileSize)
+{
+	if (!pllFileSize)
+		return E_INVALIDARG;
+
+	*pllFileSize = 0;
+
+	if(m_intTimeShiftType && m_pCurrentTShiftSink)
+		return m_pCurrentTShiftSink->GetCurFileSize(pllFileSize);
+
+	if((m_intFileSinkType & 0x07) && m_pCurrentFileSink)
+		return m_pCurrentFileSink->GetCurFileSize(pllFileSize);
+
+	return E_FAIL;
+}
+
+HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
+{
+	USES_CONVERSION;
+
+	if (!pllFileSize)
+		return E_INVALIDARG;
+
+	if (!pFileName)
+		return E_FAIL;
+
+	*pllFileSize = 0;
+
+	HRESULT hr = E_FAIL;
+
+
+	// If it's a .tsbuffer file then get info from file
+	long length = wcslen(pFileName);
+	if ((length >= 9) && (_wcsicmp(pFileName+length-9, L".tsbuffer") == 0))
+	{
+
+	//	(log << "Opening File to get size: " << pFileName << "\n").Write();
+		HANDLE hFile = CreateFile(W2T(pFileName),   // The filename
+							 GENERIC_READ,          // File access
+							 FILE_SHARE_READ |
+							 FILE_SHARE_WRITE,       // Share access
+							 NULL,                  // Security
+							 OPEN_EXISTING,         // Open flags
+							 (DWORD) 0,             // More flags
+							 NULL);                 // Template
+		if (hFile != INVALID_HANDLE_VALUE)
+		{
+			__int64 length = -1;
+			DWORD read = 0;
+			LARGE_INTEGER li;
+			li.QuadPart = 0;
+			::SetFilePointer(hFile, li.LowPart, &li.HighPart, FILE_BEGIN);
+			ReadFile(hFile, (PVOID)&length, (DWORD)sizeof(__int64), &read, NULL);
+			CloseHandle(hFile);
+
+			if(length > -1)
+			{
+				*pllFileSize = length;
+				return S_OK;
+			}
+		}
+		else
+		{
+			wchar_t msg[MAX_PATH];
+			DWORD dwErr = GetLastError();
+			swprintf((LPWSTR)&msg, L"Failed to open file %s : 0x%x\n", pFileName, dwErr);
+			::OutputDebugString(W2T((LPWSTR)&msg));
+			return HRESULT_FROM_WIN32(dwErr);
+		}
+	}
+	else //Normal File type & info file type
+	{
+		TCHAR infoName[512];
+		strcpy(infoName, W2T(pFileName));
+		strcat(infoName, ".info");
+
+		HANDLE hInfoFile = CreateFile((LPCTSTR) infoName, // The filename
+										GENERIC_READ,    // File access
+										FILE_SHARE_READ |
+										FILE_SHARE_WRITE,   // Share access
+										NULL,      // Security
+										OPEN_EXISTING,    // Open flags
+										FILE_ATTRIBUTE_NORMAL, // More flags
+										NULL);
+
+		if (hInfoFile != INVALID_HANDLE_VALUE)
+		{
+			__int64 length = -1;
+			DWORD read = 0;
+			LARGE_INTEGER li;
+			li.QuadPart = 0;
+			::SetFilePointer(hInfoFile, li.LowPart, &li.HighPart, FILE_BEGIN);
+			ReadFile(hInfoFile, (PVOID)&length, (DWORD)sizeof(__int64), &read, NULL);
+			CloseHandle(hInfoFile);
+
+			if(length > -1)
+			{
+				*pllFileSize = length;
+				return S_OK;
+			}
+		}
+
+		//Test file is being recorded to
+		HANDLE hFile = CreateFile(W2T(pFileName),		// The filename
+							GENERIC_READ,				// File access
+							FILE_SHARE_READ |
+							FILE_SHARE_WRITE,			// Share access
+							NULL,						// Security
+							OPEN_EXISTING,				// Open flags
+							FILE_ATTRIBUTE_NORMAL,		// More flags
+							NULL);						// Template
+
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			DWORD dwErr = GetLastError();
+			return HRESULT_FROM_WIN32(dwErr);
+		}
+
+		DWORD dwSizeLow;
+		DWORD dwSizeHigh;
+
+		dwSizeLow = ::GetFileSize(hFile, &dwSizeHigh);
+		if ((dwSizeLow == 0xFFFFFFFF) && (GetLastError() != NO_ERROR ))
+		{
+			CloseHandle(hFile);
+			return E_FAIL;
+		}
+
+		CloseHandle(hFile);
+
+		LARGE_INTEGER li;
+		li.LowPart = dwSizeLow;
+		li.HighPart = dwSizeHigh;
+		*pllFileSize = li.QuadPart;
+	}
+	return S_OK;
+}
+	

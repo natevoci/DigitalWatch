@@ -71,7 +71,7 @@ public:
 
 	BOOL IsActive();
 
-	HRESULT AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType = 0);
+	HRESULT AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType = 0);
 	HRESULT NullFileName(CComPtr<IBaseFilter>& pFilter, int intSinkType);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
@@ -92,6 +92,8 @@ public:
 	BOOL IsRecording(void);
 	BOOL IsPaused(void);
 	HRESULT GetCurFile(LPOLESTR *ppszFileName);
+	HRESULT GetCurFileSize(__int64 *pllFileSize);
+	HRESULT GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize);
 
 	BOOL SupportsRecording() { return FALSE; }
 

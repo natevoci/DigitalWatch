@@ -90,26 +90,33 @@ private:
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IMediaControl> m_piMediaControl;
 
-	CComPtr <IBaseFilter> m_piInfinitePinTee;
+	CComPtr <IBaseFilter> m_pInfinitePinTee;
 
 	int m_intSinkType;
 
-	CComPtr <IBaseFilter> m_piTelexSink;
-	DWDump *m_piTelexDWDump;
-	CComPtr <IBaseFilter> m_piVideoSink;
-	DWDump *m_piVideoDWDump;
-	CComPtr <IBaseFilter> m_piAudioSink;
-	DWDump *m_piAudioDWDump;
-	CComPtr <IBaseFilter> m_piAVMpeg2Demux;
-	CComPtr <IBaseFilter> m_piMPGSink;
-	DWDump *m_piMPGDWDump;
-	CComPtr <IBaseFilter> m_piMPGMpeg2Mux;
-	CComPtr <IBaseFilter> m_piMPGMpeg2Demux;
-	CComPtr <IBaseFilter> m_piTSSink;
-	DWDump *m_piTSDWDump;
-	CComPtr <IBaseFilter> m_piTSMpeg2Demux;
-	CComPtr <IBaseFilter> m_piFTSSink;
-	DWDump *m_piFTSDWDump;
+	CComPtr <IBaseFilter> m_pTelexSink;
+	DWDump *m_pTelexDWDump;
+	CComPtr <IBaseFilter> m_pVideoSink;
+	DWDump *m_pVideoDWDump;
+	CComPtr <IBaseFilter> m_pAudioSink;
+	DWDump *m_pAudioDWDump;
+	CComPtr <IBaseFilter> m_pAVMpeg2Demux;
+	CComPtr <IBaseFilter> m_pMPGSink;
+	DWDump *m_pMPGDWDump;
+	CComPtr <IBaseFilter> m_pMPGMpeg2Mux;
+	CComPtr <IBaseFilter> m_pMPGMpeg2Demux;
+	CComPtr <IBaseFilter> m_pTSSink;
+	DWDump *m_pTSDWDump;
+	CComPtr <IBaseFilter> m_pTSMpeg2Demux;
+	CComPtr <IBaseFilter> m_pFTSSink;
+	DWDump *m_pFTSDWDump;
+
+	LPOLESTR m_pTelexFileName;
+	LPOLESTR m_pVideoFileName;
+	LPOLESTR m_pAudioFileName;
+	LPOLESTR m_pMPGFileName;
+	LPOLESTR m_pTSFileName;
+	LPOLESTR m_pFTSFileName;
 
 	DWORD m_rotEntry;
 

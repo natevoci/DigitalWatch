@@ -54,6 +54,8 @@ public:
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
 	virtual HRESULT ReLoad(LPWSTR pCmdLine);
+	virtual HRESULT SetStream(long index);
+	virtual HRESULT GetStreamList(void);
 
 	virtual void ThreadProc();
 
@@ -67,8 +69,6 @@ protected:
 	virtual HRESULT Skip(long seconds);
 
 	virtual HRESULT UpdateData();
-	virtual HRESULT SetStream(long index);
-	virtual HRESULT GetStreamList(void);
 
 private:
 	const LPWSTR m_strSourceType;
