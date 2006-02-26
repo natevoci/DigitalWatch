@@ -76,6 +76,7 @@
   <Key code='P' shift>			ShowChannelInfo()</>
   <Key code='Q'>				ShowOSDItem("Signal")</>
   <Key code='E'>				ShowOSDItem("NowAndNext")</>
+  <Key code='W'>				ReLoadTimeShiftFile()</>
 
   <Key code='1' shift>			SetColorControls(  350, 10000, 0, 10000, 1)</>
   <Key code='2' shift>			SetColorControls(  450, 10000, 0, 10000, 1)</>

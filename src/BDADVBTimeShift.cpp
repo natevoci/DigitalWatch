@@ -410,6 +410,14 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 
 		return TogglePauseRecording(n1);
 	}
+	else if (_wcsicmp(pCurr, L"ReLoadTimeShiftFile") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return ReLoadTimeShiftFile();
+	}
+
 
 	if (m_pCurrentFileSource)
 		return m_pCurrentFileSource->ExecuteCommand(command);
@@ -1066,7 +1074,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	__int64 fileSize = 0;
 	(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
 	while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
-				fileSize < (__int64)2000000 && count < 10)
+				fileSize < (__int64)4000000 && count < 10)
 	{
 		Sleep(500);
 		(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
@@ -1079,11 +1087,12 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
 		return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 
+
 	if FAILED(hr = m_pCurrentDWGraph->Pause(TRUE))
 	{
 		(log << "Failed to Pause Graph.\n").Write();
 	}
-	
+
 	m_pCurrentFileSource->SeekTo(0);
 
 	Sleep(500);
@@ -1560,3 +1569,46 @@ BOOL BDADVBTimeShift::IsRecording()
 	else
 		return FALSE;
 }
+
+HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
+{
+	HRESULT hr;
+
+	LPOLESTR pFileName = NULL;
+	if(m_pCurrentSink)
+		m_pCurrentSink->GetCurFile(&pFileName);
+
+	if (!pFileName)
+	{
+		hr = E_FAIL;
+		return (log << "Failed to Get Sink Filter File Name: " << hr << "\n").Write(hr);
+	}
+
+	// Wait up to 5 sec for file to grow
+	int count =0;
+	__int64 fileSize = 0;
+	(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
+	while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
+				fileSize < (__int64)4000000 && count < 10)
+	{
+		Sleep(500);
+		(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
+		count++;
+	}
+
+	g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+	g_pTv->ShowOSDItem(L"Warnings", 2);
+
+	if FAILED(hr = m_pCurrentFileSource->ReLoad(pFileName))
+		return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
+
+	// If it's a .tsbuffer file then seek to the end
+	long length = wcslen(pFileName);
+	if ((length >= 9) && (_wcsicmp(pFileName+length-9, L".tsbuffer") == 0))
+	{
+		m_pCurrentFileSource->SeekTo(100);
+	}
+
+	return hr;
+}
+
