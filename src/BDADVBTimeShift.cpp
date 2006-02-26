@@ -388,7 +388,7 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"Recording") == 0)
 	{
-		if (command->LHS.ParameterCount <= 0)
+/*DWS		if (command->LHS.ParameterCount <= 0)
 			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		if (command->LHS.ParameterCount > 1)
@@ -397,6 +397,24 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		return ToggleRecording(n1);
+*/
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 2)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		n2 = 0;
+		if (command->LHS.ParameterCount >= 2)
+		{
+			n2 = (int)command->LHS.Parameter[1];
+			return ToggleRecording(n1, (LPWSTR)n2);
+		}
+		else
+			return ToggleRecording(n1);
+
 	}
 	else if (_wcsicmp(pCurr, L"RecordingPause") == 0)
 	{
@@ -1087,12 +1105,11 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
 		return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 
-
 	if FAILED(hr = m_pCurrentDWGraph->Pause(TRUE))
 	{
 		(log << "Failed to Pause Graph.\n").Write();
 	}
-
+	
 	m_pCurrentFileSource->SeekTo(0);
 
 	Sleep(500);
@@ -1496,7 +1513,8 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename)
 
 	HRESULT hr = S_OK;
 
-	WCHAR sz[32];
+//DWS	WCHAR sz[32];
+	WCHAR sz[32] = L"";
 
 //	if(m_pCurrentSink->IsRecording())
 	if (m_pCurrentSink->IsRecording() && ((mode == 0) || (mode == 2)))
@@ -1517,8 +1535,13 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename)
 		lstrcpyW(sz, L"Recording");
 	}
 
-	g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
-	g_pTv->ShowOSDItem(L"Recording", 5);
+	//DWS if (sz != L"") this is required to avoid OSD when nothing in sz
+	//the if then else above may leave sz empty for example when trying to stop and not recording...
+	if (sz != L"")
+	{
+		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
+		g_pTv->ShowOSDItem(L"Recording", 5);
+	}
 
 	return hr;
 }

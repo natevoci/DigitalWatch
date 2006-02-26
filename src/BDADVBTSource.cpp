@@ -1304,7 +1304,8 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename)
 
 	HRESULT hr = S_OK;
 
-	WCHAR sz[32];
+//DWS	WCHAR sz[32];
+	WCHAR sz[32] = L"";
 
 //	if(m_pCurrentSink->IsRecording())
 	if (m_pCurrentSink->IsRecording() && ((mode == 0) || (mode == 2)))
@@ -1325,9 +1326,13 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename)
 		lstrcpyW(sz, L"Recording");
 	}
 
-	g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
-	g_pTv->ShowOSDItem(L"Recording", 5);
-
+	//DWS if (sz != L"") this is required to avoid OSD when nothing in sz
+	//the if then else above may leave sz empty for example when trying to stop and not recording...
+	if (sz != L"")
+	{
+		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
+		g_pTv->ShowOSDItem(L"Recording", 5);
+	}
 	return hr;
 }
 

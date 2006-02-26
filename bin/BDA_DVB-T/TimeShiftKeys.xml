@@ -48,10 +48,11 @@
   <Key code='L'>				LastChannel()</>
 
   <!-- Home and End. Rec and Stop on VP remote -->
-  <Key code= 36>				RecordingTimer(1)</>
+  <Key code= 36>				Recording(1)</>
   <Key code= 35>				Recording(0)</>
   <Key code='R'>				Recording(2)</>
-  <Key code='R' shift>			RecordingPause(2)</>
+  <Key code='R' shift>				RecordingPause(2)</>
+  <Key code='R' alt>				Recording(2,"TestDWS")</>
 
   <!-- space -->
    

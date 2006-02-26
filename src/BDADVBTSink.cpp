@@ -246,7 +246,8 @@ BOOL BDADVBTSink::IsActive()
 	return m_bActive;
 }
 
-HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType)
+//HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName)
+HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName)
 {
 	if (ppFileName == NULL)
 	{
@@ -325,7 +326,9 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 			wsprintfW(*ppFileName, L"%S%S %S.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 111)
 			wsprintfW(*ppFileName, L"%S%S %S.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
-		else if (intSinkType == 2) 
+		else if (pFileName == NULL)
+		{
+		     if (intSinkType == 2) 
 			wsprintfW(*ppFileName, L"%S%S %S.full.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 22) 
 			wsprintfW(*ppFileName, L"%S%S %S.ts", wPathName, wTimeStamp, wServiceName);
@@ -337,6 +340,22 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 			wsprintfW(*ppFileName, L"%S%S %S.mp2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 6)
 			wsprintfW(*ppFileName, L"%S%S %S.txt", wPathName, wTimeStamp, wServiceName);
+		}
+		else
+		{
+		     if (intSinkType == 2) 
+			wsprintfW(*ppFileName, L"%S%S.full.ts", wPathName, pFileName);
+		else if (intSinkType == 22) 
+			wsprintfW(*ppFileName, L"%S%S.ts", wPathName, pFileName);
+		else if (intSinkType == 3) 
+			wsprintfW(*ppFileName, L"%S%S.mpg", wPathName, pFileName);
+		else if (intSinkType == 4) 
+			wsprintfW(*ppFileName, L"%S%S.mv2", wPathName, pFileName);
+		else if (intSinkType == 5) 
+			wsprintfW(*ppFileName, L"%S%S.mp2", wPathName, pFileName);
+		else if (intSinkType == 6)
+			wsprintfW(*ppFileName, L"%S%S.txt", wPathName, pFileName);
+		}
 
 		//
 		// Set the Sink Filter File Name 
@@ -916,7 +935,7 @@ HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFile
 */			
 
 	if(m_intFileSinkType)
-		return m_pCurrentFileSink->StartRecording(pService);
+		return m_pCurrentFileSink->StartRecording(pService, pFilename);
 
 	return hr;
 }
