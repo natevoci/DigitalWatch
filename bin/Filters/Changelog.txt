@@ -1,6 +1,7 @@
 Version 2.2.0.0
 =================
 bear:
+Fixed a bug with the MultiFileReader::Read() function where it was trying to read data past the end of the file.
 Found and fixed a few more potential divide by zero bugs.
 Fixed a bug in the MultiFileReader::Read() function where it would crash if the info array had no file-> class loaded.Fixed a potential problem with the IAMStreamSelect GetCount() function not returning 0 value if there are no streams.
 Fixed a potential problem if you have a threaded call to CTSFileSourcePin::GetAvailable() function if the FileReader class does not exist such as when reloading.

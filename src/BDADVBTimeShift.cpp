@@ -945,7 +945,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			(log << "Failed to start channel scanning\n").Write();
 			continue;
 		}
-
+ 
 		// Start the background thread for updating statistics
 		if FAILED(hr = StartThread())
 		{
@@ -1210,11 +1210,11 @@ HRESULT BDADVBTimeShift::UnloadFileSource()
 	if(m_pCurrentDWGraph)
 	{
 		if FAILED(hr = m_pCurrentDWGraph->Stop())
-			(log << "Failed to stop DWGraph\n").Write();
+			(log << "Failed to stop the File Source DWGraph\n").Write();
 
 		if FAILED(hr = m_pCurrentFileSource->UnloadFilters())
-		return (log << "Failed to remove Sink filters: " << hr << "\n").Write(hr);
-
+			return (log << "Failed to remove File Source filters: " << hr << "\n").Write(hr);
+/*
 		IGraphBuilder *piGraphBuilder;
 		if FAILED(hr = m_pCurrentDWGraph->QueryGraphBuilder(&piGraphBuilder))
 			return (log << "Failed to get the filtergraph's IGraphBuilder Interface : " << hr << "\n").Write(hr);
@@ -1230,7 +1230,7 @@ HRESULT BDADVBTimeShift::UnloadFileSource()
 
 		if FAILED(hr = piMediaFilter->SetSyncSource(NULL))
 			return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-
+*/
 	}
 
 	indent.Release();
