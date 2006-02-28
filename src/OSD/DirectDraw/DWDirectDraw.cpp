@@ -177,6 +177,7 @@ HRESULT DWDirectDraw::GetOverlayCallbackInterface(IDDrawExclModeVideoCallback **
 HRESULT DWDirectDraw::Clear()
 {
 	CAutoLock screensLock(&m_screensLock);
+	CAutoLock overlayLock(&m_overlayLock);
 
 	HRESULT hr;
 
@@ -212,6 +213,7 @@ HRESULT DWDirectDraw::Flip()
 
 void DWDirectDraw::SetOverlayEnabled(BOOL bEnabled)
 {
+	CAutoLock overlayLock(&m_overlayLock);
 	m_bOverlayEnabled = bEnabled;
 }
 
@@ -219,6 +221,8 @@ void DWDirectDraw::SetOverlayPosition(const RECT* pRect)
 {
 	if (pRect)
 	{
+		CAutoLock overlayLock(&m_overlayLock);
+
 		CopyRect(&m_OverlayPositionRect, pRect);
 
 		POINT p;
@@ -241,6 +245,7 @@ void DWDirectDraw::SetOverlayPosition(const RECT* pRect)
 
 void DWDirectDraw::SetOverlayColor(COLORREF color)
 {
+	CAutoLock overlayLock(&m_overlayLock);
 	m_dwVideoKeyColor = color;
 }
 

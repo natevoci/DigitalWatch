@@ -70,6 +70,8 @@ private:
 	BOOL m_bOverlayEnabled;
 	RECT m_OverlayPositionRect;
 	COLORREF m_dwVideoKeyColor;
+
+	CCritSec m_overlayLock;
 };
 
 
