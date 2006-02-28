@@ -91,6 +91,9 @@ AppData::AppData()
 
 	settings.timeshift.folder = new wchar_t[MAX_PATH];
 	wcscpy(settings.timeshift.folder, L"");
+	settings.timeshift.dlimit = 5000;
+	settings.timeshift.flimit = 4000000;
+	settings.timeshift.fdelay = 1000;
 	settings.timeshift.bufferMinutes = 30;
 	settings.timeshift.format = 0;
 
@@ -150,6 +153,9 @@ AppData::AppData()
 	values.capture.format =	settings.capture.format;
 
 	values.timeshift.format = settings.timeshift.format;
+	values.timeshift.dlimit = settings.timeshift.dlimit;;
+	values.timeshift.flimit = settings.timeshift.flimit;
+	values.timeshift.fdelay = settings.timeshift.fdelay;
 	values.timeshift.bufferMinutes = settings.timeshift.bufferMinutes;
 
 	values.dsnetwork.format = settings.dsnetwork.format;
@@ -494,6 +500,21 @@ HRESULT AppData::LoadSettings()
 					settings.timeshift.format = _wtoi(pSubElement->value);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"LoadDelayLimit") == 0)
+				{
+					settings.timeshift.dlimit = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"LoadFileSize") == 0)
+				{
+					settings.timeshift.flimit = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"LoadPauseDelay") == 0)
+				{
+					settings.timeshift.fdelay = _wtoi(pSubElement->value);
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"BufferMinutes") == 0)
 				{
 					settings.timeshift.bufferMinutes = _wtoi(pSubElement->value);
@@ -691,11 +712,16 @@ HRESULT AppData::SaveSettings()
 		pCapture->Elements.Add(new XMLElement(L"Format", pValue));
 	}
 
-
 	XMLElement *pTimeshift = new XMLElement(L"Timeshift");
 	file.Elements.Add(pTimeshift);
 	{
 		pTimeshift->Elements.Add(new XMLElement(L"Folder", settings.timeshift.folder));
+		strCopy(pValue, settings.timeshift.dlimit);
+		pTimeshift->Elements.Add(new XMLElement(L"LoadDelayLimit", pValue));
+		strCopy(pValue, settings.timeshift.flimit);
+		pTimeshift->Elements.Add(new XMLElement(L"LoadFileSize", pValue));
+		strCopy(pValue, settings.timeshift.fdelay);
+		pTimeshift->Elements.Add(new XMLElement(L"LoadPauseDelay", pValue));
 		strCopy(pValue, settings.timeshift.bufferMinutes);
 		pTimeshift->Elements.Add(new XMLElement(L"BufferMinutes", pValue));
 		strCopy(pValue, settings.timeshift.format);

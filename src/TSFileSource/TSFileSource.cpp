@@ -266,7 +266,8 @@ void TSFileSource::ThreadProc()
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
-		Sleep(100);
+//		Sleep(100);
+		Sleep(1000);
 	}
 }
 

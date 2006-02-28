@@ -63,7 +63,8 @@ public:
 	BOOL IsActive();
 	HRESULT AddDWDumpFilter(LPWSTR name, DWDump **pfDWDump, CComPtr <IBaseFilter> &pFilter);
 //DWS 	HRESULT StartRecording(DVBTChannels_Service* pService);
-	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFileName = NULL);
+//DWS28-02-2006	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL);
+	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL, LPWSTR pPath = NULL);
 	HRESULT StopRecording(void);
 	HRESULT PauseRecording(void);
 	HRESULT UnPauseRecording(DVBTChannels_Service* pService);

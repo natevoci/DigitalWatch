@@ -50,6 +50,7 @@
   <Key code='R'>				Recording(2)</>
   <Key code='R' shift>				RecordingPause(2)</>
   <Key code='R' alt>				Recording(1,"TestDWS")</>
+  <Key code='R' ctrl>				Recording(1,"TestDWS","c:")</>
 
   <!-- space -->
   <Key code= 32>				TimeShift(2)</>

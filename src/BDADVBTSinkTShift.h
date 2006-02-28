@@ -63,7 +63,8 @@ public:
 
 	BOOL SetRecordingFullTS();
 	BOOL SetRecordingTSMux(long PIDs[]);
-	BOOL StartRecording(LPWSTR filename);
+//DWS28-02-2006	BOOL StartRecording(LPWSTR filename);
+	BOOL StartRecording(LPWSTR filename, LPWSTR pPath);
 	BOOL PauseRecording(BOOL bPause);
 	BOOL StopRecording();
 	BOOL IsRecording();

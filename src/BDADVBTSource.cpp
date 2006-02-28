@@ -355,14 +355,17 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"Recording") == 0)
 	{
 		if (command->LHS.ParameterCount <= 0)
-			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+//DWS28-02-2006			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "Expecting 1 or 2 or 3 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		if (command->LHS.ParameterCount > 2)
+//DWS28-02-2006		if (command->LHS.ParameterCount > 2)
+		if (command->LHS.ParameterCount > 3)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		n2 = 0;
+/*DWS28-02-2006		
 		if (command->LHS.ParameterCount >= 2)
 		{
 			n2 = (int)command->LHS.Parameter[1];
@@ -370,6 +373,23 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		}
 		else
 			return ToggleRecording(n1);
+*/
+		if (command->LHS.ParameterCount >= 3)
+		{
+			n2 = (int)command->LHS.Parameter[1];
+			n3 = (int)command->LHS.Parameter[2];
+			return ToggleRecording(n1, (LPWSTR)n2, (LPWSTR)n3);
+		}
+		else
+		{
+			if (command->LHS.ParameterCount >= 2)
+			{
+				n2 = (int)command->LHS.Parameter[1];
+				return ToggleRecording(n1, (LPWSTR)n2);
+			}
+			else
+				return ToggleRecording(n1);
+		}
 
 	}
 	else if (_wcsicmp(pCurr, L"RecordingPause") == 0)
@@ -504,7 +524,8 @@ void BDADVBTSource::ThreadProc()
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
-		Sleep(100);
+//		Sleep(100);
+		Sleep(1000);
 	}
 }
 
@@ -650,6 +671,9 @@ HRESULT BDADVBTSource::SetFrequency(long frequency, long bandwidth)
 
 HRESULT BDADVBTSource::NetworkUp()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
 
@@ -667,6 +691,9 @@ HRESULT BDADVBTSource::NetworkUp()
 
 HRESULT BDADVBTSource::NetworkDown()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
 
@@ -684,6 +711,9 @@ HRESULT BDADVBTSource::NetworkDown()
 
 HRESULT BDADVBTSource::ProgramUp()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
 
@@ -704,6 +734,9 @@ HRESULT BDADVBTSource::ProgramUp()
 
 HRESULT BDADVBTSource::ProgramDown()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
 
@@ -1148,6 +1181,7 @@ HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long
 
 void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 {
+//	return ;
 //	HRESULT hr;
 	LPWSTR str = NULL;
 	strCopy(str, L"");
@@ -1235,6 +1269,9 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 
 HRESULT BDADVBTSource::UpdateChannels()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return S_OK;
 
@@ -1290,7 +1327,8 @@ HRESULT BDADVBTSource::MoveNetworkDown(long originalNetworkId)
 }
 
 //HRESULT BDADVBTSource::ToggleRecording(long mode)
-HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename)
+//DWS28-02-2006HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename)
+HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath)
 {
 	if (!m_pCurrentSink)
 	{
@@ -1320,7 +1358,8 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename)
 	else if (!m_pCurrentSink->IsRecording() && ((mode == 1) || (mode == 2)))
 	{
 //		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService))
-		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename))
+//DWS28-02-2006		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename))
+		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename, pPath))
 			return hr;
 
 		lstrcpyW(sz, L"Recording");

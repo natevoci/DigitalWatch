@@ -412,7 +412,8 @@ HRESULT BDADVBTSinkFile::AddDWDumpFilter(LPWSTR name, DWDump **pfDWDump, CComPtr
 }
 
 //DWS HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService)
-HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR pFileName)
+//DWS28-02-2006 HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR pFileName)
+HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR pFileName, LPWSTR pPath)
 {
 	(log << "Recording Starting on Sink FileWriter \n").Write();
 
@@ -421,8 +422,9 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 	if ((m_intSinkType& 0x1) && m_pFTSSink)
 	{
 		//Add Demux Pins (Full TS Sink's)
-		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pFTSFileName, pService, m_pFTSSink, 2, pFileName))		
-			(log << "Failed to Set the File Name on the Full TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
+//DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pFTSFileName, pService, m_pFTSSink, 2, pFileName))		
+		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pFTSFileName, pService, m_pFTSSink, 2, pFileName, pPath))		
+		(log << "Failed to Set the File Name on the Full TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
 		if FAILED(hr = m_pFTSDWDump->Record())
 			(log << "Failed to Start Recording on the Full TS Sink Filter: " << hr << "\n").Write(hr);
@@ -433,7 +435,8 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pTSMpeg2Demux, 1))
 			(log << "Failed to Add Output Pins to TS Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 
-		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTSFileName, pService, m_pTSSink, 22, pFileName))
+//DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTSFileName, pService, m_pTSSink, 22, pFileName))
+		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTSFileName, pService, m_pTSSink, 22, pFileName, pPath))
 			(log << "Failed to Set the File Name on the TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
 		if FAILED(hr = m_pTSDWDump->Record())
@@ -442,7 +445,8 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 
 	if ((m_intSinkType& 0x4) && m_pMPGSink)
 	{
-		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 3, pFileName))
+//DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 3, pFileName))
+		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 3, pFileName, pPath))
 			(log << "Failed to Set the File Name on the MPG Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
 		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pMPGMpeg2Demux))
@@ -466,13 +470,16 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 			(log << "Failed to Add Output Pins to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 
 		//Add Demux Pins (Seperate A/V Sink's) Video
-		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pVideoFileName, pService, m_pVideoSink, 4, pFileName))
+//DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pVideoFileName, pService, m_pVideoSink, 4, pFileName))
+		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pVideoFileName, pService, m_pVideoSink, 4, pFileName, pPath))
 			(log << "Failed to Set the File Name on the Video Sink FileWriter Interface: " << hr << "\n").Write(hr);
 		else	//Add Demux Pins (Seperate A/V Sink's) Teletext
-			if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTelexFileName, pService, m_pTelexSink, 6, pFileName))
+//DWS28-02-2006			if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTelexFileName, pService, m_pTelexSink, 6, pFileName))
+			if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTelexFileName, pService, m_pTelexSink, 6, pFileName, pPath))
 				(log << "Failed to Set the File Name on the Teletext Sink FileWriter Interface: " << hr << "\n").Write(hr);
 			else	//Add Demux Pins (Seperate A/V Sink's) Audio
-				if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pAudioFileName, pService, m_pAudioSink, 5, pFileName))
+//DWS28-02-2006				if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pAudioFileName, pService, m_pAudioSink, 5, pFileName))
+				if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pAudioFileName, pService, m_pAudioSink, 5, pFileName, pPath))
 					(log << "Failed to Set the File Name on the Audio Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
 		if FAILED(hr = m_pVideoDWDump->Record())

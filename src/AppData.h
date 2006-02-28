@@ -118,10 +118,13 @@ public:
 			LPWSTR folder;
 			int format;
 		} capture;
-
+		
 		struct SETTINGS_TIMESHIFT
 		{
 			LPWSTR folder;
+			int dlimit;
+			int flimit;
+			int fdelay;
 			int bufferMinutes;
 			int format;
 		} timeshift;
@@ -198,6 +201,9 @@ public:
 		struct SETTINGS_TIMESHIFT
 		{
 			long format;
+			long dlimit;
+			long flimit;
+			long fdelay;
 			long bufferMinutes;
 		} timeshift;
 

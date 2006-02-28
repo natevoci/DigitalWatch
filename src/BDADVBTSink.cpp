@@ -247,7 +247,8 @@ BOOL BDADVBTSink::IsActive()
 }
 
 //HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName)
-HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName)
+//DWS28-02-2006 HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName)
+HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName, LPWSTR pPath)
 {
 	if (ppFileName == NULL)
 	{
@@ -310,15 +311,23 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 		wcsftime(wTimeStamp, 32, L"(%Y-%m-%d %H-%M-%S)", tmTime);
 
 
-		if ((intSinkType == 1 || intSinkType == 11 || intSinkType == 111) &&
-				g_pData->settings.timeshift.folder)
-			lstrcpyW(wPathName, g_pData->settings.timeshift.folder);
+		//DWS28-02-2006
+		if (pPath != NULL)
+			  lstrcpyW(wPathName, pPath);
 		else
-		{
-			lstrcpyW(wPathName, g_pData->settings.capture.folder);
-			if (wcslen(g_pData->settings.capture.fileName))
-				lstrcpyW(wServiceName, g_pData->settings.capture.fileName);
-		}
+			if ((intSinkType == 1 || intSinkType == 11 || intSinkType == 111) &&
+					g_pData->settings.timeshift.folder)
+				lstrcpyW(wPathName, g_pData->settings.timeshift.folder);
+			else
+			{
+				lstrcpyW(wPathName, g_pData->settings.capture.folder);
+				if (wcslen(g_pData->settings.capture.fileName))
+					lstrcpyW(wServiceName, g_pData->settings.capture.fileName);
+			}
+
+		//DWS28-02-2006
+        //ensures that there's always a back slash at the end
+        wPathName[lstrlenW(wPathName)] = char(92*(int)(wPathName[lstrlenW(wPathName)-1]!=char(92)));
 
 		if (intSinkType == 1)
 			wsprintfW(*ppFileName, L"%S%S %S.full.tsbuffer", wPathName, wTimeStamp, wServiceName);
@@ -327,7 +336,7 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 		else if (intSinkType == 111)
 			wsprintfW(*ppFileName, L"%S%S %S.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (pFileName == NULL)
-		{
+		{	
 		     if (intSinkType == 2) 
 			wsprintfW(*ppFileName, L"%S%S %S.full.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 22) 
@@ -342,8 +351,8 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 			wsprintfW(*ppFileName, L"%S%S %S.txt", wPathName, wTimeStamp, wServiceName);
 		}
 		else
-		{
-		     if (intSinkType == 2) 
+		//DWS28-02-2006
+		{	 if (intSinkType == 2) 
 			wsprintfW(*ppFileName, L"%S%S.full.ts", wPathName, pFileName);
 		else if (intSinkType == 22) 
 			wsprintfW(*ppFileName, L"%S%S.ts", wPathName, pFileName);
@@ -913,7 +922,8 @@ HRESULT BDADVBTSink::PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<
 	return hr;
 }
 
-HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename)
+//DWS28-02-2006	HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename)
+HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename, LPWSTR pPath)
 {
 	if (!m_pCurrentFileSink)
 	{
@@ -935,7 +945,8 @@ HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFile
 */			
 
 	if(m_intFileSinkType)
-		return m_pCurrentFileSink->StartRecording(pService, pFilename);
+//DWS28-02-2006		return m_pCurrentFileSink->StartRecording(pService, pFilename);
+		return m_pCurrentFileSink->StartRecording(pService, pFilename, pPath);
 
 	return hr;
 }

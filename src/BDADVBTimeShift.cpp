@@ -399,14 +399,17 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 		return ToggleRecording(n1);
 */
 		if (command->LHS.ParameterCount <= 0)
-			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+//DWS28-02-2006			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+			return (log << "Expecting 1 or 2 or 3 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		if (command->LHS.ParameterCount > 2)
+//DWS28-02-2006		if (command->LHS.ParameterCount > 2)
+		if (command->LHS.ParameterCount > 3)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		n2 = 0;
+/*DWS28-02-2006		
 		if (command->LHS.ParameterCount >= 2)
 		{
 			n2 = (int)command->LHS.Parameter[1];
@@ -414,6 +417,23 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 		}
 		else
 			return ToggleRecording(n1);
+*/
+		if (command->LHS.ParameterCount >= 3)
+		{
+			n2 = (int)command->LHS.Parameter[1];
+			n3 = (int)command->LHS.Parameter[2];
+			return ToggleRecording(n1, (LPWSTR)n2, (LPWSTR)n3);
+		}
+		else
+		{
+			if (command->LHS.ParameterCount >= 2)
+			{
+				n2 = (int)command->LHS.Parameter[1];
+				return ToggleRecording(n1, (LPWSTR)n2);
+			}
+			else
+				return ToggleRecording(n1);
+		}
 
 	}
 	else if (_wcsicmp(pCurr, L"RecordingPause") == 0)
@@ -561,7 +581,8 @@ void BDADVBTimeShift::ThreadProc()
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
-		Sleep(100);
+//		Sleep(100);
+		Sleep(1000);
 	}
 }
 
@@ -705,6 +726,9 @@ HRESULT BDADVBTimeShift::SetFrequency(long frequency, long bandwidth)
 
 HRESULT BDADVBTimeShift::NetworkUp()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
 
@@ -722,6 +746,9 @@ HRESULT BDADVBTimeShift::NetworkUp()
 
 HRESULT BDADVBTimeShift::NetworkDown()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
 
@@ -739,6 +766,9 @@ HRESULT BDADVBTimeShift::NetworkDown()
 
 HRESULT BDADVBTimeShift::ProgramUp()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
 
@@ -759,6 +789,9 @@ HRESULT BDADVBTimeShift::ProgramUp()
 
 HRESULT BDADVBTimeShift::ProgramDown()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return (log << "There are no networks in the channels file\n").Write(E_POINTER);
 
@@ -1089,21 +1122,42 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 
 	// Wait up to 5 sec for file to grow
 	int count =0;
+	int maxcount =0;
 	__int64 fileSize = 0;
+	__int64 fileSizeSave = 0;
+
 	(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
 	while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
-				fileSize < (__int64)4000000 && count < 10)
+			fileSize < (__int64)max(2000000, g_pData->values.timeshift.flimit) &&
+			count < max(2, (g_pData->values.timeshift.dlimit/500)) &&
+			maxcount < 20)
 	{
-		Sleep(500);
 		(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
 		count++;
+		maxcount++;
+		fileSizeSave++;
+		if (fileSize > fileSizeSave)
+			count--;
+
+		Sleep(500);
+	}
+
+	if (FAILED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) || fileSize <= fileSizeSave)
+	{
+		g_pOSD->Data()->SetItem(L"warnings", L"FAILED Building The TimeShift File");
+		g_pTv->ShowOSDItem(L"Warnings", 5);
+		return (log << "Data Flow Stopped on the Sink File: " << fileSize << "\n").Write(E_FAIL);
 	}
 
 	g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
 	g_pTv->ShowOSDItem(L"Warnings", 2);
 
 	if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
+	{
+		g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
+		g_pTv->ShowOSDItem(L"Warnings", 5);
 		return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
+	}
 
 	if FAILED(hr = m_pCurrentDWGraph->Pause(TRUE))
 	{
@@ -1112,7 +1166,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	
 	m_pCurrentFileSource->SeekTo(0);
 
-	Sleep(500);
+	Sleep(max(500, g_pData->values.timeshift.fdelay));
 /*
 	count = 0;
 	while ( FAILED(hr = m_pCurrentFileSource->GetStreamList()) && count < 6)
@@ -1356,6 +1410,7 @@ HRESULT BDADVBTimeShift::AddDemuxPinsTeletext(DVBTChannels_Service* pService, lo
 
 void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 {
+//	return ;
 //	HRESULT hr;
 	LPWSTR str = NULL;
 	strCopy(str, L"");
@@ -1444,6 +1499,9 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 
 HRESULT BDADVBTimeShift::UpdateChannels()
 {
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);;
+
 	if (channels.GetListSize() <= 0)
 		return S_OK;
 
@@ -1499,7 +1557,8 @@ HRESULT BDADVBTimeShift::MoveNetworkDown(long originalNetworkId)
 }
 
 //HRESULT BDADVBTimeShift::ToggleRecording(long mode)
-HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename)
+//DWS28-02-2006 HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename)
+HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath)
 {
 	if (!m_pCurrentSink)
 	{
@@ -1529,7 +1588,8 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename)
 	else if (!m_pCurrentSink->IsRecording() && ((mode == 1) || (mode == 2)))
 	{
 //		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService))
-		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename))
+//DWS28-02-2006		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename))
+		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename, pPath))
 			return hr;
 
 		lstrcpyW(sz, L"Recording");

@@ -105,7 +105,8 @@ protected:
 	HRESULT MoveNetworkUp(long transportStreamId);
 	HRESULT MoveNetworkDown(long transportStreamId);
 //	HRESULT ToggleRecording(long mode);
-	HRESULT ToggleRecording(long mode, LPWSTR pFilename = NULL);
+//DWS28-02-2006	HRESULT ToggleRecording(long mode, LPWSTR pFilename = NULL);
+	HRESULT ToggleRecording(long mode, LPWSTR pFilename = NULL, LPWSTR pPath = NULL);
 	HRESULT TogglePauseRecording(long mode);
 
 private:
