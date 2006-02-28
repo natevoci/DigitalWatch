@@ -22,15 +22,19 @@
 			<a name="Description" /><h2>Description</h2>
 
 			<div id=text>
-				DigitalWatch is a free open source project for watching DVB-T digital
+				DigitalWatch is a free open source project for watching and recording DVB-T digital
 				television. I started this project because I was unhappy with all the
 				other applcations that were available at the time. They all lacked in
 				their ability to customize many aspects of the tv watching experience,
-				so i created DigitalWatch<br>
+				so i created the DigitalWatch 0.x series which was designed around the
+				WinDTV SDK and ended up having BDA support tacked on the side in the 0.7x versions.<br>
+				It became obvious that the design I'd used to create the original version of
+				DigitalWatch did not suit BDA, so I undertook a total redesign of the DigitalWatch
+				archtecture which has resulted in DigitalWatch 2.x<br>
 				<br>
 				DigitalWatch is mostly oriented towards watching rather than recording
-				although some versions do have recording capabilities. If you are intereted
-				in scheduling your recordings then use
+				although most versions do have recording capabilities. If you are intereted
+				in scheduling your recordings then I recommend using
 				<a href="http://dvb-ws.sourceforge.net/">DVB Web Scheduler</a>.<br>
 				<br>
 				DigitalWatch is not aimed at the extreme novice user. Maybe it will be
@@ -52,9 +56,10 @@
 			<div id=text>
 				DigitalWatch 2.x has been totally redeveloped from the DigitalWatch 0.x series with
 				an entirely different architecture. As a result, not all of the features available
-				in 0.x versions have been implemented in 2.x versions. I plan to add most of them
-				as time permits but for the moment i'm focussing on the big things like
-				channel scanning and the epg.<br>
+				in 0.x versions have been implemented in 2.x versions. It's planned to add most of them
+				as time permits but time doesn't permit very much for me these days. Fortunately bear
+				and DigiWatchSaver have been able to chip in and start adding support for recording
+				and timeshifting.<br>
 				<br>
 				<h4>What does it do?</h4>
 				<ul>
@@ -62,19 +67,14 @@
 					<li>OSD items are configurable (font, colour, location on screen, size)<br>
 					<li>Operational from the keyboard to make using a remote easy.<br>
 					<li>Configurable key assignments.<br>
-						The default key assignments are VisionPlus remote friendly.<br>
 					<li>Single key channel selection. Channels are organised by network rather than having a great long list of duplicate channels.<br>
 					<li>Fast channel changing.<br>
-					<li>Choose which video and audio decoders get used and access filter properties dialogs.<br>
+					<li>Choose which video and audio decoders get used for each media type.<br>
 					<li>Volume control that doesn't tamper with the windows mixer.<br>
-					<li>Some of the Options
-					<ul>
-						<li>Always On Top<br>
-						<li>Disable Screensaver<br>
-						<li>Zoom (For watching 4:3 material without the black border)
-					</ul>
-					<li>Supports HD and AC3, but depends on which video and audio decoders you choose and what their settings are.<br>
-					<li>SPDIF passthrough depending on Audio decoder, Audio decoder settings, and hardware.<br>
+					<li>Always On Top option<br>
+					<li>Disable Screensaver<br>
+					<li>Zoom (For watching 4:3 material without the black border)
+					<li>Supports HD and AC3. Of course this depends on which video and audio decoders you choose and what their settings are.<br>
 					<br>
 					<h5>New to 2.x versions</h5>
 					<li>Supports any BDA compatible DVB-T digital tv tuner.<br>
@@ -83,16 +83,19 @@
 					<li>Much nicer OSD (only works for the Overlay Mixer at the moment. VMR9 is to come)<br>
 					<li>Detailed logging to diagnose problems<br>
 					<li>Channel scanning.<br>
+					<br>
+					<h5>Coming soon</h5>
+					These are currently in the trunk source but are still undergoing bug fixes.
+					<li>File Playback (using TSFileSource)<br>
+					<li>Recording to multiple formats<br>
+					<li>Timeshifting<br>
+					<li>Command line arguments.<br>
+					<li>Detection of Aspect Ratio, and the ability to override it.<br>
 				</ul>
 				<br>
-				<h4>What doesn't it do? (Yet)</h4>
+				<h4>What doesn't it do?</h4>
 				<ul>
-					<li>Time Shifting (for VisionPlus cards with WDM drivers only at the moment)<br>
-					<li>Now and Next information displayed on OSD<br>
-					<li>Play back recorded files.<br>
-					<li>Start on last channel (like a normal tv)<br>
-					<li>Start in fullscreen<br>
-					<li>Set Aspect Ratio<br>
+					<li>See the <a href="http://nate.deepcreek.org.au/svn/DigitalWatch/trunk/docs/TODO.txt">TODO List</a><br>
 				</ul>
 			</div>
 		</div>
@@ -108,56 +111,57 @@
 						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.1.3.zip">Zip File</a> (164kb)
 						<td>
 						<td><a href="#DW-2.0.1.3">History</a>
-						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.1.3/">Source Tag</a>
+						<td><a href="http://nate.deepcreek.org.au/svn/DigitalWatch/tags/2.0.1.3/">Source Tag</a>
 					</tr>
 					<tr>
 						<td>DigitalWatch 2.0.0.11
 						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.11.zip">Zip File</a> (201kb)
 						<td>
 						<td><a href="#DW-2.0.0.11">History</a>
-						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.11/">Source Tag</a>
+						<td><a href="http://nate.deepcreek.org.au/svn/DigitalWatch/tags/2.0.0.11/">Source Tag</a>
 					</tr>
 					<tr>
 						<td>DigitalWatch 2.0.0.9
 						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.9.zip">Zip File</a> (200kb)
 						<td>
 						<td><a href="#DW-2.0.0.9">History</a>
-						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.9/">Source Tag</a>
+						<td><a href="http://nate.deepcreek.org.au/svn/DigitalWatch/tags/2.0.0.9/">Source Tag</a>
 					</tr>
 					<tr>
 						<td>DigitalWatch 2.0.0.7
 						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.7.zip">Zip File</a> (199kb)
 						<td>
 						<td><a href="#DW-2.0.0.7">History</a>
-						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.7/">Source Tag</a>
+						<td><a href="http://nate.deepcreek.org.au/svn/DigitalWatch/tags/2.0.0.7/">Source Tag</a>
 					</tr>
 					<tr>
 						<td>DigitalWatch 2.0.0.5
 						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.5.zip">Zip File</a> (179kb)
 						<td>
 						<td><a href="#DW-2.0.0.5">History</a>
-						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.5/">Source Tag</a>
+						<td><a href="http://nate.deepcreek.org.au/svn/DigitalWatch/tags/2.0.0.5/">Source Tag</a>
 					</tr>
 					<tr>
 						<td>DigitalWatch 2.0.0.3
 						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.3.zip">Zip File</a> (177kb)
 						<td>
 						<td><a href="#DW-2.0.0.3">History</a>
-						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.3/">Source Tag</a>
+						<td><a href="http://nate.deepcreek.org.au/svn/DigitalWatch/tags/2.0.0.3/">Source Tag</a>
 					</tr>
 					<tr>
 						<td>DigitalWatch 2.0.0.1
 						<td><a href="http://nate.dynalias.net/DigitalWatch/files/DW2/DW-2.0.0.1.zip">Zip File</a> (177kb)
 						<td>
 						<td><a href="#DW-2.0.0.1">History</a>
-						<td><a href="http://nate.dynalias.net/svn/DigitalWatch/tags/2.0.0.1/">Source Tag</a>
+						<td><a href="http://nate.deepcreek.org.au/svn/DigitalWatch/tags/2.0.0.1/">Source Tag</a>
 					</tr>
 				</table>
 				<br>
 				<a href="http://nate.dynalias.net/DigitalWatch/files/Mpeg2DecFilter.zip">Mpeg2Dec Video Decoder Filter</a> (compiled from the <a href="http://sourceforge.net/projects/guliverkli/">guliverkli</a> project)<br>
 				Initially this is the default video decoder. Either download and register this filter, or change the decoder in MediaTypes.xml.<br>
 				<br>
-				<a href="http://nate.dynalias.net/svn/DigitalWatch/trunk/">Latest Source Code</a><br>
+				<a href="http://nate.deepcreek.org.au/svn/DigitalWatch/trunk/">Latest Source Code</a><br>
+				<a href="http://forums.dvbowners.com/index.php?showforum=25">DigitalWatch Development Forum</a><br>
 			</div>
 		</div>
 	
