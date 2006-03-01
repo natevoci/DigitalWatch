@@ -4,39 +4,47 @@
   <Key code= 13>				ExitMenu(-1) ShowMenu("MainMenu")</>
   <Key code= 27>				ExitMenu()</>
 
-  <Key code='T' shift>			SetSource("BDA")</>
-  <Key code='F' shift>			SetSource("TSFILESOURCE")</>
-  <Key code='S' shift>			SetSource("BDATIMESHIFT")</>
+  <Key code='T' shift>				SetSource("BDA")</>
+  <Key code='F' shift>				SetSource("TSFILESOURCE")</>
+  <Key code='S' shift>				SetSource("BDATIMESHIFT")</>
 
   <!-- Cursor-Up and Cursor-Down with shift option. Vol+ Vol- on VP remote -->
-  <Key code= 38 shift>			ProgramUp()</>
-  <Key code= 40 shift>			ProgramDown()</>
+  <Key code= 38 shift>				ProgramUp()</>
+  <Key code= 40 shift>				ProgramDown()</>
 
-  <Key code='V'>				VideoDecoderEntry(-1)</>
-  <Key code='D'>				AudioDecoderEntry(-1)</>
-  <Key code='B'>				ResolutionEntry(-1)</>
   
   <!-- Full Screen on VP remote -->
   <Key code='Z'>				Fullscreen(2)</>
   <Key code='Y'>				AlwaysOnTop(2)</>
 
+  <!-- keypad numbers -->
+  <Key code= 96>				SetChannel(10)</>
+  <Key code= 97>				SetChannel(1)</>
+  <Key code= 98>				SetChannel(2)</>
+  <Key code= 99>				SetChannel(3)</>
+  <Key code=100>				SetChannel(4)</>
+  <Key code=101>				SetChannel(5)</>
+  <Key code=102>				SetChannel(6)</>
+  <Key code=103>				SetChannel(7)</>
+  <Key code=104>				SetChannel(8)</>
+  <Key code=105>				SetChannel(9)</>
+  
   <!-- [ and ] -->
   <Key code=219>				Zoom(100)</>
   <Key code=221>				Zoom(133)</>
-  <Key code=219 shift>			ZoomOut(5)</>
-  <Key code=221 shift>			ZoomIn(5)</>
+  <Key code=219 shift>				ZoomOut(5)</>
+  <Key code=221 shift>				ZoomIn(5)</>
   <Key code=220>				ZoomMode(-1)</>
   <Key code='K'>				ZoomMode(-1)</>
 
   <!-- - and = -->
-  <Key code=189 shift>			ZoomOut(5)</>
-  <Key code=187 shift>			ZoomIn(5)</>
+  <Key code=189 shift>				ZoomOut(5)</>
+  <Key code=187 shift>				ZoomIn(5)</>
   <Key code=189>				VolumeDown(5)</>
   <Key code=187>				VolumeUp(5)</>
   <!-- Mute on VP remote -->
   <Key code='M'>				Mute(2)</>
-  <Key code='F'>				ShowFilterProperties()</>
-
+  
   <!-- Tab on keyboard and VP remote -->
   <Key code=  9>				ToggleOSDItem("Time")</>
 
@@ -51,8 +59,9 @@
   <Key code='9' shift>			SetColorControls(10000, 10000, 0, 10000, 1)</>
 
   <Key code='X'>				Exit()</>
-  <Key code=117 shift ctrl alt>		Exit()</>
-
+  <Key code=115 alt>				Exit()</>
+  <Key code=117 shift ctrl alt>			Exit()</>
+  
 
 <!-- Mouse settings -->
 

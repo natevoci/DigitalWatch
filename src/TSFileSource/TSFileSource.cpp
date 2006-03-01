@@ -266,8 +266,8 @@ void TSFileSource::ThreadProc()
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
-//		Sleep(100);
-		Sleep(1000);
+		Sleep(100);
+//		Sleep(1000);
 	}
 }
 
@@ -327,7 +327,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename)
 		delete[] pFilename;
 	
 	// MPEG-2 Demultiplexer (DW's)
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
 	if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piTSFileSource, m_piBDAMpeg2Demux))

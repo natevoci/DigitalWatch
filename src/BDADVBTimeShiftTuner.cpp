@@ -193,14 +193,14 @@ HRESULT BDADVBTimeShiftTuner::AddSourceFilters()
 	}
 
 	//Infinite Pin Tee
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_InfTee, &m_piInfinitePinTee, L"Infinite Pin Tee"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.infteeguid, &m_piInfinitePinTee, L"Infinite Pin Tee"))
 	{
 		DestroyAll();
 		return (log << "Failed to add Infinite Pin Tee to the graph: " << hr << "\n").Write(hr);
 	}
 
 	//MPEG-2 Demultiplexer (BDA's)
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_piBDAMpeg2Demux, L"BDA MPEG-2 Demultiplexer"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_piBDAMpeg2Demux, L"BDA MPEG-2 Demultiplexer"))
 	{
 		DestroyAll();
 		return (log << "Failed to add BDA MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);

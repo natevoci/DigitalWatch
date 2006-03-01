@@ -104,6 +104,21 @@ AppData::AppData()
 	settings.dsnetwork.nicaddr = new wchar_t[MAX_PATH];
 	wcscpy(settings.dsnetwork.nicaddr, L"127.0.0.1");
 
+	CComBSTR bstrCLSID(L"{4F8BF30C-3BEB-43a3-8BF2-10096FD28CF2}");
+	CLSIDFromString(bstrCLSID, &settings.filterguids.filesourceguid);
+	bstrCLSID = GUID_NULL; 
+	CLSIDFromString(bstrCLSID, &settings.filterguids.filewriterguid);
+	bstrCLSID = L"{5cdd5c68-80dc-43e1-9e44-c849ca8026e7}";
+	CLSIDFromString(bstrCLSID, &settings.filterguids.timeshiftguid);
+	bstrCLSID = L"{4DF35815-79C5-44C8-8753-847D5C9C3CF5}";
+	CLSIDFromString(bstrCLSID, &settings.filterguids.mpgmuxguid);
+	bstrCLSID = L"{A07E6137-6C07-45D9-A00C-7DE7A7E6319B}";
+	CLSIDFromString(bstrCLSID, &settings.filterguids.dsnetguid);
+	bstrCLSID = L"{afb6c280-2c41-11d3-8a60-0000f81e0e4a}";
+	CLSIDFromString(bstrCLSID, &settings.filterguids.demuxguid);
+	bstrCLSID = L"{F8388A40-D5BB-11d0-BE5A-0080C706568E}";
+	CLSIDFromString(bstrCLSID, &settings.filterguids.infteeguid);
+
 	HRESULT hr = LoadSettings();
 	settings.loadedFromFile = SUCCEEDED(hr);
 
@@ -566,12 +581,85 @@ HRESULT AppData::LoadSettings()
 			continue;
 		}
 
+		if (_wcsicmp(element->name, L"FilterGUID") == 0)
+		{
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"FileSourceGuid") == 0)
+				{
+					if (pSubElement->value)
+					{
+						CComBSTR bstrCLSID(pSubElement->value);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.filesourceguid);
+					}
+					continue;
+				}
 
+				if (_wcsicmp(pSubElement->name, L"FileWriterGuid") == 0)
+				{
+					if (pSubElement->value)
+					{
+						CComBSTR bstrCLSID(pSubElement->value);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.filewriterguid);
+					}
+					continue;
+				}
 
+				if (_wcsicmp(pSubElement->name, L"TimeShiftGuid") == 0)
+				{
+					if (pSubElement->value)
+					{
+						CComBSTR bstrCLSID(pSubElement->value);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.timeshiftguid);
+					}
+					continue;
+				}
 
+				if (_wcsicmp(pSubElement->name, L"MPGMuxGuid") == 0)
+				{
+					if (pSubElement->value)
+					{
+						CComBSTR bstrCLSID(pSubElement->value);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.mpgmuxguid);
+					}
+					continue;
+				}
 
+				if (_wcsicmp(pSubElement->name, L"DSNetGuid") == 0)
+				{
+					if (pSubElement->value)
+					{
+						CComBSTR bstrCLSID(pSubElement->value);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.dsnetguid);
+					}
+					continue;
+				}
+				
+				if (_wcsicmp(pSubElement->name, L"DemuxGuid") == 0)
+				{
+					if (pSubElement->value)
+					{
+						CComBSTR bstrCLSID(pSubElement->value);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.demuxguid);
+					}
+					continue;
+				}
 
+				if (_wcsicmp(pSubElement->name, L"InfTeeGuid") == 0)
+				{
+					if (pSubElement->value)
+					{
+						CComBSTR bstrCLSID(pSubElement->value);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.infteeguid);
+					}
+					continue;
+				}
 
+			}
+			continue;
+		}
 
 	} // for ( int item=0 ; item<elementCount ; item++ )
 
@@ -737,6 +825,27 @@ HRESULT AppData::SaveSettings()
 		strCopy(pValue, settings.dsnetwork.port);
 		pDSNetwork->Elements.Add(new XMLElement(L"Port", pValue));
 		pDSNetwork->Elements.Add(new XMLElement(L"Nic-Addr", settings.dsnetwork.nicaddr));
+	}
+
+	XMLElement *pFilterGUID = new XMLElement(L"FilterGUID");
+	file.Elements.Add(pFilterGUID);
+	{
+		LPOLESTR clsid = new WCHAR[sizeof(CLSID)];
+		StringFromCLSID(settings.filterguids.filesourceguid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"FileSourceGuid", clsid));
+		StringFromCLSID(settings.filterguids.filewriterguid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"FileWriterGuid", clsid));
+		StringFromCLSID(settings.filterguids.timeshiftguid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"TimeShiftGuid", clsid));
+		StringFromCLSID(settings.filterguids.mpgmuxguid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"MPGMuxGuid", clsid));
+		StringFromCLSID(settings.filterguids.dsnetguid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"DSNetGuid", clsid));
+		StringFromCLSID(settings.filterguids.demuxguid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"DemuxGuid", clsid));
+		StringFromCLSID(settings.filterguids.infteeguid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"InfTeeGuid", clsid));
+		delete[] clsid;
 	}
 
 	if (pValue)

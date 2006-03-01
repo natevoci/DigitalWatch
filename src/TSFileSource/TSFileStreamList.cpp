@@ -205,8 +205,8 @@ HRESULT TSFileStreamList::LoadStreamList(LPWSTR filename)
 
 					file.Elements.Add(pStreamElement);
 				}
-				if (filename)
-					file.Save(filename);
+//				if (filename)
+//					file.Save(filename);
 
 				indent.Release();
 			}

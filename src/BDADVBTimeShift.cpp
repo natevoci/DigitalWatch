@@ -581,8 +581,8 @@ void BDADVBTimeShift::ThreadProc()
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
-//		Sleep(100);
-		Sleep(1000);
+		Sleep(100);
+//		Sleep(1000);
 	}
 }
 
@@ -982,7 +982,7 @@ HRESULT BDADVBTimeShift::LoadTuner()
 		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
 
 	//MPEG-2 Demultiplexer (DW's)
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
 	m_piBDAMpeg2Demux.QueryInterface(&m_piMpeg2Demux);

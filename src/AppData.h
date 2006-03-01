@@ -137,6 +137,17 @@ public:
 			LPWSTR nicaddr;
 		} dsnetwork;
 
+		struct SETTINGS_FILTERGUID
+		{
+			GUID filesourceguid;
+			GUID filewriterguid;
+			GUID timeshiftguid;
+			GUID mpgmuxguid;
+			GUID dsnetguid;
+			GUID demuxguid;
+			GUID infteeguid;
+		} filterguids;
+
 		int loadedFromFile;
 	} settings;
 

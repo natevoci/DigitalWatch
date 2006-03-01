@@ -133,13 +133,38 @@ HRESULT BDADVBTSinkDSNet::DestroyAll()
 HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 {
 	HRESULT hr = E_FAIL;
+/*
+
+	XMLElement *pFilterGUID = new XMLElement(L"FilterGUID");
+	file.Elements.Add(pFilterGUID);
+	{
+		pDSNetwork->Elements.Add(new XMLElement(L"FileSourceGuid", settings.filterguids.filesourceguid));
+		pDSNetwork->Elements.Add(new XMLElement(L"FileWriterGuid", settings.filterguids.filewriterguid));
+		pDSNetwork->Elements.Add(new XMLElement(L"TimeShiftGuid", settings.filterguids.timeshiftguid));
+		pDSNetwork->Elements.Add(new XMLElement(L"MPGMuxGuid", settings.filterguids.mpgmuxguid));
+		pDSNetwork->Elements.Add(new XMLElement(L"DSNetGuid", settings.filterguids.dsnetguid));
+	}
+
+		if (_wcsicmp(element->name, L"LoadFilter") == 0)
+		{
+			attr = element->Attributes.Item(L"clsid");
+			if ((attr == NULL) || (attr->value[0] == '\0'))
+				continue;
+
+			CComBSTR bstrCLSID(attr->value);
+			GUID clsid;
+			if FAILED(hr = CLSIDFromString(bstrCLSID, &clsid))
+				continue;
+*/
+
 
 	//--- Add & connect the DSNetworking filters ---
 
 	if (m_intSinkType& 0x1)
 	{
 		//DSNet (Full TS DSNetworking)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_DSNetworkSender, &m_pFTSSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.dsnetguid, &m_pFTSSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
+//		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_DSNetworkSender, &m_pFTSSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
 //		if FAILED(hr = graphTools.AddFilterByName(m_piGraphBuilder, &m_piFTSSink, CLSID_LegacyAmFilterCategory, L"Full TS MPEG-2 Multicast Sender (BDA Compatible)"))
 		{
 			(log << "Failed to add Full TS MPEG Multicast Sender to the graph: " << hr << "\n").Write(hr);
@@ -160,12 +185,13 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 	else if (m_intSinkType& 0x2)
 	{
 		//MPEG-2 Demultiplexer (TS DSNetworking)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_pTSMpeg2Demux, L"TS DSNetwork MPEG-2 Demultiplexer"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_pTSMpeg2Demux, L"TS DSNetwork MPEG-2 Demultiplexer"))
 		{
 			(log << "Failed to add TS DSNetwork MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
 		else	//Multicast Sender (TS DSNetworking)
-			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_DSNetworkSender, &m_pTSSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
+			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.dsnetguid, &m_pTSSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
+//			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_DSNetworkSender, &m_pTSSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
 //			if FAILED(hr = graphTools.AddFilterByName(m_piGraphBuilder, &m_piTSSink, CLSID_LegacyAmFilterCategory, L"MPEG-2 Multicast Sender (BDA Compatible)"))
 			{
 				(log << "Failed to add TS DSNetwork MPEG Multicast Sender to the graph: " << hr << "\n").Write(hr);
@@ -203,18 +229,19 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 	else if (m_intSinkType& 0x4)
 	{
 		//MPEG-2 Demultiplexer (MPG DSNetworking)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Demultiplexer, &m_pMPGMpeg2Demux, L"MPG DSNetworking MPEG-2 Demultiplexer"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_pMPGMpeg2Demux, L"MPG DSNetworking MPEG-2 Demultiplexer"))
 		{
 			(log << "Failed to add MPG DSNetwork MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
 		else //MPEG-2 Multiplexer (MPG DSNetworking)
-			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_MPEG2Multiplexer, &m_pMPGMpeg2Mux, L"MPG DSNetworking Sender MPEG-2 Multiplexer"))
+			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.mpgmuxguid, &m_pMPGMpeg2Mux, L"MPG DSNetworking Sender MPEG-2 Multiplexer"))
 			{
 				(log << "Failed to add MPG TimeShift MPEG-2 Multiplexer to the graph: " << hr << "\n").Write(hr);
 				DestroyFilter(m_pMPGMpeg2Demux);
 			}
 			else //Multicast Sender (MPG DSNetworking)
-				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_DSNetworkSender, &m_pMPGSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
+				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.dsnetguid, &m_pMPGSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
+//				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_DSNetworkSender, &m_pMPGSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
 //				if FAILED(hr = graphTools.AddFilterByName(m_piGraphBuilder, &m_piMPGSink, CLSID_LegacyAmFilterCategory, L"MPEG-2 Multicast Sender (BDA Compatible)"))
 				{
 					(log << "Failed to add MPG DSNetwork  FileWriter to the graph: " << hr << "\n").Write(hr);
