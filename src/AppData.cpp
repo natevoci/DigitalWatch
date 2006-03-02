@@ -483,8 +483,8 @@ HRESULT AppData::LoadSettings()
 				XMLElement *pSubElement = element->Elements.Item(subItem);
 				if (_wcsicmp(pSubElement->name, L"Format") == 0)
 				{
-					settings.capture.format = _wtoi(pSubElement->value);
-//					settings.capture.format = StringToLong(pSubElement->value);
+//					settings.capture.format = _wtoi(pSubElement->value);
+					settings.capture.format = StringToLong(pSubElement->value);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"Filename") == 0)
@@ -513,8 +513,8 @@ HRESULT AppData::LoadSettings()
 				XMLElement *pSubElement = element->Elements.Item(subItem);
 				if (_wcsicmp(pSubElement->name, L"Format") == 0)
 				{
-					settings.timeshift.format = _wtoi(pSubElement->value);
-//					settings.timeshift.format = StringToLong(pSubElement->value);
+//					settings.timeshift.format = _wtoi(pSubElement->value);
+					settings.timeshift.format = StringToLong(pSubElement->value);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"LoadDelayLimit") == 0)
