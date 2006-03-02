@@ -99,11 +99,12 @@ HRESULT TSFileStreamList::Initialise(DWGraph* pFilterGraph)
 
 }
 
-HRESULT TSFileStreamList::LoadStreamList(LPWSTR filename)
+HRESULT TSFileStreamList::LoadStreamList(BOOL bLogOutput)
 {
 	CAutoLock listLock(&m_listLock);
 
-	(log << "Loading IAMStreamSelect Info: " "\n").Write();
+	if (bLogOutput)
+		(log << "Loading IAMStreamSelect Info: " "\n").Write();
 
 	HRESULT hr;
 
@@ -128,7 +129,8 @@ HRESULT TSFileStreamList::LoadStreamList(LPWSTR filename)
 
 		ULONG count = 0;
 		pIAMStreamSelect->Count(&count);
-		(log << "Number of selections found : " << (int)count << "\n").Write();
+		if (bLogOutput)
+			(log << "Number of selections found : " << (int)count << "\n").Write();
 
 		if (count)
 		{
@@ -140,19 +142,14 @@ HRESULT TSFileStreamList::LoadStreamList(LPWSTR filename)
 			for(UINT i = 0; i < count; i++)
 			{
 				WCHAR* pStreamName = NULL;
-//				AMMediaType media = NULL
-
 				if(S_OK == pIAMStreamSelect->Info(i, 0, &flags, &lcid, &group, &pStreamName, 0, 0))
 				{
-//					if(lastgroup != group && i) 
-//						::AppendMenu(hMenu, MF_SEPARATOR, NULL, NULL);
-
-						lastgroup = group;
-
 					if(pStreamName)
 					{
+						if (bLogOutput)
+							(log << "Stream found : " << pStreamName << "\n").Write();
+
 						TSFileStreamListItem *item = new TSFileStreamListItem();
-						(log << "Name of Stream found : " << pStreamName << "\n").Write();
 						strCopy(item->index, (long)i);
 						strCopy(item->media, L"MPEG2");
 						strCopy(item->flags, (long)flags);
@@ -167,54 +164,21 @@ HRESULT TSFileStreamList::LoadStreamList(LPWSTR filename)
 					}
 				}
 			}
-			indent.Release();
 
 			if (m_list.size() == 0)
 			{
 				indent.Release();
-				return (log << "No Streams found\n").Show(E_FAIL);
-			}
-			else
-			{
-				(log << "Saving the XML stream List file : " "\n").Write();
-				LogMessageIndent indent(&log);
-
-				CAutoLock lock(&m_listLock);
-
-				XMLDocument file;
-				file.SetLogCallback(m_pLogCallback);
-//				if FAILED(hr = file.Load(filename))
-//				{
-//					return (log << "Could not load Stream list file: " << filename << "\n").Show(hr);
-//				}
-
-				LPWSTR pValue = NULL;
-
-				std::vector<TSFileStreamListItem *>::iterator it = m_list.begin();
-				for ( ; it != m_list.end() ; it++ )
-				{
-					TSFileStreamListItem *pStreams = *it;
-					XMLElement *pStreamElement = new XMLElement(L"Stream");
-					pStreamElement->Attributes.Add(new XMLAttribute(L"Index", (pStreams->index ? (LPWSTR)pStreams->index : L"")));
-					pStreamElement->Attributes.Add(new XMLAttribute(L"Media", (pStreams->media ? (LPWSTR)pStreams->media : L"")));
-					pStreamElement->Attributes.Add(new XMLAttribute(L"Flag", (pStreams->flags ? (LPWSTR)pStreams->flags : L"")));
-					pStreamElement->Attributes.Add(new XMLAttribute(L"Lcid", (pStreams->lcid ? (LPWSTR)pStreams->lcid : L"")));
-					pStreamElement->Attributes.Add(new XMLAttribute(L"Group", (pStreams->group ? (LPWSTR)pStreams->group : L"")));
-					pStreamElement->Attributes.Add(new XMLAttribute(L"Name", (pStreams->name ? (LPWSTR)pStreams->name : L"")));
-					pStreamElement->Attributes.Add(new XMLAttribute(L"Ltext", (pStreams->ltext ? (LPWSTR)pStreams->ltext : L"")));
-
-					file.Elements.Add(pStreamElement);
-				}
-//				if (filename)
-//					file.Save(filename);
-
-				indent.Release();
+				if (bLogOutput)
+					return (log << "No Streams found\n").Show(E_FAIL);
+				else
+					return E_FAIL;
 			}
 		}
 	}
 
 	indent.Release();
-	(log << "Finished Loading the Streams List: " "\n").Write();
+	if (bLogOutput)
+		(log << "Finished Loading the Streams List: " "\n").Write();
 
 	return S_OK;
 }
@@ -241,7 +205,7 @@ LPWSTR TSFileStreamList::GetListItem(LPWSTR name, long nIndex)
 		TSFileStreamListItem *item = m_list.at(nIndex);
 		if (_wcsicmp(name, L".index") == 0)
 			return item->index;
-		if (_wcsicmp(name, L".media") == 0)
+		else if (_wcsicmp(name, L".media") == 0)
 			return item->media;
 		else if (_wcsicmp(name, L".flags") == 0)
 			return item->flags;
@@ -260,12 +224,13 @@ LPWSTR TSFileStreamList::GetListItem(LPWSTR name, long nIndex)
 long TSFileStreamList::GetListSize()
 {
 	CAutoLock listLock(&m_listLock);
-
 	return m_list.size();
 }
 
 LPWSTR TSFileStreamList::GetServiceName()
 {
+	CAutoLock listLock(&m_listLock);
+
 	if (!m_list.size())
 		return NULL;
 
@@ -278,3 +243,33 @@ LPWSTR TSFileStreamList::GetServiceName()
 	return NULL;
 }
 
+HRESULT TSFileStreamList::FindServiceName(LPWSTR pServiceName, int *pIndex)
+{
+	CAutoLock listLock(&m_listLock);
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	if (!m_list.size())
+		return E_FAIL;
+
+	HRESULT hr;
+
+	if FAILED(hr = LoadStreamList(FALSE))
+		return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);
+
+	//return if service is already selected
+	if (wcsstr(GetServiceName(), pServiceName) != NULL)
+		return S_FALSE;
+
+	for (int index = 1; index < m_list.size(); index++)
+	{
+		if (wcsstr(m_list[index]->name, pServiceName) != NULL)
+		{
+			*pIndex = index;
+			return S_OK;
+		}
+	}
+	return E_FAIL;
+}

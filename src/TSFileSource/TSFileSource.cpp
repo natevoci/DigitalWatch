@@ -36,6 +36,7 @@
 
 TSFileSource::TSFileSource() : m_strSourceType(L"TSFileSource")
 {
+	m_bInitialised = FALSE;
 	m_pDWGraph = NULL;
 	g_pOSD->Data()->AddList(&streamList);
 }
@@ -69,6 +70,8 @@ DWGraph *TSFileSource::GetFilterGraph(void)
 
 HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 {
+	m_bInitialised = TRUE;
+
 	(log << "Initialising TSFileSource Source\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -313,7 +316,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename)
 		return (log << "Failed to unload previous filters\n").Write(hr);
 
 	// TSFileSource
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, CLSID_TSFileSource, &m_piTSFileSource, L"TSFileSource"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.filesourceclsid, &m_piTSFileSource, L"TSFileSource"))
 		return (log << "Failed to add TSFileSource to the graph: " << hr << "\n").Write(hr);
 
 	// Set Filename
@@ -327,7 +330,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename)
 		delete[] pFilename;
 	
 	// MPEG-2 Demultiplexer (DW's)
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
 	if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piTSFileSource, m_piBDAMpeg2Demux))
@@ -578,11 +581,8 @@ HRESULT TSFileSource::UpdateData()
 	swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
 	g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
 
-	wchar_t file[MAX_PATH];
-
-	swprintf((LPWSTR)&file, L"%sTSFileSource\\StreamList.xml", g_pData->application.appPath);
 	if (!streamList.GetListSize())
-		if FAILED(hr = streamList.LoadStreamList((LPWSTR)&file))
+		if FAILED(hr = streamList.LoadStreamList(FALSE))
 			return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);
 		else
 		{
@@ -612,11 +612,25 @@ HRESULT TSFileSource::GetStreamList(void)
 {
 	HRESULT hr = S_OK;
 
-	wchar_t file[MAX_PATH];
-
-	swprintf((LPWSTR)&file, L"%sTSFileSource\\StreamList.xml", g_pData->application.appPath);
-	if FAILED(hr = streamList.LoadStreamList((LPWSTR)&file))
+	if FAILED(hr = streamList.LoadStreamList())
 		return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);
+
+	return hr;
+}
+
+HRESULT TSFileSource::SetStreamName(LPWSTR pService)
+{
+	if (!pService)
+		return S_FALSE;
+
+	HRESULT hr;
+
+	int index = -1;
+	if FAILED(hr = streamList.FindServiceName(pService, &index))
+		return hr;
+
+	if(hr == S_OK) 
+		SetStream(index);
 
 	return hr;
 }

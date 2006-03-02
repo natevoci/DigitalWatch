@@ -120,6 +120,8 @@ protected:
 private:
 	const LPWSTR m_strSourceType;
 
+	BOOL m_bInitialised;
+
 	std::vector<BDADVBTimeShiftTuner*> m_tuners;
 
 	BDADVBTimeShiftTuner *m_pCurrentTuner;

@@ -201,6 +201,9 @@ STDMETHODIMP DWDump::SetFileName(LPCOLESTR pszFileName, const AM_MEDIA_TYPE *pmt
     if(wcslen(pszFileName) > MAX_PATH)
         return ERROR_FILENAME_EXCED_RANGE;
 
+	if (m_pFileName)
+		delete[] m_pFileName;
+
     m_pFileName = new WCHAR[1+lstrlenW(pszFileName)];
     if (m_pFileName == 0)
         return E_OUTOFMEMORY;

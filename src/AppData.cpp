@@ -105,19 +105,19 @@ AppData::AppData()
 	wcscpy(settings.dsnetwork.nicaddr, L"127.0.0.1");
 
 	CComBSTR bstrCLSID(L"{4F8BF30C-3BEB-43a3-8BF2-10096FD28CF2}");
-	CLSIDFromString(bstrCLSID, &settings.filterguids.filesourceguid);
+	CLSIDFromString(bstrCLSID, &settings.filterguids.filesourceclsid);
 	bstrCLSID = GUID_NULL; 
-	CLSIDFromString(bstrCLSID, &settings.filterguids.filewriterguid);
+	CLSIDFromString(bstrCLSID, &settings.filterguids.filewriterclsid);
 	bstrCLSID = L"{5cdd5c68-80dc-43e1-9e44-c849ca8026e7}";
-	CLSIDFromString(bstrCLSID, &settings.filterguids.timeshiftguid);
+	CLSIDFromString(bstrCLSID, &settings.filterguids.timeshiftclsid);
 	bstrCLSID = L"{4DF35815-79C5-44C8-8753-847D5C9C3CF5}";
-	CLSIDFromString(bstrCLSID, &settings.filterguids.mpgmuxguid);
+	CLSIDFromString(bstrCLSID, &settings.filterguids.mpgmuxclsid);
 	bstrCLSID = L"{A07E6137-6C07-45D9-A00C-7DE7A7E6319B}";
-	CLSIDFromString(bstrCLSID, &settings.filterguids.dsnetguid);
+	CLSIDFromString(bstrCLSID, &settings.filterguids.dsnetclsid);
 	bstrCLSID = L"{afb6c280-2c41-11d3-8a60-0000f81e0e4a}";
-	CLSIDFromString(bstrCLSID, &settings.filterguids.demuxguid);
+	CLSIDFromString(bstrCLSID, &settings.filterguids.demuxclsid);
 	bstrCLSID = L"{F8388A40-D5BB-11d0-BE5A-0080C706568E}";
-	CLSIDFromString(bstrCLSID, &settings.filterguids.infteeguid);
+	CLSIDFromString(bstrCLSID, &settings.filterguids.infteeclsid);
 
 	HRESULT hr = LoadSettings();
 	settings.loadedFromFile = SUCCEEDED(hr);
@@ -484,6 +484,7 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"Format") == 0)
 				{
 					settings.capture.format = _wtoi(pSubElement->value);
+//					settings.capture.format = StringToLong(pSubElement->value);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"Filename") == 0)
@@ -513,6 +514,7 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"Format") == 0)
 				{
 					settings.timeshift.format = _wtoi(pSubElement->value);
+//					settings.timeshift.format = StringToLong(pSubElement->value);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"LoadDelayLimit") == 0)
@@ -581,78 +583,78 @@ HRESULT AppData::LoadSettings()
 			continue;
 		}
 
-		if (_wcsicmp(element->name, L"FilterGUID") == 0)
+		if (_wcsicmp(element->name, L"Filter_CLSID") == 0)
 		{
 			int subCount = element->Elements.Count();
 			for ( int subItem=0 ; subItem<subCount ; subItem++ )
 			{
 				XMLElement *pSubElement = element->Elements.Item(subItem);
-				if (_wcsicmp(pSubElement->name, L"FileSourceGuid") == 0)
+				if (_wcsicmp(pSubElement->name, L"CLSID_FileSource") == 0)
 				{
 					if (pSubElement->value)
 					{
 						CComBSTR bstrCLSID(pSubElement->value);
-						CLSIDFromString(bstrCLSID, &settings.filterguids.filesourceguid);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.filesourceclsid);
 					}
 					continue;
 				}
 
-				if (_wcsicmp(pSubElement->name, L"FileWriterGuid") == 0)
+				if (_wcsicmp(pSubElement->name, L"CLSID_FileWriter") == 0)
 				{
 					if (pSubElement->value)
 					{
 						CComBSTR bstrCLSID(pSubElement->value);
-						CLSIDFromString(bstrCLSID, &settings.filterguids.filewriterguid);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.filewriterclsid);
 					}
 					continue;
 				}
 
-				if (_wcsicmp(pSubElement->name, L"TimeShiftGuid") == 0)
+				if (_wcsicmp(pSubElement->name, L"CLSID_TimeShiftWriter") == 0)
 				{
 					if (pSubElement->value)
 					{
 						CComBSTR bstrCLSID(pSubElement->value);
-						CLSIDFromString(bstrCLSID, &settings.filterguids.timeshiftguid);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.timeshiftclsid);
 					}
 					continue;
 				}
 
-				if (_wcsicmp(pSubElement->name, L"MPGMuxGuid") == 0)
+				if (_wcsicmp(pSubElement->name, L"CLSID_MPGMuxer") == 0)
 				{
 					if (pSubElement->value)
 					{
 						CComBSTR bstrCLSID(pSubElement->value);
-						CLSIDFromString(bstrCLSID, &settings.filterguids.mpgmuxguid);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.mpgmuxclsid);
 					}
 					continue;
 				}
 
-				if (_wcsicmp(pSubElement->name, L"DSNetGuid") == 0)
+				if (_wcsicmp(pSubElement->name, L"CLSID_DSNetSender") == 0)
 				{
 					if (pSubElement->value)
 					{
 						CComBSTR bstrCLSID(pSubElement->value);
-						CLSIDFromString(bstrCLSID, &settings.filterguids.dsnetguid);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.dsnetclsid);
 					}
 					continue;
 				}
 				
-				if (_wcsicmp(pSubElement->name, L"DemuxGuid") == 0)
+				if (_wcsicmp(pSubElement->name, L"CLSID_DeMultiplexer") == 0)
 				{
 					if (pSubElement->value)
 					{
 						CComBSTR bstrCLSID(pSubElement->value);
-						CLSIDFromString(bstrCLSID, &settings.filterguids.demuxguid);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.demuxclsid);
 					}
 					continue;
 				}
 
-				if (_wcsicmp(pSubElement->name, L"InfTeeGuid") == 0)
+				if (_wcsicmp(pSubElement->name, L"CLSID_InfiniteTee") == 0)
 				{
 					if (pSubElement->value)
 					{
 						CComBSTR bstrCLSID(pSubElement->value);
-						CLSIDFromString(bstrCLSID, &settings.filterguids.infteeguid);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.infteeclsid);
 					}
 					continue;
 				}
@@ -791,12 +793,65 @@ HRESULT AppData::SaveSettings()
 
 	}
 
+
+
+
+
+/*
+
+	LPWSTR pValue = NULL;
+
+	strCopy(pValue, frequency);
+	pElement->Attributes.Add(new XMLAttribute(L"Frequency", pValue));
+	delete pValue;
+	pValue = NULL;
+
+	strCopy(pValue, bandwidth);
+	pElement->Attributes.Add(new XMLAttribute(L"Bandwidth", pValue));
+	delete pValue;
+	pValue = NULL;
+
+	strCopyHex(pValue, originalNetworkId);
+	pElement->Attributes.Add(new XMLAttribute(L"OriginalNetworkId", pValue));
+	delete pValue;
+	pValue = NULL;
+
+	strCopyHex(pValue, transportStreamId);
+	pElement->Attributes.Add(new XMLAttribute(L"TransportStreamId", pValue));
+	delete pValue;
+	pValue = NULL;
+
+	strCopyHex(pValue, networkId);
+	pElement->Attributes.Add(new XMLAttribute(L"NetworkId", pValue));
+	delete pValue;
+	pValue = NULL;
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	XMLElement *pCapture = new XMLElement(L"Capture");
 	file.Elements.Add(pCapture);
 	{
 		pCapture->Elements.Add(new XMLElement(L"Filename", settings.capture.fileName));
 		pCapture->Elements.Add(new XMLElement(L"Folder", settings.capture.folder));
-		strCopy(pValue, settings.capture.format);
+//		strCopy(pValue, settings.capture.format);
+		strCopyHex(pValue, settings.capture.format);
 		pCapture->Elements.Add(new XMLElement(L"Format", pValue));
 	}
 
@@ -812,7 +867,8 @@ HRESULT AppData::SaveSettings()
 		pTimeshift->Elements.Add(new XMLElement(L"LoadPauseDelay", pValue));
 		strCopy(pValue, settings.timeshift.bufferMinutes);
 		pTimeshift->Elements.Add(new XMLElement(L"BufferMinutes", pValue));
-		strCopy(pValue, settings.timeshift.format);
+//		strCopy(pValue, settings.timeshift.format);
+		strCopyHex(pValue, settings.timeshift.format);
 		pTimeshift->Elements.Add(new XMLElement(L"Format", pValue));
 	}
 
@@ -827,24 +883,24 @@ HRESULT AppData::SaveSettings()
 		pDSNetwork->Elements.Add(new XMLElement(L"Nic-Addr", settings.dsnetwork.nicaddr));
 	}
 
-	XMLElement *pFilterGUID = new XMLElement(L"FilterGUID");
+	XMLElement *pFilterGUID = new XMLElement(L"Filter_CLSID");
 	file.Elements.Add(pFilterGUID);
 	{
 		LPOLESTR clsid = new WCHAR[sizeof(CLSID)];
-		StringFromCLSID(settings.filterguids.filesourceguid, &clsid);
-		pFilterGUID->Elements.Add(new XMLElement(L"FileSourceGuid", clsid));
-		StringFromCLSID(settings.filterguids.filewriterguid, &clsid);
-		pFilterGUID->Elements.Add(new XMLElement(L"FileWriterGuid", clsid));
-		StringFromCLSID(settings.filterguids.timeshiftguid, &clsid);
-		pFilterGUID->Elements.Add(new XMLElement(L"TimeShiftGuid", clsid));
-		StringFromCLSID(settings.filterguids.mpgmuxguid, &clsid);
-		pFilterGUID->Elements.Add(new XMLElement(L"MPGMuxGuid", clsid));
-		StringFromCLSID(settings.filterguids.dsnetguid, &clsid);
-		pFilterGUID->Elements.Add(new XMLElement(L"DSNetGuid", clsid));
-		StringFromCLSID(settings.filterguids.demuxguid, &clsid);
-		pFilterGUID->Elements.Add(new XMLElement(L"DemuxGuid", clsid));
-		StringFromCLSID(settings.filterguids.infteeguid, &clsid);
-		pFilterGUID->Elements.Add(new XMLElement(L"InfTeeGuid", clsid));
+		StringFromCLSID(settings.filterguids.filesourceclsid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_FileSource", clsid));
+		StringFromCLSID(settings.filterguids.filewriterclsid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_FileWriter", clsid));
+		StringFromCLSID(settings.filterguids.timeshiftclsid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_TimeShiftWriter", clsid));
+		StringFromCLSID(settings.filterguids.mpgmuxclsid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_MPGMuxer", clsid));
+		StringFromCLSID(settings.filterguids.dsnetclsid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_DSNetSender", clsid));
+		StringFromCLSID(settings.filterguids.demuxclsid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_DeMuxer", clsid));
+		StringFromCLSID(settings.filterguids.infteeclsid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_InfiniteTee", clsid));
 		delete[] clsid;
 	}
 

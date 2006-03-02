@@ -57,7 +57,7 @@ public:
 	virtual HRESULT Destroy();
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph);
-	virtual HRESULT LoadStreamList(LPWSTR filename);
+	virtual HRESULT LoadStreamList(BOOL bLogOutput = TRUE);
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListName();
@@ -65,6 +65,7 @@ public:
 	virtual long GetListSize();
 
 	virtual LPWSTR GetServiceName();
+	virtual HRESULT FindServiceName(LPWSTR pServiceName, int *pIndex);
 
 private:
 	std::vector<TSFileStreamListItem *> m_list;

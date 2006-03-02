@@ -137,7 +137,7 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 	if (m_intSinkType& 0x1)
 	{
 		//FileWriter (Full TS TimeShifting)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.timeshiftguid, &m_pFTSSink, L"Full TS TimeShift FileWriter"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.timeshiftclsid, &m_pFTSSink, L"Full TS TimeShift FileWriter"))
 		{
 			(log << "Failed to add Full TS TimeShift FileWriter to the graph: " << hr << "\n").Write(hr);
 		}
@@ -157,12 +157,12 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 	else if (m_intSinkType& 0x2)
 	{
 		//MPEG-2 Demultiplexer (TS TimeShifting)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_pTSMpeg2Demux, L"TS TimeShift MPEG-2 Demultiplexer"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pTSMpeg2Demux, L"TS TimeShift MPEG-2 Demultiplexer"))
 		{
 			(log << "Failed to add TS TimeShift MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
 		else		//FileWriter (TS TimeShifting)
-			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.timeshiftguid, &m_pTSSink, L"TS TimeShift FileWriter"))
+			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.timeshiftclsid, &m_pTSSink, L"TS TimeShift FileWriter"))
 			{
 				(log << "Failed to add TS TimeShift FileWriter to the graph: " << hr << "\n").Write(hr);
 				DestroyTSFilters();
@@ -195,18 +195,18 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 	else if (m_intSinkType& 0x4)
 	{
 		//MPEG-2 Demultiplexer (MPG TimeShifting)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_pMPGMpeg2Demux, L"MPG TimeShift MPEG-2 Demultiplexer"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pMPGMpeg2Demux, L"MPG TimeShift MPEG-2 Demultiplexer"))
 		{
 			(log << "Failed to add MPG TimeShift MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
 		else //MPEG-2 Multiplexer (MPG TimeShifting)
-			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.mpgmuxguid, &m_pMPGMpeg2Mux, L"MPG TimeShift MPEG-2 Multiplexer"))
+			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.mpgmuxclsid, &m_pMPGMpeg2Mux, L"MPG TimeShift MPEG-2 Multiplexer"))
 			{
 				(log << "Failed to add MPG TimeShift MPEG-2 Multiplexer to the graph: " << hr << "\n").Write(hr);
 				DestroyMPGFilters();
 			}
 			else //FileWriter (MPG TimeShifting)
-				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.timeshiftguid, &m_pMPGSink, L"MPG TimeShift FileWriter"))
+				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.timeshiftclsid, &m_pMPGSink, L"MPG TimeShift FileWriter"))
 				{
 					(log << "Failed to add MPG TimeShift  FileWriter to the graph: " << hr << "\n").Write(hr);
 					DestroyMPGFilters();

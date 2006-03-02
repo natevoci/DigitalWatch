@@ -139,13 +139,13 @@ public:
 
 		struct SETTINGS_FILTERGUID
 		{
-			GUID filesourceguid;
-			GUID filewriterguid;
-			GUID timeshiftguid;
-			GUID mpgmuxguid;
-			GUID dsnetguid;
-			GUID demuxguid;
-			GUID infteeguid;
+			GUID filesourceclsid;
+			GUID filewriterclsid;
+			GUID timeshiftclsid;
+			GUID mpgmuxclsid;
+			GUID dsnetclsid;
+			GUID demuxclsid;
+			GUID infteeclsid;
 		} filterguids;
 
 		int loadedFromFile;

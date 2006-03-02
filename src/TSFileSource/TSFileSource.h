@@ -50,12 +50,14 @@ public:
 	virtual HRESULT Start();
 	virtual BOOL IsRecording();
 	virtual HRESULT SeekTo(long percentage);
+	virtual HRESULT Skip(long seconds);
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
 	virtual HRESULT ReLoad(LPWSTR pCmdLine);
 	virtual HRESULT SetStream(long index);
 	virtual HRESULT GetStreamList(void);
+	virtual	HRESULT SetStreamName(LPWSTR pService);
 
 	virtual void ThreadProc();
 
@@ -66,12 +68,13 @@ protected:
 	virtual void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 
 	virtual HRESULT PlayPause();
-	virtual HRESULT Skip(long seconds);
 
 	virtual HRESULT UpdateData();
 
 private:
 	const LPWSTR m_strSourceType;
+
+	BOOL m_bInitialised;
 
 	DWGraph *m_pDWGraph;
 	CComPtr <IGraphBuilder> m_piGraphBuilder;

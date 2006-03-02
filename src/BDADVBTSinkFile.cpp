@@ -153,7 +153,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 	if (m_intSinkType& 0x2)
 	{
 		//MPEG-2 Demultiplexer (TS Sink's)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_pTSMpeg2Demux, L"TS Sink MPEG-2 Demultiplexer"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pTSMpeg2Demux, L"TS Sink MPEG-2 Demultiplexer"))
 		{
 			(log << "Failed to add TS Sink MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
@@ -188,12 +188,12 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 	if (m_intSinkType& 0x4)
 	{
 		//MPEG-2 Demultiplexer (MPG Sink's)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_pMPGMpeg2Demux, L"MPG Sink MPEG-2 Demultiplexer"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pMPGMpeg2Demux, L"MPG Sink MPEG-2 Demultiplexer"))
 		{
 			(log << "Failed to add MPG Sink MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
 		else //MPEG-2 Multiplexer (MPG Sink's)
-			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.mpgmuxguid, &m_pMPGMpeg2Mux, L"MPG Sink MPEG-2 Multiplexer"))
+			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.mpgmuxclsid, &m_pMPGMpeg2Mux, L"MPG Sink MPEG-2 Multiplexer"))
 			{
 				(log << "Failed to add MPEG-2 Multiplexer to the graph: " << hr << "\n").Write(hr);
 				DestroyMPGFilters();
@@ -242,7 +242,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 	if (m_intSinkType& 0x8)
 	{
 		//MPEG-2 Demultiplexer (Seperate A/V Sink's)
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_pAVMpeg2Demux, L"A/V Sink MPEG-2 Demultiplexer"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pAVMpeg2Demux, L"A/V Sink MPEG-2 Demultiplexer"))
 		{
 			(log << "Failed to add A/V Sink MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 		}
@@ -392,7 +392,7 @@ HRESULT BDADVBTSinkFile::AddDWDumpFilter(LPWSTR name, DWDump **pfDWDump, CComPtr
 {
 	HRESULT hr = S_OK;
 
-	if ((CComBSTR)GUID_NULL == (CComBSTR)g_pData->settings.filterguids.filewriterguid)
+	if ((CComBSTR)GUID_NULL == (CComBSTR)g_pData->settings.filterguids.filewriterclsid)
 	{
 		// Dump filter for recording
 		*pfDWDump = new DWDump(&hr);
@@ -413,7 +413,7 @@ HRESULT BDADVBTSinkFile::AddDWDumpFilter(LPWSTR name, DWDump **pfDWDump, CComPtr
 	}
 	else
 	{
-		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.filewriterguid, &pFilter, name))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.filewriterclsid, &pFilter, name))
 			return (log << "Failed to add the FileWriter Filter to the graph: " << hr << "\n").Write(hr);
 	}
 	return hr;

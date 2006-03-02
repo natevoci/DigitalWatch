@@ -36,6 +36,7 @@
 
 BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 {
+	m_bInitialised = FALSE;
 	m_pCurrentTuner = NULL;
 	m_pCurrentSink  = NULL;
 	m_pCurrentNetwork = NULL;
@@ -88,6 +89,11 @@ DWGraph *BDADVBTSource::GetFilterGraph(void)
 
 HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 {
+//	if (m_bInitialised)
+//		return S_OK;
+
+	m_bInitialised = TRUE;
+
 	(log << "Initialising BDA Source\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -112,6 +118,7 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		(log << "Frequency List found to be the same\n").Write();
 		break;
 	};
+
 	(log << "Clearing All TVChannels.Services Lists\n").Write();
 	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Services");
 
@@ -905,7 +912,7 @@ HRESULT BDADVBTSource::LoadTuner()
 		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
 
 	//MPEG-2 Demultiplexer (DW's)
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
 	m_piBDAMpeg2Demux.QueryInterface(&m_piMpeg2Demux);

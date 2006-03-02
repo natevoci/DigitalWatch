@@ -112,6 +112,8 @@ protected:
 private:
 	const LPWSTR m_strSourceType;
 
+	BOOL m_bInitialised;
+
 	BDADVBTSourceTuner *m_pCurrentTuner;
 	std::vector<BDADVBTSourceTuner *> m_tuners;
 	CCritSec m_tunersLock;

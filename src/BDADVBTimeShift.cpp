@@ -37,6 +37,7 @@
 
 BDADVBTimeShift::BDADVBTimeShift() : m_strSourceType(L"BDATimeShift")
 {
+	m_bInitialised = FALSE;
 	m_pCurrentTuner = NULL;
 	m_pCurrentSink  = NULL;
 	m_pCurrentFileSource = NULL;
@@ -99,10 +100,14 @@ DWGraph *BDADVBTimeShift::GetFilterGraph(void)
 
 HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 {
-	(log << "Initialising BDATimeShift Source\n").Write();
-	LogMessageIndent indent(&log);
+//	if (m_bInitialised)
+//		return S_OK;
 
 	m_bFileSourceActive = FALSE;
+	m_bInitialised = TRUE;
+
+	(log << "Initialising BDATimeShift Source\n").Write();
+	LogMessageIndent indent(&log);
 
 	for (int i = 0; i < g_pOSD->Data()->GetListCount(channels.GetListName()); i++)
 	{
@@ -125,14 +130,15 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		(log << "Frequency List found to be the same\n").Write();
 		break;
 	};
+
 	(log << "Clearing All TVChannels.Services Lists\n").Write();
 	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Services");
 
 	HRESULT hr;
 	m_pDWGraph = pFilterGraph;
 
-	g_pData->values.timeshift.format = g_pData->settings.timeshift.format;
-	g_pData->values.capture.format = g_pData->settings.capture.format;
+	g_pData->values.timeshift.format = g_pData->settings.timeshift.format & 0x0F;
+	g_pData->values.capture.format = (g_pData->settings.timeshift.format & 0xF0)>>4; //g_pData->settings.capture.format;
 	g_pData->values.dsnetwork.format = g_pData->settings.dsnetwork.format;
 
 	m_pCurrentSink = new BDADVBTSink();
@@ -505,7 +511,7 @@ HRESULT BDADVBTimeShift::Start()
 BOOL BDADVBTimeShift::CanLoad(LPWSTR pCmdLine)
 {
 	long length = wcslen(pCmdLine);
-	if ((length >= 5) && (_wcsnicmp(pCmdLine, L"tv://", 5) == 0))
+	if ((length >= 5) && (_wcsnicmp(pCmdLine, L"ts://", 5) == 0))
 	{
 		return TRUE;
 	}
@@ -517,7 +523,7 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 	if (!pCmdLine)
 		return S_FALSE;
 
-	if (_wcsnicmp(pCmdLine, L"tstv://", 7) != 0)
+	if (_wcsnicmp(pCmdLine, L"ts://", 5) != 0)
 		return S_FALSE;
 
 	pCmdLine += 5;
@@ -582,7 +588,6 @@ void BDADVBTimeShift::ThreadProc()
 	{
 		UpdateData();
 		Sleep(100);
-//		Sleep(1000);
 	}
 }
 
@@ -820,6 +825,17 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 	m_pCurrentNetwork = pNetwork;
 	m_pCurrentService = pService;
 
+	if(m_pCurrentFileSource && m_pCurrentService->serviceName &&
+			(g_pData->values.timeshift.format & 0x01 |
+			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
+	{
+		if (m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName) == S_OK)
+		{
+			m_pCurrentFileSource->Skip(-5);
+			return S_OK;
+		}
+	}
+
 	return RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
 }
 
@@ -982,7 +998,7 @@ HRESULT BDADVBTimeShift::LoadTuner()
 		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
 
 	//MPEG-2 Demultiplexer (DW's)
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxguid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
 	m_piBDAMpeg2Demux.QueryInterface(&m_piMpeg2Demux);
@@ -1163,21 +1179,26 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	{
 		(log << "Failed to Pause Graph.\n").Write();
 	}
-	
-	m_pCurrentFileSource->SeekTo(0);
 
-	Sleep(max(500, g_pData->values.timeshift.fdelay));
-/*
 	count = 0;
-	while ( FAILED(hr = m_pCurrentFileSource->GetStreamList()) && count < 6)
+	if(m_pCurrentFileSource && m_pCurrentService->serviceName &&
+		(g_pData->values.timeshift.format & 0x01) &&
+		(g_pData->values.capture.format & 0x01) & (!g_pData->values.timeshift.format))
 	{
-		Sleep(500);
-		if FAILED(hr = m_pCurrentFileSource->ReLoad(filename))
-			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
-
-		count++;
+		while (FAILED(hr = m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName)) &&
+				count < (g_pData->values.timeshift.fdelay/500))
+		{
+			count++;
+			Sleep(500);
+		}
+		m_pCurrentFileSource->SeekTo(0);
 	}
-*/
+	else
+	{
+		m_pCurrentFileSource->SeekTo(0);
+		Sleep(max(500, g_pData->values.timeshift.fdelay));
+	}
+
 	if FAILED(hr = m_pCurrentDWGraph->Pause(FALSE))
 	{
 		(log << "Failed to Pause Graph.\n").Write();
@@ -1457,6 +1478,11 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 	{
 		g_pOSD->Data()->SetItem(L"CurrentService", L"");
 	}
+
+	if(m_pCurrentFileSource && m_pCurrentService->serviceName)
+		m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName);
+
+
 
 /*
 	// Set Signal Statistics
