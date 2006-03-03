@@ -618,7 +618,7 @@ HRESULT TSFileSource::GetStreamList(void)
 	return hr;
 }
 
-HRESULT TSFileSource::SetStreamName(LPWSTR pService)
+HRESULT TSFileSource::SetStreamName(LPWSTR pService, BOOL bEnable)
 {
 	if (!pService)
 		return S_FALSE;
@@ -629,7 +629,7 @@ HRESULT TSFileSource::SetStreamName(LPWSTR pService)
 	if FAILED(hr = streamList.FindServiceName(pService, &index))
 		return hr;
 
-	if(hr == S_OK) 
+	if(hr == S_OK && bEnable) 
 		SetStream(index);
 
 	return hr;

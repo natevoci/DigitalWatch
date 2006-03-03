@@ -155,8 +155,17 @@ HRESULT TSFileStreamList::LoadStreamList(BOOL bLogOutput)
 						strCopy(item->flags, (long)flags);
 						strCopy(item->lcid, (long)lcid);
 						strCopy(item->group, (long)group);
-						strCopy(item->name, (LPWSTR)pStreamName);
-						strCopy(item->ltext, (long)wcslen(pStreamName));
+
+						item->name = new WCHAR[wcslen((LPWSTR)pStreamName) + 8];	
+						if (flags & AMSTREAMSELECTINFO_EXCLUSIVE)
+							wsprintfW(item->name, L"*%S",(LPWSTR)pStreamName);  
+						else if (flags & AMSTREAMSELECTINFO_ENABLED)
+							wsprintfW(item->name, L"->  %S",(LPWSTR)pStreamName);  
+						else
+							wsprintfW(item->name, L"    %S",(LPWSTR)pStreamName);  
+
+//						strCopy(item->name, (LPWSTR)streamName);
+						strCopy(item->ltext, (long)(wcslen(pStreamName)+8));
 						CoTaskMemFree(pStreamName);
 						m_list.push_back(item);
 
@@ -236,7 +245,9 @@ LPWSTR TSFileStreamList::GetServiceName()
 
 	for (int index = 0; index < m_list.size(); index++)
 	{
-		if (!_wcsnicmp(m_list[index]->name, L"->", 2))
+		long flag =	StringToLong(m_list[index]->flags);
+		if (flag & AMSTREAMSELECTINFO_ENABLED)
+//		if (!_wcsnicmp(m_list[index]->name, L"->", 2))
 			return m_list[index]->name;
 	}
 
@@ -260,8 +271,14 @@ HRESULT TSFileStreamList::FindServiceName(LPWSTR pServiceName, int *pIndex)
 		return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);
 
 	//return if service is already selected
-	if (wcsstr(GetServiceName(), pServiceName) != NULL)
-		return S_FALSE;
+	if (GetServiceName() && pServiceName)
+	{
+		if (wcsstr(GetServiceName(), pServiceName) != NULL)
+			return S_FALSE;
+	}
+	else
+		return E_FAIL;
+
 
 	for (int index = 1; index < m_list.size(); index++)
 	{

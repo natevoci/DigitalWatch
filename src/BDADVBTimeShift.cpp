@@ -829,9 +829,9 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 			(g_pData->values.timeshift.format & 0x01 |
 			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
 	{
-		if (m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName) == S_OK)
+		if (m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, FALSE) == S_OK)
 		{
-			m_pCurrentFileSource->Skip(-5);
+//			m_pCurrentFileSource->Skip(-5);
 			return S_OK;
 		}
 	}
@@ -1479,8 +1479,13 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 		g_pOSD->Data()->SetItem(L"CurrentService", L"");
 	}
 
-	if(m_pCurrentFileSource && m_pCurrentService->serviceName)
-		m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName);
+	if(m_pCurrentFileSource && m_pCurrentService->serviceName &&
+			(g_pData->values.timeshift.format & 0x01 |
+			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
+	{
+		if (m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, TRUE) == S_OK)
+			m_pCurrentFileSource->Skip(0);
+	}
 
 
 

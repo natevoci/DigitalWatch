@@ -57,7 +57,7 @@ public:
 	virtual HRESULT ReLoad(LPWSTR pCmdLine);
 	virtual HRESULT SetStream(long index);
 	virtual HRESULT GetStreamList(void);
-	virtual	HRESULT SetStreamName(LPWSTR pService);
+	virtual	HRESULT SetStreamName(LPWSTR pService, BOOL bEnable = TRUE);
 
 	virtual void ThreadProc();
 
