@@ -79,7 +79,8 @@ HRESULT DWSurfaceText::InitDC(HDC &hDC)
 {
 	USES_CONVERSION;
 
-	m_hFont = CreateFontIndirect(&font);
+	if (m_hFont == NULL)
+		m_hFont = CreateFontIndirect(&font);
 	if (m_hFont == NULL)
 	{
 		return (log << "Could not load font: " << font.lfFaceName << "\n").Write(E_FAIL);
@@ -104,8 +105,6 @@ HRESULT DWSurfaceText::InitDC(HDC &hDC)
 HRESULT DWSurfaceText::UninitDC(HDC &hDC)
 {
 	SelectObject(hDC, m_hOldFont);
-	DeleteObject(m_hFont);
-	m_hFont = NULL;
 	m_hOldFont = NULL;
 
 	return S_OK;
