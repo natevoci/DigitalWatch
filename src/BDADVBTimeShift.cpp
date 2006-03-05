@@ -1195,7 +1195,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	}
 	else
 	{
-		m_pCurrentFileSource->SeekTo(0);
+//		m_pCurrentFileSource->SeekTo(0);
 		Sleep(max(500, g_pData->values.timeshift.fdelay));
 	}
 
@@ -1484,7 +1484,9 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
 	{
 		if (m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, TRUE) == S_OK)
-			m_pCurrentFileSource->Skip(0);
+		{
+//			m_pCurrentFileSource->Skip(0);
+		}
 	}
 
 

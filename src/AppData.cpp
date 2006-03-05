@@ -886,7 +886,7 @@ HRESULT AppData::SaveSettings()
 	XMLElement *pFilterGUID = new XMLElement(L"Filter_CLSID");
 	file.Elements.Add(pFilterGUID);
 	{
-		LPOLESTR clsid = new WCHAR[sizeof(CLSID)];
+		LPOLESTR clsid = new WCHAR[sizeof(CLSID)+1];
 		StringFromCLSID(settings.filterguids.filesourceclsid, &clsid);
 		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_FileSource", clsid));
 		StringFromCLSID(settings.filterguids.filewriterclsid, &clsid);
@@ -901,7 +901,7 @@ HRESULT AppData::SaveSettings()
 		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_DeMuxer", clsid));
 		StringFromCLSID(settings.filterguids.infteeclsid, &clsid);
 		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_InfiniteTee", clsid));
-		delete[] clsid;
+//		delete clsid;
 	}
 
 	if (pValue)

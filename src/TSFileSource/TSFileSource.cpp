@@ -410,18 +410,17 @@ HRESULT TSFileSource::UnloadFilters()
 {
 	HRESULT hr;
 
-	DestroyFilter(m_piTSFileSource);
-	DestroyFilter(m_piBDAMpeg2Demux);
 	if (m_piMpeg2Demux)
 		m_piMpeg2Demux.Release();
 
+	if FAILED(hr = graphTools.DisconnectAllPins(m_piGraphBuilder))
+		(log << "Failed to DisconnectAllPins : " << hr << "\n").Write();
+
+	DestroyFilter(m_piTSFileSource);
+	DestroyFilter(m_piBDAMpeg2Demux);
 
 	if FAILED(hr = m_pDWGraph->Cleanup())
 		return (log << "Failed to cleanup DWGraph\n").Write(hr);
-
-	m_piTSFileSource.Release();
-	m_piBDAMpeg2Demux.Release();
-	m_piMpeg2Demux.Release();
 
 	return S_OK;
 }
@@ -486,6 +485,8 @@ HRESULT TSFileSource::Skip(long seconds)
 	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
 		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
 
+	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest-(__int64)20000000));
+
 	rtStop = 0;
 	rtNow += ((__int64)seconds * (__int64)10000000);
 	if (rtNow < rtEarliest)
@@ -511,6 +512,8 @@ HRESULT TSFileSource::SeekTo(long percentage)
 
 	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
 		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
+
+	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest-(__int64)40000000));
 
 	if (percentage > 100)
 		percentage = 100;
