@@ -921,6 +921,12 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 					g_pOSD->Data()->SetItem(L"warnings", L"No Capture or TimeShift format set");
 					g_pTv->ShowOSDItem(L"Warnings", 5);
 					(log << "No Capture or TimeShift format set\n").Write();
+					if FAILED(hr = LoadDemux())
+					{
+						(log << "Failed to Add DeMultiplexer \n").Write();
+						continue;
+					}
+
 					if FAILED(hr = AddDemuxPins(m_pCurrentService))
 					{
 						(log << "Failed to Add Demux Pins\n").Write();
@@ -993,6 +999,21 @@ HRESULT BDADVBTimeShift::LoadTuner()
 	if FAILED(hr = m_pCurrentTuner->AddSourceFilters())
 		return (log << "Failed to add source filters: " << hr << "\n").Write(hr);
 
+	indent.Release();
+	(log << "Finished Loading Tuner\n").Write();
+
+	return S_OK;
+}
+
+
+HRESULT BDADVBTimeShift::LoadDemux()
+{
+	(log << "Loading DW DeMultiplexer\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+
 	CComPtr <IPin> piTSPin;
 	if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
 		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
@@ -1026,10 +1047,27 @@ HRESULT BDADVBTimeShift::LoadTuner()
 	piTSPin.Release();
 
 	indent.Release();
-	(log << "Finished Loading Tuner\n").Write();
+	(log << "Finished Loading DW DeMultiplexer\n").Write();
 
 	return S_OK;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 HRESULT BDADVBTimeShift::UnloadTuner()
 {

@@ -89,6 +89,7 @@ protected:
 	virtual HRESULT RenderChannel(int frequency, int bandwidth);
 
 	HRESULT LoadTuner();
+	HRESULT LoadDemux();
 	HRESULT UnloadTuner();
 	HRESULT LoadSink();
 	HRESULT UnloadSink();
