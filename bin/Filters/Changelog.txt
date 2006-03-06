@@ -1,6 +1,7 @@
 Version 2.2.0.0
 =================
 bear:
+Found and fixed a new bug where the local pid array times were not being updated in the Update duration thread.
 Fixed a bug where the Multifilereader was holding the file open when in stopped, re- FileDuration's FileReader class.
 Fixed another issue with the Multifilereader mode's correct seeking time when changing between streams.
 Fixed a issue with the Source Load() function where it was changing the filename paramater's pointer value.

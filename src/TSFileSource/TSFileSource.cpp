@@ -513,7 +513,7 @@ HRESULT TSFileSource::SeekTo(long percentage)
 	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
 		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
 
-	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest-(__int64)40000000));
+	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest-(__int64)20000000));
 
 	if (percentage > 100)
 		percentage = 100;
