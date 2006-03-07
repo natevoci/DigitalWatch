@@ -223,8 +223,9 @@ HRESULT TSFileSource::Start()
 	if (!m_pDWGraph)
 		return (log << "Filter graph not set in TSFileSource::Play\n").Write(E_FAIL);
 
-	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
-		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
+	if (!m_piGraphBuilder)
+		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
+			return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
 
 	indent.Release();
 	(log << "Finished Playing TSFileSource Source : " << hr << "\n").Write();
@@ -256,6 +257,15 @@ BOOL TSFileSource::CanLoad(LPWSTR pCmdLine)
 
 HRESULT TSFileSource::Load(LPWSTR pCmdLine)
 {
+	if (!m_pDWGraph)
+		return (log << "Filter graph not set in TSFileSource::Play\n").Write(E_FAIL);
+
+	HRESULT hr;
+
+	if (!m_piGraphBuilder)
+		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
+			return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
+
 	return LoadFile(pCmdLine);
 }
 

@@ -520,8 +520,37 @@ BOOL BDADVBTimeShift::CanLoad(LPWSTR pCmdLine)
 
 HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 {
+	if (!m_pDWGraph)
+		return (log << "Filter graph not set in BDADVBTimeShift::Load\n").Write(E_FAIL);
+
+	HRESULT hr;
+
+	if(m_pCurrentFileSource)
+		if FAILED(hr = m_pCurrentFileSource->Start())
+			return (log << "Failed to Start FileSource class: " << hr << "\n").Write(hr);
+
+	if(!m_piGraphBuilder)
+		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
+			return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
+
 	if (!pCmdLine)
-		return S_FALSE;
+//		return S_FALSE;
+	{
+		//TODO: replace this with last selected channel, or menu depending on options.
+		DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
+		DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
+
+		if (pService)
+		{
+			return RenderChannel(pNetwork, pService);
+		}
+		else
+		{
+			hr = g_pTv->ShowMenu(L"TVMenu");
+			(log << "No channel found. Loading TV Menu : " << hr << "\n").Write();
+			return E_FAIL;
+		}
+	}
 
 	if (_wcsnicmp(pCmdLine, L"ts://", 5) != 0)
 		return S_FALSE;
