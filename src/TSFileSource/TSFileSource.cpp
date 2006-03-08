@@ -218,7 +218,7 @@ HRESULT TSFileSource::Start()
 	(log << "Playing TSFileSource Source\n").Write();
 	LogMessageIndent indent(&log);
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
 
 	if (!m_pDWGraph)
 		return (log << "Filter graph not set in TSFileSource::Play\n").Write(E_FAIL);

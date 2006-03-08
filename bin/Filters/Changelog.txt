@@ -1,3 +1,8 @@
+Version 2.2.0.1
+=================
+bear:
+Fixed a bug where the filter was not seeking correctly on the first seek, the internal bitrate was not being updated in the pids array. This was apparant on large files.
+
 Version 2.2.0.0
 =================
 bear:
