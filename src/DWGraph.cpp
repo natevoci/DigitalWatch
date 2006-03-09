@@ -257,6 +257,72 @@ HRESULT DWGraph::Start()
 	return hr;
 }
 
+HRESULT DWGraph::Start(IGraphBuilder *piGraphBuilder)
+{
+	(log << "Starting DW Sink Graph\n").Write();
+	LogMessageIndent indent(&log);
+
+	if (!piGraphBuilder)
+		return (log << "Sink Graph Builder interface is NULL\n").Write(E_POINTER);
+
+	HRESULT hr;
+
+	CComPtr<IMediaControl> piMediaControl;
+	if FAILED(hr = piGraphBuilder->QueryInterface(&piMediaControl))
+		return (log << "Failed to get Sink Graph media control: " << hr << "\n").Write(hr);
+
+	//Start the graph
+	hr = piMediaControl->Run();
+	if FAILED(hr)
+		return (log << "Failed to start graph: " << hr << "\n").Write(hr);
+
+	//Log the reference clock
+	do
+	{
+		CComPtr<IReferenceClock> piRefClock;
+		CComQIPtr<IMediaFilter> piMediaFilter(piGraphBuilder);
+		if (!piMediaFilter)
+		{
+			(log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write();
+			break;
+		}
+
+		if FAILED(hr = piMediaFilter->GetSyncSource(&piRefClock))
+		{
+			(log << "Failed to get reference clock: " << hr << "\n").Write();
+			break;
+		}
+
+		if (!piRefClock)
+		{
+			(log << "Reference Clock is not set\n").Write();
+			break;
+		}
+		
+		CComQIPtr<IBaseFilter> piFilter(piRefClock);
+		if (!piFilter)
+		{
+			(log << "Failed to get IBaseFilter interface from reference clock\n").Write();
+			break;
+		}
+
+		FILTER_INFO filterInfo;
+		if SUCCEEDED(hr = piFilter->QueryFilterInfo(&filterInfo))
+		{
+			(log << "Reference Clock is \"" << filterInfo.achName << "\"\n").Write();
+			if (filterInfo.pGraph)
+				filterInfo.pGraph->Release();
+		}
+		else
+			(log << "Failed to get filter info: " << hr << "\n").Write();
+	} while (FALSE);
+
+	indent.Release();
+	(log << "Finished Starting DW Sink Graph : " << hr << "\n").Write();
+
+	return hr;
+}
+
 HRESULT DWGraph::Stop()
 {
 	(log << "Stopping DW Graph\n").Write();
@@ -275,6 +341,29 @@ HRESULT DWGraph::Stop()
 
 	indent.Release();
 	(log << "Finished Stopping DW Graph : " << hr << "\n").Write();
+
+	return hr;
+}
+
+HRESULT DWGraph::Stop(IGraphBuilder *piGraphBuilder)
+{
+	(log << "Stopping DW Sink Graph\n").Write();
+	LogMessageIndent indent(&log);
+
+	if (!piGraphBuilder)
+		return (log << "Sink Graph Builder interface is NULL\n").Write(E_POINTER);
+
+	HRESULT hr;
+
+	CComPtr<IMediaControl> piMediaControl;
+	if FAILED(hr = piGraphBuilder->QueryInterface(&piMediaControl))
+		return (log << "Failed to get Sink Graph media control: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaControl->Stop())
+		return (log << "Failed to stop graph: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Finished Stopping DW Sink Graph : " << hr << "\n").Write();
 
 	return hr;
 }
@@ -332,6 +421,30 @@ HRESULT DWGraph::Cleanup()
 
 	indent.Release();
 	(log << "Finished Cleaning up DW Graph\n").Write();
+
+	return S_OK;
+}
+
+HRESULT DWGraph::Cleanup(IGraphBuilder *piGraphBuilder)
+{
+	(log << "Cleaning up DW Sink Graph\n").Write();
+	LogMessageIndent indent(&log);
+
+	if (!piGraphBuilder)
+		return (log << "Sink Graph Builder interface is NULL\n").Write(E_POINTER);
+
+	HRESULT hr;
+
+	hr = graphTools.DisconnectAllPins(piGraphBuilder);
+	if FAILED(hr)
+		(log << "Failed to disconnect pins: " << hr << "\n").Write(hr);
+
+	hr = graphTools.RemoveAllFilters(piGraphBuilder);
+	if FAILED(hr)
+		(log << "Failed to remove filters: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Finished Cleaning up DW Sink Graph\n").Write();
 
 	return S_OK;
 }

@@ -44,7 +44,7 @@ BDADVBTimeShiftTuner::BDADVBTimeShiftTuner(BDADVBTimeShift *pBDADVBTimeShift, BD
 	m_pBDADVBTimeShift(pBDADVBTimeShift),
 	m_pBDACard(pBDACard)
 {
-	m_pDWGraph = NULL;
+	m_piGraphBuilder = NULL;
 
 	m_bInitialised = 0;
 	m_bActive = FALSE;
@@ -56,7 +56,6 @@ BDADVBTimeShiftTuner::BDADVBTimeShiftTuner(BDADVBTimeShift *pBDADVBTimeShift, BD
 	m_pMpeg2DataParser = new DVBMpeg2DataParser();
 	m_pMpeg2DataParser->SetDVBTChannels(m_pBDADVBTimeShift->GetChannels());
 
-	m_rotEntry = 0;
 }
 
 BDADVBTimeShiftTuner::~BDADVBTimeShiftTuner()
@@ -77,23 +76,20 @@ void BDADVBTimeShiftTuner::SetLogCallback(LogMessageCallback *callback)
 	graphTools.SetLogCallback(callback);
 }
 
-HRESULT BDADVBTimeShiftTuner::Initialise(DWGraph *pDWGraph)
+HRESULT BDADVBTimeShiftTuner::Initialise(IGraphBuilder *piGraphBuilder)
 {
 	HRESULT hr;
 	if (m_bInitialised)
 		return (log << "DVB-T Source Tuner tried to initialise a second time\n").Write(E_FAIL);
 
-	if (!pDWGraph)
+	if (!piGraphBuilder)
 		return (log << "Must pass a valid DWGraph object to Initialise a tuner\n").Write(E_FAIL);
 
-	m_pDWGraph = pDWGraph;
+	m_piGraphBuilder = piGraphBuilder;
 
 	//--- COM should already be initialized ---
 
-	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
-		return (log << "Failed to get graph: " << hr << "\n").Write(hr);
-
-	if FAILED(hr = m_pDWGraph->QueryMediaControl(&m_piMediaControl))
+	if FAILED(hr = m_piGraphBuilder->QueryInterface(&m_piMediaControl))
 		return (log << "Failed to get media control: " << hr << "\n").Write(hr);
 
 	//--- Initialise Tune Request ---
@@ -146,7 +142,7 @@ HRESULT BDADVBTimeShiftTuner::DestroyAll()
 
 	m_piTuningSpace.Release();
 	m_piMediaControl.Release();
-	m_piGraphBuilder.Release();
+//	m_piGraphBuilder.Release();
 
 	return S_OK;
 }

@@ -64,7 +64,6 @@ public:
 	virtual HRESULT ExecuteCommand(ParseLine* command);
 	//Keys, ControlBar, OSD, Menu, etc...
 
-	virtual HRESULT Start();
 	virtual BOOL IsRecording();
 	virtual HRESULT ReLoadTimeShiftFile();
 
@@ -130,7 +129,7 @@ private:
 
 	BDADVBTSink *m_pCurrentSink;
 	TSFileSource *m_pCurrentFileSource;
-	DWGraph *m_pCurrentDWGraph;
+	
 	BOOL m_bFileSourceActive;
 
 	//Recorder
@@ -145,10 +144,12 @@ private:
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
+	CComPtr <IGraphBuilder> m_piSinkGraphBuilder;
 
 	DVBTFrequencyList frequencyList;
 
 	FilterGraphTools graphTools;
+	DWORD m_rotEntry;
 };
 
 #endif

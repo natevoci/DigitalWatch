@@ -60,7 +60,7 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT Initialise(DWGraph *pDWGraph);
+	HRESULT Initialise(IGraphBuilder *piGraphBuilder);
 	HRESULT DestroyAll();
 
 	HRESULT AddSinkFilters(DVBTChannels_Service* pService);
@@ -101,7 +101,6 @@ public:
 	BOOL SupportsRecording() { return FALSE; }
 
 private:
-	DWGraph *m_pDWGraph;
 
 	BDADVBTSinkTShift *m_pCurrentTShiftSink;
 	BDADVBTSinkFile	*m_pCurrentFileSink;
@@ -121,8 +120,6 @@ private:
 	long m_intTimeShiftType;
 	long m_intFileSinkType;
 	long m_intDSNetworkType;
-
-	DWORD m_rotEntry;
 
 	FilterGraphTools graphTools;
 };

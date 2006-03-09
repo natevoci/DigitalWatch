@@ -61,10 +61,7 @@ LPWSTR TSFileSource::GetSourceType()
 
 DWGraph *TSFileSource::GetFilterGraph(void)
 {
-//	if(m_pCurrentDWGraph && m_bFileSourceActive)
-//		*ppDWGraph = m_pCurrentDWGraph;
-//	else
-		return m_pDWGraph;
+	return m_pDWGraph;
 }
 
 
@@ -90,6 +87,11 @@ HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 	HRESULT hr;
 
 	m_pDWGraph = pFilterGraph;
+
+	if (!m_piGraphBuilder)
+		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
+			return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
+
 	streamList.Initialise(pFilterGraph);
 
 	wchar_t file[MAX_PATH];
@@ -211,26 +213,6 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 	n3 = 0;
 	n4 = 0;
 	return S_FALSE;
-}
-
-HRESULT TSFileSource::Start()
-{
-	(log << "Playing TSFileSource Source\n").Write();
-	LogMessageIndent indent(&log);
-
-	HRESULT hr = S_OK;
-
-	if (!m_pDWGraph)
-		return (log << "Filter graph not set in TSFileSource::Play\n").Write(E_FAIL);
-
-	if (!m_piGraphBuilder)
-		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
-			return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
-
-	indent.Release();
-	(log << "Finished Playing TSFileSource Source : " << hr << "\n").Write();
-
-	return hr;
 }
 
 BOOL TSFileSource::CanLoad(LPWSTR pCmdLine)

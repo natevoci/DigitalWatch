@@ -237,12 +237,9 @@ HRESULT TVControl::Load(LPWSTR pCmdLine)
 					return (log << "Failed to initialise new active source: " << hr << "\n").Write();
 
 				m_pActiveSource = source;
-//				if FAILED(hr = m_pActiveSource->Start())
-//					return (log << "Failed to play new active source: " << hr << "\n").Write();
 			}
-//			else
-				if FAILED(hr = source->Load(pCmdLine))
-					return (log << "Failed to load command \"" << pCmdLine << "\" in new active source: " << hr << "\n").Write();
+			if FAILED(hr = source->Load(pCmdLine))
+				return (log << "Failed to load command \"" << pCmdLine << "\" in new active source: " << hr << "\n").Write();
 
 			ExitMenu(-1);
 
@@ -324,9 +321,6 @@ HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 				return (log << "Failed to initialise source: " << hr << "\n").Write();
 
 			m_pActiveSource = source;
-//			if FAILED(hr = m_pActiveSource->Start())
-//				return (log << "Failed to play source: " << hr << "\n").Write();
-
 			if FAILED(hr = source->Load(NULL))
 				return (log << "Failed to load NULL command: " << hr << "\n").Write();
 

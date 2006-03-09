@@ -52,7 +52,7 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT Initialise(DWGraph *pDWGraph, int intSinkType);
+	HRESULT Initialise(IGraphBuilder *piGraphBuilder, int intSinkType);
 	HRESULT DestroyAll();
 
 	HRESULT AddSinkFilters(DVBTChannels_Service* pService);
@@ -84,7 +84,6 @@ private:
 	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 
 	BDADVBTSink *m_pBDADVBTSink;
-	DWGraph *m_pDWGraph;
 
 	BOOL m_bInitialised;
 	BOOL m_bActive;
@@ -123,8 +122,6 @@ private:
 	LPOLESTR m_pMPGFileName;
 	LPOLESTR m_pTSFileName;
 	LPOLESTR m_pFTSFileName;
-
-	DWORD m_rotEntry;
 
 	FilterGraphTools graphTools;
 };

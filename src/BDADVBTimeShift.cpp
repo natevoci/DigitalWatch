@@ -41,11 +41,12 @@ BDADVBTimeShift::BDADVBTimeShift() : m_strSourceType(L"BDATimeShift")
 	m_pCurrentTuner = NULL;
 	m_pCurrentSink  = NULL;
 	m_pCurrentFileSource = NULL;
-	m_pCurrentDWGraph = NULL;
+	m_piSinkGraphBuilder = NULL;
 	m_pCurrentNetwork = NULL;
 	m_pCurrentService = NULL;
 	m_pDWGraph = NULL;
 	m_bFileSourceActive = FALSE;
+	m_rotEntry = 0;
 
 	g_pOSD->Data()->AddList(&channels);
 	g_pOSD->Data()->AddList(&frequencyList);
@@ -77,9 +78,6 @@ void BDADVBTimeShift::SetLogCallback(LogMessageCallback *callback)
 	if (m_pCurrentSink)
 		m_pCurrentSink->SetLogCallback(callback);
 
-	if (m_pCurrentDWGraph)
-		m_pCurrentDWGraph->SetLogCallback(callback);
-
 	if (m_pCurrentFileSource)
 		m_pCurrentFileSource->SetLogCallback(callback);
 
@@ -92,10 +90,7 @@ LPWSTR BDADVBTimeShift::GetSourceType()
 
 DWGraph *BDADVBTimeShift::GetFilterGraph(void)
 {
-	if(m_pCurrentDWGraph && m_bFileSourceActive)
-		return m_pCurrentDWGraph;
-	else
-		return m_pDWGraph;
+	return m_pDWGraph;
 }
 
 HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
@@ -137,23 +132,32 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 	HRESULT hr;
 	m_pDWGraph = pFilterGraph;
 
+	//--- Create Graph ---
+	if(!m_piSinkGraphBuilder)
+		if FAILED(hr = m_piSinkGraphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER))
+			return (log << "Failed Creating TimeShift Sink Graph Builder: " << hr << "\n").Write();
+
+	//--- Add To Running Object Table --- (for graphmgr.exe)
+	if (g_pData->settings.application.addToROT)
+	{
+		if FAILED(hr = graphTools.AddToRot(m_piSinkGraphBuilder, &m_rotEntry))
+		{
+			return (log << "Failed adding the TimeShift Sink graph to ROT: " << hr << "\n").Write();
+		}
+	}
+
 	g_pData->values.timeshift.format = g_pData->settings.timeshift.format & 0x0F;
 	g_pData->values.capture.format = (g_pData->settings.timeshift.format & 0xF0)>>4; //g_pData->settings.capture.format;
 	g_pData->values.dsnetwork.format = g_pData->settings.dsnetwork.format;
 
 	m_pCurrentSink = new BDADVBTSink();
 	m_pCurrentSink->SetLogCallback(m_pLogCallback);
-	if FAILED(hr = m_pCurrentSink->Initialise(pFilterGraph))
+	if FAILED(hr = m_pCurrentSink->Initialise(m_piSinkGraphBuilder))
 		return (log << "Failed to Initialise Sink Filters" << hr << "\n").Write(hr);
-
-	m_pCurrentDWGraph = new DWGraph();
-	m_pCurrentDWGraph->SetLogCallback(m_pLogCallback);
-	if FAILED(hr = m_pCurrentDWGraph->Initialise())
-		return (log << "Failed to Initialise the filtergraph for the TSFileSource" << hr << "\n").Write(hr);
 
 	m_pCurrentFileSource = new TSFileSource();
 	m_pCurrentFileSource->SetLogCallback(m_pLogCallback);
-	if FAILED(hr = m_pCurrentFileSource->Initialise(m_pCurrentDWGraph))
+	if FAILED(hr = m_pCurrentFileSource->Initialise(m_pDWGraph))
 		return (log << "Failed to Initialise the TSFileSource Filters" << hr << "\n").Write(hr);
 
 	wchar_t file[MAX_PATH];
@@ -186,7 +190,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 			m_pCurrentTuner = new BDADVBTimeShiftTuner(this, tmpCard);
 
 			m_pCurrentTuner->SetLogCallback(m_pLogCallback);
-			if SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph))
+			if SUCCEEDED(m_pCurrentTuner->Initialise(m_piSinkGraphBuilder))
 			{
 				m_tuners.push_back(m_pCurrentTuner);
 				continue;
@@ -230,8 +234,8 @@ HRESULT BDADVBTimeShift::Destroy()
 		if FAILED(hr = UnloadFileSource())
 			(log << "Failed to unload Sink Filters\n").Write();
 
-		if FAILED(hr = m_pDWGraph->Stop())
-			(log << "Failed to stop DWGraph\n").Write();
+		if FAILED(hr = m_pDWGraph->Stop(m_piSinkGraphBuilder))
+			(log << "Failed to stop DW Sink Graph\n").Write();
 
 		if FAILED(hr = UnloadSink())
 			(log << "Failed to unload Sink Filters\n").Write();
@@ -239,14 +243,11 @@ HRESULT BDADVBTimeShift::Destroy()
 		if FAILED(hr = UnloadTuner())
 			(log << "Failed to unload tuner\n").Write();
 
-		if FAILED(hr = m_pDWGraph->Cleanup())
-			(log << "Failed to cleanup DWGraph\n").Write();
+		if FAILED(hr = m_pDWGraph->Cleanup(m_piSinkGraphBuilder))
+			(log << "Failed to cleanup DW Sink Graph\n").Write();
 
 		if (m_pCurrentFileSource)
 			delete m_pCurrentFileSource;
-
-		if (m_pCurrentDWGraph)
-			delete m_pCurrentDWGraph;
 
 		if (m_pCurrentSink)
 			delete m_pCurrentSink;
@@ -262,8 +263,18 @@ HRESULT BDADVBTimeShift::Destroy()
 
 	m_pDWGraph = NULL;
 
-	m_piGraphBuilder.Release();
+	if (m_rotEntry)
+	{
+		graphTools.RemoveFromRot(m_rotEntry);
+		m_rotEntry = 0;
+	}
 
+	if (m_piSinkGraphBuilder)
+		m_piSinkGraphBuilder.Release();
+
+	if (m_piGraphBuilder)
+		m_piGraphBuilder.Release();
+	
 	cardList.Destroy();
 	frequencyList.Destroy();
 	channels.Destroy();
@@ -472,42 +483,6 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 	return S_FALSE;
 }
 
-HRESULT BDADVBTimeShift::Start()
-{
-	(log << "Playing BDATimeShift Source\n").Write();
-	LogMessageIndent indent(&log);
-
-	HRESULT hr;
-
-	if (!m_pDWGraph)
-		return (log << "Filter graph not set in BDADVBTimeShift::Play\n").Write(E_FAIL);
-
-	if FAILED(hr = m_pCurrentFileSource->Start())
-		return (log << "Failed to Start FileSource class: " << hr << "\n").Write(hr);
-	
-	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
-		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
-
-	//TODO: replace this with last selected channel, or menu depending on options.
-	DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
-	DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
-	if (pService)
-	{
-		hr = RenderChannel(pNetwork, pService);
-	}
-	else
-	{
-		hr = g_pTv->ShowMenu(L"TVMenu");
-		(log << "No channel found. Loading TV Menu : " << hr << "\n").Write();
-		hr = E_FAIL;
-	}
-
-	indent.Release();
-	(log << "Finished Playing BDATimeShift Source : " << hr << "\n").Write();
-
-	return hr;
-}
-
 BOOL BDADVBTimeShift::CanLoad(LPWSTR pCmdLine)
 {
 	long length = wcslen(pCmdLine);
@@ -524,10 +499,6 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 		return (log << "Filter graph not set in BDADVBTimeShift::Load\n").Write(E_FAIL);
 
 	HRESULT hr;
-
-	if(m_pCurrentFileSource)
-		if FAILED(hr = m_pCurrentFileSource->Start())
-			return (log << "Failed to Start FileSource class: " << hr << "\n").Write(hr);
 
 	if(!m_piGraphBuilder)
 		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
@@ -859,10 +830,7 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
 	{
 		if (m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, FALSE) == S_OK)
-		{
-//			m_pCurrentFileSource->Skip(-5);
 			return S_OK;
-		}
 	}
 
 	return RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
@@ -910,8 +878,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 		if FAILED(hr = UnloadFileSource())
 			(log << "Failed to Unload the File Source Filters\n").Write();
 
-		if FAILED(hr = m_pDWGraph->Stop())
-			(log << "Failed to stop DWGraph\n").Write();
+		if FAILED(hr = m_pDWGraph->Stop(m_piSinkGraphBuilder))
+			(log << "Failed to Stop Sink Graph\n").Write();
 
 		if FAILED(hr = UnloadSink())
 			(log << "Failed to Unload Sink Filters\n").Write();
@@ -919,8 +887,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 		if FAILED(hr = UnloadTuner())
 			(log << "Failed to Unload Tuner Filters\n").Write();
 
-		if FAILED(hr = m_pDWGraph->Cleanup())
-			(log << "Failed to cleanup DWGraph\n").Write();
+		if FAILED(hr = m_pDWGraph->Cleanup(m_piSinkGraphBuilder))
+			(log << "Failed to Cleanup Sink Graph\n").Write();
 
 		// check for end of list done here
 		if (it == m_tuners.end())
@@ -974,7 +942,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				sinkFail = FALSE;
 		}
 
-		if FAILED(hr = m_pDWGraph->Start())
+		if FAILED(hr = m_pDWGraph->Start(m_piSinkGraphBuilder))
 		{
 			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
 			continue;
@@ -987,8 +955,6 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				(log << "Failed to load File Source Filters\n").Write();
 				continue;
 			}
-//			else
-//				m_pCurrentFileSource->SeekTo(0);
 		}
 
 		if FAILED(hr = m_pCurrentTuner->StartScanning())
@@ -1034,7 +1000,6 @@ HRESULT BDADVBTimeShift::LoadTuner()
 	return S_OK;
 }
 
-
 HRESULT BDADVBTimeShift::LoadDemux()
 {
 	(log << "Loading DW DeMultiplexer\n").Write();
@@ -1048,7 +1013,7 @@ HRESULT BDADVBTimeShift::LoadDemux()
 		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
 
 	//MPEG-2 Demultiplexer (DW's)
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+	if FAILED(hr = graphTools.AddFilter(m_piSinkGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
 	m_piBDAMpeg2Demux.QueryInterface(&m_piMpeg2Demux);
@@ -1057,7 +1022,7 @@ HRESULT BDADVBTimeShift::LoadDemux()
 	if FAILED(hr = graphTools.FindFirstFreePin(m_piBDAMpeg2Demux, &piDemuxPin, PINDIR_INPUT))
 		return (log << "Failed to get input pin on DW Demux: " << hr << "\n").Write(hr);
 
-	if FAILED(hr = m_piGraphBuilder->ConnectDirect(piTSPin, piDemuxPin, NULL))
+	if FAILED(hr = m_piSinkGraphBuilder->ConnectDirect(piTSPin, piDemuxPin, NULL))
 		return (log << "Failed to connect TS Pin to DW Demux: " << hr << "\n").Write(hr);
 
 	//Set reference clock
@@ -1065,7 +1030,7 @@ HRESULT BDADVBTimeShift::LoadDemux()
 	if (!piRefClock)
 		return (log << "Failed to get reference clock interface on demux filter: " << hr << "\n").Write(hr);
 
-	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
+	CComQIPtr<IMediaFilter> piMediaFilter(m_piSinkGraphBuilder);
 	if (!piMediaFilter)
 		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
 
@@ -1081,23 +1046,6 @@ HRESULT BDADVBTimeShift::LoadDemux()
 	return S_OK;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 HRESULT BDADVBTimeShift::UnloadTuner()
 {
 	(log << "Unloading Tuner\n").Write();
@@ -1109,7 +1057,7 @@ HRESULT BDADVBTimeShift::UnloadTuner()
 
 	if (m_piBDAMpeg2Demux)
 	{
-		m_piGraphBuilder->RemoveFilter(m_piBDAMpeg2Demux);
+		m_piSinkGraphBuilder->RemoveFilter(m_piBDAMpeg2Demux);
 		m_piBDAMpeg2Demux.Release();
 	}
 
@@ -1190,6 +1138,9 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	m_pCurrentSink->SetTransportStreamPin(piTSPin);
 */
 
+	//
+	//Start capture sink recording if no TimeShift specified, poor mans timeshift
+	//
 	if(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x07))
 		m_pCurrentSink->StartRecording(m_pCurrentService);
 
@@ -1208,12 +1159,14 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	int maxcount =0;
 	__int64 fileSize = 0;
 	__int64 fileSizeSave = 0;
-
+	//
+	//Wait until the file has grown to the specified size or break if no flow for sepcified time
+	//
 	(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
 	while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
 			fileSize < (__int64)max(2000000, g_pData->values.timeshift.flimit) &&
-			count < max(2, (g_pData->values.timeshift.dlimit/500)) &&
-			maxcount < 20)
+			count < max(1, (g_pData->values.timeshift.dlimit/500)) &&
+			maxcount < 80)
 	{
 		(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
 		count++;
@@ -1223,8 +1176,15 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 			count--;
 
 		Sleep(500);
+		LPWSTR sz = new WCHAR[128];
+		wsprintfW(sz, L"Waiting for TimeShifting File to Build: %lu kBytes", fileSize/1024); 
+		g_pOSD->Data()->SetItem(L"warnings", sz);
+		g_pTv->ShowOSDItem(L"Warnings", 5);
+		delete[] sz;
 	}
 
+	//
+	//Check if the file has stopped growing
 	if (FAILED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) || fileSize <= fileSizeSave)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"FAILED Building The TimeShift File");
@@ -1235,6 +1195,9 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
 	g_pTv->ShowOSDItem(L"Warnings", 2);
 
+	//
+	//Load the TSFileSource with the file, render & run
+	//
 	if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
@@ -1242,38 +1205,23 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 		return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 	}
 
-	if FAILED(hr = m_pCurrentDWGraph->Pause(TRUE))
+	//
+	// Do a pause if it has been requested in the settings, just adds extra delay
+	//
+	if(g_pData->values.timeshift.fdelay)
 	{
-		(log << "Failed to Pause Graph.\n").Write();
-	}
-
-	count = 0;
-	if(m_pCurrentFileSource && m_pCurrentService->serviceName &&
-		(g_pData->values.timeshift.format & 0x01) &&
-		(g_pData->values.capture.format & 0x01) & (!g_pData->values.timeshift.format))
-	{
-		while (FAILED(hr = m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName)) &&
-				count < (g_pData->values.timeshift.fdelay/500))
+		if FAILED(hr = m_pDWGraph->Pause(TRUE))
 		{
-			count++;
-			Sleep(500);
+			(log << "Failed to Pause Graph.\n").Write();
 		}
-		m_pCurrentFileSource->SeekTo(0);
-	}
-	else
-	{
-//		m_pCurrentFileSource->SeekTo(0);
-		Sleep(max(500, g_pData->values.timeshift.fdelay));
-	}
 
-	if FAILED(hr = m_pCurrentDWGraph->Pause(FALSE))
-	{
-		(log << "Failed to Pause Graph.\n").Write();
-	}
+		Sleep(max(50, g_pData->values.timeshift.fdelay));
 
-//	if((g_pData->values.timeshift.format & 0x04) ||	(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x04)))
-//		if FAILED(hr = m_pCurrentFileSource->ReLoad(filename))
-//			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
+		if FAILED(hr = m_pDWGraph->Pause(FALSE))
+		{
+			(log << "Failed to Pause Graph.\n").Write();
+		}
+	}
 
 	m_bFileSourceActive = TRUE;
 
@@ -1295,9 +1243,9 @@ HRESULT BDADVBTimeShift::UnloadFileSource()
 
 	HRESULT hr;
 
-	if(m_pCurrentDWGraph)
+	if(m_pDWGraph)
 	{
-		if FAILED(hr = m_pCurrentDWGraph->Stop())
+		if FAILED(hr = m_pDWGraph->Stop())
 			(log << "Failed to stop the File Source DWGraph\n").Write();
 
 		if FAILED(hr = m_pCurrentFileSource->UnloadFilters())

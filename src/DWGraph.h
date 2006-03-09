@@ -38,6 +38,10 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
+	virtual	HRESULT Start(IGraphBuilder *piGraphBuilder);
+	virtual	HRESULT Cleanup(IGraphBuilder *piGraphBuilder);
+	virtual	HRESULT Stop(IGraphBuilder *piGraphBuilder);
+
 	BOOL Initialise();
 	BOOL Destroy();
 

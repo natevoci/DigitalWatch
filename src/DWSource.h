@@ -45,7 +45,6 @@ public:
 	virtual HRESULT ExecuteCommand(ParseLine* command) = 0;
 	//Keys, ControlBar, OSD, Menu, etc...
 
-	virtual HRESULT Start() = 0;
 	virtual BOOL IsRecording() = FALSE;
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);

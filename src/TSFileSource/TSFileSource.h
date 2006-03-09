@@ -47,7 +47,6 @@ public:
 
 	virtual HRESULT ExecuteCommand(ParseLine* command);
 
-	virtual HRESULT Start();
 	virtual BOOL IsRecording();
 	virtual HRESULT SeekTo(long percentage);
 	virtual HRESULT Skip(long seconds);

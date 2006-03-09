@@ -39,7 +39,7 @@
 BDADVBTSinkTShift::BDADVBTSinkTShift(BDADVBTSink *pBDADVBTSink) :
 	m_pBDADVBTSink(pBDADVBTSink)
 {
-	m_pDWGraph = NULL;
+	m_piGraphBuilder = NULL;
 	m_pTelexDWDump = NULL;
 	m_pVideoDWDump = NULL;
 	m_pAudioDWDump = NULL;
@@ -57,8 +57,6 @@ BDADVBTSinkTShift::BDADVBTSinkTShift(BDADVBTSink *pBDADVBTSink) :
 	m_bInitialised = 0;
 	m_bActive = FALSE;
 
-	m_rotEntry = 0;
-
 	m_intSinkType = 0;
 }
 
@@ -74,23 +72,20 @@ void BDADVBTSinkTShift::SetLogCallback(LogMessageCallback *callback)
 	graphTools.SetLogCallback(callback);
 }
 
-HRESULT BDADVBTSinkTShift::Initialise(DWGraph *pDWGraph, int intSinkType)
+HRESULT BDADVBTSinkTShift::Initialise(IGraphBuilder *piGraphBuilder, int intSinkType)
 {
 	HRESULT hr;
 	if (m_bInitialised)
 		return (log << "DVB-T TimeShift Sink tried to initialise a second time\n").Write(E_FAIL);
 
-	if (!pDWGraph)
+	if (!piGraphBuilder)
 		return (log << "Must pass a valid DWGraph object to Initialise a Sink\n").Write(E_FAIL);
 
-	m_pDWGraph = pDWGraph;
+	m_piGraphBuilder = piGraphBuilder;
 
 	//--- COM should already be initialized ---
 
-	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
-		return (log << "Failed to get graph: " << hr << "\n").Write(hr);
-
-	if FAILED(hr = m_pDWGraph->QueryMediaControl(&m_piMediaControl))
+	if FAILED(hr = m_piGraphBuilder->QueryInterface(&m_piMediaControl))
 		return (log << "Failed to get media control: " << hr << "\n").Write(hr);
 
 	m_intSinkType = intSinkType;
@@ -123,7 +118,6 @@ HRESULT BDADVBTSinkTShift::DestroyAll()
 		delete[] m_pFTSFileName;
 
 	m_piMediaControl.Release();
-	m_piGraphBuilder.Release();
 
 	return S_OK;
 }

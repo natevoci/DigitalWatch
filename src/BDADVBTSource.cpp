@@ -81,10 +81,7 @@ LPWSTR BDADVBTSource::GetSourceType()
 
 DWGraph *BDADVBTSource::GetFilterGraph(void)
 {
-//	if(m_pCurrentDWGraph && m_bFileSourceActive)
-//		*ppDWGraph = m_pCurrentDWGraph;
-//	else
-		return m_pDWGraph;
+	return m_pDWGraph;
 }
 
 HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
@@ -125,13 +122,17 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	HRESULT hr;
 	m_pDWGraph = pFilterGraph;
 	
+	if (!m_piGraphBuilder)
+		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
+			return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
+
 	g_pData->values.capture.format = g_pData->settings.capture.format;
 	g_pData->values.timeshift.format = 0;
 	g_pData->values.dsnetwork.format = g_pData->settings.dsnetwork.format;
 
 	m_pCurrentSink = new BDADVBTSink();
 	m_pCurrentSink->SetLogCallback(m_pLogCallback);
-	if FAILED(hr = m_pCurrentSink->Initialise(pFilterGraph))
+	if FAILED(hr = m_pCurrentSink->Initialise(m_piGraphBuilder))
 		return (log << "Failed to Initialise Sink Filters" << hr << "\n").Write(hr);
 
 	wchar_t file[MAX_PATH];
@@ -163,7 +164,7 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		{
 			m_pCurrentTuner = new BDADVBTSourceTuner(this, tmpCard);
 			m_pCurrentTuner->SetLogCallback(m_pLogCallback);
-			if SUCCEEDED(m_pCurrentTuner->Initialise(pFilterGraph))
+			if SUCCEEDED(m_pCurrentTuner->Initialise(m_piGraphBuilder))
 			{
 				m_tuners.push_back(m_pCurrentTuner);
 				continue;
@@ -417,39 +418,6 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 	n3 = 0;
 	n4 = 0;
 	return S_FALSE;
-}
-
-HRESULT BDADVBTSource::Start()
-{
-	(log << "Playing BDA Source\n").Write();
-	LogMessageIndent indent(&log);
-
-	HRESULT hr;
-
-	if (!m_pDWGraph)
-		return (log << "Filter graph not set in BDADVBTSource::Play\n").Write(E_FAIL);
-
-	if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
-		return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
-
-	//TODO: replace this with last selected channel, or menu depending on options.
-	DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
-	DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
-	if (pService)
-	{
-		hr = RenderChannel(pNetwork, pService);
-	}
-	else
-	{
-		hr = g_pTv->ShowMenu(L"TVMenu");
-		(log << "No channel found. Loading TV Menu : " << hr << "\n").Write();
-		hr = E_FAIL;
-	}
-
-	indent.Release();
-	(log << "Finished Playing BDA Source : " << hr << "\n").Write();
-
-	return hr;
 }
 
 BOOL BDADVBTSource::CanLoad(LPWSTR pCmdLine)

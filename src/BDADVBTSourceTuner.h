@@ -40,7 +40,7 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT Initialise(DWGraph *pDWGraph);
+	HRESULT Initialise(IGraphBuilder *piGraphBuilder);
 	HRESULT DestroyAll();
 
 	HRESULT AddSourceFilters();
@@ -82,7 +82,6 @@ private:
 	BDADVBTSource *m_pBDADVBTSource;
 
 	BDACard *m_pBDACard;
-	DWGraph *m_pDWGraph;
 
 	BOOL m_bInitialised;
 	BOOL m_bActive;
@@ -108,8 +107,6 @@ private:
 	DWGuideDataEvent* m_poGuideDataEvent;
 	*/
 	DVBMpeg2DataParser *m_pMpeg2DataParser;
-
-	DWORD m_rotEntry;
 
 	FilterGraphTools graphTools;
 };
