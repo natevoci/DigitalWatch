@@ -36,6 +36,7 @@ public:
 	/* General */
 	virtual LPWSTR GetSourceType() = 0;
 	virtual DWGraph *GetFilterGraph(void) = 0;
+	virtual IGraphBuilder *GetGraphBuilder(void) = 0;
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph) = 0;
 	virtual HRESULT Destroy() = 0;

@@ -45,7 +45,7 @@ BDADVBTimeShift::BDADVBTimeShift() : m_strSourceType(L"BDATimeShift")
 	m_pCurrentNetwork = NULL;
 	m_pCurrentService = NULL;
 	m_pDWGraph = NULL;
-	m_bFileSourceActive = FALSE;
+	m_bFileSourceActive = TRUE;
 	m_rotEntry = 0;
 
 	g_pOSD->Data()->AddList(&channels);
@@ -93,12 +93,20 @@ DWGraph *BDADVBTimeShift::GetFilterGraph(void)
 	return m_pDWGraph;
 }
 
+IGraphBuilder *BDADVBTimeShift::GetGraphBuilder(void)
+{
+	if(m_bFileSourceActive)
+		return m_piGraphBuilder;
+	else
+		return m_piSinkGraphBuilder;
+}
+
 HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 {
 //	if (m_bInitialised)
 //		return S_OK;
 
-	m_bFileSourceActive = FALSE;
+	m_bFileSourceActive = TRUE;
 	m_bInitialised = TRUE;
 
 	(log << "Initialising BDATimeShift Source\n").Write();
@@ -1127,7 +1135,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	if (!m_pCurrentFileSource)
 		return (log << "No Main Sink Class loaded.\n").Write();
 
-	m_bFileSourceActive = FALSE;
+	m_bFileSourceActive = TRUE;
 
 	HRESULT hr = S_OK;
 /*
@@ -1185,6 +1193,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 
 	//
 	//Check if the file has stopped growing
+	//
 	if (FAILED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) || fileSize <= fileSizeSave)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"FAILED Building The TimeShift File");
@@ -1239,7 +1248,7 @@ HRESULT BDADVBTimeShift::UnloadFileSource()
 	if (!m_pCurrentFileSource)
 		return (log << "No Main Sink Class loaded.\n").Write();
 
-	m_bFileSourceActive = FALSE;
+	m_bFileSourceActive = TRUE;
 
 	HRESULT hr;
 
@@ -1359,7 +1368,7 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, DVBTChanne
 		if (renderedStreams != 0)
 			continue;
 
-		if FAILED(hr = m_pDWGraph->RenderPin(piPin))
+		if FAILED(hr = m_pDWGraph->RenderPin(m_piSinkGraphBuilder, piPin))
 		{
 			(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
 			continue;

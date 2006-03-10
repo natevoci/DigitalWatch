@@ -57,6 +57,7 @@ public:
 
 	virtual LPWSTR GetSourceType();
 	virtual DWGraph *GetFilterGraph(void);
+	virtual IGraphBuilder *GetGraphBuilder(void);
 
 	virtual HRESULT Initialise(DWGraph* pFilterGraph);
 	virtual HRESULT Destroy();

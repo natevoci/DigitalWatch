@@ -84,6 +84,11 @@ DWGraph *BDADVBTSource::GetFilterGraph(void)
 	return m_pDWGraph;
 }
 
+IGraphBuilder *BDADVBTSource::GetGraphBuilder(void)
+{
+	return m_piGraphBuilder;
+}
+
 HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 {
 //	if (m_bInitialised)

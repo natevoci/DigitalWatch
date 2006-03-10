@@ -41,6 +41,12 @@ public:
 	virtual	HRESULT Start(IGraphBuilder *piGraphBuilder);
 	virtual	HRESULT Cleanup(IGraphBuilder *piGraphBuilder);
 	virtual	HRESULT Stop(IGraphBuilder *piGraphBuilder);
+	virtual	HRESULT RenderPin(IGraphBuilder *piGraphBuilder, IPin *piPin);
+	virtual	HRESULT RefreshVideoPosition(IGraphBuilder *piGraphBuilder);
+	virtual	HRESULT GetVolume(IGraphBuilder *piGraphBuilder, long &volume);
+	virtual	HRESULT SetVolume(IGraphBuilder *piGraphBuilder, long volume);
+	virtual	HRESULT Mute(IGraphBuilder *piGraphBuilder, BOOL bMute);
+	virtual	HRESULT SetColorControls(IGraphBuilder *piGraphBuilder, int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma);
 
 	BOOL Initialise();
 	BOOL Destroy();
@@ -71,8 +77,10 @@ public:
 
 protected:
 	void CalculateVideoRect(double aspectRatio = 0);
+	virtual	HRESULT ApplyColorControls(IGraphBuilder *piGraphBuilder);
 	HRESULT ApplyColorControls();
 
+	virtual	HRESULT InitialiseVideoPosition(IGraphBuilder *piGraphBuilder);
 	HRESULT InitialiseVideoPosition();
 
 private:

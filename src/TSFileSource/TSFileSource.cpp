@@ -64,6 +64,10 @@ DWGraph *TSFileSource::GetFilterGraph(void)
 	return m_pDWGraph;
 }
 
+IGraphBuilder *TSFileSource::GetGraphBuilder(void)
+{
+	return m_piGraphBuilder;
+}
 
 HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 {

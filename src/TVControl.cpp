@@ -348,7 +348,7 @@ HRESULT TVControl::VolumeUp(int value)
 	long volume;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->GetVolume(volume);
+		hr = m_pActiveSource->GetFilterGraph()->GetVolume(m_pActiveSource->GetGraphBuilder(), volume);
 	else
 		hr = m_pFilterGraph->GetVolume(volume);
 
@@ -356,7 +356,7 @@ HRESULT TVControl::VolumeUp(int value)
 		return (log << "Failed to retrieve volume: " << hr << "\n").Write(hr);
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->SetVolume(volume+value);
+		hr = m_pActiveSource->GetFilterGraph()->SetVolume(m_pActiveSource->GetGraphBuilder(), volume+value);
 	else
 		hr = m_pFilterGraph->SetVolume(volume+value);
 
@@ -373,7 +373,7 @@ HRESULT TVControl::VolumeDown(int value)
 	long volume;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->GetVolume(volume);
+		hr = m_pActiveSource->GetFilterGraph()->GetVolume(m_pActiveSource->GetGraphBuilder(), volume);
 	else
 		hr = m_pFilterGraph->GetVolume(volume);
 
@@ -381,7 +381,7 @@ HRESULT TVControl::VolumeDown(int value)
 		return (log << "Failed to retrieve volume: " << hr << "\n").Write(hr);
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->SetVolume(volume-value);
+		hr = m_pActiveSource->GetFilterGraph()->SetVolume(m_pActiveSource->GetGraphBuilder(), volume-value);
 	else
 		hr = m_pFilterGraph->SetVolume(volume-value);
 
@@ -397,7 +397,7 @@ HRESULT TVControl::SetVolume(int value)
 	HRESULT hr;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->SetVolume(value);
+		hr = m_pActiveSource->GetFilterGraph()->SetVolume(m_pActiveSource->GetGraphBuilder(), value);
 	else
 		hr = m_pFilterGraph->SetVolume(value);
 
@@ -415,7 +415,7 @@ HRESULT TVControl::Mute(int nMute)
 	HRESULT hr;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->Mute(g_pData->values.audio.bMute);
+		hr = m_pActiveSource->GetFilterGraph()->Mute(m_pActiveSource->GetGraphBuilder(), g_pData->values.audio.bMute);
 	else
 		hr = m_pFilterGraph->Mute(g_pData->values.audio.bMute);
 
@@ -440,7 +440,7 @@ HRESULT TVControl::SetColorControls(int nBrightness, int nContrast, int nHue, in
 	if (nGamma      >   500) nGamma      =   500;
 
 //	HRESULT hr = m_pFilterGraph->SetColorControls(nBrightness, nContrast, nHue, nSaturation, nGamma);
-	HRESULT hr = m_pActiveSource->GetFilterGraph()->SetColorControls(nBrightness, nContrast, nHue, nSaturation, nGamma);
+	HRESULT hr = m_pActiveSource->GetFilterGraph()->SetColorControls(m_pActiveSource->GetGraphBuilder(), nBrightness, nContrast, nHue, nSaturation, nGamma);
 	if FAILED(hr)
 		return (log << "Failed to set color controls: " << hr << "\n").Write(hr);
 
@@ -457,7 +457,7 @@ HRESULT TVControl::Zoom(int percentage)
 	HRESULT hr;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
+		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition(m_pActiveSource->GetGraphBuilder());
 	else
 		hr = m_pFilterGraph->RefreshVideoPosition();
 
@@ -475,7 +475,7 @@ HRESULT TVControl::ZoomIn(int percentage)
 	HRESULT hr;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
+		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition(m_pActiveSource->GetGraphBuilder());
 	else
 		hr = m_pFilterGraph->RefreshVideoPosition();
 
@@ -495,7 +495,7 @@ HRESULT TVControl::ZoomOut(int percentage)
 	HRESULT hr;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
+		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition(m_pActiveSource->GetGraphBuilder());
 	else
 		hr = m_pFilterGraph->RefreshVideoPosition();
 
@@ -522,7 +522,7 @@ HRESULT TVControl::ZoomMode(int mode)
 	HRESULT hr;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
+		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition(m_pActiveSource->GetGraphBuilder());
 	else
 		hr = m_pFilterGraph->RefreshVideoPosition();
 
@@ -550,7 +550,7 @@ HRESULT TVControl::AspectRatio(int nOverride, int width, int height)
 	HRESULT hr;
 
 	if(m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
+		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition(m_pActiveSource->GetGraphBuilder());
 	else
 		hr = m_pFilterGraph->RefreshVideoPosition();
 
@@ -1888,7 +1888,7 @@ HRESULT TVControl::OnSize()
 	HRESULT hr = OnMove();
 
 	if (m_pActiveSource)
-		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition();
+		hr = m_pActiveSource->GetFilterGraph()->RefreshVideoPosition(m_pActiveSource->GetGraphBuilder());
 	else if (m_pFilterGraph)
 		hr = m_pFilterGraph->RefreshVideoPosition();
 
