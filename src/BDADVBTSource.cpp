@@ -525,11 +525,12 @@ DVBTChannels *BDADVBTSource::GetChannels()
 
 void BDADVBTSource::ThreadProc()
 {
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
 		Sleep(100);
-//		Sleep(1000);
 	}
 }
 

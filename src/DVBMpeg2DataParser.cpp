@@ -31,8 +31,6 @@
 
 void ParseMpeg2DataThread(void *pParam)
 {
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
-
 	DVBMpeg2DataParser *scanner;
 	scanner = (DVBMpeg2DataParser *)pParam;
 	scanner->StartScanThread();
@@ -551,6 +549,7 @@ void DVBMpeg2DataParser::StartScanThread()
 	try
 	{
 		ResetEvent(m_hScanningDoneEvent);
+//		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
 		//SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
 
 		(log << "\nStarting Scan Thread...\n").Write();

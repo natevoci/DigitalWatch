@@ -592,6 +592,8 @@ DVBTChannels *BDADVBTimeShift::GetChannels()
 
 void BDADVBTimeShift::ThreadProc()
 {
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
@@ -837,7 +839,7 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 			(g_pData->values.timeshift.format & 0x01 |
 			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
 	{
-		if (m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, FALSE) == S_OK)
+		if SUCCEEDED(m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, FALSE))
 			return S_OK;
 	}
 

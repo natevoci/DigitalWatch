@@ -262,11 +262,12 @@ HRESULT TSFileSource::ReLoad(LPWSTR pCmdLine)
 
 void TSFileSource::ThreadProc()
 {
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
 		Sleep(100);
-//		Sleep(1000);
 	}
 }
 
