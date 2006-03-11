@@ -705,6 +705,15 @@ DVBTChannels_Service *DVBTChannels_Network::FindPrevServiceByServiceId(long serv
 
 BOOL DVBTChannels_Network::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 {
+	if ((pNewNetwork->originalNetworkId == 0) &&
+		(pNewNetwork->transportStreamId == 0) &&
+		(pNewNetwork->networkId == 0))
+	{
+		(log << "Not Updating Network Information. Invalid information found. \n").Write();
+		PrintNetworkDetails(pNewNetwork);
+		return FALSE;
+	}
+
 	BOOL bChange =
 		(originalNetworkId != pNewNetwork->originalNetworkId) ||		// onid has changed or
 		(transportStreamId != pNewNetwork->transportStreamId) ||		// tsid has changed or
@@ -735,7 +744,7 @@ BOOL DVBTChannels_Network::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 		{
 			(log << "Original Values\n").Write();
 			LogMessageIndent indent2(&log);
-			PrintNetworkDetails();
+			PrintNetworkDetails(this);
 		}
 
 		originalNetworkId = pNewNetwork->originalNetworkId;
@@ -749,11 +758,11 @@ BOOL DVBTChannels_Network::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 		{
 			(log << "New Values\n").Write();
 			LogMessageIndent indent2(&log);
-			PrintNetworkDetails();
+			PrintNetworkDetails(this);
 		}
 		else
 		{
-			PrintNetworkDetails();
+			PrintNetworkDetails(this);
 		}
 	}
 
@@ -784,14 +793,14 @@ BOOL DVBTChannels_Network::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 	return bChange;
 }
 
-void DVBTChannels_Network::PrintNetworkDetails()
+void DVBTChannels_Network::PrintNetworkDetails(DVBTChannels_Network *pNetwork)
 {
-	(log << "Original network id : " << originalNetworkId << "\n").Write();
-	(log << "Transport stream id : " << transportStreamId << "\n").Write();
-	(log << "Network id          : " << networkId << "\n").Write();
-	(log << "Frequency           : " << frequency << "\n").Write();
-	(log << "Bandwidth           : " << bandwidth << "\n").Write();
-	(log << "Network Name        : " << (networkName ? networkName : L"<not set>") << "\n").Write();
+	(log << "Original network id : " << pNetwork->originalNetworkId << "\n").Write();
+	(log << "Transport stream id : " << pNetwork->transportStreamId << "\n").Write();
+	(log << "Network id          : " << pNetwork->networkId << "\n").Write();
+	(log << "Frequency           : " << pNetwork->frequency << "\n").Write();
+	(log << "Bandwidth           : " << pNetwork->bandwidth << "\n").Write();
+	(log << "Network Name        : " << (pNetwork->networkName ? pNetwork->networkName : L"<not set>") << "\n").Write();
 }
 
 // IDWOSDDataList Methods

@@ -131,7 +131,7 @@ public:
 	DVBTChannels_Service *FindPrevServiceByServiceId(long serviceId);
 
 	BOOL UpdateNetwork(DVBTChannels_Network *pNewNetwork);
-	void PrintNetworkDetails();
+	void PrintNetworkDetails(DVBTChannels_Network *pNetwork);
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListName();
