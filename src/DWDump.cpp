@@ -205,11 +205,11 @@ STDMETHODIMP DWDump::SetFileName(LPCOLESTR pszFileName, const AM_MEDIA_TYPE *pmt
 	if (m_pFileName)
 		delete[] m_pFileName;
 
-    m_pFileName = new WCHAR[1+lstrlenW(pszFileName)];
+    m_pFileName = new WCHAR[1+wcslen(pszFileName)];
     if (m_pFileName == 0)
         return E_OUTOFMEMORY;
 
-    lstrcpyW(m_pFileName,pszFileName);
+    wcscpy(m_pFileName,pszFileName);
     m_fWriteError = FALSE;
     HRESULT hr = OpenFile();
     CloseFile();
@@ -225,11 +225,11 @@ STDMETHODIMP DWDump::GetCurFile(LPOLESTR * ppszFileName, AM_MEDIA_TYPE *pmt)
     if (m_pFileName != NULL) 
     {
 		//QzTask = CoTask
-        *ppszFileName = (LPOLESTR)CoTaskMemAlloc(sizeof(WCHAR) * (1+lstrlenW(m_pFileName)));
+        *ppszFileName = (LPOLESTR)CoTaskMemAlloc(sizeof(WCHAR) * (1+wcslen(m_pFileName)));
 
         if (*ppszFileName != NULL)
         {
-            lstrcpyW(*ppszFileName, m_pFileName);
+            wcscpy(*ppszFileName, m_pFileName);
         }
     }
 

@@ -156,7 +156,7 @@ HRESULT TSFileStreamList::LoadStreamList(BOOL bLogOutput)
 						strCopy(item->lcid, (long)lcid);
 						strCopy(item->group, (long)group);
 
-						item->name = new WCHAR[lstrlenW((LPWSTR)pStreamName) + lstrlenW(L"    ")+1];	
+						item->name = new WCHAR[wcslen((LPWSTR)pStreamName) + sizeof(WCHAR)*5];
 						if (flags & AMSTREAMSELECTINFO_EXCLUSIVE)
 							wsprintfW(item->name, L"  * %S",(LPWSTR)pStreamName);  
 						else if (flags & AMSTREAMSELECTINFO_ENABLED)

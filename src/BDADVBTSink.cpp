@@ -282,7 +282,7 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 			delete[] *ppFileName;
 
 		*ppFileName = new WCHAR[MAX_PATH];
-		lstrcpyW(*ppFileName, L"");
+		wcscpy(*ppFileName, L"");
 
 		//
 		// Add the Date/Time Stamp to the FileName 
@@ -292,7 +292,7 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 		WCHAR wfileName[MAX_PATH] = L"";
 		WCHAR wServiceName[MAX_PATH] = L"";
 
-		lstrcpyW(wServiceName, pService->serviceName);
+		wcscpy(wServiceName, pService->serviceName);
 	
 		_tzset();
 		struct tm *tmTime;
@@ -304,21 +304,21 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 
 		//DWS28-02-2006
 		if (pPath != NULL)
-			  lstrcpyW(wPathName, pPath);
+			  wcscpy(wPathName, pPath);
 		else
 			if ((intSinkType == 1 || intSinkType == 11 || intSinkType == 111) &&
 					g_pData->settings.timeshift.folder)
-				lstrcpyW(wPathName, g_pData->settings.timeshift.folder);
+				wcscpy(wPathName, g_pData->settings.timeshift.folder);
 			else
 			{
-				lstrcpyW(wPathName, g_pData->settings.capture.folder);
+				wcscpy(wPathName, g_pData->settings.capture.folder);
 				if (wcslen(g_pData->settings.capture.fileName))
-					lstrcpyW(wServiceName, g_pData->settings.capture.fileName);
+					wcscpy(wServiceName, g_pData->settings.capture.fileName);
 			}
 
 		//DWS28-02-2006
         //ensures that there's always a back slash at the end
-        wPathName[lstrlenW(wPathName)] = char(92*(int)(wPathName[lstrlenW(wPathName)-1]!=char(92)));
+        wPathName[wcslen(wPathName)] = char(92*(int)(wPathName[wcslen(wPathName)-1]!=char(92)));
 
 		if (intSinkType == 1)
 			wsprintfW(*ppFileName, L"%S%S %S.full.tsbuffer", wPathName, wTimeStamp, wServiceName);

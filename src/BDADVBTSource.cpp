@@ -1357,7 +1357,7 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath
 		if FAILED(hr = m_pCurrentSink->StopRecording())
 			return hr;
 
-		lstrcpyW(sz, L"Recording Stopped");
+		wcscpy(sz, L"Recording Stopped");
 	}
 //	else
 	else if (!m_pCurrentSink->IsRecording() && ((mode == 1) || (mode == 2)))
@@ -1367,7 +1367,7 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath
 		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename, pPath))
 			return hr;
 
-		lstrcpyW(sz, L"Recording");
+		wcscpy(sz, L"Recording");
 	}
 
 	//DWS if (sz != L"") this is required to avoid OSD when nothing in sz
@@ -1401,7 +1401,7 @@ HRESULT BDADVBTSource::TogglePauseRecording(long mode)
 		if FAILED(hr = m_pCurrentSink->UnPauseRecording(m_pCurrentService))
 			return hr;
 
-		lstrcpyW(sz, L"Recording");
+		wcscpy(sz, L"Recording");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
 		g_pTv->ShowOSDItem(L"Recording", 5);
 	}
@@ -1410,7 +1410,7 @@ HRESULT BDADVBTSource::TogglePauseRecording(long mode)
 		if FAILED(hr = m_pCurrentSink->PauseRecording())
 			return hr;
 
-		lstrcpyW(sz, L"Recording Paused");
+		wcscpy(sz, L"Recording Paused");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
 		g_pTv->ShowOSDItem(L"Recording", 10000);
 	}

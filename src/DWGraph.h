@@ -38,16 +38,6 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	virtual	HRESULT Start(IGraphBuilder *piGraphBuilder);
-	virtual	HRESULT Cleanup(IGraphBuilder *piGraphBuilder);
-	virtual	HRESULT Stop(IGraphBuilder *piGraphBuilder);
-	virtual	HRESULT RenderPin(IGraphBuilder *piGraphBuilder, IPin *piPin);
-	virtual	HRESULT RefreshVideoPosition(IGraphBuilder *piGraphBuilder);
-	virtual	HRESULT GetVolume(IGraphBuilder *piGraphBuilder, long &volume);
-	virtual	HRESULT SetVolume(IGraphBuilder *piGraphBuilder, long volume);
-	virtual	HRESULT Mute(IGraphBuilder *piGraphBuilder, BOOL bMute);
-	virtual	HRESULT SetColorControls(IGraphBuilder *piGraphBuilder, int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma);
-
 	BOOL Initialise();
 	BOOL Destroy();
 
@@ -55,20 +45,29 @@ public:
 	HRESULT QueryMediaControl(IMediaControl** piMediaControl);
 	
 	HRESULT Start();
+	HRESULT Start(IGraphBuilder *piGraphBuilder);
 	HRESULT Stop();
+	HRESULT Stop(IGraphBuilder *piGraphBuilder);
 	HRESULT Pause(BOOL bPause);
 
 	HRESULT Cleanup();
+	HRESULT Cleanup(IGraphBuilder *piGraphBuilder);
 
 	HRESULT RenderPin(IPin *piPin);
+	HRESULT RenderPin(IGraphBuilder *piGraphBuilder, IPin *piPin);
 
 	HRESULT RefreshVideoPosition();
+	HRESULT RefreshVideoPosition(IGraphBuilder *piGraphBuilder);
 
 	HRESULT GetVolume(long &volume);
+	HRESULT GetVolume(IGraphBuilder *piGraphBuilder, long &volume);
 	HRESULT SetVolume(long volume);
+	HRESULT SetVolume(IGraphBuilder *piGraphBuilder, long volume);
 	HRESULT Mute(BOOL bMute);
+	HRESULT Mute(IGraphBuilder *piGraphBuilder, BOOL bMute);
 
 	HRESULT SetColorControls(int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma);
+	HRESULT SetColorControls(IGraphBuilder *piGraphBuilder, int nBrightness, int nContrast, int nHue, int nSaturation, int nGamma);
 
 	void GetVideoRect(RECT *rect);
 
@@ -77,11 +76,10 @@ public:
 
 protected:
 	void CalculateVideoRect(double aspectRatio = 0);
-	virtual	HRESULT ApplyColorControls(IGraphBuilder *piGraphBuilder);
-	HRESULT ApplyColorControls();
+	HRESULT ApplyColorControls(IGraphBuilder *piGraphBuilder);
 
-	virtual	HRESULT InitialiseVideoPosition(IGraphBuilder *piGraphBuilder);
 	HRESULT InitialiseVideoPosition();
+	HRESULT InitialiseVideoPosition(IGraphBuilder *piGraphBuilder);
 
 private:
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
