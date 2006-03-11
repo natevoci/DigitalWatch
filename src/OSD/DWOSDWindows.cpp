@@ -147,7 +147,7 @@ HRESULT DWOSDWindow::OnKeyCommand(LPWSTR command)
 		return S_FALSE;
 
 	if (command[0] == '#')
-		return SetHighlightedControl(command++);
+		return SetHighlightedControl(++command);
 
 	g_pTv->ExecuteCommandsImmediate(command);
 

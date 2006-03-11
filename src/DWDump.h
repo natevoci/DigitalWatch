@@ -23,7 +23,6 @@
 #ifndef DWDUMP_H
 #define DWDUMP_H
 
-#include <streams.h>
 
 class DWDump;
 

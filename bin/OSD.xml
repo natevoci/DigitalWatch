@@ -270,6 +270,96 @@ $(() - $(
 		<font height=40 weight=700 color="#FFFFFF" />
 		<align horizontal="centre"/>
 	</label>
+	<button name="TV">
+		<pos x=100 y=100 />
+		<size width=568 height=60 />
+		<text>Watch TV</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight default=1>
+			<onSelect>
+				ExitMenu(-1)
+				SetSource(BDA)
+			</onSelect>
+			<onDown>#TSTV</onDown>
+		</highlight>
+	</button>
+	
+	<button name="TSTV">
+		<pos x=100 y=170 />
+		<size width=568 height=60 />
+		<text>Timeshift TV</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>
+				ExitMenu(-1)
+				SetSource(BDATimeShift)
+			</onSelect>
+			<onUp>#TV</onUp>
+			<onDown>#File</onDown>
+		</highlight>
+	</button>
+
+	<button name="File">
+		<pos x=100 y=240 />
+		<size width=568 height=60 />
+		<text>Play File</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>
+				ExitMenu(-1)
+				SetSource(TSFileSource)
+			</onSelect>
+			<onUp>#TSTV</onUp>
+			<onDown>#Exit</onDown>
+		</highlight>
+	</button>
+
+	<button name="Exit">
+		<pos x=100 y=310 />
+		<size width=568 height=60 />
+		<text>Exit</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>
+				Exit()
+			</onSelect>
+			<onUp>#File</onUp>
+		</highlight>
+	</button>
+</window>
+
+
+<!--
+<window name="MainMenu">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	<label>
+		<pos x=384 y=40 />
+		<text>Main Menu</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
 	<list name="MenuOptions">
 		<pos x=100 y=100 />
 		<size width=568 height=426 />
@@ -312,6 +402,7 @@ $(() - $(
 		</item>
 	</list>
 </window>
+-->
 
 <window name="TVMenu">
 	<keys>
@@ -531,7 +622,7 @@ $(() - $(
 			<onDown>#ProgramUp</onDown>
 		</highlight>
 	</button>
-		
+
 	<label>
 		<pos x=340 y=105 />
 		<text>Program</text>
