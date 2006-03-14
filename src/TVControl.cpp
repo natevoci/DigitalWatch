@@ -48,7 +48,7 @@ TVControl::TVControl()
 {
 	m_mainThreadId = GetCurrentThreadId();
 	m_hCommandProcessingStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	m_hCommandProcessingDoneEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	m_hCommandProcessingDoneEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
 	m_pFilterGraph = NULL;
 	m_pActiveSource = NULL;
 
