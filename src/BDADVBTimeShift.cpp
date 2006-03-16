@@ -146,7 +146,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 			return (log << "Failed Creating TimeShift Sink Graph Builder: " << hr << "\n").Write();
 
 	//--- Add To Running Object Table --- (for graphmgr.exe)
-	if (g_pData->settings.application.addToROT)
+	if (g_pData->settings.application.addToROT && !m_rotEntry)
 	{
 		if FAILED(hr = graphTools.AddToRot(m_piSinkGraphBuilder, &m_rotEntry))
 		{
@@ -835,6 +835,11 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 	m_pCurrentNetwork = pNetwork;
 	m_pCurrentService = pService;
 
+	return RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
+}
+
+HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
+{
 	if(m_pCurrentFileSource && m_pCurrentService->serviceName &&
 			(g_pData->values.timeshift.format & 0x01 |
 			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
@@ -843,11 +848,6 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 			return S_OK;
 	}
 
-	return RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
-}
-
-HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
-{
 	(log << "Building BDATimeShift Graph (" << frequency << ", " << bandwidth << ")\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -1164,74 +1164,108 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 		return (log << "Failed to Get Sink Filter File Name: " << hr << "\n").Write(hr);
 	}
 
-	// Wait up to 5 sec for file to grow
-	int count =0;
-	int maxcount =0;
-	__int64 fileSize = 0;
-	__int64 fileSizeSave = 0;
 	//
-	//Wait until the file has grown to the specified size or break if no flow for sepcified time
+	//Do file wait method if specified. 
 	//
-	(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
-	while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
-			fileSize < (__int64)max(2000000, g_pData->values.timeshift.flimit) &&
-			count < max(1, (g_pData->values.timeshift.dlimit/500)) &&
-			maxcount < 80)
+	if(g_pData->values.timeshift.flimit)
 	{
-		(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
-		count++;
-		maxcount++;
-		fileSizeSave++;
-		if (fileSize > fileSizeSave)
-			count--;
+		// Wait up to 5 sec for file to grow
+		int count =0;
+		int maxcount =0;
+		__int64 fileSize = 0;
+		__int64 fileSizeSave = 0;
 
-		Sleep(500);
-		LPWSTR sz = new WCHAR[128];
-		wsprintfW(sz, L"Waiting for TimeShifting File to Build: %lu kBytes", fileSize/1024); 
-		g_pOSD->Data()->SetItem(L"warnings", sz);
-		g_pTv->ShowOSDItem(L"Warnings", 5);
-		delete[] sz;
-	}
-
-	//
-	//Check if the file has stopped growing
-	//
-	if (FAILED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) || fileSize <= fileSizeSave)
-	{
-		g_pOSD->Data()->SetItem(L"warnings", L"FAILED Building The TimeShift File");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
-		return (log << "Data Flow Stopped on the Sink File: " << fileSize << "\n").Write(E_FAIL);
-	}
-
-	g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
-	g_pTv->ShowOSDItem(L"Warnings", 2);
-
-	//
-	//Load the TSFileSource with the file, render & run
-	//
-	if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
-	{
-		g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
-		return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
-	}
-
-	//
-	// Do a pause if it has been requested in the settings, just adds extra delay
-	//
-	if(g_pData->values.timeshift.fdelay)
-	{
-		if FAILED(hr = m_pDWGraph->Pause(TRUE))
+		//
+		//Wait until the file has grown to the specified size or break if no flow for sepcified time
+		//
+		(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
+		while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
+				fileSize < (__int64)max(2000000, g_pData->values.timeshift.flimit) &&
+				count < max(1, (g_pData->values.timeshift.dlimit/500)) &&
+				maxcount < 80)
 		{
-			(log << "Failed to Pause Graph.\n").Write();
+			(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
+			count++;
+			maxcount++;
+			fileSizeSave++;
+			if (fileSize > fileSizeSave)
+				count--;
+
+			Sleep(500);
+			LPWSTR sz = new WCHAR[128];
+			wsprintfW(sz, L"Waiting for TimeShifting File to Build: %lu kBytes", fileSize/1024); 
+			g_pOSD->Data()->SetItem(L"warnings", sz);
+			g_pTv->ShowOSDItem(L"Warnings", 5);
+			delete[] sz;
 		}
 
-		Sleep(max(50, g_pData->values.timeshift.fdelay));
-
-		if FAILED(hr = m_pDWGraph->Pause(FALSE))
+		//
+		//Check if the file has stopped growing
+		//
+		if (FAILED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) || fileSize <= fileSizeSave)
 		{
-			(log << "Failed to Pause Graph.\n").Write();
+			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Building The TimeShift File");
+			g_pTv->ShowOSDItem(L"Warnings", 5);
+			return (log << "Data Flow Stopped on the Sink File: " << fileSize << "\n").Write(E_FAIL);
 		}
+
+		g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+		g_pTv->ShowOSDItem(L"Warnings", 2);
+
+		//
+		//Load the TSFileSource with the file, render & run
+		//
+		if FAILED(hr = m_pCurrentFileSource->Load(pFileName))//LoadTSFile(pFileName, m_pCurrentService, NULL))
+		{
+			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
+			g_pTv->ShowOSDItem(L"Warnings", 5);
+			return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
+		}
+
+		//
+		// Do a pause if it has been requested in the settings, just adds extra delay
+		//
+		if(g_pData->values.timeshift.fdelay)
+		{
+			if FAILED(hr = m_pDWGraph->Pause(TRUE))
+			{
+				(log << "Failed to Pause Graph.\n").Write();
+			}
+
+			Sleep(max(50, g_pData->values.timeshift.fdelay));
+
+			if FAILED(hr = m_pDWGraph->Pause(FALSE))
+			{
+				(log << "Failed to Pause Graph.\n").Write();
+			}
+		}
+	}
+	else
+	{
+		//
+		//Set the Source pin type as we could be loading from scratch
+		//
+		CMediaType cmt;
+		cmt.InitMediaType();
+		cmt.SetType(&MEDIATYPE_Stream);
+		if (g_pData->values.timeshift.format != 4)
+			cmt.SetSubtype(&MEDIASUBTYPE_MPEG2_TRANSPORT);
+		else
+			cmt.SetSubtype(&MEDIASUBTYPE_MPEG2_PROGRAM);
+
+		g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+		g_pTv->ShowOSDItem(L"Warnings", 2);
+		//
+		//Load the TSFileSource with the file, render & run
+		//
+		if FAILED(hr = m_pCurrentFileSource->LoadTSFile(pFileName, m_pCurrentService, &cmt))
+		{
+			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
+			g_pTv->ShowOSDItem(L"Warnings", 5);
+			return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
+		}
+		g_pOSD->Data()->SetItem(L"warnings", L"Finished play the TimeShift File");
+		g_pTv->ShowOSDItem(L"Warnings", 2);
 	}
 
 	m_bFileSourceActive = TRUE;
@@ -1505,16 +1539,18 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 		g_pOSD->Data()->SetItem(L"CurrentService", L"");
 	}
 
+	LPWSTR streamName = new WCHAR[256];
+	wsprintfW(streamName, L"%i. %s", m_pCurrentService->logicalChannelNumber, m_pCurrentService->serviceName);
 	if(m_pCurrentFileSource && m_pCurrentService->serviceName &&
 			(g_pData->values.timeshift.format & 0x01 |
 			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
 	{
-		if (m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, TRUE) == S_OK)
+		if (m_pCurrentFileSource->SetStreamName(streamName, TRUE) == S_OK)
 		{
 //			m_pCurrentFileSource->Skip(0);
 		}
 	}
-
+	delete[] streamName;
 
 
 /*

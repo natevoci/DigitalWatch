@@ -1,6 +1,13 @@
 Version 2.2.0.1
 =================
 bear:
+Added some critical locks to the demux, pidinfoarray & stream parser classes.
+Changed the duration update method to only parse if we have the pids parsed.
+Improved the startup delay by using a cold start method, the fillbuffer does not parse for pcr's until the pids are parsed. This means that the graph clock will not be updated until the pids are parsed. This occurs when there is sufficient file size to correctly parse the data.
+Improved the demux::cleardemuxpin() method byreplacing some calls with a vetetdemuxpin() method so it doesn't clear the pid if the new pid is the same value. 
+Added in a reference clock delay when we reach the end of the file, will slightly improve as time progresses to stay ahead.
+Added a RefreshTSBufferFile() call to the MultiFileReader::GetFileSize() function.
+Added a force output pin type method on the FileSource::load() function, this allows the graph to build with a program pin if required. i.e. If pmt param is media subtype program else Transport pin. If pmt is null then pin type is derived from the file parsing.
 Added in some low priority setings to the DurationUpdate, and property page threads.
 Changed the FillBuffer wait for file building method from a 50ms delay to a 2 second long retry at 50ms intervals. This is to get around file corruption caused by some drivers. 
 Fixed a bug where the filter was not seeking correctly on the first seek, the internal bitrate was not being updated in the pids array. This was apparant on large files.

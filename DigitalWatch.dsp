@@ -247,6 +247,10 @@ SOURCE=.\src\DVBTFrequencyList.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\src\TSFileSource\MediaFormats.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\TSFileSinkGuids.h
 # End Source File
 # Begin Source File

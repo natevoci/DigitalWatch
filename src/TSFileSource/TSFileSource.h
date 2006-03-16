@@ -24,6 +24,7 @@
 #define TSFILESOURCE_H
 
 #include "DWSource.h"
+#include "DVBTChannels.h"
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
 #include "DWThread.h"
@@ -54,6 +55,7 @@ public:
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
+	virtual	HRESULT LoadTSFile(LPWSTR pCmdLine, DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt);
 	virtual HRESULT ReLoad(LPWSTR pCmdLine);
 	virtual HRESULT SetStream(long index);
 	virtual HRESULT GetStreamList(void);
@@ -61,10 +63,28 @@ public:
 
 	virtual void ThreadProc();
 
+
 protected:
 	// graph building methods
-	HRESULT LoadFile(LPWSTR pFilename);
+	HRESULT LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService = NULL, AM_MEDIA_TYPE *pmt = NULL);
 	HRESULT ReLoadFile(LPWSTR pFilename);
+	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, int intPinType = 0);
+	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
+	HRESULT GetAC3Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMP2Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMP1Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetAACMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetVideoMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetH264Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMpeg4Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTIFMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTelexMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTSMedia(AM_MEDIA_TYPE *pintype);
+
 	virtual void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 
 	virtual HRESULT PlayPause();

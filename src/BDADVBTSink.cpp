@@ -35,7 +35,7 @@
 #include "dsnetifc.h"
 #include "TSFileSinkGuids.h"
 #include "Winsock.h"
-#include "StreamFormats.h"
+#include "TSFileSource/MediaFormats.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -470,10 +470,10 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseF
 
 	HRESULT hr;
 
-	if (m_piIMpeg2Demux)
-		m_piIMpeg2Demux.Release();
+	if (m_piMpeg2Demux)
+		m_piMpeg2Demux.Release();
 
-	if FAILED(hr = pFilter->QueryInterface(&m_piIMpeg2Demux))
+	if FAILED(hr = pFilter->QueryInterface(&m_piMpeg2Demux))
 	{
 		(log << "Failed to get the IMeg2Demultiplexer Interface on the Sink Demux.\n").Write();
 		return E_FAIL;
@@ -517,14 +517,11 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseF
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
 */
-	if (m_piIMpeg2Demux)
-		m_piIMpeg2Demux.Release();
+	if (m_piMpeg2Demux)
+		m_piMpeg2Demux.Release();
 
 	indent.Release();
 	(log << "Finished Adding Demux Pins\n").Write();
-//TCHAR sz[128];
-//sprintf(sz, "%u", 0);
-//MessageBox(NULL, sz,"test", NULL);
 
 	return S_OK;
 }
@@ -549,12 +546,12 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 
 		// Get the Pin
 		CComPtr<IBaseFilter>pFilter;
-		if SUCCEEDED(hr = m_piIMpeg2Demux->QueryInterface(&pFilter))
+		if SUCCEEDED(hr = m_piMpeg2Demux->QueryInterface(&pFilter))
 		{
 			if FAILED(hr = pFilter->FindPin(pPinName, &piPin))
 			{
 				// Create the Pin
-				if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+				if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
 				{
 					(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
 					return hr;
@@ -564,7 +561,7 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 		else
 		{
 			// Create the Pin
-			if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+			if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
 			{
 				(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
 				return hr;
@@ -616,7 +613,7 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 
 			// Get the Pin
 			CComPtr<IBaseFilter>pFilter;
-			if SUCCEEDED(hr = m_piIMpeg2Demux->QueryInterface(&pFilter))
+			if SUCCEEDED(hr = m_piMpeg2Demux->QueryInterface(&pFilter))
 			{
 				if FAILED(hr = pFilter->FindPin(pPinName, &piPin))
 				{
@@ -624,7 +621,7 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 					(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
 					LogMessageIndent indent(&log);
 
-					if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+					if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
 					{
 						(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
 						return hr;
@@ -638,7 +635,7 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 				LogMessageIndent indent(&log);
 
 				// Create the Pin
-				if (S_OK != (hr = m_piIMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+				if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
 				{
 					(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
 					return hr;
@@ -673,72 +670,24 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 	return hr;
 }
 
-
 HRESULT BDADVBTSink::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
-	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-	mediaType.majortype = KSDATAFORMAT_TYPE_VIDEO;
-	mediaType.subtype = MEDIASUBTYPE_MPEG2_VIDEO;
-	mediaType.bFixedSizeSamples = TRUE;
-	mediaType.bTemporalCompression = 0;
-	mediaType.lSampleSize = 1;
-	mediaType.formattype = FORMAT_MPEG2Video;
-	mediaType.pUnk = NULL;
-	mediaType.cbFormat = sizeof(g_Mpeg2ProgramVideo);
-	mediaType.pbFormat = g_Mpeg2ProgramVideo;
-
+	GetVideoMedia(&mediaType);
 	return AddDemuxPins(pService, video, L"Video", &mediaType, streamsRendered);
 }
 
 HRESULT BDADVBTSink::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
-	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
-	mediaType.majortype = MEDIATYPE_Audio;
-	//mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
-	mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
-	mediaType.bFixedSizeSamples = TRUE;
-	mediaType.bTemporalCompression = 0;
-	mediaType.lSampleSize = 1;
-	mediaType.formattype = FORMAT_WaveFormatEx;
-	mediaType.pUnk = NULL;
-	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
-	mediaType.pbFormat = g_MPEG1AudioFormat;
-
+	GetMP2Media(&mediaType);
 	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, streamsRendered);
 }
 
 HRESULT BDADVBTSink::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
-	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
-	mediaType.majortype = MEDIATYPE_Audio;
-	mediaType.subtype = MEDIASUBTYPE_DOLBY_AC3;
-	mediaType.bFixedSizeSamples = TRUE;
-	mediaType.bTemporalCompression = 0;
-	mediaType.lSampleSize = 1;
-	mediaType.formattype = FORMAT_WaveFormatEx;
-	mediaType.pUnk = NULL;
-	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
-	mediaType.pbFormat = g_MPEG1AudioFormat;
-
-
-/*	mediaType.majortype = MEDIATYPE_Audio;
-	mediaType.subtype = MEDIASUBTYPE_DOLBY_AC3;
-	mediaType.cbFormat = sizeof(MPEG1AudioFormat);//sizeof(AC3AudioFormat); //
-	mediaType.pbFormat = MPEG1AudioFormat;//AC3AudioFormat; //
-	mediaType.bFixedSizeSamples = TRUE;
-	mediaType.bTemporalCompression = 0;
-	mediaType.lSampleSize = 1;
-	mediaType.formattype = FORMAT_WaveFormatEx;
-	mediaType.pUnk = NULL;
-*/
+	GetAC3Media(&mediaType);
 	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
 }
 
@@ -757,13 +706,210 @@ HRESULT BDADVBTSink::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *
 HRESULT BDADVBTSink::AddDemuxPinsTS(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
-	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-	mediaType.majortype = MEDIATYPE_Stream;
-	mediaType.subtype = KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT; 
-	mediaType.formattype = FORMAT_None; 
-
+	GetTSMedia(&mediaType);
 	return AddDemuxPins(pService, unknown, L"TS", &mediaType, streamsRendered);
+}
+
+
+HRESULT BDADVBTSink::GetAC3Media(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_DOLBY_AC3;
+	pintype->cbFormat = sizeof(MPEG1AudioFormat);//sizeof(AC3AudioFormat); //
+	pintype->pbFormat = MPEG1AudioFormat;//AC3AudioFormat; //
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->formattype = FORMAT_WaveFormatEx;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::GetMP2Media(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_MPEG2_AUDIO; 
+	pintype->formattype = FORMAT_WaveFormatEx; 
+	pintype->cbFormat = sizeof(MPEG2AudioFormat);
+	pintype->pbFormat = MPEG2AudioFormat; 
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::GetMP1Media(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_MPEG1Payload;
+	pintype->formattype = FORMAT_WaveFormatEx; 
+	pintype->cbFormat = sizeof(MPEG1AudioFormat);
+	pintype->pbFormat = MPEG1AudioFormat;
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::GetAACMedia(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_AAC;
+	pintype->formattype = FORMAT_WaveFormatEx; 
+	pintype->cbFormat = sizeof(AACAudioFormat);
+	pintype->pbFormat = AACAudioFormat;
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::GetVideoMedia(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = KSDATAFORMAT_TYPE_VIDEO;
+	pintype->subtype = MEDIASUBTYPE_MPEG2_VIDEO;
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = FALSE;
+	pintype->lSampleSize = 1;
+	pintype->formattype = FORMAT_MPEG2Video;
+	pintype->pUnk = NULL;
+//	pintype->cbFormat = sizeof(Mpeg2ProgramVideo);
+//	pintype->pbFormat = Mpeg2ProgramVideo;
+	pintype->cbFormat = sizeof(g_Mpeg2ProgramVideo);
+	pintype->pbFormat = g_Mpeg2ProgramVideo;
+
+	return S_OK;
+}
+static GUID H264_SubType = {0x8D2D71CB, 0x243F, 0x45E3, {0xB2, 0xD8, 0x5F, 0xD7, 0x96, 0x7E, 0xC0, 0x9B}};
+
+HRESULT BDADVBTSink::GetH264Media(AM_MEDIA_TYPE *pintype)
+
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Video;
+//	pintype->subtype = FOURCCMap(MAKEFOURCC('h','2','6','4'));
+	pintype->subtype = H264_SubType;
+	pintype->bFixedSizeSamples = FALSE;
+	pintype->bTemporalCompression = TRUE;
+	pintype->lSampleSize = 1;
+
+	pintype->formattype = FORMAT_VideoInfo;
+	pintype->pUnk = NULL;
+	pintype->cbFormat = sizeof(H264VideoFormat);
+	pintype->pbFormat = H264VideoFormat;
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::GetMpeg4Media(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Video;
+	pintype->subtype = FOURCCMap(MAKEFOURCC('h','2','6','4'));
+	pintype->bFixedSizeSamples = FALSE;
+	pintype->bTemporalCompression = TRUE;
+	pintype->lSampleSize = 1;
+
+	pintype->formattype = FORMAT_VideoInfo;
+	pintype->pUnk = NULL;
+	pintype->cbFormat = sizeof(H264VideoFormat);
+	pintype->pbFormat = H264VideoFormat;
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::GetTIFMedia(AM_MEDIA_TYPE *pintype)
+
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
+	pintype->subtype = MEDIASUBTYPE_DVB_SI; 
+	pintype->formattype = KSDATAFORMAT_SPECIFIER_NONE;
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::GetTelexMedia(AM_MEDIA_TYPE *pintype)
+
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
+	pintype->subtype = KSDATAFORMAT_SUBTYPE_NONE; 
+	pintype->formattype = KSDATAFORMAT_SPECIFIER_NONE; 
+
+	return S_OK;
+}
+
+HRESULT BDADVBTSink::GetTSMedia(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Stream;
+	pintype->subtype = KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT; 
+	pintype->formattype = FORMAT_None; 
+
+	return S_OK;
 }
 
 HRESULT BDADVBTSink::ClearDemuxPids(CComPtr<IBaseFilter>& pFilter)

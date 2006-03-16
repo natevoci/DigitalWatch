@@ -91,9 +91,9 @@ AppData::AppData()
 
 	settings.timeshift.folder = new wchar_t[MAX_PATH];
 	wcscpy(settings.timeshift.folder, L"");
-	settings.timeshift.dlimit = 5000;
-	settings.timeshift.flimit = 4000000;
-	settings.timeshift.fdelay = 1000;
+	settings.timeshift.dlimit = 0;
+	settings.timeshift.flimit = 0;
+	settings.timeshift.fdelay = 0;
 	settings.timeshift.bufferMinutes = 30;
 	settings.timeshift.format = 0;
 

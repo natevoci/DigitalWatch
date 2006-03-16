@@ -183,7 +183,16 @@ HRESULT DWGraph::QueryMediaControl(IMediaControl** piMediaControl)
 
 HRESULT DWGraph::Start()
 {
-	return Start(m_piGraphBuilder);
+	HRESULT hr;
+
+	if FAILED(hr = Start(m_piGraphBuilder))
+		return hr;
+
+	m_bPlaying = TRUE;
+	m_bPaused = FALSE;
+
+
+	return hr;
 }
 
 HRESULT DWGraph::Start(IGraphBuilder *piGraphBuilder)
@@ -262,7 +271,19 @@ HRESULT DWGraph::Start(IGraphBuilder *piGraphBuilder)
 
 HRESULT DWGraph::Stop()
 {
-	return Stop(m_piGraphBuilder);
+	m_bPlaying = FALSE;
+	m_bPaused = FALSE;
+
+	HRESULT hr;
+
+	if FAILED(hr = Stop(m_piGraphBuilder))
+		return hr;
+
+		//Reset renderer method
+	if (g_pOSD)
+		g_pOSD->SetRenderMethod(RENDER_METHOD_DEFAULT);
+
+	return hr;
 }
 
 HRESULT DWGraph::Stop(IGraphBuilder *piGraphBuilder)

@@ -82,6 +82,16 @@ public:
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsTS(DVBTChannels_Service* pService, long *streamsRendered);
+	HRESULT GetAC3Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMP2Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMP1Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetAACMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetVideoMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetH264Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMpeg4Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTIFMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTelexMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTSMedia(AM_MEDIA_TYPE *pintype);
 	HRESULT ClearDemuxPids(CComPtr<IBaseFilter>& pFilter);
 	HRESULT ClearDemuxPins(IPin *pIPin);
 	HRESULT StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
@@ -106,7 +116,7 @@ private:
 	BDADVBTSinkFile	*m_pCurrentFileSink;
 	BDADVBTSinkDSNet *m_pCurrentDSNetSink;
 
-	CComPtr <IMpeg2Demultiplexer> m_piIMpeg2Demux;
+	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
 	CComPtr <IFileSinkFilter> m_piFileSink;
 
 	BOOL m_bInitialised;
