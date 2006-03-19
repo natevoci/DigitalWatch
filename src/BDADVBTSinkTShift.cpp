@@ -185,6 +185,7 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 								(log << "Failed to Set the File Name on the TS TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
 								DestroyTSFilters();
 							}
+		m_pBDADVBTSink->SetDemuxClock(m_pTSMpeg2Demux);
 	}
 	else if (m_intSinkType& 0x4)
 	{
@@ -241,6 +242,7 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 											(log << "Failed to Set the File Name on the MPG TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
 											DestroyMPGFilters();
 										}
+		m_pBDADVBTSink->SetDemuxClock(m_pMPGMpeg2Demux);
 	}
 
 
@@ -407,5 +409,4 @@ HRESULT BDADVBTSinkTShift::GetCurFileSize(__int64 *pllFileSize)
 
 	return hr;
 }
-
 

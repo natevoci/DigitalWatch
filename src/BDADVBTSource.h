@@ -64,6 +64,7 @@ public:
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
+	virtual HRESULT SetDemuxClock(IBaseFilter *pFilter);
 
 	DVBTChannels *GetChannels();
 

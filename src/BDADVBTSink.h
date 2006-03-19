@@ -94,6 +94,7 @@ public:
 	HRESULT GetTSMedia(AM_MEDIA_TYPE *pintype);
 	HRESULT ClearDemuxPids(CComPtr<IBaseFilter>& pFilter);
 	HRESULT ClearDemuxPins(IPin *pIPin);
+	HRESULT SetDemuxClock(IBaseFilter *pFilter);
 	HRESULT StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
 	HRESULT StopSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
 	HRESULT PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);

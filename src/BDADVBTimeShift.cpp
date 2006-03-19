@@ -1047,7 +1047,6 @@ HRESULT BDADVBTimeShift::LoadDemux()
 
 	HRESULT hr;
 
-
 	CComPtr <IPin> piTSPin;
 	if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
 		return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
@@ -1066,16 +1065,8 @@ HRESULT BDADVBTimeShift::LoadDemux()
 		return (log << "Failed to connect TS Pin to DW Demux: " << hr << "\n").Write(hr);
 
 	//Set reference clock
-	CComQIPtr<IReferenceClock> piRefClock(m_piBDAMpeg2Demux);
-	if (!piRefClock)
+	if FAILED(hr = SetDemuxClock(m_piBDAMpeg2Demux))
 		return (log << "Failed to get reference clock interface on demux filter: " << hr << "\n").Write(hr);
-
-	CComQIPtr<IMediaFilter> piMediaFilter(m_piSinkGraphBuilder);
-	if (!piMediaFilter)
-		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
-
-	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
-		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
 
 	piDemuxPin.Release();
 	piTSPin.Release();
@@ -1517,6 +1508,25 @@ HRESULT BDADVBTimeShift::AddDemuxPinsTeletext(DVBTChannels_Service* pService, lo
 	mediaType.formattype = KSDATAFORMAT_SPECIFIER_NONE;
 
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTimeShift::SetDemuxClock(IBaseFilter *pFilter)
+{
+	HRESULT hr = S_OK;
+
+	//Set reference clock
+	CComQIPtr<IReferenceClock> piRefClock(pFilter);
+	if (!piRefClock)
+		return (log << "Failed to get reference clock interface on TimeShift Sink demux filter: " << hr << "\n").Write(hr);
+
+	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
+	if (!piMediaFilter)
+		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
+		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
+
+	return hr;
 }
 
 void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)

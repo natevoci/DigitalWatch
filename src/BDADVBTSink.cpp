@@ -984,6 +984,25 @@ HRESULT BDADVBTSink::ClearDemuxPins(IPin *pIPin)
 	return S_OK;
 }
 
+HRESULT BDADVBTSink::SetDemuxClock(IBaseFilter *pFilter)
+{
+	HRESULT hr = S_OK;
+
+	//Set reference clock
+	CComQIPtr<IReferenceClock> piRefClock(pFilter);
+	if (!piRefClock)
+		return (log << "Failed to get reference clock interface on TimeShift Sink demux filter: " << hr << "\n").Write(hr);
+
+	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
+	if (!piMediaFilter)
+		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
+		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
+
+	return hr;
+}
+
 HRESULT BDADVBTSink::StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd)
 {
 	HRESULT hr = E_INVALIDARG;

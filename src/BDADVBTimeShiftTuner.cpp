@@ -241,6 +241,10 @@ HRESULT BDADVBTimeShiftTuner::AddSourceFilters()
 	if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piBDAMpeg2Demux, m_piBDASecTab))
 		return (log << "Failed to connect BDA Demux to MPEG-2 Sections and Tables: " << hr << "\n").Write(hr);
 
+	//Set reference clock
+	if FAILED(hr = m_pBDADVBTimeShift->SetDemuxClock(m_piBDAMpeg2Demux))
+		return (log << "Failed to get reference clock interface on BDA demux filter: " << hr << "\n").Write(hr);
+
 	m_bActive = TRUE;
 	return S_OK;
 }
