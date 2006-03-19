@@ -521,6 +521,9 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 
 		if (pService)
 		{
+			if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+				return S_OK;
+
 			return RenderChannel(pNetwork, pService);
 		}
 		else
@@ -542,6 +545,9 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 		DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
 		if (pService)
 		{
+			if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+				return S_OK;
+
 			return RenderChannel(pNetwork, pService);
 		}
 		else
@@ -639,6 +645,9 @@ HRESULT BDADVBTimeShift::SetChannel(long originalNetworkId, long serviceId)
 			return (log << "Service with service id " << serviceId << " not found\n").Write(E_POINTER);
 	}
 
+	if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+		return S_OK;
+
 	return RenderChannel(pNetwork, pService);
 }
 
@@ -679,6 +688,9 @@ HRESULT BDADVBTimeShift::SetChannel(long originalNetworkId, long transportStream
 		if (!pService)
 			return (log << "Service with service id " << serviceId << " not found\n").Write(E_POINTER);
 	}
+
+	if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+		return S_OK;
 
 	return RenderChannel(pNetwork, pService);
 }
@@ -724,6 +736,9 @@ HRESULT BDADVBTimeShift::SetFrequency(long frequency, long bandwidth)
 			m_pCurrentNetwork->bandwidth = bandwidth;
 		}
 
+		if (IsEqualObject((IUnknown *)m_pCurrentNetwork->FindDefaultService(), (IUnknown *)m_pCurrentService))
+			return S_OK;
+
 		m_pCurrentService = m_pCurrentNetwork->FindDefaultService();
 		if (m_pCurrentService)
 		{
@@ -756,6 +771,9 @@ HRESULT BDADVBTimeShift::NetworkUp()
 	if (!pService)
 		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
 
+	if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+		return S_OK;
+
 	return RenderChannel(pNetwork, pService);
 }
 
@@ -775,6 +793,9 @@ HRESULT BDADVBTimeShift::NetworkDown()
 	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 	if (!pService)
 		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+
+	if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+		return S_OK;
 
 	return RenderChannel(pNetwork, pService);
 }
@@ -799,6 +820,9 @@ HRESULT BDADVBTimeShift::ProgramUp()
 	if (!pService)
 			return (log << "Current service is not in the channels file\n").Write(E_POINTER);
 
+	if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+		return S_OK;
+
 	return RenderChannel(pNetwork, pService);
 }
 
@@ -822,6 +846,9 @@ HRESULT BDADVBTimeShift::ProgramDown()
 	if (!pService)
 			return (log << "Current service is not in the channels file\n").Write(E_POINTER);
 
+	if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+		return S_OK;
+
 	return RenderChannel(pNetwork, pService);
 }
 
@@ -832,6 +859,9 @@ HRESULT BDADVBTimeShift::ProgramDown()
 
 HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService)
 {
+	if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+		return S_OK;
+
 	m_pCurrentNetwork = pNetwork;
 	m_pCurrentService = pService;
 
@@ -1615,6 +1645,9 @@ HRESULT BDADVBTimeShift::UpdateChannels()
 		DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 		if (!pService)
 			return (log << "There are no services for the original network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+
+		if (IsEqualObject((IUnknown *)pService, (IUnknown *)m_pCurrentService))
+			return S_OK;
 
 		return RenderChannel(pNetwork, pService);
 	}
