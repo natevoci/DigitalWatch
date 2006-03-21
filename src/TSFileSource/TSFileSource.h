@@ -56,7 +56,6 @@ public:
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
 	virtual	HRESULT LoadTSFile(LPWSTR pCmdLine, DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt);
-	virtual HRESULT SetDemuxClock(IBaseFilter *pFilter);
 	virtual HRESULT ReLoad(LPWSTR pCmdLine);
 	virtual HRESULT SetStream(long index);
 	virtual HRESULT GetStreamList(void);

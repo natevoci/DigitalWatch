@@ -47,6 +47,8 @@ BDADVBTimeShift::BDADVBTimeShift() : m_strSourceType(L"BDATimeShift")
 	m_pDWGraph = NULL;
 	m_bFileSourceActive = TRUE;
 	m_rotEntry = 0;
+	m_rtTimeShiftStart = 0;
+	m_rtTimeShiftDuration = 0;
 
 	g_pOSD->Data()->AddList(&channels);
 	g_pOSD->Data()->AddList(&frequencyList);
@@ -600,6 +602,9 @@ void BDADVBTimeShift::ThreadProc()
 {
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
 
+	m_rtTimeShiftStart = timeGetTime()/60000;
+	m_rtTimeShiftDuration = m_rtTimeShiftStart;
+
 	while (!ThreadIsStopping())
 	{
 		UpdateData();
@@ -902,6 +907,9 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 	if (hr == S_FALSE)
 		(log << "Killed thread\n").Write();
 
+	m_rtTimeShiftStart = timeGetTime()/60000;
+	m_rtTimeShiftDuration = m_rtTimeShiftStart;
+
 	// Do data stuff
 	UpdateData(frequency, bandwidth);
 	if (m_pCurrentNetwork)
@@ -1065,7 +1073,7 @@ HRESULT BDADVBTimeShift::LoadDemux()
 		return (log << "Failed to connect TS Pin to DW Demux: " << hr << "\n").Write(hr);
 
 	//Set reference clock
-	if FAILED(hr = SetDemuxClock(m_piBDAMpeg2Demux))
+	if FAILED(hr = graphTools.SetReferenceClock(m_piBDAMpeg2Demux))
 		return (log << "Failed to get reference clock interface on demux filter: " << hr << "\n").Write(hr);
 
 	piDemuxPin.Release();
@@ -1510,25 +1518,6 @@ HRESULT BDADVBTimeShift::AddDemuxPinsTeletext(DVBTChannels_Service* pService, lo
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTimeShift::SetDemuxClock(IBaseFilter *pFilter)
-{
-	HRESULT hr = S_OK;
-
-	//Set reference clock
-	CComQIPtr<IReferenceClock> piRefClock(pFilter);
-	if (!piRefClock)
-		return (log << "Failed to get reference clock interface on TimeShift Sink demux filter: " << hr << "\n").Write(hr);
-
-	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
-	if (!piMediaFilter)
-		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
-
-	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
-		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-
-	return hr;
-}
-
 void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 {
 //	return ;
@@ -1592,6 +1581,31 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 	}
 	delete[] streamName;
 
+	// Set Time Shift Sink Interface
+	if (m_pCurrentSink)
+	{
+		if (g_pData->values.timeshift.maxnumbfiles != g_pData->settings.timeshift.maxnumbfiles ||
+			g_pData->values.timeshift.numbfilesrecycled != g_pData->settings.timeshift.numbfilesrecycled ||
+			g_pData->values.timeshift.bufferfilesize != g_pData->settings.timeshift.bufferfilesize ||
+			g_pData->values.timeshift.bufferMinutes != g_pData->settings.timeshift.bufferMinutes)
+		{
+			g_pData->settings.timeshift.maxnumbfiles = g_pData->values.timeshift.maxnumbfiles;
+			g_pData->settings.timeshift.numbfilesrecycled = g_pData->values.timeshift.numbfilesrecycled;
+			g_pData->settings.timeshift.bufferfilesize = g_pData->values.timeshift.bufferfilesize;
+			g_pData->settings.timeshift.bufferMinutes = g_pData->values.timeshift.bufferMinutes;
+			m_pCurrentSink->UpdateTSFileSink(FALSE);
+		}
+	}
+
+	// Set Time Shift Sink Interface to auto after time limit reached.
+	m_rtTimeShiftDuration = timeGetTime()/60000;
+	m_rtTimeShiftDuration -= m_rtTimeShiftStart;
+
+	if (m_pCurrentSink  && g_pData->values.timeshift.bufferMinutes && (g_pData->values.timeshift.bufferMinutes <= m_rtTimeShiftDuration))
+	{
+		m_rtTimeShiftStart = timeGetTime()/60000;;
+		m_pCurrentSink->UpdateTSFileSink(TRUE);
+	}
 
 /*
 	// Set Signal Statistics

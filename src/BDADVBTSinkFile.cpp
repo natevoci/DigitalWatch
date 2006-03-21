@@ -176,7 +176,10 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 							DestroyTSFilters();
 						}
 						else
+						{
+							graphTools.SetReferenceClock(m_pTSMpeg2Demux);
 							m_pBDADVBTSink->ClearDemuxPids(m_pTSMpeg2Demux);
+						}
 	}
 
 	if (m_intSinkType& 0x4)
@@ -216,7 +219,51 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 								(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Audio to MPG Sink MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
 								DestroyMPGFilters();
 							}
-							else	//Connect Mux (MPG Sink's)
+							else //Connect Mux (MPG Sink's)
+								if ((CComBSTR)GUID_NULL == (CComBSTR)g_pData->settings.filterguids.quantizerclsid)
+								{
+									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
+									{
+										(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Video to MPG Sink MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
+										DestroyMPGFilters();
+									}
+									else	//Connect FileWriter (MPG Sink's)
+										if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Mux, m_pMPGSink))
+										{
+											(log << "Failed to connect MPG Sink MPEG-2 Multiplexer to MPG Sink FileWriter: " << hr << "\n").Write(hr);
+											DestroyMPGFilters();
+										}
+//										else
+//											m_pBDADVBTSink->ClearDemuxPids(m_piMPGMpeg2Demux);
+								}
+								else
+								{
+									if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.quantizerclsid, &m_pMPGQuantizer, L"MPG Sink Quantizer"))
+									{
+										(log << "Failed to add MPG Sink Quantizer to the graph: " << hr << "\n").Write(hr);
+									}
+									else //MPEG-2 Multiplexer (MPG Sink's)
+										if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGQuantizer))
+										{
+											(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Video to MPG Sink Quantizer: " << hr << "\n").Write(hr);
+											DestroyMPGFilters();
+										}
+										else
+											if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGQuantizer, m_pMPGMpeg2Mux))
+											{
+												(log << "Failed to connect MPG Sink MPG Sink Quantizer Video to MPG Sink MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
+												DestroyMPGFilters();
+											}
+											else	//Connect FileWriter (MPG Sink's)
+												if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Mux, m_pMPGSink))
+												{
+													(log << "Failed to connect MPG Sink MPEG-2 Multiplexer to MPG Sink FileWriter: " << hr << "\n").Write(hr);
+													DestroyMPGFilters();
+												}
+												else
+													graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+								}
+/*
 								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
 								{
 									(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Video to MPG Sink MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
@@ -228,9 +275,10 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 										(log << "Failed to connect MPG Sink MPEG-2 Multiplexer to MPG Sink FileWriter: " << hr << "\n").Write(hr);
 										DestroyMPGFilters();
 									}
-//									else
+									else
+										graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
 //										m_pBDADVBTSink->ClearDemuxPids(m_piMPGMpeg2Demux);
-
+*/
 	}
 
 	if (m_intSinkType& 0x8)
@@ -259,37 +307,65 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 						DestroyAVFilters();
 					}
 					else		//Connect Demux (Seperate A/V Sink's)
-					if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pInfinitePinTee, m_pAVMpeg2Demux))
-					{
-						(log << "Failed to connect Infinite Pin Tee Filter to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-						DestroyAVFilters();
-					}
-					else	//Add Demux Pins (Seperate A/V Sink's)
-						if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pAVMpeg2Demux))
+						if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pInfinitePinTee, m_pAVMpeg2Demux))
 						{
-							(log << "Failed to Add Output Pins to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
+							(log << "Failed to connect Infinite Pin Tee Filter to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 							DestroyAVFilters();
 						}
-						else		//Connect FileWriter (Seperate A/V Sink's) Audio
-							if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pAVMpeg2Demux, m_pAudioSink))
+						else	//Add Demux Pins (Seperate A/V Sink's)
+							if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pAVMpeg2Demux))
 							{
-								(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Audio Sink FileWriter: " << hr << "\n").Write(hr);
+								(log << "Failed to Add Output Pins to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 								DestroyAVFilters();
 							}
-							else		//Connect FileWriter (Seperate A/V Sink's) Teletext
-								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pAVMpeg2Demux, m_pTelexSink))
+							else		//Connect FileWriter (Seperate A/V Sink's) Audio
+								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pAVMpeg2Demux, m_pAudioSink))
 								{
-									(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Teletext Sink FileWriter: " << hr << "\n").Write(hr);
+									(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Audio Sink FileWriter: " << hr << "\n").Write(hr);
 									DestroyAVFilters();
 								}
-								else		//Connect FileWriter (Seperate A/V Sink's) Video
-									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pAVMpeg2Demux, m_pVideoSink))
+								else		//Connect FileWriter (Seperate A/V Sink's) Teletext
+									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pAVMpeg2Demux, m_pTelexSink))
 									{
-										(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Video Sink FileWriter: " << hr << "\n").Write(hr);
+										(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Teletext Sink FileWriter: " << hr << "\n").Write(hr);
 										DestroyAVFilters();
 									}
-									else
-										m_pBDADVBTSink->ClearDemuxPids(m_pAVMpeg2Demux);
+									else	//Connect FileWriter (Seperate A/V Sink's) Video
+										if ((CComBSTR)GUID_NULL == (CComBSTR)g_pData->settings.filterguids.quantizerclsid)
+										{
+											if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pAVMpeg2Demux, m_pVideoSink))
+											{
+												(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Video Sink FileWriter: " << hr << "\n").Write(hr);
+												DestroyAVFilters();
+											}
+											else
+												m_pBDADVBTSink->ClearDemuxPids(m_pAVMpeg2Demux);
+										}
+										else
+										{
+											if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.quantizerclsid, &m_pVideoQuantizer, L"A/V Video Sink Quantizer"))
+											{
+												(log << "Failed to add A/V Video Sink Quantizer to the graph: " << hr << "\n").Write(hr);
+											}
+											else
+												if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pAVMpeg2Demux, m_pVideoQuantizer))
+												{
+													(log << "Failed to connect A/V Sink MPEG-2 Demultiplexer to Video Sink Quantizer: " << hr << "\n").Write(hr);
+													DestroyAVFilters();
+												}
+												else
+													if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pVideoQuantizer, m_pVideoSink))
+													{
+														(log << "Failed to connect A/V Sink Quantizer to Video Sink FileWriter: " << hr << "\n").Write(hr);
+														DestroyAVFilters();
+													}
+													else
+													{
+														m_pBDADVBTSink->ClearDemuxPids(m_pAVMpeg2Demux);
+														graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+													}
+										}
+
 	}
 
 	m_bActive = TRUE;
@@ -314,6 +390,7 @@ void BDADVBTSinkFile::DestroyMPGFilters()
 	DeleteFilter(&m_pMPGDWDump);
 	DestroyFilter(m_pMPGSink);
 	DestroyFilter(m_pMPGMpeg2Mux);
+	DestroyFilter(m_pMPGQuantizer);
 	DestroyFilter(m_pMPGMpeg2Demux);
 }
 
@@ -325,6 +402,7 @@ void BDADVBTSinkFile::DestroyAVFilters()
 	DestroyFilter(m_pTelexSink);
 	DeleteFilter(&m_pAudioDWDump);
 	DestroyFilter(m_pAudioSink);
+	DestroyFilter(m_pVideoQuantizer);
 	DestroyFilter(m_pAVMpeg2Demux);
 }
 

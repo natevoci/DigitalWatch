@@ -49,6 +49,7 @@ public:
 	{
 		struct SETTINGS_APPLICATION
 		{
+			BOOL multiple;
 			BOOL disableScreenSaver;
 			int priority;
 			BOOL addToROT;
@@ -126,6 +127,9 @@ public:
 			int flimit;
 			int fdelay;
 			int bufferMinutes;
+			int maxnumbfiles;
+			int numbfilesrecycled;
+			int bufferfilesize;
 			int format;
 		} timeshift;
 
@@ -146,6 +150,7 @@ public:
 			GUID dsnetclsid;
 			GUID demuxclsid;
 			GUID infteeclsid;
+			GUID quantizerclsid;
 		} filterguids;
 
 		int loadedFromFile;
@@ -216,6 +221,9 @@ public:
 			long flimit;
 			long fdelay;
 			long bufferMinutes;
+			long maxnumbfiles;
+			long numbfilesrecycled;
+			long bufferfilesize;
 		} timeshift;
 
 		struct SETTINGS_DSNETWORK

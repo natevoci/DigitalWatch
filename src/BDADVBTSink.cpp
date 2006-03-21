@@ -91,13 +91,13 @@ HRESULT BDADVBTSink::Initialise(IGraphBuilder *piGraphBuilder)
 	if FAILED(hr = m_piGraphBuilder->QueryInterface(&m_piMediaControl))
 		return (log << "Failed to get media control: " << hr << "\n").Write(hr);
 
-	m_intTimeShiftType = g_pData->values.timeshift.format;
-	if(m_intTimeShiftType)
+	m_intDSNetworkType = g_pData->values.dsnetwork.format;
+	if(m_intDSNetworkType)
 	{
-		m_pCurrentTShiftSink = new BDADVBTSinkTShift(this);
-		m_pCurrentTShiftSink->SetLogCallback(m_pLogCallback);
-		if FAILED(hr = m_pCurrentTShiftSink->Initialise(m_piGraphBuilder, m_intTimeShiftType))
-			return (log << "Failed to Initalise the TimeShift Sink Filters: " << hr << "\n").Write(hr);
+		m_pCurrentDSNetSink = new BDADVBTSinkDSNet(this);
+		m_pCurrentDSNetSink->SetLogCallback(m_pLogCallback);
+		if FAILED(hr = m_pCurrentDSNetSink->Initialise(m_piGraphBuilder, m_intDSNetworkType))
+			return (log << "Failed to Initalise the DSNetwork Sink Filters: " << hr << "\n").Write(hr);
 	}
 
 	m_intFileSinkType = g_pData->values.capture.format;
@@ -109,13 +109,13 @@ HRESULT BDADVBTSink::Initialise(IGraphBuilder *piGraphBuilder)
 			return (log << "Failed to Initalise the File Sink Filters: " << hr << "\n").Write(hr);
 	}
 
-	m_intDSNetworkType = g_pData->values.dsnetwork.format;
-	if(m_intDSNetworkType)
+	m_intTimeShiftType = g_pData->values.timeshift.format;
+	if(m_intTimeShiftType)
 	{
-		m_pCurrentDSNetSink = new BDADVBTSinkDSNet(this);
-		m_pCurrentDSNetSink->SetLogCallback(m_pLogCallback);
-		if FAILED(hr = m_pCurrentDSNetSink->Initialise(m_piGraphBuilder, m_intDSNetworkType))
-			return (log << "Failed to Initalise the DSNetwork Sink Filters: " << hr << "\n").Write(hr);
+		m_pCurrentTShiftSink = new BDADVBTSinkTShift(this);
+		m_pCurrentTShiftSink->SetLogCallback(m_pLogCallback);
+		if FAILED(hr = m_pCurrentTShiftSink->Initialise(m_piGraphBuilder, m_intTimeShiftType))
+			return (log << "Failed to Initalise the TimeShift Sink Filters: " << hr << "\n").Write(hr);
 	}
 
 	m_bInitialised = TRUE;
@@ -126,10 +126,10 @@ HRESULT BDADVBTSink::DestroyAll()
 {
     HRESULT hr = S_OK;
 
-	if (m_pCurrentTShiftSink)
+	if (m_pCurrentDSNetSink)
 	{
-		m_pCurrentTShiftSink->RemoveSinkFilters();
-		delete m_pCurrentTShiftSink;
+		m_pCurrentDSNetSink->RemoveSinkFilters();
+		delete m_pCurrentDSNetSink;
 	}
 
 	if (m_pCurrentFileSink)
@@ -138,10 +138,10 @@ HRESULT BDADVBTSink::DestroyAll()
 		delete m_pCurrentFileSink;
 	}
 
-	if (m_pCurrentDSNetSink)
+	if (m_pCurrentTShiftSink)
 	{
-		m_pCurrentDSNetSink->RemoveSinkFilters();
-		delete m_pCurrentDSNetSink;
+		m_pCurrentTShiftSink->RemoveSinkFilters();
+		delete m_pCurrentTShiftSink;
 	}
 
 	m_piMediaControl.Release();
@@ -153,12 +153,11 @@ HRESULT BDADVBTSink::AddSinkFilters(DVBTChannels_Service* pService)
 {
 	HRESULT hr = E_FAIL;
 
-
-	//--- Add & connect the Sink filters ---
-	if (m_intFileSinkType && m_pCurrentFileSink)
+	//--- Now add & connect the DSNetworking filters ---
+	if (m_intDSNetworkType && m_pCurrentDSNetSink)
 	{
-		if FAILED(hr = m_pCurrentFileSink->AddSinkFilters(pService))
-			(log << "Failed to add all the File Sink Filters to the graph: " << hr << "\n").Write(hr);
+		if FAILED(hr = m_pCurrentDSNetSink->AddSinkFilters(pService))
+			(log << "Failed to add all the DSNetworking Sink Filters to the graph: " << hr << "\n").Write(hr);
 	}
 
 	//--- Now add & connect the TimeShifting filters ---
@@ -168,13 +167,12 @@ HRESULT BDADVBTSink::AddSinkFilters(DVBTChannels_Service* pService)
 			(log << "Failed to add all the TimeShift Sink Filters to the graph: " << hr << "\n").Write(hr);
 	}
 
-	//--- Now add & connect the DSNetworking filters ---
-	if (m_intDSNetworkType && m_pCurrentDSNetSink)
+	//--- Add & connect the Sink filters ---
+	if (m_intFileSinkType && m_pCurrentFileSink)
 	{
-		if FAILED(hr = m_pCurrentDSNetSink->AddSinkFilters(pService))
-			(log << "Failed to add all the DSNetworking Sink Filters to the graph: " << hr << "\n").Write(hr);
+		if FAILED(hr = m_pCurrentFileSink->AddSinkFilters(pService))
+			(log << "Failed to add all the File Sink Filters to the graph: " << hr << "\n").Write(hr);
 	}
-
 
 	m_bActive = TRUE;
 	return hr;
@@ -193,13 +191,13 @@ HRESULT BDADVBTSink::RemoveSinkFilters()
 {
 	m_bActive = FALSE;
 	
-	//--- Remove the Sink filters ---
-	if (m_intFileSinkType && m_pCurrentFileSink)
-		m_pCurrentFileSink->RemoveSinkFilters();
-
 	//--- Remove the TimeShifting filters ---
 	if (m_intTimeShiftType && m_pCurrentTShiftSink)
 		m_pCurrentTShiftSink->RemoveSinkFilters();
+
+	//--- Remove the Sink filters ---
+	if (m_intFileSinkType && m_pCurrentFileSink)
+		m_pCurrentFileSink->RemoveSinkFilters();
 
 	//--- Remove the DSNetworking filters ---
 	if (m_intDSNetworkType && m_pCurrentDSNetSink)
@@ -220,14 +218,14 @@ HRESULT BDADVBTSink::SetTransportStreamPin(IPin* piPin)
 
 	m_piInfinitePinTee = pinInfo.pFilter;
 
-	if(m_pCurrentTShiftSink)
-		m_pCurrentTShiftSink->SetTransportStreamPin(piPin);
+	if(m_pCurrentDSNetSink)
+		m_pCurrentDSNetSink->SetTransportStreamPin(piPin);
 
 	if(m_pCurrentFileSink)
 		m_pCurrentFileSink->SetTransportStreamPin(piPin);
 
-	if(m_pCurrentDSNetSink)
-		m_pCurrentDSNetSink->SetTransportStreamPin(piPin);
+	if(m_pCurrentTShiftSink)
+		m_pCurrentTShiftSink->SetTransportStreamPin(piPin);
 
 	return S_OK;
 }
@@ -984,25 +982,6 @@ HRESULT BDADVBTSink::ClearDemuxPins(IPin *pIPin)
 	return S_OK;
 }
 
-HRESULT BDADVBTSink::SetDemuxClock(IBaseFilter *pFilter)
-{
-	HRESULT hr = S_OK;
-
-	//Set reference clock
-	CComQIPtr<IReferenceClock> piRefClock(pFilter);
-	if (!piRefClock)
-		return (log << "Failed to get reference clock interface on TimeShift Sink demux filter: " << hr << "\n").Write(hr);
-
-	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
-	if (!piMediaFilter)
-		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
-
-	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
-		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-
-	return hr;
-}
-
 HRESULT BDADVBTSink::StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd)
 {
 	HRESULT hr = E_INVALIDARG;
@@ -1335,3 +1314,11 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 	return S_OK;
 }
 	
+HRESULT BDADVBTSink::UpdateTSFileSink(BOOL bAutoMode)
+{
+	if(m_intTimeShiftType && m_pCurrentTShiftSink)
+		return m_pCurrentTShiftSink->UpdateTSFileSink(bAutoMode);
+
+	return E_FAIL;
+}
+

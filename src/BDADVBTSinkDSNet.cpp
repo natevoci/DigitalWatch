@@ -143,13 +143,13 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 			if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pInfinitePinTee, m_pFTSSink))
 			{
 				(log << "Failed to connect Infinite Pin Tee Filter to Full TS MPEG-2 Multicast Sender: " << hr << "\n").Write(hr);
-				DestroyFilter(m_pFTSSink);
+				DestroyFTSFilters();
 			}
 			else	//Add File Name (FTS DSNetworking))
 				if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pFTSFileName, pService, m_pFTSSink))
 				{
 					(log << "Failed to Setup the Full TS DSNetwork Multicast Sender Interface: " << hr << "\n").Write(hr);
-					DestroyFilter(m_pFTSSink);
+					DestroyFTSFilters();
 				}
 	}
 	else if (m_intSinkType& 0x2)
@@ -165,35 +165,36 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 //			if FAILED(hr = graphTools.AddFilterByName(m_piGraphBuilder, &m_piTSSink, CLSID_LegacyAmFilterCategory, L"MPEG-2 Multicast Sender (BDA Compatible)"))
 			{
 				(log << "Failed to add TS DSNetwork MPEG Multicast Sender to the graph: " << hr << "\n").Write(hr);
-				DestroyFilter(m_pTSMpeg2Demux);
+				DestroyTSFilters();
 			}
 			else	//Connect Demux (TS DSNetworking)
 				if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pInfinitePinTee, m_pTSMpeg2Demux))
 				{
 					(log << "Failed to connect Infinite Pin Tee Filter to TS DSNetwork MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-					DestroyFilter(m_pTSSink);
-					DestroyFilter(m_pTSMpeg2Demux);
+					DestroyTSFilters();
 				}
 				else	//Add Demux Pins (TS DSNetworking)
 					if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pTSMpeg2Demux, 1))
 					{
 						(log << "Failed to Add Output Pins to TS DSNetwork MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-							DestroyFilter(m_pTSSink);
-							DestroyFilter(m_pTSMpeg2Demux);
+						DestroyTSFilters();
 					}
 					else		//Connect Multicast Sender (TS DSNetworking)
 						if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pTSMpeg2Demux, m_pTSSink))
 						{
 							(log << "Failed to connect TS DSNetwork MPEG-2 Demultiplexer to TS DSNetwork MPEG Multicast Sender: " << hr << "\n").Write(hr);
-							DestroyFilter(m_pTSSink);
-							DestroyFilter(m_pTSMpeg2Demux);
+							DestroyTSFilters();
 						}
 						else	//Add File Name (TS DSNetworking))
 							if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTSFileName, pService, m_pTSSink))
 							{
 								(log << "Failed to Setup the TS DSNetwork Multicast Sender Interface: " << hr << "\n").Write(hr);
-								DestroyFilter(m_pTSSink);
-								DestroyFilter(m_pTSMpeg2Demux);
+								DestroyTSFilters();
+							}
+							else
+							{
+								graphTools.SetReferenceClock(m_pTSMpeg2Demux);
+								m_pBDADVBTSink->ClearDemuxPids(m_pTSMpeg2Demux);
 							}
 	}
 	else if (m_intSinkType& 0x4)
@@ -207,7 +208,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 			if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.mpgmuxclsid, &m_pMPGMpeg2Mux, L"MPG DSNetworking Sender MPEG-2 Multiplexer"))
 			{
 				(log << "Failed to add MPG TimeShift MPEG-2 Multiplexer to the graph: " << hr << "\n").Write(hr);
-				DestroyFilter(m_pMPGMpeg2Demux);
+				DestroyMPGFilters();
 			}
 			else //Multicast Sender (MPG DSNetworking)
 				if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.dsnetclsid, &m_pMPGSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
@@ -215,57 +216,103 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 //				if FAILED(hr = graphTools.AddFilterByName(m_piGraphBuilder, &m_piMPGSink, CLSID_LegacyAmFilterCategory, L"MPEG-2 Multicast Sender (BDA Compatible)"))
 				{
 					(log << "Failed to add MPG DSNetwork  FileWriter to the graph: " << hr << "\n").Write(hr);
-					DestroyFilter(m_pMPGMpeg2Mux);
-					DestroyFilter(m_pMPGMpeg2Demux);
+					DestroyMPGFilters();
 				}
 				else	//Connect Demux (MPG DSNetworking)
 					if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pInfinitePinTee, m_pMPGMpeg2Demux))
 					{
 						(log << "Failed to connect Infinite Pin Tee Filter to MPG DSNetwork MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-						DestroyFilter(m_pMPGSink);
-						DestroyFilter(m_pMPGMpeg2Mux);
-						DestroyFilter(m_pMPGMpeg2Demux);
+						DestroyMPGFilters();
 					}
 					else	//Add Demux Pins (MPG DSNetworking))
 						if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pMPGMpeg2Demux))
 						{
 							(log << "Failed to Add Output Pins to MPG DSNetwork MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
-								DestroyFilter(m_pMPGSink);
-								DestroyFilter(m_pMPGMpeg2Mux);
-								DestroyFilter(m_pMPGMpeg2Demux);
+							DestroyMPGFilters();
 						}
 						else	//Connect Mux (MPG DSNetworking)
 							if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
 							{
 								(log << "Failed to connect MPG DSNetwork MPEG-2 Demultiplexer Audio to MPG DSNetwork MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
-								DestroyFilter(m_pMPGSink);
-								DestroyFilter(m_pMPGMpeg2Mux);
-								DestroyFilter(m_pMPGMpeg2Demux);
+								DestroyMPGFilters();
 							}
 							else	//Connect Mux (MPG DSNetworking)
 								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
 								{
 									(log << "Failed to connect MPG DSNetwork MPEG-2 Demultiplexer Video to MPG DSNetwork MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
-									DestroyFilter(m_pMPGSink);
-									DestroyFilter(m_pMPGMpeg2Mux);
-									DestroyFilter(m_pMPGMpeg2Demux);
+									DestroyMPGFilters();
 								}
 								else	//Connect Multicast Sender (MPG DSNetworking)
 									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Mux, m_pMPGSink))
 									{
 										(log << "Failed to connect MPG DSNetwork MPEG-2 Multiplexer to MPG DSNetwork Multicast Sender: " << hr << "\n").Write(hr);
-										DestroyFilter(m_pMPGSink);
-										DestroyFilter(m_pMPGMpeg2Mux);
-										DestroyFilter(m_pMPGMpeg2Demux);
+										DestroyMPGFilters();
 									}
 									else	//Add Demux Pins (MPG DSNetworking))
 										if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink))
 										{
 											(log << "Failed to Setup the MPG DSNetwork Multicast Sender Interface: " << hr << "\n").Write(hr);
-											DestroyFilter(m_pMPGSink);
-											DestroyFilter(m_pMPGMpeg2Mux);
-											DestroyFilter(m_pMPGMpeg2Demux);
+											DestroyMPGFilters();
 										}
+										else
+											graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+
+/*								if ((CComBSTR)GUID_NULL == (CComBSTR)g_pData->settings.filterguids.quantizerclsid)
+								{
+									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
+									{
+										(log << "Failed to connect MPG TimeShift MPEG-2 Demultiplexer Video to MPG TimeShift MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
+										DestroyMPGFilters();
+									}
+									else	//Connect FileWriter (MPG DSNetworking's)
+										if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Mux, m_pMPGSink))
+										{
+											(log << "Failed to connect MPG TimeShift MPEG-2 Multiplexer to MPG TimeShift FileWriter: " << hr << "\n").Write(hr);
+											DestroyMPGFilters();
+										}
+										else	//Add FileName (MPG DSNetworking)
+											if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 111))
+											{
+												(log << "Failed to Set the File Name on the MPG TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
+												DestroyMPGFilters();
+											}
+											else
+												graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+								}
+								else
+								{
+									if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.quantizerclsid, &m_pMPGQuantizer, L"MPG TimeShift Quantizer"))
+									{
+										(log << "Failed to add MPG TimeShift Quantizer to the graph: " << hr << "\n").Write(hr);
+									}
+									else //MPEG-2 Multiplexer (MPG DSNetworking's)
+										if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGQuantizer))
+										{
+											(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Video to MPG TimeShift Quantizer: " << hr << "\n").Write(hr);
+											DestroyMPGFilters();
+										}
+										else
+											if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGQuantizer, m_pMPGMpeg2Mux))
+											{
+												(log << "Failed to connect MPG Sink MPG Sink Quantizer Video to MPG TimeShift MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
+												DestroyMPGFilters();
+											}
+											else	//Connect FileWriter (MPG DSNetworking's)
+												if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Mux, m_pMPGSink))
+												{
+													(log << "Failed to connect MPG Sink MPEG-2 Multiplexer to MPG TimeShift FileWriter: " << hr << "\n").Write(hr);
+													DestroyMPGFilters();
+												}
+												else	//Add FileName (MPG DSNetworking)
+													if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink))
+													{
+														(log << "Failed to Set the File Name on the MPG TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
+														DestroyMPGFilters();
+													}
+													else
+														graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+								}
+*/
 	}
 	m_bActive = TRUE;
 	return hr;
@@ -298,6 +345,7 @@ void BDADVBTSinkDSNet::DestroyMPGFilters()
 	DeleteFilter(&m_pMPGDWDump);
 	DestroyFilter(m_pMPGSink);
 	DestroyFilter(m_pMPGMpeg2Mux);
+	DestroyFilter(m_pMPGQuantizer);
 	DestroyFilter(m_pMPGMpeg2Demux);
 }
 
@@ -309,6 +357,7 @@ void BDADVBTSinkDSNet::DestroyAVFilters()
 	DestroyFilter(m_pTelexSink);
 	DeleteFilter(&m_pAudioDWDump);
 	DestroyFilter(m_pAudioSink);
+	DestroyFilter(m_pVideoQuantizer);
 	DestroyFilter(m_pAVMpeg2Demux);
 }
 

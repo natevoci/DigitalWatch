@@ -50,7 +50,6 @@ public:
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
-	virtual HRESULT SetDemuxClock(IBaseFilter *pFilter) = 0;
 
 	/* Filtergraph */
 /*	virtual HRESULT AddFilters() = 0;

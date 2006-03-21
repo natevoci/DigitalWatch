@@ -99,20 +99,28 @@ private:
 
 	int m_intSinkType;
 
+	CComPtr <IBaseFilter> m_pAVMpeg2Demux;
+
 	CComPtr <IBaseFilter> m_pTelexSink;
 	DWDump *m_pTelexDWDump;
+
+	CComPtr <IBaseFilter> m_pVideoQuantizer;
 	CComPtr <IBaseFilter> m_pVideoSink;
 	DWDump *m_pVideoDWDump;
+
 	CComPtr <IBaseFilter> m_pAudioSink;
 	DWDump *m_pAudioDWDump;
-	CComPtr <IBaseFilter> m_pAVMpeg2Demux;
+
+	CComPtr <IBaseFilter> m_pMPGMpeg2Demux;
+	CComPtr <IBaseFilter> m_pMPGQuantizer;
+	CComPtr <IBaseFilter> m_pMPGMpeg2Mux;
 	CComPtr <IBaseFilter> m_pMPGSink;
 	DWDump *m_pMPGDWDump;
-	CComPtr <IBaseFilter> m_pMPGMpeg2Mux;
-	CComPtr <IBaseFilter> m_pMPGMpeg2Demux;
+
+	CComPtr <IBaseFilter> m_pTSMpeg2Demux;
 	CComPtr <IBaseFilter> m_pTSSink;
 	DWDump *m_pTSDWDump;
-	CComPtr <IBaseFilter> m_pTSMpeg2Demux;
+
 	CComPtr <IBaseFilter> m_pFTSSink;
 	DWDump *m_pFTSDWDump;
 

@@ -46,7 +46,7 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 
 	g_pData->hWnd = FindWindow(szWindowClass, NULL);
 	//LATER: Option for multiple instances
-	if (g_pData->hWnd != NULL)
+	if (g_pData->hWnd != NULL && !g_pData->settings.application.multiple)
 	{
 		(log << "An instance of Digital Watch is already running.\n  Bringing the existing instance to the foreground.\n").Write();
 		SetForegroundWindow(g_pData->hWnd);

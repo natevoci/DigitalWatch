@@ -70,7 +70,6 @@ public:
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
-	virtual HRESULT SetDemuxClock(IBaseFilter *pFilter);
 
 	DVBTChannels *GetChannels();
 
@@ -123,6 +122,8 @@ private:
 	const LPWSTR m_strSourceType;
 
 	BOOL m_bInitialised;
+	long m_rtTimeShiftStart;
+	long m_rtTimeShiftDuration;
 
 	std::vector<BDADVBTimeShiftTuner*> m_tuners;
 

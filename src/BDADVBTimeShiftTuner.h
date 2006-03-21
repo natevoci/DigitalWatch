@@ -45,6 +45,7 @@ public:
 	HRESULT DestroyAll();
 
 	HRESULT AddSourceFilters();
+	HRESULT DeleteOutputPins(IBaseFilter *pFilter);
 	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 	HRESULT RemoveSourceFilters();
 

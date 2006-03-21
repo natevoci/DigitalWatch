@@ -34,6 +34,10 @@
 #include "DVBMpeg2DataParser.h"
 #include "DWDump.h"
 
+// {0d2620cd-a57a-4458-b96f-76442b70e9c7}
+EXTERN_GUID(IID_ITSFileSink,
+0x0d2620cd, 0xa57a, 0x4458, 0xb9, 0x6f, 0x76, 0x44, 0x2b, 0x70, 0xe9, 0xc7);
+
 // {5cdd5c68-80dc-43e1-9e44-c849ca8026e7}
 EXTERN_GUID(CLSID_TSFileSink,
 0x5cdd5c68, 0x80dc, 0x43e1, 0x9e, 0x44, 0xc8, 0x49, 0xca, 0x80, 0x26, 0xe7);
@@ -70,6 +74,8 @@ public:
 	BOOL IsRecording();
 	HRESULT GetCurFile(LPOLESTR *ppszFileName);
 	HRESULT GetCurFileSize(__int64 *pllFileSize);
+	HRESULT UpdateTSFileSink(BOOL bAutoMode = FALSE);
+	HRESULT SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAutoMode = FALSE);
 
 	BOOL SupportsRecording() { return FALSE; }
 
@@ -96,20 +102,29 @@ private:
 
 	int m_intSinkType;
 
+	CComPtr <IBaseFilter> m_pAVMpeg2Demux;
+
 	CComPtr <IBaseFilter> m_pTelexSink;
 	DWDump *m_pTelexDWDump;
+
+	CComPtr <IBaseFilter> m_pVideoQuantizer;
 	CComPtr <IBaseFilter> m_pVideoSink;
 	DWDump *m_pVideoDWDump;
+
 	CComPtr <IBaseFilter> m_pAudioSink;
 	DWDump *m_pAudioDWDump;
-	CComPtr <IBaseFilter> m_pAVMpeg2Demux;
+
+	CComPtr <IBaseFilter> m_pMPGMpeg2Demux;
+	CComPtr <IBaseFilter> m_pMPGQuantizer;
+	CComPtr <IBaseFilter> m_pMPGMpeg2Mux;
 	CComPtr <IBaseFilter> m_pMPGSink;
 	DWDump *m_pMPGDWDump;
-	CComPtr <IBaseFilter> m_pMPGMpeg2Mux;
-	CComPtr <IBaseFilter> m_pMPGMpeg2Demux;
+
+
+	CComPtr <IBaseFilter> m_pTSMpeg2Demux;
 	CComPtr <IBaseFilter> m_pTSSink;
 	DWDump *m_pTSDWDump;
-	CComPtr <IBaseFilter> m_pTSMpeg2Demux;
+
 	CComPtr <IBaseFilter> m_pFTSSink;
 	DWDump *m_pFTSDWDump;
 

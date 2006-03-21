@@ -242,11 +242,75 @@ HRESULT BDADVBTimeShiftTuner::AddSourceFilters()
 		return (log << "Failed to connect BDA Demux to MPEG-2 Sections and Tables: " << hr << "\n").Write(hr);
 
 	//Set reference clock
-	if FAILED(hr = m_pBDADVBTimeShift->SetDemuxClock(m_piBDAMpeg2Demux))
+	if FAILED(hr = graphTools.SetReferenceClock(m_piBDAMpeg2Demux))
 		return (log << "Failed to get reference clock interface on BDA demux filter: " << hr << "\n").Write(hr);
+
+	//Set reference clock
+	if FAILED(hr = DeleteOutputPins(m_piBDAMpeg2Demux))
+		return (log << "Failed to Delete the Output Pins on the Demux filter: " << hr << "\n").Write(hr);
 
 	m_bActive = TRUE;
 	return S_OK;
+}
+
+
+
+HRESULT BDADVBTimeShiftTuner::DeleteOutputPins(IBaseFilter *pFilter)
+{
+    HRESULT hr = S_OK;
+	
+    PIN_DIRECTION  direction;
+	CComPtr <IPin> pIPin = NULL;
+	CComPtr <IPin> pDownstreamPin = NULL;
+	AM_MEDIA_TYPE *type;
+	
+	// Get an instance of the Demux control interface
+	CComPtr <IMpeg2Demultiplexer> muxInterface;
+	hr = pFilter->QueryInterface (&muxInterface);
+	
+	// Enumerate the Demux pins
+    CComPtr <IEnumPins> pIEnumPins;
+    hr = pFilter->EnumPins (&pIEnumPins);
+	
+    if (FAILED (hr))
+    {
+		(log << "Cannot get enumpins on Demux filter: " << hr << "\n").Write(hr);
+        return hr;
+    }
+
+    while(pIEnumPins->Next(1, &pIPin, 0) == S_OK)
+    {
+        hr = pIPin->QueryDirection(&direction);
+		
+        if(direction == PINDIR_OUTPUT)
+        {
+            pIPin->ConnectedTo(&pDownstreamPin);
+			
+            if(pDownstreamPin == NULL)
+            {
+				PIN_INFO pinInfo;
+				if (FAILED(pIPin->QueryPinInfo(&pinInfo)))
+				{
+					(log << "Cannot Get Demux Output Pin Info on Demux filter: " << hr << "\n").Write(hr);
+					return hr;
+				}
+				
+				CComPtr <IEnumMediaTypes> ppEnum;
+				if (SUCCEEDED (pIPin->EnumMediaTypes(&ppEnum)))
+				{
+					while(ppEnum->Next(1, &type, 0) == S_OK)
+					{
+						muxInterface->DeleteOutputPin(pinInfo.achName);
+					}
+				}
+				ppEnum = NULL;
+            }
+            pDownstreamPin = NULL;
+        }
+        pIPin = NULL;
+    }
+	
+	return hr;
 }
 
 void BDADVBTimeShiftTuner::DestroyFilter(CComPtr <IBaseFilter> &pFilter)

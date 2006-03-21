@@ -815,6 +815,34 @@ void FilterGraphTools::RemoveFromRot(DWORD pdwRegister)
 	pdwRegister = 0;
 }
 
+HRESULT FilterGraphTools::SetReferenceClock(IBaseFilter *pFilter)
+{
+	HRESULT hr = S_OK;
+
+	FILTER_INFO info;
+	if FAILED(hr = pFilter->QueryFilterInfo(&info))
+		return (log << "Failed to Query Filter Info from IBaseFilter filter: " << hr << "\n").Write(hr);
+
+	CComQIPtr<IGraphBuilder> piGraphBuilder(info.pGraph);
+	if (!piGraphBuilder)
+		return (log << "Failed to get IGraphBuilder interface from IBaseFilter filter: " << hr << "\n").Write(hr);
+
+	info.pGraph->Release();
+
+	//Set reference clock
+	CComQIPtr<IReferenceClock> piRefClock(pFilter);
+	if (!piRefClock)
+		return (log << "Failed to get reference clock interface on IBaseFilter filter: " << hr << "\n").Write(hr);
+
+	CComQIPtr<IMediaFilter> piMediaFilter(piGraphBuilder);
+	if (!piMediaFilter)
+		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
+		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
+
+	return hr;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //BDA functions

@@ -1,6 +1,8 @@
 Version 2.2.0.1
 =================
 bear:
+Fixed a bug that was being caused when the fillbuffer thread was clashing with the UpdateDuration thread.
+Removed the line of code to change the speed of the TSFileSourceClock by 1%. It was just for testing.
 Added a line of code to change the speed of the TSFileSourceClock by 1%. 
 Added an extra TSBuffer::Require() called from the Update Duration thread, this is so that we can read ahead between each FillBuffer calls.
 Added some extra PidArray critical locks.

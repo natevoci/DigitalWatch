@@ -247,6 +247,10 @@ SOURCE=.\src\DVBTFrequencyList.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\src\TSFileSource\ITSFileSink.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\TSFileSource\MediaFormats.h
 # End Source File
 # Begin Source File
@@ -340,6 +344,10 @@ SOURCE=.\src\BDADVBTSinkTShift.cpp
 # Begin Source File
 
 SOURCE=.\src\BDADVBTSinkTShift.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\IMP2Requant.h
 # End Source File
 # End Group
 # End Group

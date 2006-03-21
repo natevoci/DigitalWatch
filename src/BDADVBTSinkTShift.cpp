@@ -30,6 +30,7 @@
 #include <ksmedia.h>
 #include <bdamedia.h>
 #include "TSFileSinkGuids.h"
+#include "TSFileSource/ITSFileSink.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -185,7 +186,8 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 								(log << "Failed to Set the File Name on the TS TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
 								DestroyTSFilters();
 							}
-		m_pBDADVBTSink->SetDemuxClock(m_pTSMpeg2Demux);
+							else
+								graphTools.SetReferenceClock(m_pTSMpeg2Demux);
 	}
 	else if (m_intSinkType& 0x4)
 	{
@@ -236,16 +238,74 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 										(log << "Failed to connect MPG TimeShift MPEG-2 Multiplexer to MPG TimeShift FileWriter: " << hr << "\n").Write(hr);
 										DestroyMPGFilters();
 									}
-									else	//Add Demux Pins (MPG TimeShifting)
+									else	//Add FileName (MPG TimeShifting)
 										if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 111))
 										{
 											(log << "Failed to Set the File Name on the MPG TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
 											DestroyMPGFilters();
 										}
-		m_pBDADVBTSink->SetDemuxClock(m_pMPGMpeg2Demux);
+										else
+											graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+
+/*								if ((CComBSTR)GUID_NULL == (CComBSTR)g_pData->settings.filterguids.quantizerclsid)
+								{
+									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
+									{
+										(log << "Failed to connect MPG TimeShift MPEG-2 Demultiplexer Video to MPG TimeShift MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
+										DestroyMPGFilters();
+									}
+									else	//Connect FileWriter (MPG TimeShifting's)
+										if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Mux, m_pMPGSink))
+										{
+											(log << "Failed to connect MPG TimeShift MPEG-2 Multiplexer to MPG TimeShift FileWriter: " << hr << "\n").Write(hr);
+											DestroyMPGFilters();
+										}
+										else	//Add FileName (MPG TimeShifting)
+											if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 111))
+											{
+												(log << "Failed to Set the File Name on the MPG TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
+												DestroyMPGFilters();
+											}
+											else
+												graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+								}
+								else
+								{
+									if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.quantizerclsid, &m_pMPGQuantizer, L"MPG TimeShift Quantizer"))
+									{
+										(log << "Failed to add MPG TimeShift Quantizer to the graph: " << hr << "\n").Write(hr);
+									}
+									else //MPEG-2 Multiplexer (MPG TimeShifting's)
+										if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGQuantizer))
+										{
+											(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Video to MPG TimeShift Quantizer: " << hr << "\n").Write(hr);
+											DestroyMPGFilters();
+										}
+										else
+											if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGQuantizer, m_pMPGMpeg2Mux))
+											{
+												(log << "Failed to connect MPG Sink MPG Sink Quantizer Video to MPG TimeShift MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
+												DestroyMPGFilters();
+											}
+											else	//Connect FileWriter (MPG TimeShifting's)
+												if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Mux, m_pMPGSink))
+												{
+													(log << "Failed to connect MPG Sink MPEG-2 Multiplexer to MPG TimeShift FileWriter: " << hr << "\n").Write(hr);
+													DestroyMPGFilters();
+												}
+												else	//Add FileName (MPG TimeShifting)
+													if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 111))
+													{
+														(log << "Failed to Set the File Name on the MPG TimeShift FileWriter Interface: " << hr << "\n").Write(hr);
+														DestroyMPGFilters();
+													}
+													else
+														graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+								}
+*/
 	}
 
-
+	UpdateTSFileSink(FALSE);
 	m_bActive = TRUE;
 	return hr;
 }
@@ -277,6 +337,7 @@ void BDADVBTSinkTShift::DestroyMPGFilters()
 	DeleteFilter(&m_pMPGDWDump);
 	DestroyFilter(m_pMPGSink);
 	DestroyFilter(m_pMPGMpeg2Mux);
+	DestroyFilter(m_pMPGQuantizer);
 	DestroyFilter(m_pMPGMpeg2Demux);
 }
 
@@ -288,6 +349,7 @@ void BDADVBTSinkTShift::DestroyAVFilters()
 	DestroyFilter(m_pTelexSink);
 	DeleteFilter(&m_pAudioDWDump);
 	DestroyFilter(m_pAudioSink);
+	DestroyFilter(m_pVideoQuantizer);
 	DestroyFilter(m_pAVMpeg2Demux);
 }
 
@@ -408,5 +470,75 @@ HRESULT BDADVBTSinkTShift::GetCurFileSize(__int64 *pllFileSize)
 		return m_pBDADVBTSink->GetSinkSize(m_pTelexFileName, pllFileSize);
 
 	return hr;
+}
+
+HRESULT BDADVBTSinkTShift::UpdateTSFileSink(BOOL bAutoMode)
+{
+
+	if ((m_intSinkType & 0x1) && m_pFTSSink)
+		return SetTimeShiftInterface(m_pFTSSink, bAutoMode);
+
+	else if ((m_intSinkType & 0x2) && m_pTSSink)
+		return SetTimeShiftInterface(m_pTSSink, bAutoMode);
+
+	else if ((m_intSinkType & 0x4) && m_pMPGSink)
+		return SetTimeShiftInterface(m_pMPGSink, bAutoMode);
+
+	else if ((m_intSinkType & 0x8) && m_pVideoSink)
+		return SetTimeShiftInterface(m_pVideoSink, bAutoMode);
+
+	else if ((m_intSinkType & 0x8) && m_pAudioSink)
+		return SetTimeShiftInterface(m_pAudioSink, bAutoMode);
+
+	else if ((m_intSinkType & 0x8) && m_pTelexSink)
+		return SetTimeShiftInterface(m_pTelexSink, bAutoMode);
+
+	return E_FAIL;
+}
+
+HRESULT BDADVBTSinkTShift::SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAutoMode)
+{
+	if (!pFilter)
+		return E_INVALIDARG;
+
+	HRESULT hr = E_NOINTERFACE;
+	CComQIPtr <ITSFileSink, &IID_ITSFileSink> piTSFileSink(pFilter);
+	if(!piTSFileSink)
+		return (log << "Failed to get ITSFileSink interface from IBaseFilter filter: " << hr << "\n").Write(hr);
+
+	//Do auto set of buffer files.
+	if (bAutoMode)
+	{
+		USHORT numbfilesadded = 1;
+		USHORT numbfilesremoved = 0;
+		piTSFileSink->GetNumbFilesAdded(&numbfilesadded);
+		piTSFileSink->GetNumbFilesRemoved(&numbfilesremoved);
+		numbfilesadded -= numbfilesremoved;
+		numbfilesadded = max(2, numbfilesadded);
+		numbfilesadded++;
+		numbfilesadded = min(g_pData->values.timeshift.maxnumbfiles, numbfilesadded);
+		piTSFileSink->SetMinTSFiles(numbfilesadded);
+		return S_OK;
+	}
+
+	int	maxNumbFiles = max(g_pData->values.timeshift.numbfilesrecycled + 1, g_pData->values.timeshift.maxnumbfiles);	
+	maxNumbFiles = min(100, maxNumbFiles);
+	g_pData->values.timeshift.maxnumbfiles = maxNumbFiles;
+	piTSFileSink->SetMaxTSFiles((USHORT)maxNumbFiles);
+
+	__int64	chunkReserve =(__int64)(10 * 1048576);
+	piTSFileSink->GetChunkReserve(&chunkReserve);
+	__int64 bufferFileSize = (__int64)max(10, g_pData->values.timeshift.bufferfilesize);	
+	bufferFileSize = (__int64)min(500, bufferFileSize);
+	bufferFileSize *= (__int64)1048576;
+	g_pData->values.timeshift.bufferfilesize = bufferFileSize/1048576;
+	piTSFileSink->SetMaxTSFileSize((__int64)max(chunkReserve, bufferFileSize));
+
+	int	numbFilesRecycled = max(2, g_pData->values.timeshift.numbfilesrecycled);	
+	numbFilesRecycled = min(maxNumbFiles, numbFilesRecycled);
+	g_pData->values.timeshift.numbfilesrecycled = numbFilesRecycled;
+	piTSFileSink->SetMinTSFiles((USHORT)numbFilesRecycled);
+
+	return S_OK;
 }
 

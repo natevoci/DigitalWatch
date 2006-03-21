@@ -1184,25 +1184,6 @@ HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
 }
 
-HRESULT BDADVBTSource::SetDemuxClock(IBaseFilter *pFilter)
-{
-	HRESULT hr = S_OK;
-
-	//Set reference clock
-	CComQIPtr<IReferenceClock> piRefClock(pFilter);
-	if (!piRefClock)
-		return (log << "Failed to get reference clock interface on TimeShift Sink demux filter: " << hr << "\n").Write(hr);
-
-	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
-	if (!piMediaFilter)
-		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
-
-	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
-		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-
-	return hr;
-}
-
 void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 {
 //	return ;

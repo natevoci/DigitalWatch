@@ -69,6 +69,8 @@ public:
 	HRESULT AddToRot(IUnknown *pUnkGraph, DWORD *pdwRegister);
 	void RemoveFromRot(DWORD pdwRegister);
 
+	HRESULT SetReferenceClock(IBaseFilter *pFilter);
+
 	//BDA functions
 	HRESULT InitDVBTTuningSpace(CComPtr <ITuningSpace> &piTuningSpace);
 	HRESULT CreateDVBTTuneRequest(CComPtr <ITuningSpace> piTuningSpace, CComPtr <ITuneRequest> &pExTuneRequest, long frequency, long bandwidth);

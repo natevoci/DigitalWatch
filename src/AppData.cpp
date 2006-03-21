@@ -47,6 +47,7 @@ AppData::AppData()
 	application.bCursorVisible = TRUE;
 
 	//SETTINGS
+	settings.application.multiple = FALSE;
 	settings.application.disableScreenSaver = TRUE;
 	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
 	settings.application.addToROT = TRUE;
@@ -94,8 +95,11 @@ AppData::AppData()
 	settings.timeshift.dlimit = 0;
 	settings.timeshift.flimit = 0;
 	settings.timeshift.fdelay = 0;
-	settings.timeshift.bufferMinutes = 30;
+	settings.timeshift.bufferMinutes = 0;
 	settings.timeshift.format = 0;
+	settings.timeshift.maxnumbfiles = 40;
+	settings.timeshift.numbfilesrecycled = 6;
+	settings.timeshift.bufferfilesize = 250;
 
 	settings.dsnetwork.format = 0;
 	settings.dsnetwork.ipaddr = new wchar_t[MAX_PATH];
@@ -118,6 +122,8 @@ AppData::AppData()
 	CLSIDFromString(bstrCLSID, &settings.filterguids.demuxclsid);
 	bstrCLSID = L"{F8388A40-D5BB-11d0-BE5A-0080C706568E}";
 	CLSIDFromString(bstrCLSID, &settings.filterguids.infteeclsid);
+	bstrCLSID = GUID_NULL; 
+	CLSIDFromString(bstrCLSID, &settings.filterguids.quantizerclsid);
 
 	HRESULT hr = LoadSettings();
 	settings.loadedFromFile = SUCCEEDED(hr);
@@ -172,6 +178,9 @@ AppData::AppData()
 	values.timeshift.flimit = settings.timeshift.flimit;
 	values.timeshift.fdelay = settings.timeshift.fdelay;
 	values.timeshift.bufferMinutes = settings.timeshift.bufferMinutes;
+	values.timeshift.maxnumbfiles = settings.timeshift.maxnumbfiles;
+	values.timeshift.numbfilesrecycled = settings.timeshift.numbfilesrecycled;
+	values.timeshift.bufferfilesize = settings.timeshift.bufferfilesize;
 
 	values.dsnetwork.format = settings.dsnetwork.format;
 
@@ -277,6 +286,11 @@ HRESULT AppData::LoadSettings()
 			for ( int subItem=0 ; subItem<subCount ; subItem++ )
 			{
 				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"MultipleInstances") == 0)
+				{
+					settings.application.multiple = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"disableScreenSaver") == 0)
 				{
 					settings.application.disableScreenSaver = (_wcsicmp(pSubElement->value, L"true") == 0);
@@ -511,6 +525,21 @@ HRESULT AppData::LoadSettings()
 			for ( int subItem=0 ; subItem<subCount ; subItem++ )
 			{
 				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"MaxNumbFiles") == 0)
+				{
+					settings.timeshift.maxnumbfiles = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"NumbFilesRecycled") == 0)
+				{
+					settings.timeshift.numbfilesrecycled = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"BufferFileSize") == 0)
+				{
+					settings.timeshift.bufferfilesize = _wtoi(pSubElement->value);
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"Format") == 0)
 				{
 //					settings.timeshift.format = _wtoi(pSubElement->value);
@@ -659,6 +688,16 @@ HRESULT AppData::LoadSettings()
 					continue;
 				}
 
+				if (_wcsicmp(pSubElement->name, L"CLSID_Quantizer") == 0)
+				{
+					if (pSubElement->value)
+					{
+						CComBSTR bstrCLSID(pSubElement->value);
+						CLSIDFromString(bstrCLSID, &settings.filterguids.quantizerclsid);
+					}
+					continue;
+				}
+
 			}
 			continue;
 		}
@@ -681,6 +720,7 @@ HRESULT AppData::SaveSettings()
 	XMLElement *pApplication = new XMLElement(L"Application");
 	file.Elements.Add(pApplication);
 	{
+		pApplication->Elements.Add(new XMLElement(L"MultipleInstances", (settings.application.multiple ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"DisableScreenSaver", (settings.application.disableScreenSaver ? L"True" : L"False")));
 		switch (settings.application.priority)
 		{
@@ -867,6 +907,12 @@ HRESULT AppData::SaveSettings()
 		pTimeshift->Elements.Add(new XMLElement(L"LoadPauseDelay", pValue));
 		strCopy(pValue, settings.timeshift.bufferMinutes);
 		pTimeshift->Elements.Add(new XMLElement(L"BufferMinutes", pValue));
+		strCopy(pValue, settings.timeshift.maxnumbfiles);
+		pTimeshift->Elements.Add(new XMLElement(L"MaxNumbFiles", pValue));
+		strCopy(pValue, settings.timeshift.numbfilesrecycled);
+		pTimeshift->Elements.Add(new XMLElement(L"NumbFilesRecycled", pValue));
+		strCopy(pValue, settings.timeshift.bufferfilesize);
+		pTimeshift->Elements.Add(new XMLElement(L"BufferFileSize", pValue));
 //		strCopy(pValue, settings.timeshift.format);
 		strCopyHex(pValue, settings.timeshift.format);
 		pTimeshift->Elements.Add(new XMLElement(L"Format", pValue));
@@ -901,6 +947,8 @@ HRESULT AppData::SaveSettings()
 		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_DeMuxer", clsid));
 		StringFromCLSID(settings.filterguids.infteeclsid, &clsid);
 		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_InfiniteTee", clsid));
+		StringFromCLSID(settings.filterguids.quantizerclsid, &clsid);
+		pFilterGUID->Elements.Add(new XMLElement(L"CLSID_Quantizer", clsid));
 	}
 
 	if (pValue)
