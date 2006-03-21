@@ -9,8 +9,6 @@ DigitalWatch TODO
 - change OSD windows to be window templates and then create instances of windows when one is shown.
   This will hopefully make it easier to have code genereted windows, and also have separate osd.xml files for each source.
 
-- Reenable WM_COPYDATA
-
 - Change ColorControls to use a standard range Br:-100<0<100 Co:-100<0<100 Hu:-180<0<180 Sa:-100<0<100
 
 - Make changing channels not change cards be default in release build
@@ -52,7 +50,11 @@ DigitalWatch TODO
 	  - Delete?
 	  - Language/Audio Selection
 	- Filter Properties
-	- Audio and Video decoder selection
+      - Menu to list filters being used and bring up properties dialog
+	- Settings page
+	  - capture paths, sizes etc...
+	  - Audio and Video decoder selection
+        - Menu to choose decoders for media types.
 
 - Add File source
   - Perhaps a generic file playback will do since TSFileSource can be registered to be a default source for .ts files.
@@ -67,32 +69,21 @@ DigitalWatch TODO
   - Custom Allocator Presenter?
   - VMR9 deinterlacing
 
-- Timeshifting
-  - Separate tuner graph from main playback graph.
-
 - Now and Next
   - Incorperate Josh's BDA NaN code
     - add Now and Next info to options for CaptureFileName mask.
-
-- Recording
-  - Use the new FileWriter that does 100Mb blocks
 
 - Startup
   - Startup.xml functions that happen on startup
   - Command-line parameters
 
-- Option to diable logging (an option for each file)
+- Option to disable logging (an option for each file)
 - Move file writing into a separate thread. Just push lines to a queue that the other thread dumps to file.
 
 - Automatically register directx9 filters if they're not registered (like mpg2splt, bdasup, tif, m2s&t, mpeg2decfilter, ffdshow)
 
 - Figure out if BDA graphs can be run from a limited user account
 
-- Menu to list filters being used and bring up properties dialog
-- Menu to choose decoders for media types.
-  - Add a Save() option so that changes can be made temporarily.
-- Menu to change audio stream.
-  - This should be persistent per program.
 - Make ShowMenu("NetworkList") select the current network to start with
 
 

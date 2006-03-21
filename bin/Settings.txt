@@ -1,0 +1,86 @@
+<Application>
+	<MultipleInstances> True | False </MultipleInstances>
+	<DisableScreenSaver> True | False </DisableScreenSaver>
+	<Priority> RealTime | High | AboveNormal | Normal | BelowNormal | Low </Priority>
+	<AddToROT> True | False </AddToROT>
+</Application>
+
+<Window>
+	<StartFullscreen> True | False </StartFullscreen>
+	<StartAlwaysOnTop> True | False </StartAlwaysOnTop>
+	<StartAtLastWindowPosition> True | False </StartAtLastWindowPosition>
+	<StartWithLastWindowSize> True | False </StartWithLastWindowSize>
+	<Position x="horizontal position in pixels" y="vertical position in pixels" />
+	<Size width="width in pixels" height="height in pixels" />
+	<RememberFullscreenState> True | False
+		Setting this to true will mean that the <StartFullscreen> value will be updated each time DW exits
+	</RememberFullscreenState>
+	<RememberAlwaysOnTopState> True | False
+		Setting this to true will mean that the <StartAlwaysOnTop> value will be updated each time DW exits
+	</RememberAlwaysOnTopState>
+	<RememberWindowPosition> True | False
+		Setting this to true will mean that the <Position> and <Size> values will be updated each time DW exits
+	</RememberWindowPosition>
+</Window>
+
+<Audio>
+	<Volume> [0 - 100] </Volume>
+	<Mute> True | False </Mute>
+</Audio>
+
+<Video>
+	<AspectRatio override="False" width="16" height="9" />
+		Leaving override set to False will mean that the aspect ratio of video is automatically detected.
+		Setting override to true will force the AR of the video to the set values
+	<Zoom> default 100 </Zoom>
+	<ZoomMode>
+		0 : with zoom at 100 this will fit the entire video inside the window
+		1 : with zoom at 100 this will fit the height of the video to the height of the window
+	</ZoomMode>
+	<Overlay>
+		<Brightness> [0 - 10000] default 750 </Brightness> For Matrox cards 5000 is the centre value
+		<Contrast> [0 - 20000] default 10000 </Contrast>
+		<Hue> [-180 - 180] default 0 </Hue>
+		<Saturation> [0 - 20000] default 10000 </Saturation>
+		<Gamma> [1 - 500] default 1 </Gamma>
+	</Overlay>
+</Video>
+
+<Capture>
+	<Filename> A name to append to captured files. If not specified then the service name is used. </Filename>
+	<Folder> The folder to store captured files to. </Folder>
+	<Format> ???? </Format>
+</Capture>
+
+<Timeshift>
+	<Folder> The folder to store timeshifting buffer files in. </Folder>
+	<LoadDelayLimit> default 0 </LoadDelayLimit>
+	<LoadFileSize> default 0 </LoadFileSize>
+	<LoadPauseDelay> default 0 </LoadPauseDelay>
+	<BufferMinutes> default 0 </BufferMinutes>
+	<MaxNumbFiles> default 40 </MaxNumbFiles>
+	<NumbFilesRecycled> default 6</NumbFilesRecycled>
+	<BufferFileSize> default 250 </BufferFileSize>
+	<Format> ???? </Format>
+</Timeshift>
+
+<DSNetwork>
+	<Format> default 0 </Format>
+	<IP-Addr> default 224.0.0.1 </IP-Addr>
+	<Port> default 0 </Port>
+	<Nic-Addr> default 127.0.0.1 </Nic-Addr>
+</DSNetwork>
+
+<Filter_CLSID>
+	These are the CLSID's for different filters that are used by DW. It is rare that these will need to be changed. If they are changed then the new filter needs to have the same interfaces as the filter it's replacing.
+	<CLSID_FileSource> default {4F8BF30C-3BEB-43A3-8BF2-10096FD28CF2}</CLSID_FileSource>
+	<CLSID_FileWriter> default {00000000-0000-0000-0000-000000000000}</CLSID_FileWriter>
+	<CLSID_TimeShiftWriter> default {5CDD5C68-80DC-43E1-9E44-C849CA8026E7}</CLSID_TimeShiftWriter>
+	<CLSID_MPGMuxer> default {4DF35815-79C5-44C8-8753-847D5C9C3CF5}</CLSID_MPGMuxer>
+	<CLSID_DSNetSender> default {A07E6137-6C07-45D9-A00C-7DE7A7E6319B}</CLSID_DSNetSender>
+	<CLSID_DeMuxer> default {AFB6C280-2C41-11D3-8A60-0000F81E0E4A}</CLSID_DeMuxer>
+	<CLSID_InfiniteTee> default {F8388A40-D5BB-11D0-BE5A-0080C706568E}</CLSID_InfiniteTee>
+	<CLSID_Quantizer> default {00000000-0000-0000-0000-000000000000}</CLSID_Quantizer>
+</Filter_CLSID>
+
+

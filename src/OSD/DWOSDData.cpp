@@ -143,7 +143,7 @@ void DWOSDData::ClearAllListNames(LPWSTR pName)
 
 int DWOSDData::GetListCount(LPWSTR pName)
 {
-	if(!pName || !m_lists.end())
+	if(!pName || (m_lists.end() != 0))
 		return 0;
 
 	int count = 0;
