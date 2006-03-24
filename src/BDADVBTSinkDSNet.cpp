@@ -130,7 +130,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 
 	//--- Add & connect the DSNetworking filters ---
 
-	if (m_intSinkType& 0x1)
+	if (m_intSinkType == 1)
 	{
 		//DSNet (Full TS DSNetworking)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.dsnetclsid, &m_pFTSSink, L"MPEG-2 Multicast Sender (BDA Compatible)"))
@@ -152,7 +152,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 					DestroyFTSFilters();
 				}
 	}
-	else if (m_intSinkType& 0x2)
+	else if (m_intSinkType == 2)
 	{
 		//MPEG-2 Demultiplexer (TS DSNetworking)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pTSMpeg2Demux, L"TS DSNetwork MPEG-2 Demultiplexer"))
@@ -197,7 +197,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 								m_pBDADVBTSink->ClearDemuxPids(m_pTSMpeg2Demux);
 							}
 	}
-	else if (m_intSinkType& 0x4)
+	else if (m_intSinkType == 3)
 	{
 		//MPEG-2 Demultiplexer (MPG DSNetworking)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pMPGMpeg2Demux, L"MPG DSNetworking MPEG-2 Demultiplexer"))

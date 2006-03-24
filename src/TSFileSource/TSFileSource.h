@@ -60,6 +60,7 @@ public:
 	virtual HRESULT SetStream(long index);
 	virtual HRESULT GetStreamList(void);
 	virtual	HRESULT SetStreamName(LPWSTR pService, BOOL bEnable = TRUE);
+	virtual	HRESULT SetRate(double dRate);
 
 	virtual void ThreadProc();
 

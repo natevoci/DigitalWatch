@@ -1,7 +1,96 @@
 --------------------
 DigitalWatch History
 --------------------
-________
+ Changes
+  ```````
+nate:
+- Added Settings.txt to contain information about the options in setting.xml
+- Small change to get DWOSDData to compile in VS2003
+- Fixed hang when the second instance of DW is destroying TVControl.
+- Fixed small memory leak in AppData
+- Replaced all lstrxxxW with wcsxxx just to be consistent throughout the code.
+- Unduplicated the cut&pasted code in DWGraph.
+- Added check that ONID TSID and NID are all valid values before updating channel information
+- Fixed problem with OSDControls not being correctly detected in OnUp, OnDown, OnLeft & OnRight commands.
+- Added alternate main menu that doesn't use OSDList and commented out the previous one.
+- Moved streams.h include from dwdump.h to dwdump.cpp file to avoid "included twice "warnings in the build.
+- Changed DWSurfaceText so that it only creates and destroys the font once, instead of every time it's assigned to a DC.
+- Fix for Invalid Rect problem. I think it was caused by Clear() running when SetOverlayPosition was half way through, so I've added a critical section lock.
+- Added implementation of WM_COPYDATA, Hasn't been tested.
+- Changes to make it compile and remove warnings in VS 2003. (Hopefully it doesn't break it for VS6.
+- Check for nulls when getting overlay window
+- Add command line processing
+- Commented out Signal Statistics stuff since it's causing hangs with my second tuner.
+- Added pausing to TSFileSource source
+- Fixed TSFileSource source to be able to load a file a second time
+- Upgraded DWThread class
+- Fixed transparency with osd lists in directdraw mode
+- Added an UpdateData thread to BDADVBTSource to get Signal Statistics
+
+bear:
+- Updated this history file.
+- Added a fix to the SubChannel selection code in TimeShifting Full Mux mode so that the full Channel Number & Name are compared.
+- Added code to cause any multiple Instance of DW to force VMR9Windowless Render.
+- Revamp of the Settings.xml for Timeshift, Capture & DSNetwork Settings, it now uses text rather than values to set the Mux types.
+- Added in a test for the TimeShift file data flow so the graph can fail and move to the next card.
+- Changed the code related to the Timeshift "BufferMinutes" setting so that it better adapts the buffer time for better accuracy.
+- Added Keyboard Mappings.pdf from rpalmer68.
+- Added settings for the following in the settings.xml,
+- Multiple Instances, trial only, use with VRM9windowless render, seperate directories.
+- Quantizer filter option, test only, for use with mpgmux & sep file captures. not fully tested yet.
+- Added settings for Time Shift Buffer size, these settings should not be changed unless you have an idea of what your doing.
+- Now have the BufferMunites setting working, default is 0 or not auto, if its value is say 5 then the TS buffer will try and change its size to give you at least 5 min of time, this may vary as the buffer goes up and down in size.
+- Had another look at the Reference Clock setting of which demux to use and changed the order of the sink building. If DSNetsink then it will be reference, if then capture sink then it becomes reference, then if Timeshift sink then it is reference.
+- Added some code to set the Reference clock after each demux is added in the BDSDVBTimeshift class, i.e. it will now set the TimeShift sink demux as the clock reference rather than defaulting to the last demux added. This may have caused problems if the reference clock was not defaulting and was null when the timeshift sink graph starts.
+- Added some code to prevent re starting of the timeshift mode if the same channel is selected.
+- Changed the Stream detection method on calls to the StreamInfo::GetFindServiceNameCur() now includes channel number in the test.
+- Added new Media Formats to make the demux pins the same as the TSFileSource media types. Also changed the sink demux types as well.
+- Removed the file build delay, loading of the TSFileSource is now instant, although the settings for file build method can be still valid if the values are not zero.
+- Added in AddDemuxpins method on the TSFileSource class method prior to connection.
+- Added in Forced Pin mode to FileSource::Load call. see TSFileSource notes.
+- Changed some of the priority settings of the updatedata threads.
+- TSFileSource:Added in some low priority setings to the DurationUpdate, and property page threads.
+- Made some changes to get the video controls to work in the timeshift failed mode.
+- TSFileSource: Changed the FillBuffer wait for file building method from a 50ms delay to a 2 second long retry at 50ms intervals. This is to get around file corruption caused by some drivers. 
+- Removed DWSource::Start() code references, were all redundant.
+- Removed the extra DWGraph class in the Timeshift class, now sink graph has its own filtergraph. Seems to have speed up channel changing a little bit.
+- Removed a few other redundant code bits.
+- Started documentation of the new code.
+- Found a call to the source Start() function that was missed, this was causing a restart of the source when selected from the main menu.
+- Removed m_pActiveSource->Start() from the if block. Then made sure that anything that happed in Start() in the sources that was required by Load() also happened in Load() in the sources.
+- Added in an else statment to stop the source classes loading twice when the application is run with a command line.
+- Some slight changes to the method of selecting the program while in timeshifting mode.
+- Changed the command line  text for the timeshift source from "TSTV://" to just "TS://"
+- Changed the names of the filter GUIDs to CLSID.
+- Added code to allow selection of the correct program service when using Full TSMux Timeshifting mode.
+- Changed the TimeShifting setting format to exclude the capture sink settings. Now you need to add on to the timeshift format value to include the capture sink class. eg Capture format settings do not affect timeshifting format. To enable recording in the Timeshift mode you now need to have the upper 4 bits set to the capture type you want. i.e. for timeshifting using TSMux format & capturing using MPGMux format you need to set the value to "0x42" where lower 4 bits are the timeshift type and the upper 4 bits are the capture format. 
+- Added in rpalmer68 Keys.xml files.
+- Added in filter CLSID values to be changable from within the settings.xml file.
+- Removed the Streams.xml file save function, now all remains in memory.
+- Added in a lower process priority in the mpeg2parser ThreadProc function.
+- Added in modification by DWS regarding extra Path parm in recording function call.
+- Added various fixes to the TSFileSource filter, see its changelog.
+- Added fixes to the timeshift waiting for file to build code, added in extra setting in the timeshift section.
+- Added in code by DigitalWatchSaver.
+- Added a TimeShift file reload function, you can now reload/return to the timeshifting file via the "W" key.
+- Changed the timeshift wait before filesource load method from a 3 sec sleep delay to a file growing test method.
+- Fixed an issue where the file was not correctly parsed from the sink filter. It now stores the file name and passes this to the filesource.
+- Fixed the issue where if your recording that you could still change the source mode via the the shift S/T/F keys. 
+- Added in some code for the recording() function passing a filename.
+- Changed the key value in the keys.xml re:<Key code= 36> RecordingTimer(1)</>.
+- Fixed various bugs, sorry don't remember which.
+- Extended the video display settings to the file source graph in timeshifting.
+- Added various warning messages etc.
+- Implemented TimeShifting class modules.
+- Fixed a problem where the sink filters were not being removed.
+- Fixed a problem setting the filename with null on the MPG sink filter.
+- Fixed crashing when you try to record if no capture format is set.
+- Fixed a problem channel scan problem on networks that have same PCR & video pid values. Channel rescan will be required.
+- Implemented Recording control, implemented settings for capture type, timeshift type, dsnetwork types into the settings.xml. sink types are 1=Full TS, 2=TSMux, 4=MPGMux, 8=Seperate Files. Note FileName is optional, will replace service name if inserted. Folder should also include extra back slash at end, eg. "G:\capture\".
+- Made changes to the channel class to include PMT & PCR pids in StreamList.xml for the TSMux Sinks. Also removed the redundant showmenu & exit menu from the TSFilesource class.
+- Added some Sink classes for File recording, timeshifting and DSNetorking.
+- Added a Stream Selection Menu to the File Source.
+
 
 v2.0.2.2
 ________

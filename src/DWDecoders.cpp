@@ -109,8 +109,9 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				continue;
 			}
 
-			if ((_wcsicmp(pName, L"Overlay Mixer") == 0) ||
-				(_wcsicmp(pName, L"OverlayMixer") == 0))
+			if (((_wcsicmp(pName, L"Overlay Mixer") == 0) ||
+				(_wcsicmp(pName, L"OverlayMixer") == 0)) &&
+				!g_pData->values.application.multiple)
 			{
 				CComPtr <IBaseFilter> piOMFilter;
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_OverlayMixer, &piOMFilter, pName);
@@ -153,7 +154,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				renderMethod = RENDER_METHOD_OverlayMixer;
 				g_pOSD->SetRenderMethod(renderMethod);
 			}
-			else if (_wcsicmp(pName, L"VMR7") == 0)
+			else if (_wcsicmp(pName, L"VMR7") == 0 && !g_pData->values.application.multiple)
 			{
 				CComPtr <IBaseFilter> piVMR7Filter;
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer, &piVMR7Filter, pName);
@@ -164,7 +165,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				renderMethod = RENDER_METHOD_VMR7;
 				g_pOSD->SetRenderMethod(renderMethod);
 			}
-			else if (_wcsicmp(pName, L"VMR9") == 0)
+			else if (_wcsicmp(pName, L"VMR9") == 0 && !g_pData->values.application.multiple)
 			{
 				CComPtr <IBaseFilter> piVMR9Filter;
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, pName);
@@ -175,7 +176,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				renderMethod = RENDER_METHOD_VMR9;
 				g_pOSD->SetRenderMethod(renderMethod);
 			}
-			else if (_wcsicmp(pName, L"VMR9Windowless") == 0)
+			else if (_wcsicmp(pName, L"VMR9Windowless") == 0 || g_pData->values.application.multiple)
 			{
 				CComPtr <IBaseFilter> piVMR9Filter;
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, pName);
@@ -204,7 +205,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				renderMethod = RENDER_METHOD_VMR9Windowless;
 				g_pOSD->SetRenderMethod(renderMethod);
 			}
-			else if (_wcsicmp(pName, L"VMR9Renderless") == 0)
+			else if (_wcsicmp(pName, L"VMR9Renderless") == 0 && !g_pData->values.application.multiple)
 			{
 				CComPtr <IBaseFilter> piVMR9Filter;
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, pName);

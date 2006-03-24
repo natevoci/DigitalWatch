@@ -88,7 +88,7 @@ AppData::AppData()
 	wcscpy(settings.capture.fileName, L"");
 	settings.capture.folder = new wchar_t[MAX_PATH];
 	wcscpy(settings.capture.folder, L"");
-	settings.capture.format = 0;
+	settings.capture.format = 2;
 
 	settings.timeshift.folder = new wchar_t[MAX_PATH];
 	wcscpy(settings.timeshift.folder, L"");
@@ -96,7 +96,7 @@ AppData::AppData()
 	settings.timeshift.flimit = 0;
 	settings.timeshift.fdelay = 0;
 	settings.timeshift.bufferMinutes = 0;
-	settings.timeshift.format = 0;
+	settings.timeshift.format = 1;
 	settings.timeshift.maxnumbfiles = 40;
 	settings.timeshift.numbfilesrecycled = 6;
 	settings.timeshift.bufferfilesize = 250;
@@ -129,6 +129,7 @@ AppData::AppData()
 	settings.loadedFromFile = SUCCEEDED(hr);
 
 	//VALUES
+	values.application.multiple = FALSE; // This gets set if you have one or more instance running.
 	values.window.bFullScreen = settings.window.startFullscreen;
 	values.window.bAlwaysOnTop = settings.window.startAlwaysOnTop;
 
@@ -296,7 +297,7 @@ HRESULT AppData::LoadSettings()
 					settings.application.disableScreenSaver = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
-				if (_wcsicmp(pSubElement->name, L"priority") == 0)
+				if (_wcsicmp(pSubElement->name, L"priority") == 0 && pSubElement->value)
 				{
 					if (_wcsicmp(pSubElement->value, L"RealTime") == 0)
 					{
@@ -495,12 +496,36 @@ HRESULT AppData::LoadSettings()
 			for ( int subItem=0 ; subItem<subCount ; subItem++ )
 			{
 				XMLElement *pSubElement = element->Elements.Item(subItem);
-				if (_wcsicmp(pSubElement->name, L"Format") == 0)
+				if (_wcsicmp(pSubElement->name, L"Format") == 0 && pSubElement->value)
 				{
+					if (_wcsicmp(pSubElement->value, L"FullMux") == 0)
+					{
+						settings.capture.format = 1;
+					}
+					else if (_wcsicmp(pSubElement->value, L"TSMux") == 0)
+					{
+						settings.capture.format = 2;
+					}
+					else if (_wcsicmp(pSubElement->value, L"MPGMux") == 0)
+					{
+						settings.capture.format = 3;
+					}
+					else if (_wcsicmp(pSubElement->value, L"SepMux") == 0)
+					{
+						settings.capture.format = 4;
+					}
+//					else if (_wcsicmp(pSubElement->value, L"DVR-MS") == 0)
+//					{
+//						settings.capture.format = 5;
+//					}
+					else
+					{
+						settings.capture.format = 0;
+					}
 //					settings.capture.format = _wtoi(pSubElement->value);
-					settings.capture.format = StringToLong(pSubElement->value);
 					continue;
 				}
+
 				if (_wcsicmp(pSubElement->name, L"Filename") == 0)
 				{
 					if (pSubElement->value)
@@ -540,10 +565,25 @@ HRESULT AppData::LoadSettings()
 					settings.timeshift.bufferfilesize = _wtoi(pSubElement->value);
 					continue;
 				}
-				if (_wcsicmp(pSubElement->name, L"Format") == 0)
+				if (_wcsicmp(pSubElement->name, L"Format") == 0 && pSubElement->value)
 				{
+					if (_wcsicmp(pSubElement->value, L"FullMux") == 0)
+					{
+						settings.timeshift.format = 1;
+					}
+					else if (_wcsicmp(pSubElement->value, L"TSMux") == 0)
+					{
+						settings.timeshift.format = 2;
+					}
+					else if (_wcsicmp(pSubElement->value, L"MPGMux") == 0)
+					{
+						settings.timeshift.format = 3;
+					}
+					else
+					{
+						settings.timeshift.format = 0;
+					}
 //					settings.timeshift.format = _wtoi(pSubElement->value);
-					settings.timeshift.format = StringToLong(pSubElement->value);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"LoadDelayLimit") == 0)
@@ -583,9 +623,25 @@ HRESULT AppData::LoadSettings()
 			for ( int subItem=0 ; subItem<subCount ; subItem++ )
 			{
 				XMLElement *pSubElement = element->Elements.Item(subItem);
-				if (_wcsicmp(pSubElement->name, L"Format") == 0)
+				if (_wcsicmp(pSubElement->name, L"Format") == 0 && pSubElement->value)
 				{
-					settings.dsnetwork.format = _wtoi(pSubElement->value);
+					if (_wcsicmp(pSubElement->value, L"FullMux") == 0)
+					{
+						settings.dsnetwork.format = 1;
+					}
+					else if (_wcsicmp(pSubElement->value, L"TSMux") == 0)
+					{
+						settings.dsnetwork.format = 2;
+					}
+					else if (_wcsicmp(pSubElement->value, L"MPGMux") == 0)
+					{
+						settings.dsnetwork.format = 3;
+					}
+					else
+					{
+						settings.dsnetwork.format = 0;
+					}
+//					settings.dsnetwork.format = _wtoi(pSubElement->value);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"Port") == 0)
@@ -868,30 +924,33 @@ HRESULT AppData::SaveSettings()
 */
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	XMLElement *pCapture = new XMLElement(L"Capture");
 	file.Elements.Add(pCapture);
 	{
 		pCapture->Elements.Add(new XMLElement(L"Filename", settings.capture.fileName));
 		pCapture->Elements.Add(new XMLElement(L"Folder", settings.capture.folder));
+		switch (settings.capture.format)
+		{
+			case 1:
+				strCopy(pValue, L"FullMux");
+				break;
+			case 2:
+				strCopy(pValue, L"TSMux");
+				break;
+			case 3:
+				strCopy(pValue, L"MPGMux");
+				break;
+			case 4:
+				strCopy(pValue, L"SepMux");
+				break;
+//			case 5:
+//				strCopy(pValue, L"DVR-MS");
+//				break;
+			default:
+				strCopy(pValue, L"None");
+				break;
+		};
 //		strCopy(pValue, settings.capture.format);
-		strCopyHex(pValue, settings.capture.format);
 		pCapture->Elements.Add(new XMLElement(L"Format", pValue));
 	}
 
@@ -913,15 +972,44 @@ HRESULT AppData::SaveSettings()
 		pTimeshift->Elements.Add(new XMLElement(L"NumbFilesRecycled", pValue));
 		strCopy(pValue, settings.timeshift.bufferfilesize);
 		pTimeshift->Elements.Add(new XMLElement(L"BufferFileSize", pValue));
+		switch (settings.timeshift.format)
+		{
+			case 1:
+				strCopy(pValue, L"FullMux");
+				break;
+			case 2:
+				strCopy(pValue, L"TSMux");
+				break;
+			case 3:
+				strCopy(pValue, L"MPGMux");
+				break;
+			default:
+				strCopy(pValue, L"None");
+				break;
+		};
 //		strCopy(pValue, settings.timeshift.format);
-		strCopyHex(pValue, settings.timeshift.format);
 		pTimeshift->Elements.Add(new XMLElement(L"Format", pValue));
 	}
 
 	XMLElement *pDSNetwork = new XMLElement(L"DSNetwork");
 	file.Elements.Add(pDSNetwork);
 	{
-		strCopy(pValue, settings.dsnetwork.format);
+		switch (settings.dsnetwork.format)
+		{
+			case 1:
+				strCopy(pValue, L"FullMux");
+				break;
+			case 2:
+				strCopy(pValue, L"TSMux");
+				break;
+			case 3:
+				strCopy(pValue, L"MPGMux");
+				break;
+			default:
+				strCopy(pValue, L"None");
+				break;
+		};
+//		strCopy(pValue, settings.dsnetwork.format);
 		pDSNetwork->Elements.Add(new XMLElement(L"Format", pValue));
 		pDSNetwork->Elements.Add(new XMLElement(L"IP-Addr", settings.dsnetwork.ipaddr));
 		strCopy(pValue, settings.dsnetwork.port);

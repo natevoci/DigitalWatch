@@ -353,9 +353,15 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if (bOwnFilename)
 		delete[] pFilename;
+
 	
-g_pOSD->Data()->SetItem(L"warnings", L"Setting up to play the TimeShift File");
-g_pTv->ShowOSDItem(L"Warnings", 2);
+	if FAILED(hr = SetRate(0.99))
+	{
+		return (log << "Failed to Set File Source Rate: " << hr << "\n").Write(hr);
+	}
+	
+//g_pOSD->Data()->SetItem(L"warnings", L"Setting up to play the TimeShift File");
+//g_pTv->ShowOSDItem(L"Warnings", 2);
 	// MPEG-2 Demultiplexer (DW's)
 	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
@@ -408,8 +414,8 @@ g_pTv->ShowOSDItem(L"Warnings", 2);
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
 
-g_pOSD->Data()->SetItem(L"warnings", L"Starting to play the TimeShift File");
-g_pTv->ShowOSDItem(L"Warnings", 2);
+//g_pOSD->Data()->SetItem(L"warnings", L"Starting to play the TimeShift File");
+//g_pTv->ShowOSDItem(L"Warnings", 2);
 
 	if FAILED(hr = m_pDWGraph->Start())
 		return (log << "Failed to Start Graph.\n").Write(hr);
@@ -981,6 +987,18 @@ HRESULT TSFileSource::SeekTo(long percentage)
 
 	UpdateData();
 
+	return S_OK;
+}
+
+HRESULT TSFileSource::SetRate(double dRate)
+{
+	HRESULT hr;
+
+	CComQIPtr<IMediaSeeking> piMediaSeeking(m_piGraphBuilder);
+	if FAILED(hr = piMediaSeeking->SetRate(dRate))
+		return (log << "Failed to set Source Rate: " << hr << "\n").Write(hr);
+
+	UpdateData();
 	return S_OK;
 }
 

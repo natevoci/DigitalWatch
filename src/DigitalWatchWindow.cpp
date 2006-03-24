@@ -45,6 +45,7 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 	sprintf((char *)&szTitle, "DigitalWatch");
 
 	g_pData->hWnd = FindWindow(szWindowClass, NULL);
+
 	//LATER: Option for multiple instances
 	if (g_pData->hWnd != NULL && !g_pData->settings.application.multiple)
 	{
@@ -52,6 +53,9 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 		SetForegroundWindow(g_pData->hWnd);
 		return FALSE;
 	}
+
+	if (g_pData->hWnd != NULL && g_pData->settings.application.multiple)
+		g_pData->values.application.multiple = g_pData->settings.application.multiple;
 
 	HBRUSH br = CreateSolidBrush(0x00000000);
 

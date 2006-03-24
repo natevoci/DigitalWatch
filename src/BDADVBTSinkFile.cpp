@@ -29,6 +29,7 @@
 #include <ks.h>
 #include <ksmedia.h>
 #include <bdamedia.h>
+#include "IMP2Requant.h"
 
 //////////////////////////////////////////////////////////////////////
 // BDADVBTSinkFile
@@ -129,7 +130,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 {
 	HRESULT hr = E_FAIL;
 
-	if (m_intSinkType& 0x1)
+	if (m_intSinkType == 1)
 	{
 		//FileWriter (Full TS Sink's)
 		if FAILED(hr = AddDWDumpFilter(L"Full TS Sink FileWriter", &m_pFTSDWDump, m_pFTSSink))
@@ -144,7 +145,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 			}
 	}
 
-	if (m_intSinkType& 0x2)
+	else if (m_intSinkType == 2)
 	{
 		//MPEG-2 Demultiplexer (TS Sink's)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pTSMpeg2Demux, L"TS Sink MPEG-2 Demultiplexer"))
@@ -182,7 +183,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 						}
 	}
 
-	if (m_intSinkType& 0x4)
+	else if (m_intSinkType == 3)
 	{
 		//MPEG-2 Demultiplexer (MPG Sink's)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pMPGMpeg2Demux, L"MPG Sink MPEG-2 Demultiplexer"))
@@ -261,7 +262,18 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 													DestroyMPGFilters();
 												}
 												else
+												{
 													graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+
+													CComQIPtr <IMP2Requant, &IID_IMP2Requant> pIMP2Requant(m_pMPGQuantizer);
+													if (!pIMP2Requant)
+													{
+														(log << "Failed to get the MPG Sink Quantizer Interface: " << hr << "\n").Write(hr);
+													}
+													else
+														pIMP2Requant->put_CompRation(2);
+												}
+
 								}
 /*
 								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
@@ -281,7 +293,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 */
 	}
 
-	if (m_intSinkType& 0x8)
+	if (m_intSinkType == 4)
 	{
 		//MPEG-2 Demultiplexer (Seperate A/V Sink's)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pAVMpeg2Demux, L"A/V Sink MPEG-2 Demultiplexer"))
@@ -362,7 +374,15 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 													else
 													{
 														m_pBDADVBTSink->ClearDemuxPids(m_pAVMpeg2Demux);
-														graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+														graphTools.SetReferenceClock(m_pAVMpeg2Demux);
+
+														CComQIPtr <IMP2Requant, &IID_IMP2Requant> pIMP2Requant(m_pMPGQuantizer);
+														if (!pIMP2Requant)
+														{
+															(log << "Failed to get the MPG Sink Quantizer Interface: " << hr << "\n").Write(hr);
+														}
+														else
+															pIMP2Requant->put_CompRation(2);
 													}
 										}
 
@@ -500,7 +520,7 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 
 	HRESULT hr = S_OK;
 
-	if ((m_intSinkType& 0x1) && m_pFTSSink)
+	if (m_intSinkType == 1 && m_pFTSSink)
 	{
 		//Add Demux Pins (Full TS Sink's)
 //DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pFTSFileName, pService, m_pFTSSink, 2, pFileName))		
@@ -513,8 +533,7 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 				(log << "Failed to Start Recording on the Full TS Sink Filter: " << hr << "\n").Write(hr);
 		}
 	}
-
-	if ((m_intSinkType& 0x2) && m_pTSSink)
+	else if (m_intSinkType == 2 && m_pTSSink)
 	{
 		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pTSMpeg2Demux, 1))
 			(log << "Failed to Add Output Pins to TS Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
@@ -529,8 +548,7 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 				(log << "Failed to Start Recording on the TS Sink Filter: " << hr << "\n").Write(hr);
 		}
 	}
-
-	if ((m_intSinkType& 0x4) && m_pMPGSink)
+	else if (m_intSinkType == 3 && m_pMPGSink)
 	{
 //DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 3, pFileName))
 		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 3, pFileName, pPath))
@@ -553,8 +571,7 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 		m_piMPGMpeg2Mux->SetSyncSource(piReferenceClock);
 */
 	}
-
-	if ((m_intSinkType& 0x8) && (m_pVideoSink || m_pAudioSink || m_pTelexSink))
+	else if (m_intSinkType== 4 && (m_pVideoSink || m_pAudioSink || m_pTelexSink))
 	{
 		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pAVMpeg2Demux))
 			(log << "Failed to Add Output Pins to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
@@ -602,30 +619,27 @@ HRESULT BDADVBTSinkFile::StopRecording(void)
 
 	HRESULT hr = S_OK;
 
-	if ((m_intSinkType& 0x1) && m_pFTSSink)
+	if (m_intSinkType == 1 && m_pFTSSink)
 	{
 		if (m_pFTSDWDump)
 			m_pFTSDWDump->Record();
 		m_pBDADVBTSink->NullFileName(m_pFTSSink, m_intSinkType);
 	}
-
-	if ((m_intSinkType& 0x2) && m_pTSSink)
+	else if (m_intSinkType == 2 && m_pTSSink)
 	{
 		if (m_pTSDWDump)
 			m_pTSDWDump->Record();
 		m_pBDADVBTSink->NullFileName(m_pTSSink, m_intSinkType);
 		m_pBDADVBTSink->ClearDemuxPids(m_pTSMpeg2Demux);
 	}
-
-	if ((m_intSinkType& 0x4) && m_pMPGSink)
+	else if (m_intSinkType ==3 && m_pMPGSink)
 	{
 		if (m_pMPGDWDump)
 			m_pMPGDWDump->Record();
 		m_pBDADVBTSink->NullFileName(m_pMPGSink, m_intSinkType);
 //		m_pBDADVBTSink->ClearDemuxPids(m_piMPGMpeg2Demux);
 	}
-
-	if ((m_intSinkType& 0x8) && (m_pVideoSink || m_pAudioSink || m_pTelexSink))
+	else if (m_intSinkType == 4 && (m_pVideoSink || m_pAudioSink || m_pTelexSink))
 	{
 		if (m_pVideoDWDump)
 			m_pVideoDWDump->Record();
@@ -650,22 +664,20 @@ HRESULT BDADVBTSinkFile::PauseRecording(void)
 
 	HRESULT hr = S_OK;
 
-	if ((m_intSinkType& 0x1) && m_pFTSSink && m_pFTSDWDump)
+	if (m_intSinkType == 1 && m_pFTSSink && m_pFTSDWDump)
 		hr = m_pFTSDWDump->Pause();
 
-	if ((m_intSinkType& 0x2) && m_pTSSink && m_pTSDWDump)
+	else if (m_intSinkType == 2 && m_pTSSink && m_pTSDWDump)
 	{
 		hr = m_pTSDWDump->Pause();
 //		m_pBDADVBTSink->ClearDemuxPids(m_pTSMpeg2Demux);
 	}
-
-	if ((m_intSinkType& 0x4) && m_pMPGSink && m_pMPGDWDump)
+	else if (m_intSinkType == 3 && m_pMPGSink && m_pMPGDWDump)
 	{
 		hr = m_pMPGDWDump->Pause();
 //		m_pBDADVBTSink->ClearDemuxPids(m_pMPGMpeg2Demux);
 	}
-	
-	if ((m_intSinkType& 0x8) &&
+	else if (m_intSinkType == 4 &&
 		(m_pVideoSink || m_pAudioSink || m_pTelexSink) &&
 		 m_pVideoDWDump  || m_pTelexDWDump || m_pAudioDWDump)
 	{
@@ -686,28 +698,25 @@ HRESULT BDADVBTSinkFile::UnPauseRecording(DVBTChannels_Service* pService)
 
 	HRESULT hr = S_OK;
 
-	if ((m_intSinkType& 0x1) && m_pFTSSink && m_pFTSDWDump)
+	if (m_intSinkType == 1 && m_pFTSSink && m_pFTSDWDump)
 	{
 		hr = m_pFTSDWDump->Pause();
 	}
-
-	if ((m_intSinkType& 0x2) && m_pTSSink && m_pTSDWDump)
+	else if (m_intSinkType == 2 && m_pTSSink && m_pTSDWDump)
 	{
 //		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pTSMpeg2Demux))
 //			(log << "Failed to Add Output Pins to TS Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 
 		hr = m_pTSDWDump->Pause();
 	}
-
-	if ((m_intSinkType& 0x4) && m_pMPGSink && m_pMPGDWDump)
+	else if (m_intSinkType == 3 && m_pMPGSink && m_pMPGDWDump)
 	{
 //		if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pMPGMpeg2Demux))
 //			(log << "Failed to Add Output Pins to MPG Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 
 		hr = m_pMPGDWDump->Pause();
 	}
-	
-	if ((m_intSinkType& 0x8) &&
+	else if (m_intSinkType == 4 &&
 		(m_pVideoSink || m_pAudioSink || m_pTelexSink)
 		 && m_pVideoDWDump || m_pTelexDWDump || m_pAudioDWDump)
 	{
@@ -727,25 +736,22 @@ HRESULT BDADVBTSinkFile::UnPauseRecording(DVBTChannels_Service* pService)
 
 BOOL BDADVBTSinkFile::IsRecording(void)
 {
-	if ((m_intSinkType & 0x1))
+	if (m_intSinkType == 1 && m_pFTSSink && m_pFTSDWDump)
 	{
-		if (m_pFTSSink && m_pFTSDWDump)
-			return m_pFTSDWDump->IsRecording();
+		return m_pFTSDWDump->IsRecording();
 	}
-	else if ((m_intSinkType & 0x2))
+	else if (m_intSinkType == 2 && m_pTSSink && m_pTSDWDump)
 	{
-		if (m_pTSSink && m_pTSDWDump)
-			return m_pTSDWDump->IsRecording();
+		return m_pTSDWDump->IsRecording();
 	}
-	else if ((m_intSinkType & 0x4))
+	else if (m_intSinkType == 3 && m_pMPGSink && m_pMPGDWDump)
 	{
-		if (m_pMPGSink && m_pMPGDWDump)
-			return m_pMPGDWDump->IsRecording();
+		return m_pMPGDWDump->IsRecording();
 	}
-	else if ((m_intSinkType & 0x8))
+	else if (m_intSinkType == 4 &&
+			(m_pVideoSink || m_pAudioSink || m_pTelexSink) &&
+			(m_pVideoDWDump || m_pTelexDWDump || m_pAudioDWDump))
 	{
-		if ((m_pVideoSink || m_pAudioSink || m_pTelexSink) &&
-			 (m_pVideoDWDump || m_pTelexDWDump || m_pAudioDWDump))
 			return 	m_pVideoDWDump->IsRecording() |
 					m_pTelexDWDump->IsRecording() |
 					m_pAudioDWDump->IsRecording();
@@ -756,28 +762,25 @@ BOOL BDADVBTSinkFile::IsRecording(void)
 
 BOOL BDADVBTSinkFile::IsPaused(void)
 {
-	if ((m_intSinkType & 0x1) && m_pFTSSink)
+	if (m_intSinkType == 1 && m_pFTSSink && m_pFTSDWDump)
 	{
-		if (m_pFTSSink && m_pFTSDWDump)
-			return m_pFTSDWDump->IsPaused();
+		return m_pFTSDWDump->IsPaused();
 	}
-	else if ((m_intSinkType & 0x2) && m_pTSSink)
+	else if (m_intSinkType == 2 && m_pTSSink && m_pTSDWDump)
 	{
-		if (m_pTSSink && m_pTSDWDump)
-			return m_pTSDWDump->IsPaused();
+		return m_pTSDWDump->IsPaused();
 	}
-	else if ((m_intSinkType & 0x4) && m_pMPGSink)
+	else if (m_intSinkType == 3 && m_pMPGSink && m_pMPGDWDump)
 	{
-		if (m_pMPGSink && m_pMPGDWDump)
-			return m_pMPGDWDump->IsPaused();
+		return m_pMPGDWDump->IsPaused();
 	}
-	else if ((m_intSinkType & 0x8) && (m_pVideoSink || m_pAudioSink || m_pTelexSink))
+	else if (m_intSinkType == 4 &&
+			(m_pVideoSink || m_pAudioSink || m_pTelexSink) &&
+			(m_pVideoDWDump || m_pTelexDWDump || m_pAudioDWDump))
 	{
-		if ((m_pVideoSink || m_pAudioSink || m_pTelexSink) &&
-			 (m_pVideoDWDump || m_pTelexDWDump || m_pAudioDWDump))
-			return 	m_pVideoDWDump->IsPaused() |
-					m_pTelexDWDump->IsPaused() |
-					m_pAudioDWDump->IsPaused();
+		return 	m_pVideoDWDump->IsPaused() |
+				m_pTelexDWDump->IsPaused() |
+				m_pAudioDWDump->IsPaused();
 	}
 
 	return m_bPaused;
@@ -791,35 +794,29 @@ HRESULT BDADVBTSinkFile::GetCurFile(LPOLESTR *ppszFileName)
 	if(*ppszFileName)
 		delete[] *ppszFileName;
 
-	if ((m_intSinkType & 0x1))
+	if (m_intSinkType == 1)
 	{
-		if (m_pFTSFileName)
-			*ppszFileName = m_pFTSFileName;
+		*ppszFileName = m_pFTSFileName;
 	}
-	else if ((m_intSinkType & 0x2) && m_pTSSink)
+	else if (m_intSinkType == 2 && m_pTSSink && m_pTSFileName)
 	{
-		if (m_pTSFileName)
-			*ppszFileName = m_pTSFileName;
+		*ppszFileName = m_pTSFileName;
 	}
-	else if ((m_intSinkType & 0x4) && m_pMPGSink)
+	else if (m_intSinkType == 3 && m_pMPGSink && m_pMPGFileName)
 	{
-		if (m_pMPGFileName)
-			*ppszFileName = m_pMPGFileName;
+		*ppszFileName = m_pMPGFileName;
 	}
-	else if ((m_intSinkType & 0x8) && m_pVideoSink)
+	else if (m_intSinkType == 4 && m_pVideoSink && m_pVideoFileName)
 	{
-		if (m_pVideoFileName)
-			*ppszFileName = m_pVideoFileName;
+		*ppszFileName = m_pVideoFileName;
 	}
-	else if ((m_intSinkType & 0x8) && m_pAudioSink)
+	else if (m_intSinkType == 4 && m_pAudioSink && m_pAudioFileName)
 	{
-		if (m_pAudioFileName)
-			*ppszFileName = m_pAudioFileName;
+		*ppszFileName = m_pAudioFileName;
 	}
-	else if ((m_intSinkType & 0x8) && m_pTelexSink)
+	else if (m_intSinkType == 4 && m_pTelexSink && m_pTelexFileName)
 	{
-		if (m_pTelexFileName)
-			*ppszFileName = m_pTelexFileName;
+		*ppszFileName = m_pTelexFileName;
 	}
 
 	if (*ppszFileName)
@@ -837,22 +834,22 @@ HRESULT BDADVBTSinkFile::GetCurFileSize(__int64 *pllFileSize)
 
 	HRESULT hr = E_FAIL;
 
-	if ((m_intSinkType & 0x1) && m_pFTSSink)
+	if (m_intSinkType == 1 && m_pFTSSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pFTSFileName, pllFileSize);
 
-	else if ((m_intSinkType & 0x2) && m_pTSSink)
+	else if (m_intSinkType == 2 && m_pTSSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pTSFileName, pllFileSize);
 
-	else if ((m_intSinkType & 0x4) && m_pMPGSink)
+	else if (m_intSinkType == 3 && m_pMPGSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pMPGFileName, pllFileSize);
 
-	else if ((m_intSinkType & 0x8) && m_pVideoSink)
+	else if (m_intSinkType == 4 && m_pVideoSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pVideoFileName, pllFileSize);
 
-	else if ((m_intSinkType & 0x8) && m_pAudioSink)
+	else if (m_intSinkType == 4 && m_pAudioSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pAudioFileName, pllFileSize);
 
-	else if ((m_intSinkType & 0x8) && m_pTelexSink)
+	else if (m_intSinkType == 4 && m_pTelexSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pTelexFileName, pllFileSize);
 
 	return hr;

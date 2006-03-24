@@ -1,5 +1,5 @@
 <Application>
-	<MultipleInstances> True | False </MultipleInstances>
+	<MultipleInstances> True | False </MultipleInstances> On opening the second Instance the video render will be forced to VMR9Windowless.
 	<DisableScreenSaver> True | False </DisableScreenSaver>
 	<Priority> RealTime | High | AboveNormal | Normal | BelowNormal | Low </Priority>
 	<AddToROT> True | False </AddToROT>
@@ -48,39 +48,39 @@
 
 <Capture>
 	<Filename> A name to append to captured files. If not specified then the service name is used. </Filename>
-	<Folder> The folder to store captured files to. </Folder>
-	<Format> ???? </Format>
+	<Folder> default is no entry </Folder> The folder to store captured files to. eg "C:\Captures" without quotes.
+	<Format> default TSMux | None |FullMux | MpgMux | SepMux </Format> Type of Recording eg. Disabled = None, All Sub Programs = FullMux as ".ts", Single Sub Program = TSMux as ".ts", Single Sub Program = MpgMux as ".mpg" and Single Sub Program = SepMux as ".mv2 and ".mp2 and ".txt" and ".ac3"
 </Capture>
 
 <Timeshift>
-	<Folder> The folder to store timeshifting buffer files in. </Folder>
-	<LoadDelayLimit> default 0 </LoadDelayLimit>
-	<LoadFileSize> default 0 </LoadFileSize>
-	<LoadPauseDelay> default 0 </LoadPauseDelay>
-	<BufferMinutes> default 0 </BufferMinutes>
-	<MaxNumbFiles> default 40 </MaxNumbFiles>
-	<NumbFilesRecycled> default 6</NumbFilesRecycled>
-	<BufferFileSize> default 250 </BufferFileSize>
-	<Format> ???? </Format>
+	<Folder> default is no entry </Folder> The folder to store timeshifting buffer files in. eg "C:\Timeshift" without quotes.
+	<LoadDelayLimit> default 0 | 50 - 100000</LoadDelayLimit> This is used for slow DTV card drivers, it specifies a pause period in ms to wait until the data from the capture stabilizes. This pause is ignored if LoadFileSize = 0. 
+	<LoadFileSize> default 0 | 2000000 - 80000000</LoadFileSize> This is used for slow DTV card drivers, it specifies a preload file size in bytes to wait until the data from the capture stabilizes. This wait method is ignored if LoadFileSize = 0. 
+	<LoadPauseDelay> default 0 </LoadPauseDelay> This is used for slow DTV card drivers, it specifies a max wait time in ms for the filesize to be aquired, if not achieved then the method will fail. This wait method is ignored if LoadFileSize = 0. 
+	<BufferMinutes> default 0 </BufferMinutes> This is a value in minutes that the Time Shift File Buffer will try and attempt to auto adjust. If this value is set then it will over ride the following buffer settings.
+	<MaxNumbFiles> default 40 | 2 - 100</MaxNumbFiles> The max number of Timeshift buffer files created if the timeshift is paused. This value will be over ridden by the BufferMinutes setting.
+	<NumbFilesRecycled> default 6 | 2 - 100</NumbFilesRecycled> The min number of Timeshift buffer files that will be created before they are recycled. This value will be over ridden by the BufferMinutes setting.
+	<BufferFileSize> default 250 | 20 - 500</BufferFileSize> The size of the ".ts" Timeshift buffer files that are used, in mBytes. This value will be over ridden by the BufferMinutes setting.
+	<Format> default FullMux | None |TSMux | MpgMux </Format> Type of Timeshift file format used eg. Disabled = None, All Sub Programs = FullMux, Single Sub Program = TSMux, Single Sub Program = MpgMux.
 </Timeshift>
 
 <DSNetwork>
-	<Format> default 0 </Format>
-	<IP-Addr> default 224.0.0.1 </IP-Addr>
-	<Port> default 0 </Port>
-	<Nic-Addr> default 127.0.0.1 </Nic-Addr>
+	<Format>  default None | TSMux | MpgMux  </Format> Type of Multicast Stream format used eg. Disabled = None, All Sub Programs = FullMux, Single Sub Program = TSMux, Single Sub Program = MpgMux.
+	<IP-Addr> default 224.0.0.1 | 224.0. 0. 0 - 239.255.255.255</IP-Addr> Multicast IP address.
+	<Port> default 0 | 0 - 65535</Port> Multicast Port address. VLC uses 1234.
+	<Nic-Addr> default 127.0.0.1 | Any Gateway Address </Nic-Addr> Network Interface Address set for gateway. Value of 0 is Any. This sets the first available address. Not recomended as it could send it via the Internet.
 </DSNetwork>
 
 <Filter_CLSID>
 	These are the CLSID's for different filters that are used by DW. It is rare that these will need to be changed. If they are changed then the new filter needs to have the same interfaces as the filter it's replacing.
 	<CLSID_FileSource> default {4F8BF30C-3BEB-43A3-8BF2-10096FD28CF2}</CLSID_FileSource>
-	<CLSID_FileWriter> default {00000000-0000-0000-0000-000000000000}</CLSID_FileWriter>
+	<CLSID_FileWriter> default {00000000-0000-0000-0000-000000000000}</CLSID_FileWriter> Optional if you want to try another FileWriter Filter rather than the DW's internal FileWriter.
 	<CLSID_TimeShiftWriter> default {5CDD5C68-80DC-43E1-9E44-C849CA8026E7}</CLSID_TimeShiftWriter>
 	<CLSID_MPGMuxer> default {4DF35815-79C5-44C8-8753-847D5C9C3CF5}</CLSID_MPGMuxer>
 	<CLSID_DSNetSender> default {A07E6137-6C07-45D9-A00C-7DE7A7E6319B}</CLSID_DSNetSender>
 	<CLSID_DeMuxer> default {AFB6C280-2C41-11D3-8A60-0000F81E0E4A}</CLSID_DeMuxer>
 	<CLSID_InfiniteTee> default {F8388A40-D5BB-11D0-BE5A-0080C706568E}</CLSID_InfiniteTee>
-	<CLSID_Quantizer> default {00000000-0000-0000-0000-000000000000}</CLSID_Quantizer>
+	<CLSID_Quantizer> default {00000000-0000-0000-0000-000000000000}</CLSID_Quantizer> Testing Only at this stage
 </Filter_CLSID>
 
 

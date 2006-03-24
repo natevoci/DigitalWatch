@@ -129,7 +129,7 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 
 	//--- Add & connect the TimeShifting filters ---
 
-	if (m_intSinkType& 0x1)
+	if (m_intSinkType == 1)
 	{
 		//FileWriter (Full TS TimeShifting)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.timeshiftclsid, &m_pFTSSink, L"Full TS TimeShift FileWriter"))
@@ -149,7 +149,7 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 					DestroyFTSFilters();
 				}
 	}
-	else if (m_intSinkType& 0x2)
+	else if (m_intSinkType == 2)
 	{
 		//MPEG-2 Demultiplexer (TS TimeShifting)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pTSMpeg2Demux, L"TS TimeShift MPEG-2 Demultiplexer"))
@@ -189,7 +189,7 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 							else
 								graphTools.SetReferenceClock(m_pTSMpeg2Demux);
 	}
-	else if (m_intSinkType& 0x4)
+	else if (m_intSinkType == 3)
 	{
 		//MPEG-2 Demultiplexer (MPG TimeShifting)
 		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_pMPGMpeg2Demux, L"MPG TimeShift MPEG-2 Demultiplexer"))
@@ -405,36 +405,18 @@ HRESULT BDADVBTSinkTShift::GetCurFile(LPOLESTR *ppszFileName)
 	if(*ppszFileName)
 		delete[] *ppszFileName;
 
-	if ((m_intSinkType & 0x1))
-	{
-		if (m_pFTSFileName)
-			*ppszFileName = m_pFTSFileName;
-	}
-	else if ((m_intSinkType & 0x2) && m_pTSSink)
-	{
-		if (m_pTSFileName)
-			*ppszFileName = m_pTSFileName;
-	}
-	else if ((m_intSinkType & 0x4) && m_pMPGSink)
-	{
-		if (m_pMPGFileName)
-			*ppszFileName = m_pMPGFileName;
-	}
-	else if ((m_intSinkType & 0x8) && m_pVideoSink)
-	{
-		if (m_pVideoFileName)
-			*ppszFileName = m_pVideoFileName;
-	}
-	else if ((m_intSinkType & 0x8) && m_pAudioSink)
-	{
-		if (m_pAudioFileName)
-			*ppszFileName = m_pAudioFileName;
-	}
-	else if ((m_intSinkType & 0x8) && m_pTelexSink)
-	{
-		if (m_pTelexFileName)
-			*ppszFileName = m_pTelexFileName;
-	}
+	if (m_intSinkType == 1 && m_pFTSFileName)
+		*ppszFileName = m_pFTSFileName;
+	else if (m_intSinkType == 2 && m_pTSSink && m_pTSFileName)
+		*ppszFileName = m_pTSFileName;
+	else if (m_intSinkType == 3 && m_pMPGSink && m_pMPGFileName)
+		*ppszFileName = m_pMPGFileName;
+	else if (m_intSinkType == 4 && m_pVideoSink && m_pVideoFileName)
+		*ppszFileName = m_pVideoFileName;
+	else if (m_intSinkType == 4 && m_pAudioSink && m_pAudioFileName)
+		*ppszFileName = m_pAudioFileName;
+	else if (m_intSinkType == 4 && m_pTelexSink && m_pTelexFileName)
+		*ppszFileName = m_pTelexFileName;
 
 	if (*ppszFileName)
 		return S_OK;
@@ -451,22 +433,17 @@ HRESULT BDADVBTSinkTShift::GetCurFileSize(__int64 *pllFileSize)
 
 	HRESULT hr = E_FAIL;
 
-	if ((m_intSinkType & 0x1) && m_pFTSSink)
+	if (m_intSinkType == 1 && m_pFTSSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pFTSFileName, pllFileSize);
-
-	else if ((m_intSinkType & 0x2) && m_pTSSink)
+	else if (m_intSinkType == 2 && m_pTSSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pTSFileName, pllFileSize);
-
-	else if ((m_intSinkType & 0x4) && m_pMPGSink)
+	else if (m_intSinkType == 3 && m_pMPGSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pMPGFileName, pllFileSize);
-
-	else if ((m_intSinkType & 0x8) && m_pVideoSink)
+	else if (m_intSinkType == 4 && m_pVideoSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pVideoFileName, pllFileSize);
-
-	else if ((m_intSinkType & 0x8) && m_pAudioSink)
+	else if (m_intSinkType == 4 && m_pAudioSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pAudioFileName, pllFileSize);
-
-	else if ((m_intSinkType & 0x8) && m_pTelexSink)
+	else if (m_intSinkType == 4 && m_pTelexSink)
 		return m_pBDADVBTSink->GetSinkSize(m_pTelexFileName, pllFileSize);
 
 	return hr;
@@ -475,22 +452,17 @@ HRESULT BDADVBTSinkTShift::GetCurFileSize(__int64 *pllFileSize)
 HRESULT BDADVBTSinkTShift::UpdateTSFileSink(BOOL bAutoMode)
 {
 
-	if ((m_intSinkType & 0x1) && m_pFTSSink)
+	if (m_intSinkType == 1 && m_pFTSSink)
 		return SetTimeShiftInterface(m_pFTSSink, bAutoMode);
-
-	else if ((m_intSinkType & 0x2) && m_pTSSink)
+	else if (m_intSinkType == 2 && m_pTSSink)
 		return SetTimeShiftInterface(m_pTSSink, bAutoMode);
-
-	else if ((m_intSinkType & 0x4) && m_pMPGSink)
+	else if (m_intSinkType == 3 && m_pMPGSink)
 		return SetTimeShiftInterface(m_pMPGSink, bAutoMode);
-
-	else if ((m_intSinkType & 0x8) && m_pVideoSink)
+	else if (m_intSinkType == 4 && m_pVideoSink)
 		return SetTimeShiftInterface(m_pVideoSink, bAutoMode);
-
-	else if ((m_intSinkType & 0x8) && m_pAudioSink)
+	else if (m_intSinkType == 4 && m_pAudioSink)
 		return SetTimeShiftInterface(m_pAudioSink, bAutoMode);
-
-	else if ((m_intSinkType & 0x8) && m_pTelexSink)
+	else if (m_intSinkType == 4 && m_pTelexSink)
 		return SetTimeShiftInterface(m_pTelexSink, bAutoMode);
 
 	return E_FAIL;
@@ -509,15 +481,24 @@ HRESULT BDADVBTSinkTShift::SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAut
 	//Do auto set of buffer files.
 	if (bAutoMode)
 	{
-		USHORT numbfilesadded = 1;
-		USHORT numbfilesremoved = 0;
-		piTSFileSink->GetNumbFilesAdded(&numbfilesadded);
-		piTSFileSink->GetNumbFilesRemoved(&numbfilesremoved);
-		numbfilesadded -= numbfilesremoved;
-		numbfilesadded = max(2, numbfilesadded);
-		numbfilesadded++;
-		numbfilesadded = min(g_pData->values.timeshift.maxnumbfiles, numbfilesadded);
-		piTSFileSink->SetMinTSFiles(numbfilesadded);
+		__int64 filebuffersize = 1;
+		piTSFileSink->GetFileBufferSize(&filebuffersize);
+		filebuffersize /= (__int64)10485760;		//Round down to 10mb blocks
+		filebuffersize++;							//Allow for remainder
+
+		int numbfiles = 1;
+		while((__int64)(filebuffersize / (__int64)2) >= 4)
+		{
+			filebuffersize /= (__int64)2;
+			numbfiles *= 2; 
+		}
+		numbfiles +=(__int64)2;
+
+		filebuffersize *= (__int64)10485760;
+		piTSFileSink->SetChunkReserve(filebuffersize);
+		piTSFileSink->SetMaxTSFileSize(filebuffersize);
+		piTSFileSink->SetMinTSFiles(numbfiles);
+
 		return S_OK;
 	}
 
@@ -526,13 +507,12 @@ HRESULT BDADVBTSinkTShift::SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAut
 	g_pData->values.timeshift.maxnumbfiles = maxNumbFiles;
 	piTSFileSink->SetMaxTSFiles((USHORT)maxNumbFiles);
 
-	__int64	chunkReserve =(__int64)(10 * 1048576);
-	piTSFileSink->GetChunkReserve(&chunkReserve);
 	__int64 bufferFileSize = (__int64)max(10, g_pData->values.timeshift.bufferfilesize);	
 	bufferFileSize = (__int64)min(500, bufferFileSize);
 	bufferFileSize *= (__int64)1048576;
 	g_pData->values.timeshift.bufferfilesize = bufferFileSize/1048576;
-	piTSFileSink->SetMaxTSFileSize((__int64)max(chunkReserve, bufferFileSize));
+	piTSFileSink->SetChunkReserve(bufferFileSize);
+	piTSFileSink->SetMaxTSFileSize(bufferFileSize);
 
 	int	numbFilesRecycled = max(2, g_pData->values.timeshift.numbfilesrecycled);	
 	numbFilesRecycled = min(maxNumbFiles, numbFilesRecycled);

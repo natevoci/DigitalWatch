@@ -1,6 +1,9 @@
 Version 2.2.0.1
 =================
 bear:
+Fixed a problem where the PidArray was being accessed during a clear operation and casing a crash.
+Re added the line of code to change the speed of the TSFileSourceClock by 1%, the value is now only reduced if it is a cold start file load.
+Fixed a problem where the Current File position was not being saved if the setposition() was called prior to the first pause()/run() call.
 Fixed a bug that was being caused when the fillbuffer thread was clashing with the UpdateDuration thread.
 Removed the line of code to change the speed of the TSFileSourceClock by 1%. It was just for testing.
 Added a line of code to change the speed of the TSFileSourceClock by 1%. 

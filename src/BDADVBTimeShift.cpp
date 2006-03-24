@@ -156,8 +156,9 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		}
 	}
 
-	g_pData->values.timeshift.format = g_pData->settings.timeshift.format & 0x0F;
-	g_pData->values.capture.format = (g_pData->settings.timeshift.format & 0xF0)>>4; //g_pData->settings.capture.format;
+	g_pData->values.timeshift.format = g_pData->settings.timeshift.format;
+//	g_pData->values.capture.format = (g_pData->settings.timeshift.format & 0xF0)>>4; //g_pData->settings.capture.format;
+	g_pData->values.capture.format = g_pData->settings.capture.format; //g_pData->settings.capture.format;
 	g_pData->values.dsnetwork.format = g_pData->settings.dsnetwork.format;
 
 	m_pCurrentSink = new BDADVBTSink();
@@ -876,8 +877,9 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 {
 	if(m_pCurrentFileSource && m_pCurrentService->serviceName &&
-			(g_pData->values.timeshift.format & 0x01 |
-			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
+//			(g_pData->values.timeshift.format & 0x01 |
+//			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
+			g_pData->values.timeshift.format == 1)
 	{
 		if SUCCEEDED(m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, FALSE))
 			return S_OK;
@@ -961,9 +963,10 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 		{
 			if FAILED(hr = LoadSink())
 			{
-				if (!g_pData->values.capture.format || !g_pData->values.timeshift.format )
+//				if (!g_pData->values.capture.format || !g_pData->values.timeshift.format )
+				if (!g_pData->values.timeshift.format)
 				{
-					g_pOSD->Data()->SetItem(L"warnings", L"No Capture or TimeShift format set");
+					g_pOSD->Data()->SetItem(L"warnings", L"No TimeShift format set");
 					g_pTv->ShowOSDItem(L"Warnings", 5);
 					(log << "No Capture or TimeShift format set\n").Write();
 					if FAILED(hr = LoadDemux())
@@ -1180,8 +1183,8 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	//
 	//Start capture sink recording if no TimeShift specified, poor mans timeshift
 	//
-	if(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x07))
-		m_pCurrentSink->StartRecording(m_pCurrentService);
+//	if(!g_pData->values.timeshift.format && (g_pData->values.capture.format & 0x07))
+//		m_pCurrentSink->StartRecording(m_pCurrentService);
 
 	LPOLESTR pFileName = NULL;
 	if(m_pCurrentSink)
@@ -1221,11 +1224,11 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 				count--;
 
 			Sleep(500);
-			LPWSTR sz = new WCHAR[128];
-			wsprintfW(sz, L"Waiting for TimeShifting File to Build: %lu kBytes", fileSize/1024); 
-			g_pOSD->Data()->SetItem(L"warnings", sz);
-			g_pTv->ShowOSDItem(L"Warnings", 5);
-			delete[] sz;
+//LPWSTR sz = new WCHAR[128];
+//wsprintfW(sz, L"Waiting for TimeShifting File to Build: %lu kBytes", fileSize/1024); 
+//g_pOSD->Data()->SetItem(L"warnings", sz);
+//g_pTv->ShowOSDItem(L"Warnings", 5);
+//delete[] sz;
 		}
 
 		//
@@ -1238,8 +1241,8 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 			return (log << "Data Flow Stopped on the Sink File: " << fileSize << "\n").Write(E_FAIL);
 		}
 
-		g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
-		g_pTv->ShowOSDItem(L"Warnings", 2);
+//g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+//g_pTv->ShowOSDItem(L"Warnings", 2);
 
 		//
 		//Load the TSFileSource with the file, render & run
@@ -1251,6 +1254,11 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 			return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 		}
 
+//		if FAILED(hr = m_pCurrentFileSource->SetRate(0.99))
+//		{
+//			return (log << "Failed to Set File Source Rate: " << hr << "\n").Write(hr);
+//		}
+	
 		//
 		// Do a pause if it has been requested in the settings, just adds extra delay
 		//
@@ -1271,19 +1279,53 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 	}
 	else
 	{
+		// Wait up to up to 2 sec for file to grow
+		int count =0;
+		int maxcount =0;
+		__int64 fileSize = 0;
+		__int64 fileSizeSave = 0;
+
+		//
+		//Wait until the file has grown to the specified size or break if no flow for sepcified time
+		//
+		(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
+		while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
+				fileSize < 20000 &&
+				count < 20)
+		{
+			(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
+			count++;
+			maxcount++;
+			fileSizeSave++;
+			Sleep(100);
+		}
+
+		//
+		//Check if the file has stopped growing
+		//
+		if (FAILED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) || fileSize <= fileSizeSave)
+		{
+			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Building The TimeShift File");
+			g_pTv->ShowOSDItem(L"Warnings", 5);
+			return (log << "Data Flow Stopped on the Sink File: " << fileSize << "\n").Write(E_FAIL);
+		}
+
+//g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+//g_pTv->ShowOSDItem(L"Warnings", 2);
 		//
 		//Set the Source pin type as we could be loading from scratch
 		//
 		CMediaType cmt;
 		cmt.InitMediaType();
 		cmt.SetType(&MEDIATYPE_Stream);
-		if (g_pData->values.timeshift.format != 4)
+//		if (g_pData->values.timeshift.format != 4)
+		if (g_pData->values.timeshift.format != 3)
 			cmt.SetSubtype(&MEDIASUBTYPE_MPEG2_TRANSPORT);
 		else
 			cmt.SetSubtype(&MEDIASUBTYPE_MPEG2_PROGRAM);
 
-		g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
-		g_pTv->ShowOSDItem(L"Warnings", 2);
+//g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+//g_pTv->ShowOSDItem(L"Warnings", 2);
 		//
 		//Load the TSFileSource with the file, render & run
 		//
@@ -1293,8 +1335,14 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 			g_pTv->ShowOSDItem(L"Warnings", 5);
 			return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 		}
-		g_pOSD->Data()->SetItem(L"warnings", L"Finished play the TimeShift File");
-		g_pTv->ShowOSDItem(L"Warnings", 2);
+//g_pOSD->Data()->SetItem(L"warnings", L"Finished play the TimeShift File");
+//g_pTv->ShowOSDItem(L"Warnings", 2);
+
+//		if FAILED(hr = m_pCurrentFileSource->SetRate(1.00))
+//		{
+//			return (log << "Failed to Set File Source Rate: " << hr << "\n").Write(hr);
+//		}
+	
 	}
 
 	m_bFileSourceActive = TRUE;
@@ -1569,13 +1617,15 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 	}
 
 	LPWSTR streamName = new WCHAR[256];
-	wsprintfW(streamName, L"%i. %s", m_pCurrentService->logicalChannelNumber, m_pCurrentService->serviceName);
+	wsprintfW(streamName, L"%i. %S", m_pCurrentService->logicalChannelNumber, m_pCurrentService->serviceName);
 	if(m_pCurrentFileSource && m_pCurrentService->serviceName &&
-			(g_pData->values.timeshift.format & 0x01 |
-			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
+//			(g_pData->values.timeshift.format & 0x01 |
+//			g_pData->values.capture.format & 0x01 & !g_pData->values.timeshift.format))
+			g_pData->values.timeshift.format == 1)
 	{
 		if (m_pCurrentFileSource->SetStreamName(streamName, TRUE) == S_OK)
 		{
+			g_pTv->ShowOSDItem(L"Channel", 5);
 //			m_pCurrentFileSource->Skip(0);
 		}
 	}
@@ -1819,20 +1869,20 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 		return (log << "Failed to Get Sink Filter File Name: " << hr << "\n").Write(hr);
 	}
 
-	// Wait up to 5 sec for file to grow
+	// Wait up to 2 sec for file to grow
 	int count =0;
 	__int64 fileSize = 0;
 	(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
 	while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) &&
-				fileSize < (__int64)4000000 && count < 10)
+				fileSize < (__int64)20000 && count < 20)
 	{
-		Sleep(500);
+		Sleep(100);
 		(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
 		count++;
 	}
 
-	g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
-	g_pTv->ShowOSDItem(L"Warnings", 2);
+//	g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+//	g_pTv->ShowOSDItem(L"Warnings", 2);
 
 	if FAILED(hr = m_pCurrentFileSource->ReLoad(pFileName))
 		return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);

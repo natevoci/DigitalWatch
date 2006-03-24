@@ -160,6 +160,11 @@ public:
 	//all values in this structure have to be 32bit to make marking work.
 	struct VALUES
 	{
+		struct SETTINGS_APPLICATION
+		{
+			BOOL multiple;
+		} application;
+
 		struct VALUES_WINDOW
 		{
 			long bFullScreen;
