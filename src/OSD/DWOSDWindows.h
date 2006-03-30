@@ -53,6 +53,7 @@ public:
 	HRESULT OnLeft();
 	HRESULT OnRight();
 	HRESULT OnSelect();
+	HRESULT OnSelected(LPWSTR lpName);
 
 	BOOL HideWindowsBehindThisOne();
 
@@ -67,6 +68,7 @@ private:
 	HRESULT SetHighlightedControl(LPWSTR wszNextControl);
 
 	LPWSTR m_pName;
+	LPWSTR m_pSelectedName;
 	std::vector<DWOSDControl *> m_controls;
 	CCritSec m_controlsLock;
 

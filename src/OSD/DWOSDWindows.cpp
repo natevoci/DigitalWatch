@@ -37,12 +37,16 @@ DWOSDWindow::DWOSDWindow()
 	m_pName = NULL;
 	m_pHighlightedControl = NULL;
 	m_bHideWindowsBehindThisOne = FALSE;
+	m_pSelectedName = NULL;
 }
 
 DWOSDWindow::~DWOSDWindow()
 {
 	if (m_pName)
 		delete[] m_pName;
+
+	if (m_pSelectedName)
+		delete[] m_pSelectedName;
 
 	ClearParameters();
 
@@ -139,6 +143,16 @@ HRESULT DWOSDWindow::OnSelect()
 
 	LPWSTR command = m_pHighlightedControl->OnSelect();
 	return OnKeyCommand(command);
+}
+
+HRESULT DWOSDWindow::OnSelected(LPWSTR lpName)
+{
+	if (lpName == NULL)
+		return S_FALSE;
+
+	m_pSelectedName = lpName;
+
+	return S_OK;
 }
 
 HRESULT DWOSDWindow::OnKeyCommand(LPWSTR command)
@@ -270,6 +284,16 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 				control = NULL;
 			}
 		}
+		else if (_wcsicmp(element->name, L"selection") == 0 && element->value)
+		{
+			if (m_pSelectedName)
+				delete[] m_pSelectedName;
+
+			strCopy(m_pSelectedName, element->value);
+
+			if (m_pSelectedName)
+				m_pHighlightedControl->SetSelect(TRUE);
+		}
 
 		if (control)
 		{
@@ -280,6 +304,30 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 	DWOSDControl *firstSelectableControl = NULL;
 	BOOL bFound = FALSE;
 	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
+
+	for ( ; it < m_controls.end() ; it++ )
+	{
+		DWOSDControl *control = *it;
+		if (control->CanSelect())
+		{
+			if (!bFound && m_pSelectedName && control->Name())
+			{
+				LPWSTR selection = g_pData->GetSelectionItem(m_pSelectedName);
+				if (selection)
+					bFound = (BOOL)((wcsstr(control->Name(), selection) != NULL));
+
+				if (bFound)
+				{
+					m_pHighlightedControl = control;
+					m_pHighlightedControl->SetSelect(TRUE);
+				}
+			}
+			else
+				control->SetSelect(FALSE);
+		}
+	}
+
+	it = m_controls.begin();
 	for ( ; it < m_controls.end() ; it++ )
 	{
 		DWOSDControl *control = *it;
@@ -296,7 +344,7 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 
 			if (!firstSelectableControl)
 				firstSelectableControl = control;
-		}		
+		}
 	}
 	if (!bFound && firstSelectableControl)
 	{

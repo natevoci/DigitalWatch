@@ -51,6 +51,7 @@ public:
 	LPWSTR m_pOnSelect;
 	LPWSTR m_pOnLeft;
 	LPWSTR m_pOnRight;
+	LPWSTR m_pSelectedName;
 };
 
 // DWOSDListItem
@@ -86,6 +87,9 @@ protected:
 
 	DWOSDImage* m_pBackgroundImage;
 	DWOSDImage* m_pHighlightImage;
+	DWOSDImage* m_pSelectedImage;
+
+	LPWSTR m_pSelectedName;
 
 };
 
@@ -136,6 +140,9 @@ protected:
 
 	std::vector <DWOSDListItem *> m_itemsToRender;
 	CCritSec m_itemsToRenderLock;
+
+	LPWSTR m_pSelectedName;
+
 };
 
 #endif

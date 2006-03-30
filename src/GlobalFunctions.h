@@ -257,6 +257,9 @@ __inline long strStartsWith(LPWSTR searchString, LPWSTR findString, BOOL ignoreC
 		cmp = wcscmp(searchString, findString);
 
 	searchString[findLength] = storeChar;
+	if (cmp)
+		return -1;
+
 	return findLength;
 }
 

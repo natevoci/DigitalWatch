@@ -92,6 +92,13 @@ $(() - $(
 	<stretchArea left=17 right=408 />
 </image>
 
+<image name="SelectedButton">
+	<filename>images\green-button-select.bmp</filename>
+	<colorkey>#FF000000</colorkey>
+	<!--<stretchArea left=17 top=17 right=408 bottom=49 />-->
+	<stretchArea left=17 right=408 />
+</image>
+
 <image name="BrownBackground">
 	<filename>images\brown-button.bmp</filename>
 	<colorkey>#000000</colorkey>
@@ -322,12 +329,31 @@ $(() - $(
 				SetSource(TSFileSource)
 			</onSelect>
 			<onUp>#TSTV</onUp>
+			<onDown>#AppSettings</onDown>
+		</highlight>
+	</button>
+
+	<button name="AppSettings">
+		<pos x=100 y=310 />
+		<size width=568 height=60 />
+		<text>Settings</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>
+				ExitMenu(-1)
+				ShowMenu(AppSetup)
+			</onSelect>
+			<onUp>#File</onUp>
 			<onDown>#Exit</onDown>
 		</highlight>
 	</button>
 
 	<button name="Exit">
-		<pos x=100 y=310 />
+		<pos x=100 y=380 />
 		<size width=568 height=60 />
 		<text>Exit</text>
 		<font height=40 weight=700 color="#FFFFFF" />
@@ -339,7 +365,7 @@ $(() - $(
 			<onSelect>
 				Exit()
 			</onSelect>
-			<onUp>#File</onUp>
+			<onUp>#AppSettings</onUp>
 		</highlight>
 	</button>
 </window>
@@ -382,6 +408,7 @@ $(() - $(
 				SetSource(BDA)
 			</onSelect>
 		</item>
+
 		<item>
 			<text>TimeShift TV</text>
 			<onSelect>
@@ -389,6 +416,7 @@ $(() - $(
 				SetSource(BDATimeShift)
 			</onSelect>
 		</item>
+
 		<item>
 			<text>Play File</text>
 			<onSelect>
@@ -396,6 +424,7 @@ $(() - $(
 				SetSource(TSFileSource)
 			</onSelect>
 		</item>
+
 		<item>
 			<text>Exit</text>
 			<onSelect>Exit()</onSelect>
@@ -440,6 +469,15 @@ $(() - $(
 				ShowMenu(TVChannelSetup)
 			</onSelect>
 		</item>
+
+		<item>
+			<text>Settings</text>
+			<onSelect>
+				ExitMenu(-1)
+				ShowMenu(AppSetup)
+			</onSelect>
+		</item>
+
 		<item>
 			<text>Main Menu</text>
 			<onSelect>
@@ -448,6 +486,1277 @@ $(() - $(
 			</onSelect>
 		</item>
 	</list>
+</window>
+
+<window name="AppSetup">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("MainMenu")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<label>
+		<pos x=384 y=40 />
+		<text>DigitalWatch Settings</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+	<list name="SettingsOptions">
+		<pos x=10 y=100 />
+		<size width=200 height=400 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Global</text>
+			<onSelect>ShowMenu(GlobalSetup)</onSelect>
+			<onRight>ShowMenu(GlobalSetup)</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Capture</text>
+			<onSelect>ShowMenu(CaptureSetup)</onSelect>
+			<onRight>ShowMenu(CaptureSetup)</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> TimeShift</text>
+			<onSelect>ShowMenu(TimeShiftSetup)</onSelect>
+			<onRight>ShowMenu(TimeShiftSetup)</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> DSNetwork</text>
+			<onSelect>ShowMenu(DSNetworkSetup)</onSelect>
+			<onRight>ShowMenu(DSNetworkSetup)</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Main Menu</text>
+			<onSelect>ExitMenu(-1) ShowMenu("MainMenu")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="GlobalSetup">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="GlobalOptions">
+		<pos x=240 y=100 />
+		<size width=290 height=400 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Multiple Instances</text>
+			<onSelect>ShowMenu("Multiple")</onSelect>
+			<onRight>ShowMenu("Multiple")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Disable Screen Saver</text>
+			<onSelect>ShowMenu("ScreenSaver")</onSelect>
+			<onRight>ShowMenu("ScreenSaver")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Application Priority</text>
+			<onSelect>ShowMenu("Priority")</onSelect>
+			<onRight>ShowMenu("Priority")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Add Graph To ROT</text>
+			<onSelect>ShowMenu("AddToROT")</onSelect>
+			<onRight>ShowMenu("AddToROT")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Start With Full Screen</text>
+			<onSelect>ShowMenu("StartFullscreen")</onSelect>
+			<onRight>ShowMenu("StartFullscreen")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Start Always On Top</text>
+			<onSelect>ShowMenu("StartAlwaysOnTop")</onSelect>
+			<onRight>ShowMenu("StartAlwaysOnTop")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Start Last Window Pos</text>
+			<onSelect>ShowMenu("StartAtLastWindowPosition")</onSelect>
+			<onRight>ShowMenu("StartAtLastWindowPosition")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Start Last Window Size</text>
+			<onSelect>ShowMenu("StartWithLastWindowSize")</onSelect>
+			<onRight>ShowMenu("StartWithLastWindowSize")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Remember Full Screen</text>
+			<onSelect>ShowMenu("RememberFullscreenState")</onSelect>
+			<onRight>ShowMenu("RememberFullscreenState")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Remember On Top</text>
+			<onSelect>ShowMenu("RememberAlwaysOnTopState")</onSelect>
+			<onRight>ShowMenu("RememberAlwaysOnTopState")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Remember Window Position</text>
+			<onSelect>ShowMenu("RememberWindowPosition")</onSelect>
+			<onRight>ShowMenu("RememberWindowPosition")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Start With Audio Muted</text>
+			<onSelect>ShowMenu("StartWithAudioMuted")</onSelect>
+			<onRight>ShowMenu("StartWithAudioMuted")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Aspect Ratio Override</text>
+			<onSelect>ShowMenu("AspectRatioOverride")</onSelect>
+			<onRight>ShowMenu("AspectRatioOverride")</onRight>
+		</item>
+	</list>
+
+</window>
+
+<window name="Multiple">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="MultipleOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.multiple</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetMultiple("True") ShowMenu("Multiple")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetMultiple("False") ShowMenu("Multiple")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="ScreenSaver">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="ScreenSaverOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.disableScreenSaver</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetDisableScreenSaver("True") ShowMenu("ScreenSaver")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetDisableScreenSaver("False") ShowMenu("ScreenSaver")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="Priority">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="PriorityOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.priority</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Realtime</text>
+			<onSelect>SetPriority("Realtime") ShowMenu("Priority")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> High</text>
+			<onSelect>SetPriority("High") ShowMenu("Priority")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> AboveNormal</text>
+			<onSelect>SetPriority("AboveNormal") ShowMenu("Priority")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Normal.</text>
+			<onSelect>SetPriority("Normal") ShowMenu("Priority")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> BelowNormal</text>
+			<onSelect>SetPriority("BelowNormal") ShowMenu("Priority")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Low</text>
+			<onSelect>SetPriority("Low") ShowMenu("Priority")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="AddToROT">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="AddToROTOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.addToROT</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetAddToROT("True") ShowMenu("AddToROT")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetAddToROT("False") ShowMenu("AddToROT")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+
+<window name="StartFullscreen">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="StartFullscreenOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.window.startFullscreen</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetStartFullscreen("True") ShowMenu("StartFullscreen")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetStartFullscreen("False") ShowMenu("StartFullscreen")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="StartAlwaysOnTop">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="StartAlwaysOnTopOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.window.startAlwaysOnTop</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetStartAlwaysOnTop("True") ShowMenu("StartAlwaysOnTop")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetStartAlwaysOnTop("False") ShowMenu("StartAlwaysOnTop")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="StartAtLastWindowPosition">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="StartAtLastWindowPositionOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.window.startAtLastWindowPosition</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetStartAtLastWindowPosition("True") ShowMenu("StartAtLastWindowPosition")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetStartAtLastWindowPosition("False") ShowMenu("StartAtLastWindowPosition")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="StartWithLastWindowSize">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="StartWithLastWindowSizeOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.window.startWithLastWindowSize</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetStartWithLastWindowSize("True") ShowMenu("StartWithLastWindowSize")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetStartWithLastWindowSize("False") ShowMenu("StartWithLastWindowSize")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="RememberFullscreenState">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="RememberFullscreenStateOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.window.rememberFullscreenState</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetRememberFullscreenState("True") ShowMenu("RememberFullscreenState")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetRememberFullscreenState("False") ShowMenu("RememberFullscreenState")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="RememberAlwaysOnTopState">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="RememberAlwaysOnTopStateOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.window.rememberAlwaysOnTopState</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetRememberAlwaysOnTopState("True") ShowMenu("RememberAlwaysOnTopState")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetRememberAlwaysOnTopState("False") ShowMenu("RememberAlwaysOnTopState")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="RememberWindowPosition">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="RememberWindowPositionOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.window.rememberWindowPosition</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetRememberWindowPosition("True") ShowMenu("RememberWindowPosition")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetRememberWindowPosition("False") ShowMenu("RememberWindowPosition")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="StartWithAudioMuted">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="StartWithAudioMutedOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.audio.bMute</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetStartWithAudioMuted("True") ShowMenu("StartWithAudioMuted")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetStartWithAudioMuted("False") ShowMenu("StartWithAudioMuted")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="AspectRatioOverride">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="AspectRatioOverrideOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.video.aspectRatio.bOverride</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetAspectRatioOverride("True") ShowMenu("AspectRatioOverride")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetAspectRatioOverride("False") ShowMenu("AspectRatioOverride")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="CaptureSetup">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="CaptureOptions">
+		<pos x=240 y=100 />
+		<size width=200 height=400 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Capture Format</text>
+			<onSelect>ShowMenu("CaptureFormat")</onSelect>
+			<onRight>ShowMenu("CaptureFormat")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Capture Folder</text>
+			<onSelect>ShowMenu("CaptureFolder")</onSelect>
+			<onRight>ShowMenu("CaptureFolder")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Capture Name</text>
+			<onSelect>ShowMenu("CaptureName")</onSelect>
+			<onRight>ShowMenu("CaptureName")</onRight>
+		</item>
+
+	</list>
+
+</window>
+
+<window name="CaptureFormat">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("CaptureSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="CapFormatOptions">
+		<pos x=470 y=100 />
+		<size width=290 height=400 />
+		<selection>settings.capture.format</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> None Selected</text>
+			<onSelect>SetCaptureFormat("None") ShowMenu("CaptureFormat")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> FullMux File</text>
+			<onSelect>SetCaptureFormat("FullMux") ShowMenu("CaptureFormat")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> TSMux File</text>
+			<onSelect>SetCaptureFormat("TSMux") ShowMenu("CaptureFormat")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> MpgMux File</text>
+			<onSelect>SetCaptureFormat("MpgMux") ShowMenu("CaptureFormat")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> SepMux File</text>
+			<onSelect>SetCaptureFormat("SepMux") ShowMenu("CaptureFormat")</onSelect>
+		</item>
+<!--
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> DVR-MS File</text>
+			<onSelect>SetCaptureFormat("DVR-MS") ShowMenu("CaptureFormat")</onSelect>
+		</item>
+-->
+	</list>
+
+	<label>
+		<pos x=384 y=500 />
+		<text>Type of Recording eg. Disabled = None, All Sub Programs = FullMux as ".ts",</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+	<label>
+		<pos x=384 y=520 />
+		<text>Single Sub Program = TSMux as ".ts", Single Sub Program = MpgMux as ".mpg" and</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+	<label>
+		<pos x=384 y=540 />
+		<text>Single Sub Program = SepMux as ".mv2 and ".mp2 and ".txt" and ".ac3"</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+</window>
+
+<window name="TimeShiftSetup">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="TimeShiftOptions">
+		<pos x=240 y=100 />
+		<size width=200 height=400 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> File Format</text>
+			<onSelect>ShowMenu("TimeShiftFormat")</onSelect>
+			<onRight>ShowMenu("TimeShiftFormat")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> TimeShift Folder</text>
+			<onSelect>ShowMenu("TimeShiftFolder")</onSelect>
+			<onRight>ShowMenu("TimeShiftFolder")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Channel Change</text>
+			<onSelect>ShowMenu("TimeShiftChange")</onSelect>
+			<onRight>ShowMenu("TimeShiftChange")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Buffer Size</text>
+			<onSelect>ShowMenu("TimeShiftBuffer")</onSelect>
+			<onRight>ShowMenu("TimeShiftBuffer")</onRight>
+		</item>
+	</list>
+
+</window>
+
+<window name="TimeShiftFormat">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("TimeShiftSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="TimeShiftOptions">
+		<pos x=470 y=100 />
+		<size width=290 height=400 />
+		<selection>settings.timeshift.format</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> None Selected</text>
+			<onSelect>SetTimeShiftFormat("None")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> FullMux File</text>
+			<onSelect>SetTimeShiftFormat("FullMux")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> TSMux File</text>
+			<onSelect>SetTimeShiftFormat("TSMux")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> MpgMux File</text>
+			<onSelect>SetTimeShiftFormat("MpgMux")</onSelect>
+		</item>
+
+	</list>
+
+	<label>
+		<pos x=384 y=500 />
+		<text>Type of Timeshift file format used eg. Disabled = None, All Sub Programs = FullMux,</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+	<label>
+		<pos x=384 y=520 />
+		<text>Single Sub Program = TSMux, Single Sub Program = MpgMux.</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+</window>
+
+<window name="DSNetworkSetup">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="DSNetworkOptions">
+		<pos x=240 y=100 />
+		<size width=200 height=400 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Stream Format</text>
+			<onSelect>ShowMenu("DSNetworkFormat")</onSelect>
+			<onRight>ShowMenu("DSNetworkFormat")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> IP Address</text>
+			<onSelect>ShowMenu("DSNetworkIPAddr")</onSelect>
+			<onRight>ShowMenu("DSNetworkIPAddr")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Port</text>
+			<onSelect>ShowMenu("DSNetworkPort")</onSelect>
+			<onRight>ShowMenu("DSNetworkPort")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Network I/face</text>
+			<onSelect>ShowMenu("DSNetworkNic")</onSelect>
+			<onRight>ShowMenu("DSNetworkNic")</onRight>
+		</item>
+	</list>
+
+</window>
+
+<window name="DSNetworkFormat">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("DSNetworkSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="DSNetworkOptions">
+		<pos x=470 y=100 />
+		<size width=290 height=400 />
+		<selection>settings.dsnetwork.format</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> None Selected</text>
+			<onSelect>SetDSNetworkFormat("None")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> FullMux Stream</text>
+			<onSelect>SetDSNetworkFormat("FullMux")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> TSMux Stream</text>
+			<onSelect>SetDSNetworkFormat("TSMux")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> MpgMux Stream</text>
+			<onSelect>SetDSNetworkFormat("MpgMux")</onSelect>
+		</item>
+
+	</list>
+
+	<label>
+		<pos x=384 y=500 />
+		<text>Type of Multicast Stream format used eg. Disabled = None, All Sub Programs = FullMux,</text> 
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+	<label>
+		<pos x=384 y=520 />
+		<text>Single Sub Program = TSMux, Single Sub Program = MpgMux.</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
 </window>
 
 <window name="TVChannelSetup">

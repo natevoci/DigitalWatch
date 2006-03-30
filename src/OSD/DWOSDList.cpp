@@ -48,6 +48,7 @@ DWOSDListItemList::DWOSDListItemList()
 	m_pOnSelect = NULL;
 	m_pOnLeft = NULL;
 	m_pOnRight = NULL;
+	m_pSelectedName = NULL;
 }
 
 DWOSDListItemList::~DWOSDListItemList()
@@ -62,6 +63,8 @@ DWOSDListItemList::~DWOSDListItemList()
 		delete[] m_pOnLeft;
 	if (m_pOnRight)
 		delete[] m_pOnRight;
+	if (m_pSelectedName)
+		delete[] m_pSelectedName;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -85,7 +88,10 @@ DWOSDListItem::DWOSDListItem(DWSurface* pSurface) : DWOSDControl(pSurface)
 	m_nTextHeight = 40;
 	m_nTextWeight = 400;
 
+	m_bCanSelect = TRUE;
 	m_bCanHighlight = TRUE;
+	m_pSelectedName = NULL;
+	m_pSelectedImage = NULL;
 }
 
 DWOSDListItem::~DWOSDListItem()
@@ -94,6 +100,8 @@ DWOSDListItem::~DWOSDListItem()
 		delete[] m_wszText;
 	if (m_wszFont)
 		delete[] m_wszFont;
+	if (m_pSelectedName)
+		delete[] m_pSelectedName;
 }
 
 HRESULT DWOSDListItem::LoadFromXML(XMLElement *pElement)
@@ -199,7 +207,22 @@ HRESULT DWOSDListItem::LoadFromXML(XMLElement *pElement)
 					if (subelement->value)
 						m_pHighlightImage = g_pOSD->GetImage(subelement->value);
 				}
+				else if (_wcsicmp(subelement->name, L"selectedImage") == 0)
+				{
+					if (subelement->value)
+						m_pSelectedImage = g_pOSD->GetImage(subelement->value);
+				}
 			}
+		}
+		else if (_wcsicmp(element->name, L"selection") == 0 && element->value)
+		{
+			if (m_pSelectedName)
+				delete[] m_pSelectedName;
+
+			strCopy(m_pSelectedName, element->value);
+
+			if (m_pSelectedName)
+				m_bCanSelect = TRUE;
 		}
 	}
 
@@ -249,6 +272,11 @@ BOOL DWOSDListItem::Equals(DWOSDListItem* target)
 		return FALSE;
 	if (target->m_pHighlightImage != m_pHighlightImage)
 		return FALSE;
+	if (target->m_pSelectedImage != m_pSelectedImage)
+		return FALSE;
+	if ((m_pSelectedName && (!target->m_pSelectedName || _wcsicmp(target->m_pSelectedName, m_pSelectedName) != 0)) || (!m_pSelectedName && target->m_pSelectedName))
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -277,6 +305,8 @@ void DWOSDListItem::CopyTo(DWOSDListItem* target)
 		strCopy(target->m_pwcsOnLeft, m_pwcsOnLeft);
 	if (m_pwcsOnRight)
 		strCopy(target->m_pwcsOnRight, m_pwcsOnRight);
+	if (m_pSelectedName)
+		strCopy(target->m_pSelectedName, m_pSelectedName);
 
 
 	target->m_dwTextColor = m_dwTextColor;
@@ -285,6 +315,7 @@ void DWOSDListItem::CopyTo(DWOSDListItem* target)
 
 	target->m_pBackgroundImage = m_pBackgroundImage;
 	target->m_pHighlightImage = m_pHighlightImage;
+	target->m_pSelectedImage = m_pSelectedImage;
 }
 
 HRESULT DWOSDListItem::Draw(long tickCount)
@@ -322,6 +353,15 @@ HRESULT DWOSDListItem::Draw(long tickCount)
 	{
 		if (m_pHighlightImage)
 			m_pHighlightImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
+		else
+		{
+			//TODO: draw something since no image was supplied
+		}
+	}
+	else if (m_bSelected)
+	{
+		if (m_pSelectedImage )
+			m_pSelectedImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
 		else
 		{
 			//TODO: draw something since no image was supplied
@@ -385,13 +425,18 @@ DWOSDList::DWOSDList(DWSurface* pSurface) : DWOSDControl(pSurface)
 	m_nMovingStartedAtYOffset = 0;
 	m_nMovingToYOffset = 0;
 
+	m_bCanSelect = FALSE;
 	m_bCanHighlight = TRUE;
+	m_pSelectedName = NULL;
 }
 
 DWOSDList::~DWOSDList()
 {
 	ClearItems();
 	ClearItemsToRender();
+
+	if (m_pSelectedName)
+		delete[] m_pSelectedName;
 
 	delete m_pListItemTemplate;
 	delete m_pListSurface;
@@ -495,6 +540,16 @@ HRESULT DWOSDList::LoadFromXML(XMLElement *pElement)
 				}
 			}
 			m_items.push_back(listItemList);
+		}
+		else if (_wcsicmp(element->name, L"selection") == 0 && element->value)
+		{
+			if (m_pSelectedName)
+				delete[] m_pSelectedName;
+
+			strCopy(m_pSelectedName, element->value);
+
+			if (m_pSelectedName)
+				m_bCanSelect = TRUE;
 		}
 	}
 
@@ -631,6 +686,11 @@ HRESULT DWOSDList::Draw(long tickCount)
 			{
 				item->m_nPosY = nYOffset;
 				item->m_nWidth = m_nWidth;
+				
+				LPWSTR selection = g_pData->GetSelectionItem(m_pSelectedName);
+				if (item->m_wszText && selection)
+						item->SetSelect((wcsstr(item->m_wszText, selection) != NULL));
+
 				item->SetHighlight((itemID == m_nHighlightedItem));
 				item->Render(tickCount);
 			}
@@ -770,6 +830,24 @@ HRESULT DWOSDList::RefreshListItems()
 						}
 					}
 
+					g_pOSD->Data()->ReplaceTokens(itemList->m_pSelectedName, pStr, i);
+					if (pStr[0] != '\0')
+					{
+						if (!listItem->m_pSelectedName || _wcsicmp(listItem->m_pSelectedName, pStr) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
+					else
+					{
+						if (strCmp(listItem->m_pSelectedName, m_pListItemTemplate->m_pSelectedName) != 0)
+						{
+							bNeedsRefresh = TRUE;
+							break;
+						}
+					}
+
 					delete[] pStr;
 					pStr = NULL;
 
@@ -833,6 +911,10 @@ HRESULT DWOSDList::RefreshListItems()
 						g_pOSD->Data()->ReplaceTokens(itemList->m_pOnRight, pStr, i);
 						if (pStr[0] != '\0')
 							strCopy(listItem->m_pwcsOnRight, pStr);
+
+						g_pOSD->Data()->ReplaceTokens(itemList->m_pSelectedName, pStr, i);
+						if (pStr[0] != '\0')
+							strCopy(listItem->m_pSelectedName, pStr);
 
 						delete[] pStr;
 						pStr = NULL;

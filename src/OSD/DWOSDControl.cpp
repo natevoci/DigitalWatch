@@ -40,6 +40,8 @@ DWOSDControl::DWOSDControl(DWSurface* pSurface)
 
 	m_bCanHighlight = FALSE;
 	m_bHighlighted = FALSE;
+	m_bCanSelect = FALSE;
+	m_bSelected = FALSE;
 	m_pwcsOnUp = NULL;
 	m_pwcsOnDown = NULL;
 	m_pwcsOnLeft = NULL;
@@ -152,5 +154,20 @@ BOOL DWOSDControl::CanHighlight()
 BOOL DWOSDControl::IsHighlighted()
 {
 	return m_bHighlighted;
+}
+
+void DWOSDControl::SetSelect(BOOL bSelected)
+{
+	m_bSelected = bSelected;
+}
+
+BOOL DWOSDControl::CanSelect()
+{
+	return m_bCanSelect;
+}
+
+BOOL DWOSDControl::IsSelected()
+{
+	return m_bSelected;
 }
 

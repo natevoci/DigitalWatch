@@ -55,6 +55,10 @@ public:
 	BOOL CanHighlight();
 	BOOL IsHighlighted();
 
+	void SetSelect(BOOL bSelected);
+	BOOL CanSelect();
+	BOOL IsSelected();
+
 	DWSurface* m_pSurface;
 
 protected:
@@ -67,6 +71,8 @@ protected:
 
 	BOOL m_bCanHighlight;
 	BOOL m_bHighlighted;
+	BOOL m_bCanSelect;
+	BOOL m_bSelected;
 	LPWSTR m_pwcsOnUp;
 	LPWSTR m_pwcsOnDown;
 	LPWSTR m_pwcsOnLeft;

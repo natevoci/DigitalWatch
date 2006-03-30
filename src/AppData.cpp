@@ -34,6 +34,9 @@
 #ifndef BELOW_NORMAL_PRIORITY_CLASS
 #define BELOW_NORMAL_PRIORITY_CLASS 0x00004000
 #endif
+static 	LPWSTR MUX_FORMAT[6] = {L"None", L"FullMux", L"TSMux", L"MpgMux", L"SepMux", L"DVR-MS"};
+static 	LPWSTR PRIORITY[6] = {L"Realtime", L"High", L"AboveNormal", L"Normal.", L"BelowNormal", L"Low"};
+static 	LPWSTR BOOLVALUE[2] = {L"False", L"True"};
 
 AppData::AppData()
 {
@@ -210,6 +213,218 @@ AppData::~AppData()
 
 	if (settings.dsnetwork.nicaddr)
 		delete[] settings.dsnetwork.nicaddr;
+}
+
+LPWSTR AppData::GetSelectionItem(LPWSTR selection)
+{
+	if (!selection)
+		return NULL;
+
+	long startsWithLength = strStartsWith(selection, L"settings");
+	if (startsWithLength > 0)
+	{
+		selection += startsWithLength;
+
+		startsWithLength = strStartsWith(selection, L".capture");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			if (_wcsicmp(selection, L".format") == 0)
+				return GetFormat(settings.capture.format);
+
+
+			return NULL;
+		}
+
+		startsWithLength = strStartsWith(selection, L".timeshift");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			if (_wcsicmp(selection, L".format") == 0)
+				return GetFormat(settings.timeshift.format);
+
+
+
+			return NULL;
+		}
+
+		startsWithLength = strStartsWith(selection, L".dsnetwork");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			if (_wcsicmp(selection, L".format") == 0)
+				return GetFormat(settings.dsnetwork.format);
+
+
+
+			return NULL;
+		}
+
+		startsWithLength = strStartsWith(selection, L".application");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			if (_wcsicmp(selection, L".multiple") == 0)
+				return GetBool(settings.application.multiple);
+
+			if (_wcsicmp(selection, L".disableScreenSaver") == 0)
+				return GetBool(settings.application.disableScreenSaver);
+
+			if (_wcsicmp(selection, L".priority") == 0)
+				return GetPriority(settings.application.priority);
+
+			if (_wcsicmp(selection, L".addToROT") == 0)
+				return GetBool(settings.application.addToROT);
+
+			return NULL;
+		}
+
+		startsWithLength = strStartsWith(selection, L".window");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			if (_wcsicmp(selection, L".startFullscreen") == 0)
+				return GetBool(settings.window.startFullscreen);
+
+			if (_wcsicmp(selection, L".startAlwaysOnTop") == 0)
+				return GetBool(settings.window.startAlwaysOnTop);
+
+			if (_wcsicmp(selection, L".startAtLastWindowPosition") == 0)
+				return GetBool(settings.window.startAtLastWindowPosition);
+
+			if (_wcsicmp(selection, L".startWithLastWindowSize") == 0)
+				return GetBool(settings.window.startWithLastWindowSize);
+
+			if (_wcsicmp(selection, L".rememberFullscreenState") == 0)
+				return GetBool(settings.window.rememberFullscreenState);
+
+			if (_wcsicmp(selection, L".rememberAlwaysOnTopState") == 0)
+				return GetBool(settings.window.rememberAlwaysOnTopState);
+
+			if (_wcsicmp(selection, L".rememberWindowPosition") == 0)
+				return GetBool(settings.window.rememberWindowPosition);
+
+			return NULL;
+		}
+
+		startsWithLength = strStartsWith(selection, L".audio");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			if (_wcsicmp(selection, L".bMute") == 0)
+				return GetBool(settings.audio.bMute);
+
+			return NULL;
+		}
+
+		startsWithLength = strStartsWith(selection, L".video.aspectRatio");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			if (_wcsicmp(selection, L".bOverride") == 0)
+				return GetBool(settings.video.aspectRatio.bOverride);
+
+			return NULL;
+		}
+	}
+	return NULL;
+}
+
+LPWSTR AppData::GetFormat(long value)
+{
+	if (value >= 6 || value < 0)
+		return MUX_FORMAT[0];
+
+	return MUX_FORMAT[value];
+}
+
+long AppData::GetFormat(LPWSTR lpwstr)
+{
+	if (!lpwstr)
+		return 0;
+
+	if ((_wcsicmp(lpwstr, L"none") == 0))
+		return 0;
+	if ((_wcsicmp(lpwstr, L"fullmux") == 0))
+		return 1;
+	if ((_wcsicmp(lpwstr, L"tsmux") == 0))
+		return 2;
+	if ((_wcsicmp(lpwstr, L"mpgmux") == 0))
+		return 3;
+	if ((_wcsicmp(lpwstr, L"sepmux") == 0))
+		return 4;
+	if ((_wcsicmp(lpwstr, L"dvr-ms") == 0))
+		return 5;
+
+	return 0;
+}
+
+LPWSTR AppData::GetBool(long value)
+{
+	if (value >= 2 || value < 0)
+		return BOOLVALUE[0];
+
+	return BOOLVALUE[value];
+}
+
+BOOL AppData::GetBool(LPWSTR lpwstr)
+{
+	if (!lpwstr)
+		return FALSE;
+
+	return (_wcsicmp(lpwstr, L"true") == 0);
+}
+
+
+LPWSTR AppData::GetPriority(long value)
+{
+	switch (value)
+	{
+		case REALTIME_PRIORITY_CLASS:
+			return PRIORITY[0];
+			break;
+		case HIGH_PRIORITY_CLASS:
+			return PRIORITY[1];
+			break;
+		case ABOVE_NORMAL_PRIORITY_CLASS:
+			return PRIORITY[2];
+			break;
+		case NORMAL_PRIORITY_CLASS:
+			return PRIORITY[3];
+			break;
+		case BELOW_NORMAL_PRIORITY_CLASS:
+			return PRIORITY[4];
+			break;
+		case IDLE_PRIORITY_CLASS:
+			return PRIORITY[5];
+			break;
+		default:
+			return PRIORITY[3];
+	}
+
+	return PRIORITY[3];
+	
+}
+
+long AppData::GetPriority(LPWSTR lpwstr)
+{
+	if (!lpwstr)
+		return NORMAL_PRIORITY_CLASS;
+
+	if ((_wcsicmp(lpwstr, L"realtime") == 0))
+		return REALTIME_PRIORITY_CLASS;
+	if ((_wcsicmp(lpwstr, L"high") == 0))
+		return HIGH_PRIORITY_CLASS;
+	if ((_wcsicmp(lpwstr, L"abovenormal") == 0))
+		return ABOVE_NORMAL_PRIORITY_CLASS;
+	if ((_wcsicmp(lpwstr, L"normal.") == 0))
+		return NORMAL_PRIORITY_CLASS;
+	if ((_wcsicmp(lpwstr, L"belownormal") == 0))
+		return BELOW_NORMAL_PRIORITY_CLASS;
+	if ((_wcsicmp(lpwstr, L"low") == 0))
+		return IDLE_PRIORITY_CLASS;
+
+	return NORMAL_PRIORITY_CLASS;
 }
 
 void AppData::RestoreMarkedChanges()
@@ -514,15 +729,14 @@ HRESULT AppData::LoadSettings()
 					{
 						settings.capture.format = 4;
 					}
-//					else if (_wcsicmp(pSubElement->value, L"DVR-MS") == 0)
-//					{
-//						settings.capture.format = 5;
-//					}
+					else if (_wcsicmp(pSubElement->value, L"DVR-MS") == 0)
+					{
+						settings.capture.format = 5;
+					}
 					else
 					{
 						settings.capture.format = 0;
 					}
-//					settings.capture.format = _wtoi(pSubElement->value);
 					continue;
 				}
 

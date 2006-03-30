@@ -241,6 +241,14 @@ public:
 	void RestoreMarkedChanges();
 	void StoreGlobalValues();
 	void MarkValuesChanges();
+	LPWSTR GetSelectionItem(LPWSTR selection);
+	LPWSTR GetFormat(long value);
+	LPWSTR GetBool(long value);
+	LPWSTR GetPriority(long value);
+	long GetFormat(LPWSTR lpwstr);
+	BOOL GetBool(LPWSTR lpwstr);
+	long GetPriority(LPWSTR lpwstr);
+
 
 private:
 	struct VALUES globalValues;

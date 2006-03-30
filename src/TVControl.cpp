@@ -1020,7 +1020,138 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 
 		return ToggleOSDItem(command->LHS.Parameter[0]);
 	}
-	
+
+	else if (_wcsicmp(pCurr, L"SetMultiple") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.multiple = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetDisableScreenSaver") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.disableScreenSaver = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetPriority") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.priority = g_pData->GetPriority(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetAddToROT") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.addToROT = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetStartFullscreen") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.startFullscreen = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetStartAlwaysOnTop") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.startAlwaysOnTop = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetStartAtLastWindowPosition") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.startAtLastWindowPosition = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetStartWithLastWindowSize") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.startWithLastWindowSize = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetRememberFullscreenState") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.rememberFullscreenState = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetRememberAlwaysOnTopState") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.rememberAlwaysOnTopState = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetRememberWindowPosition") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.rememberWindowPosition = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetStartWithAudioMuted") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.audio.bMute = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetAspectRatioOverride") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.video.aspectRatio.bOverride = g_pData->GetBool(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetCaptureFormat") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.capture.format = g_pData->GetFormat(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetTimeShiftFormat") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.timeshift.format = g_pData->GetFormat(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetDSNetworkFormat") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.dsnetwork.format = g_pData->GetFormat(command->LHS.Parameter[0]);
+		return S_OK;
+	}
+
+
+
 	/*
 	if (_wcsicmp(pCurr, "NetworkUp") == 0)
 	{

@@ -28,6 +28,7 @@ nate:
 - Added an UpdateData thread to BDADVBTSource to get Signal Statistics
 
 bear:
+- Added Settings menu to OSD.
 - Updated this history file.
 - Added a fix to the SubChannel selection code in TimeShifting Full Mux mode so that the full Channel Number & Name are compared.
 - Added code to cause any multiple Instance of DW to force VMR9Windowless Render.

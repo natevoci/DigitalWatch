@@ -46,6 +46,7 @@ DWOSDButton::DWOSDButton(DWSurface* pSurface) : DWOSDControl(pSurface)
 
 	m_pBackgroundImage = NULL;
 	m_pHighlightImage = NULL;
+	m_pSelectedImage = NULL;
 }
 
 DWOSDButton::~DWOSDButton()
@@ -152,6 +153,14 @@ HRESULT DWOSDButton::LoadFromXML(XMLElement *pElement)
 					if (subelement->value)
 						m_pHighlightImage = g_pOSD->GetImage(subelement->value);
 				}
+				else if (_wcsicmp(subelement->name, L"selectedImage") == 0)
+				{
+					if (subelement->value)
+					{
+						m_pSelectedImage = g_pOSD->GetImage(subelement->value);
+						m_bCanSelect = TRUE;
+					}
+				}
 			}
 		}
 		else if (_wcsicmp(element->name, L"highlight") == 0)
@@ -236,6 +245,15 @@ HRESULT DWOSDButton::Draw(long tickCount)
 	{
 		if (m_pHighlightImage)
 			m_pHighlightImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
+		else
+		{
+			//TODO: draw something since no image was supplied
+		}
+	}
+	else if (m_bSelected)
+	{
+		if (m_pSelectedImage)
+			m_pSelectedImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
 		else
 		{
 			//TODO: draw something since no image was supplied

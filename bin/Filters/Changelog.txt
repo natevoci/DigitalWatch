@@ -1,6 +1,8 @@
 Version 2.2.0.1
 =================
 bear:
+Reduced the load delay on the network multicast render method as the filter can now do cold starts.
+Fixed a problem where the filter was unable to change pin mode if it was loaded & rendered and new file was loaded.
 Fixed a problem where the PidArray was being accessed during a clear operation and casing a crash.
 Re added the line of code to change the speed of the TSFileSourceClock by 1%, the value is now only reduced if it is a cold start file load.
 Fixed a problem where the Current File position was not being saved if the setposition() was called prior to the first pause()/run() call.

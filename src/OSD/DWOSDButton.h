@@ -55,6 +55,7 @@ protected:
 
 	DWOSDImage* m_pBackgroundImage;
 	DWOSDImage* m_pHighlightImage;
+	DWOSDImage* m_pSelectedImage;
 
 };
 
