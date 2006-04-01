@@ -250,19 +250,20 @@ HRESULT DWOSDButton::Draw(long tickCount)
 			//TODO: draw something since no image was supplied
 		}
 	}
-	else if (m_bSelected)
+	else
 	{
-		if (m_pSelectedImage)
-			m_pSelectedImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
+		if (m_pBackgroundImage)
+			m_pBackgroundImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
 		else
 		{
 			//TODO: draw something since no image was supplied
 		}
 	}
-	else
+
+	if (m_bSelected)
 	{
-		if (m_pBackgroundImage)
-			m_pBackgroundImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
+		if (m_pSelectedImage)
+			m_pSelectedImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
 		else
 		{
 			//TODO: draw something since no image was supplied
