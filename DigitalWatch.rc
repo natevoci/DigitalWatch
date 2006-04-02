@@ -129,6 +129,24 @@ END
 
 #endif    // !_MAC
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_INPUTBOX DIALOG DISCARDABLE  22, 17, 231, 59
+STYLE DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
+CAPTION "Input Text"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT           "Prompt:",IDC_INPUTBOX_PROMPT,6,4,157,33,SS_NOPREFIX
+    EDITTEXT        IDC_INPUTBOX_DLG_EDIT1,6,37,216,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,171,4,51,14,WS_GROUP
+    PUSHBUTTON      "CANCEL",IDCANCEL,171,21,51,14,WS_GROUP
+    LTEXT           "",IDC_STATIC,0,39,8,8,NOT WS_VISIBLE
+END
+
 #endif    // English (Australia) resources
 /////////////////////////////////////////////////////////////////////////////
 

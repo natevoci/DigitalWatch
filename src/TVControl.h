@@ -111,6 +111,8 @@ public:
 
 public:
 	HRESULT GetFilterGraph(DWGraph **ppDWGraph);
+	HRESULT GetFolder(HWND hwnd, LPWSTR lpwTitle, LPWSTR *lpwFolder);
+	HRESULT GetInputBox(HWND hwnd, LPWSTR lpwTitle, LPWSTR *lpwName);
 
 private:
 	HRESULT ExecuteGlobalCommand(ParseLine* command);

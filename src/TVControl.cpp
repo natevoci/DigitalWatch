@@ -30,9 +30,11 @@
 #include "BDADVBTSource.h"
 #include "TSFileSource/TSFileSource.h"
 #include "BDADVBTimeShift.h"
+#include "../resource.h"
 
 #include <process.h>
 #include <math.h>
+#include <shlobj.h>
 
 void CommandQueueThread(void *pParam)
 {
@@ -1020,14 +1022,13 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 
 		return ToggleOSDItem(command->LHS.Parameter[0]);
 	}
-
 	else if (_wcsicmp(pCurr, L"SetMultiple") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.application.multiple = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetDisableScreenSaver") == 0)
 	{
@@ -1035,7 +1036,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.application.disableScreenSaver = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetPriority") == 0)
 	{
@@ -1043,7 +1044,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.application.priority = g_pData->GetPriority(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetAddToROT") == 0)
 	{
@@ -1051,7 +1052,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.application.addToROT = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetStartFullscreen") == 0)
 	{
@@ -1059,7 +1060,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.window.startFullscreen = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetStartAlwaysOnTop") == 0)
 	{
@@ -1067,7 +1068,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.window.startAlwaysOnTop = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetStartAtLastWindowPosition") == 0)
 	{
@@ -1075,7 +1076,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.window.startAtLastWindowPosition = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetStartWithLastWindowSize") == 0)
 	{
@@ -1083,7 +1084,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.window.startWithLastWindowSize = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetRememberFullscreenState") == 0)
 	{
@@ -1091,7 +1092,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.window.rememberFullscreenState = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetRememberAlwaysOnTopState") == 0)
 	{
@@ -1099,7 +1100,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.window.rememberAlwaysOnTopState = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetRememberWindowPosition") == 0)
 	{
@@ -1107,7 +1108,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.window.rememberWindowPosition = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetStartWithAudioMuted") == 0)
 	{
@@ -1115,7 +1116,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.audio.bMute = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetAspectRatioOverride") == 0)
 	{
@@ -1123,7 +1124,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.video.aspectRatio.bOverride = g_pData->GetBool(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetCaptureFormat") == 0)
 	{
@@ -1131,7 +1132,21 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.capture.format = g_pData->GetFormat(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetCaptureFolder") == 0)
+	{
+		if FAILED(GetFolder(g_pData->hWnd, L"Sets The File Capture Path", &g_pData->settings.capture.folder) == FALSE )
+			return S_OK;
+		
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetCaptureName") == 0)
+	{
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The Capture Default File Name", &g_pData->settings.capture.fileName) == FALSE )
+			return S_OK;
+		
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetTimeShiftFormat") == 0)
 	{
@@ -1139,7 +1154,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.timeshift.format = g_pData->GetFormat(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetTimeShiftFolder") == 0)
+	{
+		if FAILED(GetFolder(g_pData->hWnd, L"Sets The Time Shift Buffer File Path", &g_pData->settings.timeshift.folder) == FALSE )
+			return S_OK;
+		
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetDSNetworkFormat") == 0)
 	{
@@ -1147,7 +1169,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.dsnetwork.format = g_pData->GetFormat(command->LHS.Parameter[0]);
-		return S_OK;
+		return g_pData->SaveSettings();
 	}
 
 
@@ -2151,3 +2173,142 @@ HRESULT TVControl::GetFilterGraph(DWGraph **ppDWGraph)
 
 	return S_OK;
 }
+
+struct InputBox_Param
+{
+	LPWSTR lpwTitle;
+	LPWSTR *lpwInput;
+}INPUTBOX_PARAM;
+
+BOOL CALLBACK GetInputBoxBack(HWND hDlg, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+static InputBox_Param *param;
+
+	switch (Msg)
+	{
+		case WM_INITDIALOG:
+		{
+			param = (InputBox_Param*)lParam;
+			SetDlgItemTextW(hDlg, IDC_INPUTBOX_PROMPT, param->lpwTitle);
+			SetDlgItemTextW(hDlg, IDC_INPUTBOX_DLG_EDIT1, *param->lpwInput);
+			return TRUE;
+		}
+
+		case WM_DESTROY:
+		{
+			DestroyWindow(hDlg);
+			return TRUE;
+		}
+		case WM_CLOSE:
+		{
+			::EndDialog(hDlg, IDCANCEL);
+			return TRUE;
+		}
+
+		case WM_COMMAND:
+		{
+			BOOL checked = FALSE;
+			switch (LOWORD (wParam))
+			{
+				case IDCANCEL :
+				{
+					::EndDialog(hDlg, IDCANCEL);
+					break ;
+				}
+
+				case IDOK :
+				{
+					GetDlgItemTextW(hDlg, IDC_INPUTBOX_DLG_EDIT1, (*param->lpwInput), MAX_PATH);
+					::EndDialog(hDlg, IDOK);
+					break ;
+				}
+			};
+			return TRUE;
+		}
+		default:
+			return FALSE;
+	}
+	return TRUE;
+}
+
+HRESULT TVControl::GetInputBox(HWND hwnd, LPWSTR lpwTitle, LPWSTR *lpwName)
+{
+	InputBox_Param param;
+	param.lpwInput = lpwName;
+	param.lpwTitle = lpwTitle;
+
+	HMODULE hModule = ::GetModuleHandle(0);
+	HINSTANCE hInst = hModule;
+	HRSRC hrsrc = ::FindResource(hModule, MAKEINTRESOURCE(IDD_INPUTBOX), RT_DIALOG);
+	HGLOBAL hglobal = ::LoadResource(hModule, hrsrc);
+
+	if (::DialogBoxIndirectParam(hInst, (LPCDLGTEMPLATE) hglobal, hwnd, (DLGPROC)GetInputBoxBack, (LPARAM)&param) != TRUE)
+		return S_FALSE;
+
+	return S_OK;
+}
+
+BOOL CALLBACK GetFolderCallBack(HWND hwnd, UINT msg, LPARAM lpType, LPARAM pData)
+{
+	char path[MAX_PATH];
+	switch(msg)
+	{
+		case BFFM_INITIALIZED:
+			SendMessage(hwnd, BFFM_SETSELECTION, TRUE, pData);
+			break;
+
+		case BFFM_SELCHANGED: 
+			if (SHGetPathFromIDList((LPITEMIDLIST)lpType , path)) 
+				SendMessage(hwnd, BFFM_SETSTATUSTEXT, 0, (LPARAM)path);	
+
+			break;
+	}
+
+	return 0;
+}
+
+HRESULT TVControl::GetFolder(HWND hwnd, LPWSTR lpwTitle, LPWSTR *lpwFolder)
+{
+	HRESULT hr = S_FALSE;
+
+	TCHAR tmpTitle[MAX_PATH];
+	LPTSTR ptTitle = (LPTSTR)&tmpTitle;
+	sprintf(ptTitle, "%S", lpwTitle);
+
+	TCHAR tmpFolder[MAX_PATH];
+	LPTSTR ptFolder = (LPTSTR)&tmpFolder;
+	sprintf(ptFolder, "%S", (*lpwFolder));
+
+	LPMALLOC lpMalloc;
+	hr = SHGetMalloc(&lpMalloc);
+    if SUCCEEDED(hr) 
+	{
+		BROWSEINFO browseInfo;
+		browseInfo.hwndOwner = hwnd;
+		browseInfo.pidlRoot = NULL;
+		browseInfo.pszDisplayName = NULL;
+		browseInfo.lpszTitle = ptTitle;
+		browseInfo.ulFlags = BIF_STATUSTEXT; //BIF_EDITBOX 
+		browseInfo.lpfn = GetFolderCallBack;
+		browseInfo.lParam = (LPARAM)ptFolder;
+
+		char path[MAX_PATH + 1];
+		LPITEMIDLIST pidList = SHBrowseForFolder(&browseInfo);
+		if (pidList)
+		{
+			if (SHGetPathFromIDList(pidList, path)) 
+			{
+				USES_CONVERSION;
+				strCopy((*lpwFolder), T2W(path));
+				hr = S_OK;
+			}
+			else 
+				hr = S_FALSE;
+
+			lpMalloc->Free(pidList);
+			lpMalloc->Release();
+		}
+	}
+	return hr;
+}
+

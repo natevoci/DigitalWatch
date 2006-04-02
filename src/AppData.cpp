@@ -232,6 +232,8 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L".format") == 0)
 				return GetFormat(settings.capture.format);
 
+			if (_wcsicmp(selection, L".folder") == 0)
+				return settings.capture.folder;
 
 			return NULL;
 		}
@@ -243,7 +245,8 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L".format") == 0)
 				return GetFormat(settings.timeshift.format);
 
-
+			if (_wcsicmp(selection, L".folder") == 0)
+				return settings.timeshift.folder;
 
 			return NULL;
 		}
