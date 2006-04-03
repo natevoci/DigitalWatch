@@ -1727,6 +1727,143 @@ $(() - $(
 	</list>
 </window>
 
+<window name="TimeShiftBuffer">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("TimeShiftSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="TimeShiftBufferOptions">
+		<pos x=470 y=100 />
+		<size width=290 height=400 />
+		<selection>settings.timeshift.buffer</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Auto Size</text>
+			<onSelect>SetTimeShiftBuffer("Auto") ShowMenu("TimeShiftBuffer")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Large Size</text>
+			<onSelect>SetTimeShiftBuffer("Large") ShowMenu("TimeShiftBuffer")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Medium Size</text>
+			<onSelect>SetTimeShiftBuffer("Medium") ShowMenu("TimeShiftBuffer")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Small Size</text>
+			<onSelect>SetTimeShiftBuffer("Small") ShowMenu("TimeShiftBuffer")</onSelect>
+		</item>
+
+	</list>
+
+	<label>
+		<pos x=384 y=500 />
+		<text>Size of Timeshift file Buffer is Set eg. Set Auto Buffer size  = Auto,  Small = 500MB,</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+	<label>
+		<pos x=384 y=520 />
+		<text>Medium = 1.5GB & Large = 5GB.</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+</window>
+
+<window name="TimeShiftChange">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("TimeShiftSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="TimeShiftChangeOptions">
+		<pos x=470 y=100 />
+		<size width=290 height=400 />
+		<selection>settings.timeshift.change</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Fast</text>
+			<onSelect>SetTimeShiftChange("Fast") ShowMenu("TimeShiftChange")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Normal</text>
+			<onSelect>SetTimeShiftChange("Normal") ShowMenu("TimeShiftChange")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Slow</text>
+			<onSelect>SetTimeShiftChange("Slow") ShowMenu("TimeShiftChange")</onSelect>
+		</item>
+
+	</list>
+
+	<label>
+		<pos x=384 y=500 />
+		<text>Speed of channel change eg. Set Fast  = 2 sec,  Normal = 5 sec & Slow = 10 sec.</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+</window>
+
 <window name="DSNetworkSetup">
 	<keys>
 		<Key code= 13>Select()</>
@@ -1765,8 +1902,8 @@ $(() - $(
 			<gap>10</gap>
 			<font height=30 weight=700 color="#FFFFFF" />
 			<text> IP Address</text>
-			<onSelect>ShowMenu("DSNetworkIPAddr")</onSelect>
-			<onRight>ShowMenu("DSNetworkIPAddr")</onRight>
+			<onSelect>ShowMenu("DSNetworkIP")</onSelect>
+			<onRight>ShowMenu("DSNetworkIP")</onRight>
 		</item>
 
 		<item>
@@ -1864,6 +2001,111 @@ $(() - $(
 		<align horizontal="centre"/>
 	</label>
 
+</window>
+
+<window name="DSNetworkIP">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("DSNetworkSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="DSNetworkIPOptions">
+		<pos x=470 y=100 />
+		<size width=290 height=400 />
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Change</text>
+			<onSelect>SetDSNetworkIP() ShowMenu("DSNetworkIP")</onSelect>
+		</item>
+
+	</list>
+</window>
+
+<window name="DSNetworkNic">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("DSNetworkSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="DSNetworkNicOptions">
+		<pos x=470 y=100 />
+		<size width=290 height=400 />
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Change</text>
+			<onSelect>SetDSNetworkNic() ShowMenu("DSNetworkNic")</onSelect>
+		</item>
+
+	</list>
+</window>
+
+<window name="DSNetworkPort">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("DSNetworkSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="DSNetworkPortOptions">
+		<pos x=470 y=100 />
+		<size width=290 height=400 />
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Change</text>
+			<onSelect>SetDSNetworkPort() ShowMenu("DSNetworkPort")</onSelect>
+		</item>
+
+	</list>
 </window>
 
 <window name="TVChannelSetup">

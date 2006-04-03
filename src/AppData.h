@@ -123,6 +123,8 @@ public:
 		struct SETTINGS_TIMESHIFT
 		{
 			LPWSTR folder;
+			LPWSTR change;
+			LPWSTR buffer;
 			int dlimit;
 			int flimit;
 			int fdelay;
@@ -242,6 +244,8 @@ public:
 	void StoreGlobalValues();
 	void MarkValuesChanges();
 	LPWSTR GetSelectionItem(LPWSTR selection);
+	void SetBuffer(LPWSTR lpwstr);
+	void SetChange(LPWSTR lpwstr);
 	LPWSTR GetFormat(long value);
 	LPWSTR GetBool(long value);
 	LPWSTR GetPriority(long value);

@@ -98,6 +98,10 @@ AppData::AppData()
 	settings.timeshift.dlimit = 0;
 	settings.timeshift.flimit = 0;
 	settings.timeshift.fdelay = 0;
+	settings.timeshift.buffer = new wchar_t[MAX_PATH];
+	wcscpy(settings.timeshift.buffer, L"Medium");
+	settings.timeshift.change = new wchar_t[MAX_PATH];
+	wcscpy(settings.timeshift.change, L"Fast");
 	settings.timeshift.bufferMinutes = 0;
 	settings.timeshift.format = 1;
 	settings.timeshift.maxnumbfiles = 40;
@@ -208,6 +212,12 @@ AppData::~AppData()
 	if (settings.timeshift.folder)
 		delete[] settings.timeshift.folder;
 
+	if (settings.timeshift.change)
+		delete[] settings.timeshift.change;
+
+	if (settings.timeshift.buffer)
+		delete[] settings.timeshift.buffer;
+
 	if (settings.dsnetwork.ipaddr)
 		delete[] settings.dsnetwork.ipaddr;
 
@@ -247,6 +257,12 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L".folder") == 0)
 				return settings.timeshift.folder;
+
+			if (_wcsicmp(selection, L".change") == 0)
+				return settings.timeshift.change;
+
+			if (_wcsicmp(selection, L".buffer") == 0)
+				return settings.timeshift.buffer;
 
 			return NULL;
 		}
@@ -331,6 +347,45 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 		}
 	}
 	return NULL;
+}
+
+void AppData::SetBuffer(LPWSTR lpwstr)
+{
+	if (!lpwstr)
+		return;
+		
+	strCopy(settings.timeshift.buffer, lpwstr);	
+
+	if (_wcsicmp(lpwstr, L"Auto") == 0)
+		return;
+
+	if (_wcsicmp(lpwstr, L"Small") == 0)
+		settings.timeshift.numbfilesrecycled = 2;	
+	else if (_wcsicmp(lpwstr, L"Medium") == 0)
+		settings.timeshift.numbfilesrecycled = 6;	
+	else if (_wcsicmp(lpwstr, L"Large") == 0)
+		settings.timeshift.numbfilesrecycled = 20;	
+
+	settings.timeshift.bufferMinutes = 0;	
+
+	return;
+}
+
+void AppData::SetChange(LPWSTR lpwstr)
+{
+	if (!lpwstr)
+		return;
+
+	strCopy(settings.timeshift.change, lpwstr);	
+
+	if ((_wcsicmp(lpwstr, L"Fast") == 0))
+		settings.timeshift.flimit = 0;	
+	else if ((_wcsicmp(lpwstr, L"Normal") == 0))
+		settings.timeshift.flimit = 2000000;	
+	else if ((_wcsicmp(lpwstr, L"Slow") == 0))
+		settings.timeshift.flimit = 4000000;	
+
+	return;
 }
 
 LPWSTR AppData::GetFormat(long value)
@@ -775,6 +830,16 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"NumbFilesRecycled") == 0)
 				{
 					settings.timeshift.numbfilesrecycled = _wtoi(pSubElement->value);
+
+					if (settings.timeshift.bufferMinutes)
+						strCopy(settings.timeshift.buffer, L"Auto");
+					else  if (settings.timeshift.numbfilesrecycled <= 2)
+						strCopy(settings.timeshift.buffer, L"Small");
+					else if(settings.timeshift.numbfilesrecycled <= 6)
+						strCopy(settings.timeshift.buffer, L"Medium");
+					else if(settings.timeshift.numbfilesrecycled > 6)
+						strCopy(settings.timeshift.buffer, L"Large");
+
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"BufferFileSize") == 0)
@@ -811,6 +876,14 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"LoadFileSize") == 0)
 				{
 					settings.timeshift.flimit = _wtoi(pSubElement->value);
+
+					if (!settings.timeshift.flimit)
+						strCopy(settings.timeshift.change, L"Fast");
+					else  if (settings.timeshift.flimit >= 2000000)
+						strCopy(settings.timeshift.change, L"Normal");
+					else if(settings.timeshift.flimit > 2000000)
+						strCopy(settings.timeshift.change, L"Slow");
+
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"LoadPauseDelay") == 0)
@@ -821,6 +894,9 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"BufferMinutes") == 0)
 				{
 					settings.timeshift.bufferMinutes = _wtoi(pSubElement->value);
+					if (settings.timeshift.bufferMinutes)
+						strCopy(settings.timeshift.buffer, L"Auto");
+
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"Folder") == 0)

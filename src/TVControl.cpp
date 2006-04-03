@@ -1163,12 +1163,82 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetTimeShiftChange") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->SetChange(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetTimeShiftBuffer") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (!command->LHS.Parameter[0])
+			return S_OK;
+
+		if (_wcsicmp(command->LHS.Parameter[0], L"Auto") == 0)
+		{
+			LPWSTR pValue = NULL;
+			strCopy(pValue, g_pData->settings.timeshift.bufferMinutes);
+
+			if FAILED(GetInputBox(g_pData->hWnd, L"Sets The Time Shift Buffer Size in Minutes", &pValue) == FALSE )
+			{
+				if (pValue)
+					delete[] pValue;
+
+				return S_OK;
+			}
+
+			if (pValue)
+			{
+				g_pData->settings.timeshift.bufferMinutes = _wtoi(pValue);
+				delete[] pValue;
+			}
+
+		}
+
+		g_pData->SetBuffer(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetDSNetworkFormat") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.dsnetwork.format = g_pData->GetFormat(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetDSNetworkIP") == 0)
+	{
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The DSNetwork IP Address", &g_pData->settings.dsnetwork.ipaddr) == FALSE )
+			return S_OK;
+		
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetDSNetworkPort") == 0)
+	{
+		LPWSTR pValue;
+		strCopy(pValue, g_pData->settings.dsnetwork.port);
+
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The DSNetwork Port Number", &pValue) == FALSE )
+			return S_OK;
+
+		if (pValue)
+			g_pData->settings.dsnetwork.port = _wtoi(pValue);
+		
+		if (g_pData->settings.dsnetwork.port < 0 || g_pData->settings.dsnetwork.port > 65535)
+			return S_OK;
+
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetDSNetworkNic") == 0)
+	{
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The DSNetwork NIC Address", &g_pData->settings.dsnetwork.nicaddr) == FALSE )
+			return S_OK;
+		
 		return g_pData->SaveSettings();
 	}
 
