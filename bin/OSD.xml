@@ -2438,7 +2438,73 @@ $(() - $(
 			<text> $(StreamInfo.Name)</text>
 			<onSelect>SetStream($(StreamInfo.index)) ExitMenu()</onSelect>
 			<onLeft>ExitMenu()</onLeft>
-			<onRight>SetStream($(StreamInfo.index)) ExitMenu() GetStreamList() ShowMenu("StreamList")</onRight>
+			<onRight>SetStream($(StreamInfo.index)) ExitMenu(-1) GetStreamList() ShowMenu("StreamList")</onRight>
+		</itemList>
+	</list>
+</window>
+
+<window name="FilterList">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	
+	<list name="Filter">
+		<pos x=100 y=100 />
+		<size width=568 height=426 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+		
+		<itemList>
+			<source>FilterInfo</source>
+			<text> $(FilterInfo.Name) - $(FilterInfo.flags) Pages</text>
+			<onSelect>ShowFilter($(FilterInfo.Name)) ExitMenu(-1) GetFilterList() ShowMenu("FilterList")</onSelect>
+			<onLeft>ExitMenu()</onLeft>
+		</itemList>
+	</list>
+</window>
+
+<window name="TSFilterList">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>Left()</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	
+	<list name="TSFilter">
+		<pos x=100 y=100 />
+		<size width=568 height=426 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+		
+		<itemList>
+			<source>FilterTSInfo</source>
+			<text> $(FilterTSInfo.Name) - $(FilterTSInfo.flags) Pages</text>
+			<onSelect>ShowTSFilter($(FilterTSInfo.Name)) ExitMenu(-1) GetTSFilterList() ShowMenu("TSFilterList")</onSelect>
+			<onLeft>ExitMenu()</onLeft>
 		</itemList>
 	</list>
 </window>

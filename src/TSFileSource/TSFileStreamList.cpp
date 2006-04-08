@@ -87,11 +87,11 @@ HRESULT TSFileStreamList::Destroy()
 	return S_OK;
 }
 
-HRESULT TSFileStreamList::Initialise(DWGraph* pFilterGraph)
+HRESULT TSFileStreamList::Initialise(IGraphBuilder* piGraphBuilder)
 {
 	(log << "Initialising the Stream List \n").Write();
 
-	m_pDWGraph = pFilterGraph;
+	m_piGraphBuilder = piGraphBuilder;
 
 	(log << "Finished Initialising the Stream List \n").Write();
 	
@@ -109,11 +109,7 @@ HRESULT TSFileStreamList::LoadStreamList(BOOL bLogOutput)
 	HRESULT hr;
 
 	if (!m_piGraphBuilder)
-	{
-		hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder);
-		if (FAILED(hr))
-			return (log << "Unable to Query for the Graph Builder Interface\n").Show(E_FAIL);
-	}
+		return (log << "Graph Builder Interface not yet Initalised\n").Show(E_FAIL);
 
 	IBaseFilter *pFilter;
 	hr = graphTools.FindFilterByCLSID(m_piGraphBuilder, CLSID_TSFileSource, &pFilter);
@@ -164,7 +160,6 @@ HRESULT TSFileStreamList::LoadStreamList(BOOL bLogOutput)
 						else
 							wsprintfW(item->name, L"    %S",(LPWSTR)pStreamName);  
 
-//						strCopy(item->name, (LPWSTR)streamName);
 						strCopy(item->ltext, (long)(wcslen(pStreamName)+8));
 						CoTaskMemFree(pStreamName);
 						m_list.push_back(item);
@@ -247,7 +242,6 @@ LPWSTR TSFileStreamList::GetServiceName()
 	{
 		long flag =	StringToLong(m_list[index]->flags);
 		if (flag & AMSTREAMSELECTINFO_ENABLED)
-//		if (!_wcsnicmp(m_list[index]->name, L"->", 2))
 			return m_list[index]->name;
 	}
 

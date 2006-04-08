@@ -29,6 +29,7 @@
 #include "FilterGraphTools.h"
 #include "DWThread.h"
 #include "TSFileStreamList.h"
+#include "..\FilterPropList.h"
 #include <vector>
 
 class TSFileSource : public DWSource, public DWThread
@@ -60,6 +61,8 @@ public:
 	virtual HRESULT SetStream(long index);
 	virtual HRESULT GetStreamList(void);
 	virtual	HRESULT SetStreamName(LPWSTR pService, BOOL bEnable = TRUE);
+	virtual	HRESULT GetFilterList(void);
+	virtual	HRESULT ShowFilter(LPWSTR filterName);
 	virtual	HRESULT SetRate(double dRate);
 
 	virtual void ThreadProc();
@@ -85,6 +88,7 @@ protected:
 	HRESULT GetTIFMedia(AM_MEDIA_TYPE *pintype);
 	HRESULT GetTelexMedia(AM_MEDIA_TYPE *pintype);
 	HRESULT GetTSMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT SetSourceInterface(IBaseFilter *pFilter);
 
 	virtual void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 
@@ -100,11 +104,12 @@ private:
 	DWGraph *m_pDWGraph;
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 
-	CComPtr <IBaseFilter> m_piTSFileSource;
+	CComPtr <IBaseFilter> m_pTSFileSource;
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
 
 	TSFileStreamList streamList;
+	FilterPropList filterList;
 
 	FilterGraphTools graphTools;
 };

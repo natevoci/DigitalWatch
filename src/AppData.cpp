@@ -850,22 +850,14 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"Format") == 0 && pSubElement->value)
 				{
 					if (_wcsicmp(pSubElement->value, L"FullMux") == 0)
-					{
 						settings.timeshift.format = 1;
-					}
 					else if (_wcsicmp(pSubElement->value, L"TSMux") == 0)
-					{
 						settings.timeshift.format = 2;
-					}
 					else if (_wcsicmp(pSubElement->value, L"MPGMux") == 0)
-					{
 						settings.timeshift.format = 3;
-					}
 					else
-					{
 						settings.timeshift.format = 0;
-					}
-//					settings.timeshift.format = _wtoi(pSubElement->value);
+
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"LoadDelayLimit") == 0)
@@ -919,22 +911,14 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"Format") == 0 && pSubElement->value)
 				{
 					if (_wcsicmp(pSubElement->value, L"FullMux") == 0)
-					{
 						settings.dsnetwork.format = 1;
-					}
 					else if (_wcsicmp(pSubElement->value, L"TSMux") == 0)
-					{
 						settings.dsnetwork.format = 2;
-					}
 					else if (_wcsicmp(pSubElement->value, L"MPGMux") == 0)
-					{
 						settings.dsnetwork.format = 3;
-					}
 					else
-					{
 						settings.dsnetwork.format = 0;
-					}
-//					settings.dsnetwork.format = _wtoi(pSubElement->value);
+
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"Port") == 0)

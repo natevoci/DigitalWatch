@@ -7,7 +7,8 @@
   <Key code=114>				ShowMenu("NetworkList")</>
   <Key code=115>				GetStreamList() ShowMenu("StreamList")</>
   <Key code='U'>				GetStreamList() ShowMenu("StreamList")</>
- <Key code='K'>				ExitMenu(-1) ShowMenu("TVMenu")</>
+  <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
+  <Key code='K'>				ExitMenu(-1) ShowMenu("TVMenu")</>
 
   <!-- keyboard numbers -->
   <Key code='0'>				SeekTo(100)</>

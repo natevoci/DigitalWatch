@@ -45,6 +45,7 @@ BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 
 	g_pOSD->Data()->AddList(&channels);
 	g_pOSD->Data()->AddList(&frequencyList);
+	g_pOSD->Data()->AddList(&filterList);
 }
 
 BDADVBTSource::~BDADVBTSource()
@@ -61,6 +62,7 @@ void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 	graphTools.SetLogCallback(callback);
 	channels.SetLogCallback(callback);
 	frequencyList.SetLogCallback(callback);
+	filterList.SetLogCallback(callback);
 	cardList.SetLogCallback(callback);
 
 	if (m_pCurrentSink)
@@ -139,6 +141,20 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	m_pCurrentSink->SetLogCallback(m_pLogCallback);
 	if FAILED(hr = m_pCurrentSink->Initialise(m_piGraphBuilder))
 		return (log << "Failed to Initialise Sink Filters" << hr << "\n").Write(hr);
+
+	filterList.Initialise(m_piGraphBuilder);
+	for (i = 0; i < g_pOSD->Data()->GetListCount(filterList.GetListName()); i++)
+	{
+		if (g_pOSD->Data()->GetListFromListName(filterList.GetListName()) != &filterList)
+		{
+			(log << "Filter List is not the same, Rotating List\n").Write();
+			g_pOSD->Data()->RotateList(g_pOSD->Data()->GetListFromListName(filterList.GetListName()));
+			continue;
+		}
+		(log << "Filter List found to be the same\n").Write();
+		break;
+	};
+
 
 	wchar_t file[MAX_PATH];
 
@@ -240,6 +256,7 @@ HRESULT BDADVBTSource::Destroy()
 	cardList.Destroy();
 	frequencyList.Destroy();
 	channels.Destroy();
+	filterList.Destroy();
 
 	indent.Release();
 	(log << "Finished Destroying BDA Source\n").Write();
@@ -417,6 +434,21 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 
 		return TogglePauseRecording(n1);
 	}
+	if (_wcsicmp(pCurr, L"ShowFilter") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return ShowFilter(command->LHS.Parameter[0]);
+	}
+	else if (_wcsicmp(pCurr, L"GetFilterList") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return GetFilterList();
+	}
+
 
 
 	//Just referencing these variables to stop warnings.
@@ -1329,6 +1361,25 @@ HRESULT BDADVBTSource::MoveNetworkUp(long originalNetworkId)
 HRESULT BDADVBTSource::MoveNetworkDown(long originalNetworkId)
 {
 	return channels.MoveNetworkDown(originalNetworkId);
+}
+
+HRESULT BDADVBTSource::GetFilterList(void)
+{
+	HRESULT hr = S_OK;
+
+	if FAILED(hr = filterList.LoadFilterList(TRUE))
+		return (log << "Failed to get a Filter Property List: " << hr << "\n").Write(hr);
+
+	return hr;
+}
+
+HRESULT BDADVBTSource::ShowFilter(LPWSTR filterName)
+{
+	HRESULT hr;
+	if FAILED(hr = filterList.ShowFilterProperties(g_pData->hWnd, filterName, 0))
+		return (log << "Failed to Show the Filter Property Page: " << hr << "\n").Write(hr);
+
+	return hr;
 }
 
 //HRESULT BDADVBTSource::ToggleRecording(long mode)

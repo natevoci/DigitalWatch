@@ -7,8 +7,11 @@
   <!-- F2 and Preview button on VP remote -->
   <Key code=113>				ExitMenu(-1) ShowMenu("TVMenu")</>
   <Key code='K'>				ExitMenu(-1) ShowMenu("TVMenu")</>
-  <Key code='U'>				GetStreamList() ShowMenu("StreamList")</>
-
+  <Key code='U'>				GetStreamList() ShowMenu("StreamList")</>
+  <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
+  <Key code='G'>				GetTSFilterList() ShowMenu("TSFilterList")</>
+  <Key code='W'>				ReLoadTimeShiftFile()</>
+ 
  <!-- numpad + and - -->
   <Key code=107>				NetworkUp()</>
   <Key code=109>				NetworkDown()</>

@@ -1,6 +1,18 @@
+Version 2.2.0.2
+=================
+bear:
+Added some code to the TSFileSinkPin Class to drop data packets that are not in sequence.
+Added a Packet error indicator from the above code to display the error count on the property page, and via the ISTFileSink Interface.
+Added a reset button to the property page to reset the error count.
+bear:
 Version 2.2.0.1
 =================
 bear:
+Some minor changes to the code to improve stability.
+Restored the update duration thread priority, just seems to update better.
+Added a fixed Aspect Ratio Option to the ITSFileSource Interface and property page. It sets the media format on the Demux video output pin to 720x576, default is null. 
+Fixed a bug in the setPositions function that was causing a lock of the thread if it was called repeatedly quickly. re DNTVLive pause scrolling.
+Fixed a bug where the pid parser was not locked while setposition was called.
 Reduced the load delay on the network multicast render method as the filter can now do cold starts.
 Fixed a problem where the filter was unable to change pin mode if it was loaded & rendered and new file was loaded.
 Fixed a problem where the PidArray was being accessed during a clear operation and casing a crash.

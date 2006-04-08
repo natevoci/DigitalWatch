@@ -33,6 +33,7 @@
 #include "DVBTFrequencyList.h"
 #include "DWThread.h"
 #include <vector>
+#include "FilterPropList.h"
 
 class BDADVBTSource : public DWSource, public DWThread
 {
@@ -64,6 +65,8 @@ public:
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
+	virtual	HRESULT GetFilterList(void);
+	virtual	HRESULT ShowFilter(LPWSTR filterName);
 
 	DVBTChannels *GetChannels();
 
@@ -133,6 +136,7 @@ private:
 	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
 
 	DVBTFrequencyList frequencyList;
+	FilterPropList filterList;
 
 	FilterGraphTools graphTools;
 };

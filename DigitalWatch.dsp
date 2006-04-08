@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 d3d9.lib d3dx9.lib ddraw.lib dxguid.lib libcmt.lib libcimt.lib strmbase.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib comdlg32.lib ws2_32.lib  shell32.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe"
+# ADD LINK32 d3d9.lib d3dx9.lib ddraw.lib dxguid.lib libcmt.lib libcimt.lib strmbase.lib kernel32.lib user32.lib gdi32.lib ole32.lib advapi32.lib oleaut32.lib uuid.lib winmm.lib version.lib comdlg32.lib ws2_32.lib shell32.lib /nologo /subsystem:windows /machine:I386 /nodefaultlib:"libcmt.lib" /nodefaultlib:"msvcrt.lib" /nodefaultlib:"libcd.lib" /nodefaultlib:"libcmtd.lib" /nodefaultlib:"msvcrtd.lib" /out:"bin/DigitalWatch.exe"
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "DigitalWatch - Win32 Debug"
@@ -251,6 +251,10 @@ SOURCE=.\src\TSFileSource\ITSFileSink.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\TSFileSource\ITSFileSource.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\TSFileSource\MediaFormats.h
 # End Source File
 # Begin Source File
@@ -374,6 +378,14 @@ SOURCE=.\src\DWMediaTypes.cpp
 # Begin Source File
 
 SOURCE=.\src\DWMediaTypes.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\FilterPropList.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\FilterPropList.h
 # End Source File
 # End Group
 # Begin Group "Filters"

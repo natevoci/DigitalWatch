@@ -33,7 +33,8 @@
   <Key code='P' shift>				ShowChannelInfo()</>
   <Key code='Q'>				ShowOSDItem("Signal")</>
   <Key code='E'>				ShowOSDItem("NowAndNext")</>
-
+  <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
+ 
   	
 
 

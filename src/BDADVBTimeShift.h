@@ -35,6 +35,7 @@
 #include "DWThread.h"
 #include <vector>
 #include "TSFileSource/TSFileSource.h"
+#include "FilterPropList.h"
 
 class TSFileSource;
 class BDADVBTimeShift : public DWSource, public DWThread
@@ -70,6 +71,8 @@ public:
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
+	virtual	HRESULT GetFilterList(void);
+	virtual	HRESULT ShowFilter(LPWSTR filterName);
 
 	DVBTChannels *GetChannels();
 
@@ -150,6 +153,7 @@ private:
 	CComPtr <IGraphBuilder> m_piSinkGraphBuilder;
 
 	DVBTFrequencyList frequencyList;
+	FilterPropList filterList;
 
 	FilterGraphTools graphTools;
 	DWORD m_rotEntry;

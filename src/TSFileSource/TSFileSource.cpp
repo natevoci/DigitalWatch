@@ -31,6 +31,7 @@
 #include <ks.h>
 #include <ksmedia.h>
 #include <bdamedia.h>
+#include "ITSFileSource.h"
 
 #include <process.h>
 
@@ -43,6 +44,7 @@ TSFileSource::TSFileSource() : m_strSourceType(L"TSFileSource")
 	m_bInitialised = FALSE;
 	m_pDWGraph = NULL;
 	g_pOSD->Data()->AddList(&streamList);
+	g_pOSD->Data()->AddList(&filterList);
 }
 
 TSFileSource::~TSFileSource()
@@ -54,6 +56,7 @@ void TSFileSource::SetLogCallback(LogMessageCallback *callback)
 {
 	DWSource::SetLogCallback(callback);
 	streamList.SetLogCallback(callback);
+	filterList.SetLogCallback(callback);
 
 	graphTools.SetLogCallback(callback);
 }
@@ -80,6 +83,15 @@ HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 	(log << "Initialising TSFileSource Source\n").Write();
 	LogMessageIndent indent(&log);
 
+	HRESULT hr;
+
+	m_pDWGraph = pFilterGraph;
+
+	if (!m_piGraphBuilder)
+		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
+			return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
+
+	streamList.Initialise(m_piGraphBuilder);
 	for (int i = 0; i < g_pOSD->Data()->GetListCount(streamList.GetListName()); i++)
 	{
 		if (g_pOSD->Data()->GetListFromListName(streamList.GetListName()) != &streamList)
@@ -92,15 +104,19 @@ HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 		break;
 	};
 
-	HRESULT hr;
+	filterList.Initialise(m_piGraphBuilder);
+	for (i = 0; i < g_pOSD->Data()->GetListCount(filterList.GetListName()); i++)
+	{
+		if (g_pOSD->Data()->GetListFromListName(filterList.GetListName()) != &filterList)
+		{
+			(log << "Filter List is not the same, Rotating List\n").Write();
+			g_pOSD->Data()->RotateList(g_pOSD->Data()->GetListFromListName(filterList.GetListName()));
+			continue;
+		}
+		(log << "Filter List found to be the same\n").Write();
+		break;
+	};
 
-	m_pDWGraph = pFilterGraph;
-
-	if (!m_piGraphBuilder)
-		if FAILED(hr = m_pDWGraph->QueryGraphBuilder(&m_piGraphBuilder))
-			return (log << "Failed to get graph: " << hr <<"\n").Write(hr);
-
-	streamList.Initialise(pFilterGraph);
 
 	wchar_t file[MAX_PATH];
 
@@ -147,6 +163,7 @@ HRESULT TSFileSource::Destroy()
 
 	m_piGraphBuilder.Release();
 	streamList.Destroy();
+	filterList.Destroy();
 
 	indent.Release();
 	(log << "Finished Destroying TSFileSource Source\n").Write();
@@ -221,6 +238,20 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		return GetStreamList();
+	}
+	if (_wcsicmp(pCurr, L"ShowFilter") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return ShowFilter(command->LHS.Parameter[0]);
+	}
+	else if (_wcsicmp(pCurr, L"GetFilterList") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return GetFilterList();
 	}
 
 
@@ -340,11 +371,11 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		return (log << "Failed to unload previous filters\n").Write(hr);
 
 	// TSFileSource
-	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.filesourceclsid, &m_piTSFileSource, L"TSFileSource"))
+	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.filesourceclsid, &m_pTSFileSource, L"TSFileSource"))
 		return (log << "Failed to add TSFileSource to the graph: " << hr << "\n").Write(hr);
 
 	// Set Filename
-	CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_piTSFileSource);
+	CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
 	if (!piFileSourceFilter)
 		return (log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write(hr);
 
@@ -354,6 +385,10 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	if (bOwnFilename)
 		delete[] pFilename;
 
+	if FAILED(hr = SetSourceInterface(m_pTSFileSource))
+	{
+		return (log << "Failed to Set ITSFileSource Interface: " << hr << "\n").Write(hr);
+	}
 	
 	if FAILED(hr = SetRate(0.99))
 	{
@@ -375,7 +410,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		}
 	}
 
-	if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piTSFileSource, m_piBDAMpeg2Demux))
+	if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pTSFileSource, m_piBDAMpeg2Demux))
 		return (log << "Failed to connect TSFileSource to MPEG2 Demultiplexer: " << hr << "\n").Write(hr);
 
 	// Render output pins
@@ -403,7 +438,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	}
 
 	//Set reference clock
-	CComQIPtr<IReferenceClock> piRefClock(m_piTSFileSource);
+	CComQIPtr<IReferenceClock> piRefClock(m_pTSFileSource);
 	if (!piRefClock)
 		return (log << "Failed to get reference clock interface on Sink demux filter: " << hr << "\n").Write(hr);
 
@@ -444,10 +479,10 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 
 	HRESULT hr = E_FAIL;
 
-	if (m_piTSFileSource)
+	if (m_pTSFileSource)
 	{
 		// Set Filename
-		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_piTSFileSource);
+		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
 		if (!piFileSourceFilter)
 			return (log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write(hr);
 
@@ -473,7 +508,7 @@ HRESULT TSFileSource::UnloadFilters()
 	if FAILED(hr = graphTools.DisconnectAllPins(m_piGraphBuilder))
 		(log << "Failed to DisconnectAllPins : " << hr << "\n").Write();
 
-	DestroyFilter(m_piTSFileSource);
+	DestroyFilter(m_pTSFileSource);
 	DestroyFilter(m_piBDAMpeg2Demux);
 
 	if FAILED(hr = m_pDWGraph->Cleanup())
@@ -1002,6 +1037,34 @@ HRESULT TSFileSource::SetRate(double dRate)
 	return S_OK;
 }
 
+HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter)
+{
+	if (!pFilter)
+		return E_INVALIDARG;
+
+	HRESULT hr = E_NOINTERFACE;
+	CComQIPtr <ITSFileSource, &IID_ITSFileSource> piTSFilepSource(pFilter);
+	if(!piTSFilepSource)
+		return (log << "Failed to get ITSFileSource interface from IBaseFilter filter: " << hr << "\n").Write(hr);
+
+	piTSFilepSource->SetNPControl(0);
+	piTSFilepSource->SetNPSlave(0);
+	piTSFilepSource->SetRateControlMode(0);
+	piTSFilepSource->SetDelayMode(0);
+	piTSFilepSource->SetMP2Mode(1);
+	piTSFilepSource->SetAC3Mode(1);
+	piTSFilepSource->SetAudio2Mode(0);
+	piTSFilepSource->SetROTMode(0);
+	piTSFilepSource->SetClockMode(1);
+	piTSFilepSource->SetCreateTSPinOnDemux(0);
+	piTSFilepSource->SetCreateTxtPinOnDemux(0);
+	piTSFilepSource->SetFixedAspectRatio(0);
+
+	return S_OK;
+}
+
+
+
 HRESULT TSFileSource::UpdateData()
 {
 	HRESULT hr;
@@ -1070,7 +1133,7 @@ HRESULT TSFileSource::UpdateData()
 HRESULT TSFileSource::SetStream(long index)
 {
 	IAMStreamSelect *pIAMStreamSelect;
-	HRESULT hr = m_piTSFileSource->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
+	HRESULT hr = m_pTSFileSource->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
 	if (SUCCEEDED(hr))
 	{
 		hr = pIAMStreamSelect->Enable((index & 0xff), AMSTREAMSELECTENABLE_ENABLE);
@@ -1102,6 +1165,25 @@ HRESULT TSFileSource::SetStreamName(LPWSTR pService, BOOL bEnable)
 
 	if(hr == S_OK && bEnable) 
 		SetStream(index);
+
+	return hr;
+}
+
+HRESULT TSFileSource::GetFilterList(void)
+{
+	HRESULT hr = S_OK;
+
+	if FAILED(hr = filterList.LoadFilterList(TRUE))
+		return (log << "Failed to get a Filter Property List: " << hr << "\n").Write(hr);
+
+	return hr;
+}
+
+HRESULT TSFileSource::ShowFilter(LPWSTR filterName)
+{
+	HRESULT hr;
+	if FAILED(hr = filterList.ShowFilterProperties(g_pData->hWnd, filterName, 0))
+		return (log << "Failed to Show the Filter Property Page: " << hr << "\n").Write(hr);
 
 	return hr;
 }

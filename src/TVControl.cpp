@@ -1195,12 +1195,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			if (pValue)
 			{
 				g_pData->settings.timeshift.bufferMinutes = _wtoi(pValue);
+				g_pData->settings.timeshift.bufferMinutes = _wtoi(pValue);
+				strCopy(g_pData->settings.timeshift.buffer, command->LHS.Parameter[0]);
 				delete[] pValue;
 			}
 
 		}
-
 		g_pData->SetBuffer(command->LHS.Parameter[0]);
+
 		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetDSNetworkFormat") == 0)

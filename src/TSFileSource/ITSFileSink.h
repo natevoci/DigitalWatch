@@ -50,5 +50,7 @@ DECLARE_INTERFACE_(ITSFileSink, IUnknown)
 	STDMETHOD(GetChunkReserve) (THIS_ __int64 *chunkSize) PURE;
 	STDMETHOD(SetChunkReserve) (THIS_ __int64 chunkSize) PURE;
 	STDMETHOD(GetFileBufferSize) (THIS_ __int64 *lpllsize) PURE;
+	STDMETHOD(GetNumbErrorPackets) (THIS_ __int64 *lpllErrors) PURE;
+	STDMETHOD(SetNumbErrorPackets) (THIS_ __int64 lpllErrors) PURE;
 };
 

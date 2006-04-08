@@ -1,5 +1,5 @@
 /**
- *	TSFileStreamList.h
+ *	FilterPropList.h
  *	Copyright (C) 2005 Nate
  *	Copyright (C) 2006 Bear
  *
@@ -21,8 +21,8 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef TSFILESTREAMLIST_H
-#define TSFILESTREAMLIST_H
+#ifndef FILTERPROPLIST_H
+#define FILTERPROPLIST_H
 
 #include "DWGraph.h"
 #include "XMLDocument.h"
@@ -33,46 +33,43 @@
 #include "GlobalFunctions.h"
 #include "FilterGraphTools.h"
 
-class TSFileStreamListItem
+class FilterPropListItem
 {
 public:
-	TSFileStreamListItem();
-	virtual ~TSFileStreamListItem();
+	FilterPropListItem();
+	virtual ~FilterPropListItem();
 
 	LPWSTR index;
 	LPWSTR flags;
-	LPWSTR media;
-	LPWSTR lcid;
-	LPWSTR group;
 	LPWSTR name;
-	LPWSTR ltext;
 };
 
-class TSFileStreamList : public LogMessageCaller, public IDWOSDDataList
+class FilterPropList : public LogMessageCaller, public IDWOSDDataList
 {
 public:
-	TSFileStreamList();
-	virtual ~TSFileStreamList();
+	FilterPropList();
+	virtual ~FilterPropList();
 
 	virtual HRESULT Destroy();
 
-	virtual HRESULT Initialise(IGraphBuilder* piGraphBuilder);
-	virtual HRESULT LoadStreamList(BOOL bLogOutput = TRUE);
+	virtual HRESULT Initialise(IGraphBuilder *piGraphBuilder, LPWSTR ListName = NULL);
+	virtual HRESULT LoadFilterList(BOOL bLogOutput = TRUE);
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListName();
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
 	virtual long GetListSize();
 
-	virtual LPWSTR GetServiceName();
-	virtual HRESULT FindServiceName(LPWSTR pServiceName, int *pIndex);
+	virtual HRESULT FindFilterName(LPWSTR pFilterName, int *pIndex);
+	virtual HRESULT ShowFilterProperties(HWND hWnd, LPWSTR filterName, int index);
 
 private:
-	std::vector<TSFileStreamListItem *> m_list;
+	std::vector<FilterPropListItem *> m_list;
 	CCritSec m_listLock;
 
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 	FilterGraphTools graphTools;
+	HRESULT GetFilterProperties(LPWSTR *pfilterName, int *pCount, UINT * pFlags);
 
 	long m_offset;
 
