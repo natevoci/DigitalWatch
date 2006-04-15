@@ -22,7 +22,7 @@
 
 #include "LogMessageWriter.h"
 #include "GlobalFunctions.h"
-#include "FileWriter.h"
+#include "LogFileWriter.h"
 
 //////////////////////////////////////////////////////////////////////
 // LogMessageWriter
@@ -70,7 +70,7 @@ void LogMessageWriter::Write(LPWSTR pStr)
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
-		FileWriter file;
+		LogFileWriter file;
 		if SUCCEEDED(file.Open(m_logFilename, TRUE))
 		{
 			for ( int i=0 ; i<m_indent ; i++ )
@@ -109,7 +109,7 @@ void LogMessageWriter::Clear()
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
-		FileWriter file;
+		LogFileWriter file;
 		if SUCCEEDED(file.Open(m_logFilename, FALSE))
 		{
 			file.Close();

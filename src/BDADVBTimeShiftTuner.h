@@ -55,7 +55,9 @@ public:
 	long GetCurrentFrequency();
 
 	HRESULT StartScanning();
-	
+	HRESULT StopScanning();
+	HRESULT StopTIF();
+
 	HRESULT GetSignalStats(BOOL &locked, long &strength, long &quality);
 
 	BOOL IsActive();

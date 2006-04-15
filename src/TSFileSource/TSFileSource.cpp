@@ -364,6 +364,67 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	HRESULT hr;
 
+	if (m_pDWGraph->IsPlaying())
+	{
+		if FAILED(hr = m_pDWGraph->Stop())
+			return (log << "Failed to stop DWGraph\n").Write(hr);
+
+		// Set Filename
+		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
+		if (!piFileSourceFilter)
+			return (log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write(hr);
+
+		if FAILED(hr = piFileSourceFilter->Load(pFilename, pmt))
+			return (log << "Failed to load filename: " << hr << "\n").Write(hr);
+
+		if (bOwnFilename)
+			delete[] pFilename;
+
+//		if FAILED(hr = SetRate(0.99))
+//		{
+//			return (log << "Failed to Set File Source Rate: " << hr << "\n").Write(hr);
+//		}
+	
+		// Set Demux pids if loaded from a TimeShift Source
+		if (pService)
+		{
+			if FAILED(hr = AddDemuxPins(pService, m_piBDAMpeg2Demux, pmt))
+			{
+				(log << "Failed to Add Demux Pins\n").Write();
+			}
+		}
+
+		if FAILED(hr = m_pDWGraph->Start())
+			return (log << "Failed to Start Graph.\n").Write(hr);
+
+		indent.Release();
+		(log << "Finished Loading File\n").Write();
+
+		UpdateData();
+		g_pTv->ShowOSDItem(L"Position", 10);
+	/*
+		// If it's a .tsbuffer file then seek to the end
+		long length = wcslen(pFilename);
+		if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0))
+		{
+			SeekTo(100);
+		}
+	*/
+
+		return S_OK;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
 	if FAILED(hr = m_pDWGraph->Stop())
 		return (log << "Failed to stop DWGraph\n").Write(hr);
 
@@ -632,6 +693,12 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 		{
 			if (SUCCEEDED(hr = piPin.QueryInterface(&piPidMap)))
 			{
+				if FAILED(hr = VetDemuxPin(piPin, Pid))
+				{
+					(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
+					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+				}
+
 				if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 				{
 					(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
@@ -644,6 +711,12 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 			USHORT pidId = 0xC0;
 			if (pMediaType->subtype == MEDIASUBTYPE_MPEG2_VIDEO)
 			{
+				if FAILED(hr = VetDemuxPin(piPin, Pid))
+				{
+					(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
+					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+				}
+
 				if FAILED(hr = piStreamIdMap->MapStreamId(0xE0, MPEG2_PROGRAM_ELEMENTARY_STREAM, 0, 0))
 				{
 					(log << "Failed to map demux Stream ID's " << pPinName << " pin : " << hr << "\n").Write();
@@ -652,6 +725,12 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 			}
 			else if (pMediaType->subtype == MEDIASUBTYPE_MPEG1Payload)
 			{
+				if FAILED(hr = VetDemuxPin(piPin, Pid))
+				{
+					(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
+					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+				}
+
 				if FAILED(hr = piStreamIdMap->MapStreamId(0xC0, MPEG2_PROGRAM_ELEMENTARY_STREAM, 0, 0))
 				{
 					(log << "Failed to map demux Stream ID's " << pPinName << " pin : " << hr << "\n").Write();
@@ -660,6 +739,12 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 			}
 			else if (pMediaType->subtype == MEDIASUBTYPE_MPEG2_AUDIO)
 			{
+				if FAILED(hr = VetDemuxPin(piPin, Pid))
+				{
+					(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
+					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+				}
+
 				if FAILED(hr = piStreamIdMap->MapStreamId(0xC0, MPEG2_PROGRAM_ELEMENTARY_STREAM, 0, 0))
 				{
 					(log << "Failed to map demux Stream ID's " << pPinName << " pin : " << hr << "\n").Write();
@@ -668,6 +753,12 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 			}
 			else if (pMediaType->subtype == MEDIASUBTYPE_DOLBY_AC3)
 			{
+				if FAILED(hr = VetDemuxPin(piPin, Pid))
+				{
+					(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
+					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+				}
+
 				if FAILED(hr = piStreamIdMap->MapStreamId(0xBD, MPEG2_PROGRAM_ELEMENTARY_STREAM, 0x80, 0x04))
 				{
 					(log << "Failed to map demux Stream ID's " << pPinName << " pin : " << hr << "\n").Write();
@@ -690,6 +781,54 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 	return hr;
 }
 
+HRESULT TSFileSource::VetDemuxPin(IPin* pIPin, ULONG pid)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pIPin == NULL)
+		return hr;
+
+	ULONG pids = 0;
+	IMPEG2PIDMap* muxMapPid;
+	if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid))){
+
+		IEnumPIDMap *pIEnumPIDMap;
+		if (SUCCEEDED(muxMapPid->EnumPIDMap(&pIEnumPIDMap))){
+			ULONG pNumb = 0;
+			PID_MAP pPidMap;
+			while(pIEnumPIDMap->Next(1, &pPidMap, &pNumb) == S_OK){
+				if (pid != pPidMap.ulPID)
+				{
+					pids = pPidMap.ulPID;
+					hr = muxMapPid->UnmapPID(1, &pids);
+				}
+			}
+		}
+		muxMapPid->Release();
+	}
+	else {
+
+		IMPEG2StreamIdMap* muxStreamMap;
+		if(SUCCEEDED(pIPin->QueryInterface (&muxStreamMap))){
+
+			IEnumStreamIdMap *pIEnumStreamMap;
+			if (SUCCEEDED(muxStreamMap->EnumStreamIdMap(&pIEnumStreamMap))){
+				ULONG pNumb = 0;
+				STREAM_ID_MAP pStreamIdMap;
+				while(pIEnumStreamMap->Next(1, &pStreamIdMap, &pNumb) == S_OK){
+					if (pid != pStreamIdMap.stream_id)
+					{
+						pids = pStreamIdMap.stream_id;
+						hr = muxStreamMap->UnmapStreamId(1, &pids);
+					}
+				}
+			}
+			muxStreamMap->Release();
+		}
+	}
+	return S_OK;
+}
+
 HRESULT TSFileSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
@@ -709,7 +848,8 @@ HRESULT TSFileSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, AM_MEDIA_T
 {
 	AM_MEDIA_TYPE mediaType;
 	GetAC3Media(&mediaType);
-	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, pmt, streamsRendered);
+//	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, pmt, streamsRendered);
+	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, pmt, streamsRendered);
 }
 
 HRESULT TSFileSource::GetAC3Media(AM_MEDIA_TYPE *pintype)

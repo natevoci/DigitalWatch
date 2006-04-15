@@ -437,6 +437,21 @@ HRESULT BDADVBTimeShiftTuner::StartScanning()
 	return S_FALSE;
 }
 
+HRESULT BDADVBTimeShiftTuner::StopScanning()
+{
+	if (m_pMpeg2DataParser)
+		return m_pMpeg2DataParser->EndScan();
+
+	return S_FALSE;
+}
+
+HRESULT BDADVBTimeShiftTuner::StopTIF()
+{
+	if (m_piBDATIF)
+		return m_piBDATIF->Stop();
+
+	return S_FALSE;
+}
 
 HRESULT BDADVBTimeShiftTuner::GetSignalStats(BOOL &locked, long &strength, long &quality)
 {

@@ -518,6 +518,7 @@ HRESULT DVBMpeg2DataParser::StartScan()
 
 	if (m_bThreadStarted)
 		return S_FALSE;
+
 	m_bThreadStarted = TRUE;
 
 	unsigned long result = _beginthread(ParseMpeg2DataThread, 0, (void *) this);
@@ -526,6 +527,21 @@ HRESULT DVBMpeg2DataParser::StartScan()
 		m_bThreadStarted = FALSE;
 		return E_FAIL;
 	}
+	return S_OK;
+}
+
+HRESULT DVBMpeg2DataParser::EndScan()
+{
+	//Stop the thread 
+
+	if (!m_bThreadStarted)
+		return S_OK;
+
+	m_bThreadStarted = FALSE;
+
+	SetEvent(m_hScanningStopEvent[0]);
+	WaitForThreadToFinish();
+
 	return S_OK;
 }
 

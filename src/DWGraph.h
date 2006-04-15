@@ -45,7 +45,7 @@ public:
 	HRESULT QueryMediaControl(IMediaControl** piMediaControl);
 	
 	HRESULT Start();
-	HRESULT Start(IGraphBuilder *piGraphBuilder);
+	HRESULT Start(IGraphBuilder *piGraphBuilder, BOOL bSink = FALSE);
 	HRESULT Stop();
 	HRESULT Stop(IGraphBuilder *piGraphBuilder);
 	HRESULT Pause(BOOL bPause);

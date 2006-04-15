@@ -1,6 +1,9 @@
 Version 2.2.0.2
 =================
 bear:
+Changed the method in the file reload code to enable a cold start if a file is reloaded that has just been created.
+Changed some file reading/writing flags in the filewriter & file reader classes for quicker file accessing.
+Added some classes for preperation to use the Mpeg2Parser code.
 Added some code to the TSFileSinkPin Class to drop data packets that are not in sequence.
 Added a Packet error indicator from the above code to display the error count on the property page, and via the ISTFileSink Interface.
 Added a reset button to the property page to reset the error count.

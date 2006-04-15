@@ -649,6 +649,12 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 				continue;	//it's safe to not piPin.Release() because it'll go out of scope
 			}
 
+			if FAILED(hr = VetDemuxPin(piPin, Pid))
+			{
+				(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+			}
+
 			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 			{
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
@@ -666,6 +672,54 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 		*streamsRendered = renderedStreams;
 
 	return hr;
+}
+
+HRESULT BDADVBTSink::VetDemuxPin(IPin* pIPin, ULONG pid)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pIPin == NULL)
+		return hr;
+
+	ULONG pids = 0;
+	IMPEG2PIDMap* muxMapPid;
+	if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid))){
+
+		IEnumPIDMap *pIEnumPIDMap;
+		if (SUCCEEDED(muxMapPid->EnumPIDMap(&pIEnumPIDMap))){
+			ULONG pNumb = 0;
+			PID_MAP pPidMap;
+			while(pIEnumPIDMap->Next(1, &pPidMap, &pNumb) == S_OK){
+				if (pid != pPidMap.ulPID)
+				{
+					pids = pPidMap.ulPID;
+					hr = muxMapPid->UnmapPID(1, &pids);
+				}
+			}
+		}
+		muxMapPid->Release();
+	}
+	else {
+
+		IMPEG2StreamIdMap* muxStreamMap;
+		if(SUCCEEDED(pIPin->QueryInterface (&muxStreamMap))){
+
+			IEnumStreamIdMap *pIEnumStreamMap;
+			if (SUCCEEDED(muxStreamMap->EnumStreamIdMap(&pIEnumStreamMap))){
+				ULONG pNumb = 0;
+				STREAM_ID_MAP pStreamIdMap;
+				while(pIEnumStreamMap->Next(1, &pStreamIdMap, &pNumb) == S_OK){
+					if (pid != pStreamIdMap.stream_id)
+					{
+						pids = pStreamIdMap.stream_id;
+						hr = muxStreamMap->UnmapStreamId(1, &pids);
+					}
+				}
+			}
+			muxStreamMap->Release();
+		}
+	}
+	return S_OK;
 }
 
 HRESULT BDADVBTSink::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered)
@@ -686,7 +740,8 @@ HRESULT BDADVBTSink::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *strea
 {
 	AM_MEDIA_TYPE mediaType;
 	GetAC3Media(&mediaType);
-	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
+//	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, streamsRendered);
 }
 
 HRESULT BDADVBTSink::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)

@@ -107,6 +107,7 @@ AppData::AppData()
 	settings.timeshift.maxnumbfiles = 40;
 	settings.timeshift.numbfilesrecycled = 6;
 	settings.timeshift.bufferfilesize = 250;
+	settings.timeshift.multicard = FALSE;
 
 	settings.dsnetwork.format = 0;
 	settings.dsnetwork.ipaddr = new wchar_t[MAX_PATH];
@@ -189,6 +190,7 @@ AppData::AppData()
 	values.timeshift.maxnumbfiles = settings.timeshift.maxnumbfiles;
 	values.timeshift.numbfilesrecycled = settings.timeshift.numbfilesrecycled;
 	values.timeshift.bufferfilesize = settings.timeshift.bufferfilesize;
+	values.timeshift.multicard = settings.timeshift.multicard;
 
 	values.dsnetwork.format = settings.dsnetwork.format;
 
@@ -264,6 +266,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L".buffer") == 0)
 				return settings.timeshift.buffer;
 
+			if (_wcsicmp(selection, L".multicard") == 0)
+				return GetBool(settings.timeshift.multicard);
+
 			return NULL;
 		}
 
@@ -273,8 +278,6 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			selection += startsWithLength;
 			if (_wcsicmp(selection, L".format") == 0)
 				return GetFormat(settings.dsnetwork.format);
-
-
 
 			return NULL;
 		}
@@ -827,6 +830,14 @@ HRESULT AppData::LoadSettings()
 					settings.timeshift.maxnumbfiles = _wtoi(pSubElement->value);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"BufferMinutes") == 0)
+				{
+					settings.timeshift.bufferMinutes = _wtoi(pSubElement->value);
+					if (settings.timeshift.bufferMinutes)
+						strCopy(settings.timeshift.buffer, L"Auto");
+
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"NumbFilesRecycled") == 0)
 				{
 					settings.timeshift.numbfilesrecycled = _wtoi(pSubElement->value);
@@ -883,19 +894,16 @@ HRESULT AppData::LoadSettings()
 					settings.timeshift.fdelay = _wtoi(pSubElement->value);
 					continue;
 				}
-				if (_wcsicmp(pSubElement->name, L"BufferMinutes") == 0)
-				{
-					settings.timeshift.bufferMinutes = _wtoi(pSubElement->value);
-					if (settings.timeshift.bufferMinutes)
-						strCopy(settings.timeshift.buffer, L"Auto");
-
-					continue;
-				}
 				if (_wcsicmp(pSubElement->name, L"Folder") == 0)
 				{
 					if (pSubElement->value)
 						wcscpy(settings.timeshift.folder, pSubElement->value);
 
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"MultiCard") == 0)
+				{
+					settings.timeshift.multicard = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
 			}
@@ -1266,6 +1274,7 @@ HRESULT AppData::SaveSettings()
 		};
 //		strCopy(pValue, settings.timeshift.format);
 		pTimeshift->Elements.Add(new XMLElement(L"Format", pValue));
+		pTimeshift->Elements.Add(new XMLElement(L"MultiCard", (settings.timeshift.multicard ? L"True" : L"False")));
 	}
 
 	XMLElement *pDSNetwork = new XMLElement(L"DSNetwork");

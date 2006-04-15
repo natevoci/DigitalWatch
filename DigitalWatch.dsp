@@ -697,6 +697,14 @@ SOURCE=.\src\XMLDocument.h
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\src\LogFileWriter.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\LogFileWriter.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\LogMessage.cpp
 # End Source File
 # Begin Source File

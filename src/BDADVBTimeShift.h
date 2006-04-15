@@ -91,6 +91,9 @@ protected:
 	HRESULT RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService);
 	virtual HRESULT RenderChannel(int frequency, int bandwidth);
 
+	void RotateFilterList(void);
+	HRESULT LoadSinkGraph(int frequency, int bandwidth);
+	HRESULT UnLoadSinkGraph();
 	HRESULT LoadTuner();
 	HRESULT LoadDemux();
 	HRESULT UnloadTuner();
@@ -103,6 +106,7 @@ protected:
 
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
 		
+	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
@@ -128,8 +132,6 @@ private:
 	long m_rtTimeShiftStart;
 	long m_rtTimeShiftDuration;
 
-	std::vector<BDADVBTimeShiftTuner*> m_tuners;
-
 	BDADVBTimeShiftTuner *m_pCurrentTuner;
 	CCritSec m_tunersLock;
 
@@ -153,10 +155,24 @@ private:
 	CComPtr <IGraphBuilder> m_piSinkGraphBuilder;
 
 	DVBTFrequencyList frequencyList;
-	FilterPropList filterList;
+	FilterPropList *m_pCurrentFilterList;
 
 	FilterGraphTools graphTools;
 	DWORD m_rotEntry;
+
+	struct TUNER_GRAPH
+	{
+		BDADVBTSink * pSink;
+		BDADVBTimeShiftTuner *pTuner;
+		FilterPropList *pFilterList;
+		CComPtr <IGraphBuilder> piGraphBuilder;
+		DWORD rotEntry;
+		BOOL isRecording;
+		long networkId;
+		long serviceId;
+	} tuner_graph;
+
+	std::vector<TUNER_GRAPH*> m_tuners;
 };
 
 #endif

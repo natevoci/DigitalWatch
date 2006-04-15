@@ -368,6 +368,25 @@ HRESULT BDADVBTSourceTuner::StartScanning()
 	return S_FALSE;
 }
 
+HRESULT BDADVBTSourceTuner::StopScanning()
+{
+	if (m_pMpeg2DataParser)
+	{
+		m_pMpeg2DataParser->SetFrequency(m_lFrequency);
+		m_pMpeg2DataParser->SetFilter(m_piBDASecTab);
+		return m_pMpeg2DataParser->EndScan();
+	}
+
+	return S_FALSE;
+}
+
+HRESULT BDADVBTSourceTuner::StopTIF()
+{
+	if (m_piBDATIF)
+		return m_piBDATIF->Stop();
+
+	return S_FALSE;
+}
 
 HRESULT BDADVBTSourceTuner::GetSignalStats(BOOL &locked, long &strength, long &quality)
 {

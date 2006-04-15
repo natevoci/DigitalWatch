@@ -133,6 +133,7 @@ public:
 			int numbfilesrecycled;
 			int bufferfilesize;
 			int format;
+			BOOL multicard;
 		} timeshift;
 
 		struct SETTINGS_DSNETWORK
@@ -231,6 +232,7 @@ public:
 			long maxnumbfiles;
 			long numbfilesrecycled;
 			long bufferfilesize;
+			long multicard;
 		} timeshift;
 
 		struct SETTINGS_DSNETWORK

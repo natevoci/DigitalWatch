@@ -194,7 +194,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 							else
 							{
 								graphTools.SetReferenceClock(m_pTSMpeg2Demux);
-								m_pBDADVBTSink->ClearDemuxPids(m_pTSMpeg2Demux);
+//								m_pBDADVBTSink->ClearDemuxPids(m_pTSMpeg2Demux);
 							}
 	}
 	else if (m_intSinkType == 3)

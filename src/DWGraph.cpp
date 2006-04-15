@@ -185,7 +185,7 @@ HRESULT DWGraph::Start()
 {
 	HRESULT hr;
 
-	if FAILED(hr = Start(m_piGraphBuilder))
+	if FAILED(hr = Start(m_piGraphBuilder, FALSE))
 		return hr;
 
 	m_bPlaying = TRUE;
@@ -195,7 +195,7 @@ HRESULT DWGraph::Start()
 	return hr;
 }
 
-HRESULT DWGraph::Start(IGraphBuilder *piGraphBuilder)
+HRESULT DWGraph::Start(IGraphBuilder *piGraphBuilder, BOOL bSink)
 {
 	(log << "Starting DW Graph\n").Write();
 	LogMessageIndent indent(&log);
@@ -209,18 +209,24 @@ HRESULT DWGraph::Start(IGraphBuilder *piGraphBuilder)
 	if FAILED(hr = piGraphBuilder->QueryInterface(&piMediaControl))
 		return (log << "Failed to get Graph media control: " << hr << "\n").Write(hr);
 
-	hr = InitialiseVideoPosition(piGraphBuilder);
-	if FAILED(hr)
-		return (log << "Failed to Initialise Video Rendering: " << hr << "\n").Write(hr);
+	if (!bSink)
+	{
+		hr = InitialiseVideoPosition(piGraphBuilder);
+		if FAILED(hr)
+			return (log << "Failed to Initialise Video Rendering: " << hr << "\n").Write(hr);
+	}
 
 	//Start the graph
 	hr = piMediaControl->Run();
 	if FAILED(hr)
 		return (log << "Failed to start graph: " << hr << "\n").Write(hr);
 
-	hr = ApplyColorControls(piGraphBuilder);
-	hr = SetVolume(piGraphBuilder, g_pData->values.audio.volume);
-	hr = Mute(piGraphBuilder, g_pData->values.audio.bMute);
+	if (!bSink)
+	{
+		hr = ApplyColorControls(piGraphBuilder);
+		hr = SetVolume(piGraphBuilder, g_pData->values.audio.volume);
+		hr = Mute(piGraphBuilder, g_pData->values.audio.bMute);
+	}
 
 	//Log the reference clock
 	do
