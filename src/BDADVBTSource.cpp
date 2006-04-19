@@ -907,6 +907,10 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 		if FAILED(hr = m_pDWGraph->Start())
 		{
+			HRESULT hr2;
+			if FAILED(hr2 = m_pDWGraph->Stop())
+				(log << "Failed to stop DWGraph\n").Write();
+
 			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
 			continue;
 		}

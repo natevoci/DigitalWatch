@@ -29,6 +29,7 @@ nate:
 
 bear:
 Changes:
+- Added a fix to work around the dntvlive mini driver problem that causes the tuner to change in other instances.
 - Changed the graph rebuild method when changing channels in Timeshifting mode, it will now create a new sink graph if another card is free and then the player will change over to it before closing the previous sink graph. This improves the visual channel change to give a 1sec display change.
 - Implemented a "QuietWhenMinimised" option in Global settings, it lets you close the player when timeshifting if the application is minimised. It will restart when the application is restored and will seek to the present time.
 - Implemented a "MultiCard" option in Global settings, it lets you create multiple sink graphs in timeshifting mode dependant on the number of cards you have active and will let you change channel between each graph, and seeking to the present time. It will release the most last used sink graph if changing to a new channel if all the cards are already in use by the application unless it is recording.

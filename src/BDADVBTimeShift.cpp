@@ -1194,6 +1194,9 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 
 		if FAILED(hr = LoadSinkGraph(frequency, bandwidth))
 		{
+			if FAILED(hr = UnLoadSinkGraph())
+				(log << "Failed to Unload Sink Graph\n").Write();
+
 			(log << "Failed to Load the Sink Graph\n").Write();
 			continue;
 		}
@@ -1292,6 +1295,9 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 
 	if FAILED(hr = LoadSinkGraph(frequency, bandwidth))
 	{
+		if FAILED(hr = UnLoadSinkGraph())
+			(log << "Failed to Unload Sink Graph\n").Write();
+
 		(log << "Failed to Load Sink Graph\n").Write();
 		delete tuner;
 		return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
@@ -1543,7 +1549,13 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 //	SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 
 	if FAILED(hr = m_pDWGraph->Start(m_piSinkGraphBuilder, TRUE))
+	{
+		HRESULT hr2;
+		if FAILED(hr2 = m_pDWGraph->Stop(m_piSinkGraphBuilder))
+			(log << "Failed to stop DW Sink Graph\n").Write();
+
 		return (log << "Failed to Start Graph. Possibly tuner already in use: " << hr << "\n").Write(hr);
+	}
 
 	if FAILED(hr = m_pCurrentTuner->StopTIF())
 		return (log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write(hr);
