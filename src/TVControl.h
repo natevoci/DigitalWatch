@@ -104,6 +104,9 @@ public:
 	HRESULT OnSize();
 	HRESULT OnMove();
 	HRESULT OnTimer(int wParam);
+	HRESULT OnMinimize();
+	HRESULT OnRestore();
+	HRESULT MinimiseScreen();
 
 	HRESULT ExecuteCommandsImmediate(LPCWSTR command);
 	void ExecuteCommandsQueue(LPCWSTR command);

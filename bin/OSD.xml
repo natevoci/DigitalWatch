@@ -217,6 +217,17 @@ $(() - $(
 			</background>
 		</label>
 	</group>
+	<group name="RecordingIcon">
+		<label>
+			<pos x=20 y=426 />
+			<text>$(Recordingicon)</text>
+			<font height=20 weight=70 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=0 right=10 bottom=0 />
+			</background>
+		</label>
+	</group>
 	<!--
 	<group name="VideoDecoder">
 	</group>
@@ -630,6 +641,15 @@ $(() - $(
 			<height>40</height>
 			<gap>10</gap>
 			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Multiple Cards</text>
+			<onSelect>ShowMenu("MultiCards")</onSelect>
+			<onRight>ShowMenu("MultiCards")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
 			<text> Start With Full Screen</text>
 			<onSelect>ShowMenu("StartFullscreen")</onSelect>
 			<onRight>ShowMenu("StartFullscreen")</onRight>
@@ -687,6 +707,15 @@ $(() - $(
 			<text> Remember Window Position</text>
 			<onSelect>ShowMenu("RememberWindowPosition")</onSelect>
 			<onRight>ShowMenu("RememberWindowPosition")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Quiet When Minimised</text>
+			<onSelect>ShowMenu("QuietWhenMinimised")</onSelect>
+			<onRight>ShowMenu("QuietWhenMinimised")</onRight>
 		</item>
 
 		<item>
@@ -922,6 +951,50 @@ $(() - $(
 
 </window>
 
+<window name="MultiCards">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="MultiCardOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.multicard</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetMultiCard("True") ShowMenu("MultiCards")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetMultiCard("False") ShowMenu("MultiCards")</onSelect>
+		</item>
+	</list>
+
+</window>
 
 <window name="StartFullscreen">
 	<keys>
@@ -1233,6 +1306,51 @@ $(() - $(
 			<font height=30 weight=700 color="#FFFFFF" />
 			<text> False</text>
 			<onSelect>SetRememberWindowPosition("False") ShowMenu("RememberWindowPosition")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="QuietWhenMinimised">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="QuietWhenMinimisedOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.window.quietOnMinimise</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetQuietOnMinimise("True") ShowMenu("QuietWhenMinimised")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetQuietOnMinimise("False") ShowMenu("QuietWhenMinimised")</onSelect>
 		</item>
 	</list>
 
@@ -1611,15 +1729,6 @@ $(() - $(
 			<onSelect>ShowMenu("TimeShiftBuffer")</onSelect>
 			<onRight>ShowMenu("TimeShiftBuffer")</onRight>
 		</item>
-
-		<item>
-			<height>40</height>
-			<gap>10</gap>
-			<font height=30 weight=700 color="#FFFFFF" />
-			<text> Multiple Cards</text>
-			<onSelect>ShowMenu("MultiCards")</onSelect>
-			<onRight>ShowMenu("MultiCards")</onRight>
-		</item>
 	</list>
 
 </window>
@@ -1869,51 +1978,6 @@ $(() - $(
 		<font height=20 weight=700 color="#FFFFFF" />
 		<align horizontal="centre"/>
 	</label>
-
-</window>
-
-<window name="MultiCards">
-	<keys>
-		<Key code= 13>Select()</>
-		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("TimeShiftSetup")</>
-		<Key code= 38>Up()</>
-		<Key code= 39>right()</>
-		<Key code= 40>Down()</>
-	</keys>
-
-	<list name="MultiCardOptions">
-		<pos x=470 y=100 />
-		<size width=290 height=400 />
-		<selection>settings.timeshift.multicard</selection>
-		
-		<itemTemplate>
-			<height>40</height>
-			<gap>5</gap>
-			<font height=30 weight=700 color="#FFFFFF" />
-			<align horizontal="left"/>
-			<background>
-				<image>BrownButton</image>
-				<highlightImage>GreenButton</highlightImage>
-				<selectedImage>SelectedButton</SelectedImage>
-			</background>
-		</itemTemplate>
-
-		<item>
-			<height>40</height>
-			<gap>10</gap>
-			<font height=30 weight=700 color="#FFFFFF" />
-			<text> True</text>
-			<onSelect>SetMultiCard("True") ShowMenu("MultiCards")</onSelect>
-		</item>
-
-		<item>
-			<height>40</height>
-			<gap>10</gap>
-			<font height=30 weight=700 color="#FFFFFF" />
-			<text> False</text>
-			<onSelect>SetMultiCard("False") ShowMenu("MultiCards")</onSelect>
-		</item>
-	</list>
 
 </window>
 

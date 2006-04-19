@@ -75,6 +75,7 @@ public:
 	virtual	HRESULT ShowFilter(LPWSTR filterName);
 
 	DVBTChannels *GetChannels();
+	int m_cardId;
 
 	virtual void ThreadProc();
 
@@ -92,6 +93,10 @@ protected:
 	virtual HRESULT RenderChannel(int frequency, int bandwidth);
 
 	void RotateFilterList(void);
+	void UpdateStatusDisplay();
+	HRESULT CloseBuffers();
+	HRESULT CloseDisplay();
+	HRESULT OpenDisplay();
 	HRESULT LoadSinkGraph(int frequency, int bandwidth);
 	HRESULT UnLoadSinkGraph();
 	HRESULT LoadTuner();
@@ -166,6 +171,7 @@ private:
 		BDADVBTimeShiftTuner *pTuner;
 		FilterPropList *pFilterList;
 		CComPtr <IGraphBuilder> piGraphBuilder;
+		int cardId;
 		DWORD rotEntry;
 		BOOL isRecording;
 		long networkId;

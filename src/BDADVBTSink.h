@@ -60,7 +60,7 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
-	HRESULT Initialise(IGraphBuilder *piGraphBuilder);
+	HRESULT Initialise(IGraphBuilder *piGraphBuilder, int cardID = 0);
 	HRESULT DestroyAll();
 
 	HRESULT AddSinkFilters(DVBTChannels_Service* pService);
@@ -132,6 +132,7 @@ private:
 	long m_intTimeShiftType;
 	long m_intFileSinkType;
 	long m_intDSNetworkType;
+	int m_cardId;
 
 	FilterGraphTools graphTools;
 };

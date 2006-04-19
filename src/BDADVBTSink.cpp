@@ -63,6 +63,7 @@ BDADVBTSink::BDADVBTSink()
 	m_intTimeShiftType = 0;
 	m_intFileSinkType = 0;
 	m_intDSNetworkType = 0;
+	m_cardId = 0;
 }
 
 BDADVBTSink::~BDADVBTSink()
@@ -77,9 +78,11 @@ void BDADVBTSink::SetLogCallback(LogMessageCallback *callback)
 	graphTools.SetLogCallback(callback);
 }
 
-HRESULT BDADVBTSink::Initialise(IGraphBuilder *piGraphBuilder)
+HRESULT BDADVBTSink::Initialise(IGraphBuilder *piGraphBuilder, int cardID)
 {
 	HRESULT hr;
+	m_cardId = cardID;
+
 	if (m_bInitialised)
 		return (log << "DVB-T Sink tried to initialise a second time\n").Write(E_FAIL);
 
@@ -380,7 +383,7 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 			return (log << "Failed to set network interface for Sink filter: " << hr << "\n").Write(hr);
 
 		sprintf(sz,"%S",g_pData->settings.dsnetwork.ipaddr);
-		ULONG ulIP = inet_addr(sz);
+		ULONG ulIP = inet_addr(sz) + 256*256*256*m_cardId;
 		if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons((unsigned short)g_pData->settings.dsnetwork.port)))
 			return (log << "Failed to set multicast group for Sink filter: " << hr << "\n").Write(hr);
 		piMulticastConfig->Release();

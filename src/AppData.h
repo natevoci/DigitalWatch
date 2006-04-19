@@ -53,6 +53,7 @@ public:
 			BOOL disableScreenSaver;
 			int priority;
 			BOOL addToROT;
+			BOOL multicard;
 			//LPWSTR logFilename;
 		} application;
 
@@ -83,6 +84,7 @@ public:
 			BOOL rememberFullscreenState;
 			BOOL rememberAlwaysOnTopState;
 			BOOL rememberWindowPosition;
+			BOOL quietOnMinimise;
 		} window;
 
 		struct VALUES_AUDIO
@@ -133,7 +135,6 @@ public:
 			int numbfilesrecycled;
 			int bufferfilesize;
 			int format;
-			BOOL multicard;
 		} timeshift;
 
 		struct SETTINGS_DSNETWORK
@@ -166,6 +167,7 @@ public:
 		struct SETTINGS_APPLICATION
 		{
 			BOOL multiple;
+			long multicard;
 		} application;
 
 		struct VALUES_WINDOW
@@ -232,7 +234,6 @@ public:
 			long maxnumbfiles;
 			long numbfilesrecycled;
 			long bufferfilesize;
-			long multicard;
 		} timeshift;
 
 		struct SETTINGS_DSNETWORK

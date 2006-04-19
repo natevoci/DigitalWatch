@@ -3,6 +3,7 @@
 	<DisableScreenSaver> True | False </DisableScreenSaver>
 	<Priority> RealTime | High | AboveNormal | Normal | BelowNormal | Low </Priority>
 	<AddToROT> True | False </AddToROT>
+	<MultiCard>default False | True</MultiCard>If True, enables the Application to use the spare DVBT cards to create multiple Sink graphs so you can surf between them in TV TimeShift or TV Recording.
 </Application>
 
 <Window>
@@ -21,6 +22,7 @@
 	<RememberWindowPosition> True | False
 		Setting this to true will mean that the <Position> and <Size> values will be updated each time DW exits
 	</RememberWindowPosition>
+	<QuietOnMinimise>default False | True</QuietOnMinimise> If true will cause the application to go quiet if it is minimised. 
 </Window>
 
 <Audio>

@@ -54,6 +54,7 @@ AppData::AppData()
 	settings.application.disableScreenSaver = TRUE;
 	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
 	settings.application.addToROT = TRUE;
+	settings.application.multicard = FALSE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
@@ -70,6 +71,7 @@ AppData::AppData()
 	settings.window.rememberFullscreenState = TRUE;
 	settings.window.rememberAlwaysOnTopState = TRUE;
 	settings.window.rememberWindowPosition = TRUE;
+	settings.window.quietOnMinimise = FALSE;
 
 	settings.audio.volume = 100;
 	settings.audio.bMute = FALSE;
@@ -107,7 +109,6 @@ AppData::AppData()
 	settings.timeshift.maxnumbfiles = 40;
 	settings.timeshift.numbfilesrecycled = 6;
 	settings.timeshift.bufferfilesize = 250;
-	settings.timeshift.multicard = FALSE;
 
 	settings.dsnetwork.format = 0;
 	settings.dsnetwork.ipaddr = new wchar_t[MAX_PATH];
@@ -138,6 +139,7 @@ AppData::AppData()
 
 	//VALUES
 	values.application.multiple = FALSE; // This gets set if you have one or more instance running.
+	values.application.multicard = settings.application.multicard;
 	values.window.bFullScreen = settings.window.startFullscreen;
 	values.window.bAlwaysOnTop = settings.window.startAlwaysOnTop;
 
@@ -190,7 +192,6 @@ AppData::AppData()
 	values.timeshift.maxnumbfiles = settings.timeshift.maxnumbfiles;
 	values.timeshift.numbfilesrecycled = settings.timeshift.numbfilesrecycled;
 	values.timeshift.bufferfilesize = settings.timeshift.bufferfilesize;
-	values.timeshift.multicard = settings.timeshift.multicard;
 
 	values.dsnetwork.format = settings.dsnetwork.format;
 
@@ -266,9 +267,6 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L".buffer") == 0)
 				return settings.timeshift.buffer;
 
-			if (_wcsicmp(selection, L".multicard") == 0)
-				return GetBool(settings.timeshift.multicard);
-
 			return NULL;
 		}
 
@@ -298,6 +296,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L".addToROT") == 0)
 				return GetBool(settings.application.addToROT);
 
+			if (_wcsicmp(selection, L".multicard") == 0)
+				return GetBool(settings.application.multicard);
+
 			return NULL;
 		}
 
@@ -325,6 +326,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L".rememberWindowPosition") == 0)
 				return GetBool(settings.window.rememberWindowPosition);
+
+			if (_wcsicmp(selection, L".quietOnMinimise") == 0)
+				return GetBool(settings.window.quietOnMinimise);
 
 			return NULL;
 		}
@@ -606,6 +610,11 @@ HRESULT AppData::LoadSettings()
 					settings.application.addToROT = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"MultiCard") == 0)
+				{
+					settings.application.multicard = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 			}
 			continue;
 		}
@@ -672,6 +681,11 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"rememberWindowPosition") == 0)
 				{
 					settings.window.rememberWindowPosition = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"quietOnMinimise") == 0)
+				{
+					settings.window.quietOnMinimise = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
 
@@ -901,11 +915,6 @@ HRESULT AppData::LoadSettings()
 
 					continue;
 				}
-				if (_wcsicmp(pSubElement->name, L"MultiCard") == 0)
-				{
-					settings.timeshift.multicard = (_wcsicmp(pSubElement->value, L"true") == 0);
-					continue;
-				}
 			}
 			continue;
 		}
@@ -1086,6 +1095,7 @@ HRESULT AppData::SaveSettings()
 		};
 		pApplication->Elements.Add(new XMLElement(L"Priority", pValue));
 		pApplication->Elements.Add(new XMLElement(L"AddToROT", (settings.application.addToROT ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"MultiCard", (settings.application.multicard ? L"True" : L"False")));
 	}
 
 	XMLElement *pWindow = new XMLElement(L"Window");
@@ -1129,6 +1139,7 @@ HRESULT AppData::SaveSettings()
 		pWindow->Elements.Add(new XMLElement(L"RememberFullscreenState", (settings.window.rememberFullscreenState ? L"True" : L"False")));
 		pWindow->Elements.Add(new XMLElement(L"RememberAlwaysOnTopState", (settings.window.rememberAlwaysOnTopState ? L"True" : L"False")));
 		pWindow->Elements.Add(new XMLElement(L"RememberWindowPosition", (settings.window.rememberWindowPosition ? L"True" : L"False")));
+		pWindow->Elements.Add(new XMLElement(L"QuietOnMinimise", (settings.window.quietOnMinimise ? L"True" : L"False")));
 	}
 
 	XMLElement *pAudio = new XMLElement(L"Audio");
@@ -1274,7 +1285,6 @@ HRESULT AppData::SaveSettings()
 		};
 //		strCopy(pValue, settings.timeshift.format);
 		pTimeshift->Elements.Add(new XMLElement(L"Format", pValue));
-		pTimeshift->Elements.Add(new XMLElement(L"MultiCard", (settings.timeshift.multicard ? L"True" : L"False")));
 	}
 
 	XMLElement *pDSNetwork = new XMLElement(L"DSNetwork");

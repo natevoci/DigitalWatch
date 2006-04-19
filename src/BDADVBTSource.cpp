@@ -577,12 +577,16 @@ HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
 		(log << "Unable to SetChannel, Recording Still in Progress\n").Write();
 		indent.Release();
 		(log << "Finished Setting Channel\n").Write();
 		return S_OK;
 	}
+	g_pOSD->Data()->SetItem(L"recordingicon", L"");
+	g_pTv->HideOSDItem(L"RecordingIcon");
 
 	DVBTChannels_Network* pNetwork = channels.FindNetworkByONID(originalNetworkId);
 
@@ -615,16 +619,19 @@ HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long transportStreamId
 	//TODO: Check if recording
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
 		(log << "Unable to SetChannel, Recording Still in Progress\n").Write();
 		indent.Release();
 		(log << "Finished Setting Channel\n").Write();
 		return S_OK;
 	}
+	g_pOSD->Data()->SetItem(L"recordingicon", L"");
+	g_pTv->HideOSDItem(L"RecordingIcon");
 
 	DVBTChannels_Network* pNetwork = channels.FindNetwork(originalNetworkId, transportStreamId, networkId);
 
@@ -657,16 +664,19 @@ HRESULT BDADVBTSource::SetFrequency(long frequency, long bandwidth)
 	//TODO: Check if recording
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
 		(log << "Unable to SetFrequency, Recording Still in Progress\n").Write();
 		indent.Release();
 		(log << "Finished Setting Frequency\n").Write();
 		return S_OK;
 	}
+	g_pOSD->Data()->SetItem(L"recordingicon", L"");
+	g_pTv->HideOSDItem(L"RecordingIcon");
 
 	m_pCurrentNetwork = NULL;
 	m_pCurrentService = NULL;
@@ -815,10 +825,11 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 	//TODO: Check if recording
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
 		(log << "Unable to RenderChannel, Recording Still in Progress\n").Write();
 		indent.Release();
@@ -922,6 +933,19 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		m_tuners.erase(it);
 		m_tuners.push_back(m_pCurrentTuner);
 		
+		g_pOSD->Data()->SetItem(L"recordingicon", L"");
+		if (m_pCurrentSink && m_pCurrentSink->IsRecording())
+		{
+			if (m_pCurrentSink->IsPaused())
+				g_pOSD->Data()->SetItem(L"recordingicon", L"P");
+			else
+				g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+
+			g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
+		}
+		else
+			g_pTv->HideOSDItem(L"RecordingIcon");
+
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 
 		indent.Release();
@@ -1462,16 +1486,18 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath
 	WCHAR sz[32] = L"";
 
 //	if(m_pCurrentSink->IsRecording())
-	if (m_pCurrentSink->IsRecording() && ((mode == 0) || (mode == 2)))
+	if (m_pCurrentSink && m_pCurrentSink->IsRecording() && ((mode == 0) || (mode == 2)))
 	{
 
 		if FAILED(hr = m_pCurrentSink->StopRecording())
 			return hr;
 
 		wcscpy(sz, L"Recording Stopped");
+		g_pOSD->Data()->SetItem(L"recordingicon", L"S");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 2);
 	}
 //	else
-	else if (!m_pCurrentSink->IsRecording() && ((mode == 1) || (mode == 2)))
+	else if (m_pCurrentSink && !m_pCurrentSink->IsRecording() && ((mode == 1) || (mode == 2)))
 	{
 //		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService))
 //DWS28-02-2006		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename))
@@ -1479,6 +1505,8 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath
 			return hr;
 
 		wcscpy(sz, L"Recording");
+		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 	}
 
 	//DWS if (sz != L"") this is required to avoid OSD when nothing in sz
@@ -1515,6 +1543,8 @@ HRESULT BDADVBTSource::TogglePauseRecording(long mode)
 		wcscpy(sz, L"Recording");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
 		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 	}
 	else
 	{
@@ -1523,7 +1553,9 @@ HRESULT BDADVBTSource::TogglePauseRecording(long mode)
 
 		wcscpy(sz, L"Recording Paused");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
-		g_pTv->ShowOSDItem(L"Recording", 10000);
+		g_pTv->ShowOSDItem(L"Recording", 100000);
+		g_pOSD->Data()->SetItem(L"recordingicon", L"P");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 	}
 
 

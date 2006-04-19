@@ -283,7 +283,7 @@ HRESULT FilterPropList::ShowFilterProperties(HWND hWnd, LPWSTR filterName, int i
 		{
 			FILTER_INFO filterInfo;
 			if ((filterName && SUCCEEDED(pFilter->QueryFilterInfo(&filterInfo)) &&
-				(_wcsicmp(filterInfo.achName, filterName) == 0))
+				(wcsstr(filterInfo.achName, filterName) != NULL))
 				|| (!filterName && count == index)) 
 			{
 				ISpecifyPropertyPages* piProp = NULL;
@@ -316,4 +316,3 @@ HRESULT FilterPropList::ShowFilterProperties(HWND hWnd, LPWSTR filterName, int i
 	}
 	return NOERROR;
 }
-

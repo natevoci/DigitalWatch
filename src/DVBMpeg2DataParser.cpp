@@ -562,11 +562,11 @@ void DVBMpeg2DataParser::StartScanThread()
 {
 	HRESULT hr;
 
+//	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+//SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
 	try
 	{
 		ResetEvent(m_hScanningDoneEvent);
-//		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
-		//SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
 
 		(log << "\nStarting Scan Thread...\n").Write();
 
@@ -652,7 +652,7 @@ void DVBMpeg2DataParser::StartScanThread()
 				g_pOSD->Data()->SetItem(L"Scanning", L"");
 			}
 
-			DWORD dwWait = WaitForSingleObject(m_hScanningStopEvent[0], 1000);
+			DWORD dwWait = ::WaitForSingleObject(m_hScanningStopEvent[0], 5000);
 			if (dwWait != WAIT_TIMEOUT)
 				break;
 		}

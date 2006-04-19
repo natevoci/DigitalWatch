@@ -311,6 +311,8 @@ HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 					g_pTv->ShowOSDItem(L"Recording", 5);
 					g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 					g_pTv->ShowOSDItem(L"Warnings", 5);
+					g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+					g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 					return S_FALSE;
 				}
 
@@ -675,6 +677,8 @@ HRESULT TVControl::Exit()
 		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 		return S_FALSE;
 	}
 /*
@@ -1110,6 +1114,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		g_pData->settings.window.rememberWindowPosition = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetQuietOnMinimise") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.quietOnMinimise = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetStartWithAudioMuted") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -1210,7 +1222,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 1)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		g_pData->settings.timeshift.multicard = g_pData->GetBool(command->LHS.Parameter[0]);
+		g_pData->settings.application.multicard = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetDSNetworkFormat") == 0)
@@ -2173,6 +2185,46 @@ HRESULT TVControl::OnTimer(int wParam)
 		return S_OK;
 	}
 	return S_FALSE;
+}
+
+HRESULT TVControl::OnMinimize()
+{
+	if (!g_pData->settings.window.quietOnMinimise)
+		return S_OK;
+
+	HRESULT hr = S_OK;
+
+	ParseLine command;
+	command.Parse(L"CloseDisplay");
+	if (m_pActiveSource)
+		hr = m_pActiveSource->ExecuteCommand(&command);
+
+	return hr;
+}
+
+HRESULT TVControl::OnRestore()
+{
+//	if (!g_pData->settings.window.quietOnMinimise)
+//		return S_OK;
+
+	HRESULT hr = S_OK;
+
+	ParseLine command;
+	command.Parse(L"OpenDisplay");
+	if (m_pActiveSource)
+		hr = m_pActiveSource->ExecuteCommand(&command);
+
+	return hr;
+}
+
+HRESULT TVControl::MinimiseScreen()
+{
+	WINDOWPLACEMENT wPlace;
+	GetWindowPlacement(g_pData->hWnd, &wPlace);
+	wPlace.showCmd = SW_MINIMIZE;
+
+	BOOL bResult = SetWindowPlacement(g_pData->hWnd, &wPlace);
+	return (bResult ? S_OK : E_FAIL);
 }
 
 
