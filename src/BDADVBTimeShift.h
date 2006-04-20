@@ -37,6 +37,23 @@
 #include "TSFileSource/TSFileSource.h"
 #include "FilterPropList.h"
 
+class TunerSinkGraphItem
+{
+public:
+	TunerSinkGraphItem();
+	virtual ~TunerSinkGraphItem();
+
+	BDADVBTSink * pSink;
+	BDADVBTimeShiftTuner *pTuner;
+	FilterPropList *pFilterList;
+	CComPtr <IGraphBuilder> piGraphBuilder;
+	int cardId;
+	DWORD rotEntry;
+	BOOL isRecording;
+	long networkId;
+	long serviceId;
+};
+
 class TSFileSource;
 class BDADVBTimeShift : public DWSource, public DWThread
 {
@@ -129,6 +146,9 @@ protected:
 //DWS28-02-2006	HRESULT ToggleRecording(long mode, LPWSTR pFilename = NULL);
 	HRESULT ToggleRecording(long mode, LPWSTR pFilename = NULL, LPWSTR pPath = NULL);
 	HRESULT TogglePauseRecording(long mode);
+	TunerSinkGraphItem *GetCurrentTunerGraph();
+	void SetCurrentTunerGraph(TunerSinkGraphItem *tuner);
+	HRESULT SaveCurrentTunerItem(TunerSinkGraphItem **tuner);
 
 private:
 	const LPWSTR m_strSourceType;
@@ -137,6 +157,7 @@ private:
 	long m_rtTimeShiftStart;
 	long m_rtTimeShiftDuration;
 
+	std::vector<TunerSinkGraphItem*> m_tuners;
 	BDADVBTimeShiftTuner *m_pCurrentTuner;
 	CCritSec m_tunersLock;
 
@@ -165,20 +186,6 @@ private:
 	FilterGraphTools graphTools;
 	DWORD m_rotEntry;
 
-	struct TUNER_GRAPH
-	{
-		BDADVBTSink * pSink;
-		BDADVBTimeShiftTuner *pTuner;
-		FilterPropList *pFilterList;
-		CComPtr <IGraphBuilder> piGraphBuilder;
-		int cardId;
-		DWORD rotEntry;
-		BOOL isRecording;
-		long networkId;
-		long serviceId;
-	} tuner_graph;
-
-	std::vector<TUNER_GRAPH*> m_tuners;
 };
 
 #endif
