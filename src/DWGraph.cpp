@@ -345,6 +345,29 @@ HRESULT DWGraph::Pause(BOOL bPause)
 	return hr;
 }
 
+HRESULT DWGraph::Pause(IGraphBuilder *piGraphBuilder)
+{
+	(log << "Pausing DW Graph\n").Write();
+	LogMessageIndent indent(&log);
+
+	if (!piGraphBuilder)
+		piGraphBuilder = m_piGraphBuilder;
+
+	HRESULT hr;
+
+	CComPtr<IMediaControl> piMediaControl;
+	if FAILED(hr = piGraphBuilder->QueryInterface(&piMediaControl))
+		return (log << "Failed to get Graph media control: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaControl->Pause())
+		return (log << "Failed to stop graph: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Finished Pausing DW Graph : " << hr << "\n").Write();
+
+	return hr;
+}
+
 HRESULT DWGraph::Cleanup()
 {
 	return Cleanup(m_piGraphBuilder);

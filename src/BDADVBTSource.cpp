@@ -880,11 +880,11 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			continue;
 		}
 
-		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
-		{
-			(log << "Failed to Lock Channel\n").Write();
-			continue;
-		}
+//		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+//		{
+//			(log << "Failed to Lock Channel\n").Write();
+//			continue;
+//		}
 
 		if (m_pCurrentService)
 		{
@@ -903,6 +903,16 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 				if (g_pData->values.capture.format)
 					continue;
 			}
+		}
+
+		if FAILED(hr = m_pDWGraph->Pause(m_piGraphBuilder))
+		{
+			HRESULT hr2;
+			if FAILED(hr2 = m_pDWGraph->Stop())
+				(log << "Failed to stop DW Sink Graph\n").Write();
+
+			(log << "Failed to Pause Graph. Possibly tuner already in use.\n").Write();
+			continue;
 		}
 
 		if FAILED(hr = m_pDWGraph->Start())

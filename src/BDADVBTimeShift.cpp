@@ -1393,6 +1393,11 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 
 		UpdateStatusDisplay();
 
+		// Start the background thread for updating statistics
+		if FAILED(hr = StartThread())
+			(log << "Failed to start background thread: " << hr << "\n").Write();
+
+
 		if (!m_pCurrentSink || !m_pCurrentSink->IsRecording())
 		{
 			// Start the background thread for updating channels
@@ -1483,11 +1488,6 @@ HRESULT BDADVBTimeShift::OpenDisplay()
 	if (!m_pDWGraph->IsPlaying())
 		return 	ReLoadTimeShiftFile();
 
-	if (m_pCurrentNetwork)
-		g_pTv->ShowOSDItem(L"Channel", 10);
-
-	g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
-
 	return S_OK;
 }
 
@@ -1499,8 +1499,8 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 	if FAILED(hr = LoadTuner())
 		return (log << "Failed to load Source Tuner: " << hr << "\n").Write(hr);
 
-	if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
-		return (log << "Failed to Lock Channel: " << hr << "\n").Write(hr);
+//	if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+//		return (log << "Failed to Lock Channel: " << hr << "\n").Write(hr);
 
 	BOOL sinkFail = TRUE;
 	if (m_pCurrentService)
@@ -1532,6 +1532,18 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 
 	// Set priority to HIGH
 //	SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+
+	if FAILED(hr = m_pDWGraph->Pause(m_piSinkGraphBuilder))
+	{
+		HRESULT hr2;
+		if FAILED(hr2 = m_pDWGraph->Stop(m_piSinkGraphBuilder))
+			(log << "Failed to stop DW Sink Graph\n").Write();
+
+		return (log << "Failed to Pause Graph. Possibly tuner already in use: " << hr << "\n").Write(hr);
+	}
+
+	if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+		return (log << "Failed to Lock Channel: " << hr << "\n").Write(hr);
 
 	if FAILED(hr = m_pDWGraph->Start(m_piSinkGraphBuilder, TRUE))
 	{

@@ -49,6 +49,7 @@ public:
 	HRESULT Stop();
 	HRESULT Stop(IGraphBuilder *piGraphBuilder);
 	HRESULT Pause(BOOL bPause);
+	HRESULT Pause(IGraphBuilder *piGraphBuilder = NULL);
 
 	HRESULT Cleanup();
 	HRESULT Cleanup(IGraphBuilder *piGraphBuilder);

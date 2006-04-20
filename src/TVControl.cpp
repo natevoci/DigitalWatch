@@ -2194,6 +2194,12 @@ HRESULT TVControl::OnMinimize()
 
 	HRESULT hr = S_OK;
 
+	{
+		ParseLine command;
+		command.Parse(L"CloseBuffers");
+		if (m_pActiveSource)
+			hr = m_pActiveSource->ExecuteCommand(&command);
+	}
 	ParseLine command;
 	command.Parse(L"CloseDisplay");
 	if (m_pActiveSource)

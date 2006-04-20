@@ -11,9 +11,9 @@
   <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
   <Key code='G'>				GetTSFilterList() ShowMenu("TSFilterList")</>
   <Key code='W'>				ReLoadTimeShiftFile()</>
- <Key code='Q'>				MinimiseDisplay()</>
+ <Key code='Q'>				MinimiseBuffers()</>
  <Key code=81 shift>			CloseBuffers()</>
- <Key code=81 alt>			MinimiseBuffers()</>
+ <Key code=81 alt>			MinimiseDisplay()</>
 
  <!-- numpad + and - -->
   <Key code=107>				NetworkUp()</>
