@@ -26,6 +26,7 @@
 #include "LogMessage.h"
 
 #include "StreamFormats.h"
+#include "tsfilesource//MediaFormats.h"
 #include <ks.h> // Must be included before ksmedia.h
 #include <ksmedia.h> // Must be included before bdamedia.h
 #include "bdamedia.h"
@@ -46,6 +47,15 @@ BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 	g_pOSD->Data()->AddList(&channels);
 	g_pOSD->Data()->AddList(&frequencyList);
 	g_pOSD->Data()->AddList(&filterList);
+
+	wchar_t file[MAX_PATH];
+	//Get list of BDA capture cards
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+	cardList.LoadCards((LPWSTR)&file);
+	if (cardList.cards.size() == 0)
+		(log << "Could not find any BDA cards\n").Show();
+	else
+		g_pOSD->Data()->AddList(&cardList);
 }
 
 BDADVBTSource::~BDADVBTSource()
@@ -123,6 +133,17 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		break;
 	};
 
+	for (i = 0; i < g_pOSD->Data()->GetListCount(cardList.GetListName()); i++)
+	{
+		if (g_pOSD->Data()->GetListFromListName(cardList.GetListName()) != &cardList)
+		{
+			(log << "Cards List is not the same, Rotating List\n").Write();
+			g_pOSD->Data()->RotateList(g_pOSD->Data()->GetListFromListName(cardList.GetListName()));
+		}
+		(log << "Cards List found to be the same\n").Write();
+		break;
+	};
+
 	(log << "Clearing All TVChannels.Services Lists\n").Write();
 	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Services");
 
@@ -169,12 +190,18 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 		return hr;
 
 	//Get list of BDA capture cards
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
-	cardList.LoadCards((LPWSTR)&file);
-	cardList.SaveCards();
 	if (cardList.cards.size() == 0)
 		return (log << "Could not find any BDA cards\n").Show(E_FAIL);
-	
+	else
+	{
+		g_pOSD->Data()->ClearAllListNames(L"DVBTDeviceInfo");
+		cardList.Destroy();
+		swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+		cardList.LoadCards((LPWSTR)&file);
+		cardList.SaveCards();
+	}
+	g_pOSD->Data()->AddList(&cardList);
+
 	CAutoLock tunersLock(&m_tunersLock);
 
 	std::vector<BDACard *>::iterator it = cardList.cards.begin();
@@ -448,8 +475,54 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 
 		return GetFilterList();
 	}
+	else if (_wcsicmp(pCurr, L"SetDVBTDeviceStatus") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
+		if (command->LHS.ParameterCount > 2)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		n2 = 0;
+		if (command->LHS.ParameterCount >= 2)
+			n2 = StringToLong(command->LHS.Parameter[1]);
+
+		return cardList.UpdateCardStatus(n1, n2);
+	}
+	else if (_wcsicmp(pCurr, L"SetDVBTDevicePosition") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 2)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		n2 = 0;
+		if (command->LHS.ParameterCount >= 2)
+			n2 = StringToLong(command->LHS.Parameter[1]);
+
+		return cardList.SetCardPosition(n1, n2);
+	}
+	else if (_wcsicmp(pCurr, L"RemoveDVBTDevice") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		return cardList.RemoveCard(n1);
+	}
+	else if (_wcsicmp(pCurr, L"ParseDVBTDevices") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return cardList.ReloadCards();
+	}
 
 	//Just referencing these variables to stop warnings.
 	n3 = 0;
@@ -557,7 +630,7 @@ DVBTChannels *BDADVBTSource::GetChannels()
 
 void BDADVBTSource::ThreadProc()
 {
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 
 	while (!ThreadIsStopping())
 	{
@@ -905,13 +978,19 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			}
 		}
 
-		if FAILED(hr = m_pDWGraph->Pause(m_piGraphBuilder))
+		if FAILED(hr = m_pDWGraph->Pause(m_piGraphBuilder, (BOOL)(m_pCurrentService == NULL)))
 		{
 			HRESULT hr2;
 			if FAILED(hr2 = m_pDWGraph->Stop())
 				(log << "Failed to stop DW Sink Graph\n").Write();
 
 			(log << "Failed to Pause Graph. Possibly tuner already in use.\n").Write();
+			continue;
+		}
+
+		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+		{
+			(log << "Failed to Lock Channel\n").Write();
 			continue;
 		}
 
@@ -1269,15 +1348,17 @@ HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *str
 
 	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
 	mediaType.majortype = MEDIATYPE_Audio;
-	//mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
-	mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
+	mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
+	//mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
 	mediaType.bFixedSizeSamples = TRUE;
 	mediaType.bTemporalCompression = 0;
 	mediaType.lSampleSize = 1;
 	mediaType.formattype = FORMAT_WaveFormatEx;
 	mediaType.pUnk = NULL;
-	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
-	mediaType.pbFormat = g_MPEG1AudioFormat;
+	mediaType.cbFormat = sizeof(MPEG2AudioFormat);
+//	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
+	mediaType.pbFormat = MPEG2AudioFormat;
+//	mediaType.pbFormat = g_MPEG1AudioFormat;
 
 	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, streamsRendered);
 }

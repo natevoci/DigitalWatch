@@ -38,6 +38,15 @@ public:
 
 	HWND hWnd;
 
+	//These values are used as temp values passed within the OSD menu.
+	struct TEMP_VALUES
+	{
+		BOOL bools[9];
+		int	ints[9];
+		long longs[9];
+		LPWSTR lpstr[9];
+	} temps;
+
 	struct APPLICATION
 	{
 		LPWSTR appPath;
@@ -247,20 +256,23 @@ public:
 	void StoreGlobalValues();
 	void MarkValuesChanges();
 	LPWSTR GetSelectionItem(LPWSTR selection);
+	LPWSTR GetTempItem(LPWSTR selection);
 	void SetBuffer(LPWSTR lpwstr);
 	void SetChange(LPWSTR lpwstr);
 	LPWSTR GetFormat(long value);
 	LPWSTR GetBool(long value);
+	LPWSTR GetStatus(long value);
+	LPWSTR GetStatusString(LPWSTR lpwstr);
 	LPWSTR GetPriority(long value);
 	long GetFormat(LPWSTR lpwstr);
 	BOOL GetBool(LPWSTR lpwstr);
+	BOOL GetStatus(LPWSTR lpwstr);
 	long GetPriority(LPWSTR lpwstr);
 
 
 private:
 	struct VALUES globalValues;
 	struct VALUES markedValues;
-
 };
 
 #endif

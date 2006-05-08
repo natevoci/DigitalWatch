@@ -1,6 +1,9 @@
 Version 2.2.0.2
 =================
 bear:
+Added a TSThread Class to the TSFileSink filter Pin class to help with file cashing issues.
+Removed Frodo's packet error filter code from the TSFileSink filter, was too much delay for small sample sizes.
+Added some object locks to the IAMStreamInterface for when the Stop function is called.
 Changed the method in the file reload code to enable a cold start if a file is reloaded that has just been created.
 Changed some file reading/writing flags in the filewriter & file reader classes for quicker file accessing.
 Added some classes for preperation to use the Mpeg2Parser code.

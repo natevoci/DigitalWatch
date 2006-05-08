@@ -37,12 +37,22 @@
 static 	LPWSTR MUX_FORMAT[6] = {L"None", L"FullMux", L"TSMux", L"MpgMux", L"SepMux", L"DVR-MS"};
 static 	LPWSTR PRIORITY[6] = {L"Realtime", L"High", L"AboveNormal", L"Normal.", L"BelowNormal", L"Low"};
 static 	LPWSTR BOOLVALUE[2] = {L"False", L"True"};
+static 	LPWSTR STATUSVALUE[2] = {L"Disabled", L"Enabled"};
 
 AppData::AppData()
 {
 	hWnd = 0;
 
 	this->SetLogCallback(&g_DWLogWriter);
+
+	//TEMPS
+	for (int i = 0; i < 9; i++)
+	{
+		temps.bools[i] = 0;
+		temps.ints[i] = 0;
+		temps.longs[i] = 0;
+		temps.lpstr[i] = NULL;
+	}
 
 	//APPLICATION
 	application.appPath = new wchar_t[MAX_PATH];
@@ -203,6 +213,12 @@ AppData::~AppData()
 {
 	SaveSettings();
 
+	for (int i = 0; i < 9; i++)
+	{
+		if (temps.lpstr[i])
+			delete[] temps.lpstr[i];
+	}
+
 	if (application.appPath)
 		delete[] application.appPath;
 
@@ -233,124 +249,262 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 	if (!selection)
 		return NULL;
 
-	long startsWithLength = strStartsWith(selection, L"settings");
+	WCHAR StrTemp[MAX_PATH];
+	LPWSTR pStrTemp = NULL;
+	//Replace Tokens
+	g_pOSD->Data()->ReplaceTokens(selection, pStrTemp);
+	if (&pStrTemp)
+	{
+		wcscpy((LPWSTR)&StrTemp[0], pStrTemp);
+		selection = &StrTemp[0];
+		delete[] pStrTemp;
+		pStrTemp = NULL;
+	}
+
+	long startsWithLength = strStartsWith(selection, L"settings.");
 	if (startsWithLength > 0)
 	{
 		selection += startsWithLength;
 
-		startsWithLength = strStartsWith(selection, L".capture");
+		startsWithLength = strStartsWith(selection, L"capture.");
 		if (startsWithLength > 0)
 		{
 			selection += startsWithLength;
-			if (_wcsicmp(selection, L".format") == 0)
+			if (_wcsicmp(selection, L"format") == 0)
 				return GetFormat(settings.capture.format);
 
-			if (_wcsicmp(selection, L".folder") == 0)
+			if (_wcsicmp(selection, L"folder") == 0)
 				return settings.capture.folder;
 
 			return NULL;
 		}
 
-		startsWithLength = strStartsWith(selection, L".timeshift");
+		startsWithLength = strStartsWith(selection, L"timeshift.");
 		if (startsWithLength > 0)
 		{
 			selection += startsWithLength;
-			if (_wcsicmp(selection, L".format") == 0)
+			if (_wcsicmp(selection, L"format") == 0)
 				return GetFormat(settings.timeshift.format);
 
-			if (_wcsicmp(selection, L".folder") == 0)
+			if (_wcsicmp(selection, L"folder") == 0)
 				return settings.timeshift.folder;
 
-			if (_wcsicmp(selection, L".change") == 0)
+			if (_wcsicmp(selection, L"change") == 0)
 				return settings.timeshift.change;
 
-			if (_wcsicmp(selection, L".buffer") == 0)
+			if (_wcsicmp(selection, L"buffer") == 0)
 				return settings.timeshift.buffer;
 
 			return NULL;
 		}
 
-		startsWithLength = strStartsWith(selection, L".dsnetwork");
+		startsWithLength = strStartsWith(selection, L"dsnetwork.");
 		if (startsWithLength > 0)
 		{
 			selection += startsWithLength;
-			if (_wcsicmp(selection, L".format") == 0)
+			if (_wcsicmp(selection, L"format") == 0)
 				return GetFormat(settings.dsnetwork.format);
 
 			return NULL;
 		}
 
-		startsWithLength = strStartsWith(selection, L".application");
+		startsWithLength = strStartsWith(selection, L"application.");
 		if (startsWithLength > 0)
 		{
 			selection += startsWithLength;
-			if (_wcsicmp(selection, L".multiple") == 0)
+			if (_wcsicmp(selection, L"multiple") == 0)
 				return GetBool(settings.application.multiple);
 
-			if (_wcsicmp(selection, L".disableScreenSaver") == 0)
+			if (_wcsicmp(selection, L"disableScreenSaver") == 0)
 				return GetBool(settings.application.disableScreenSaver);
 
-			if (_wcsicmp(selection, L".priority") == 0)
+			if (_wcsicmp(selection, L"priority") == 0)
 				return GetPriority(settings.application.priority);
 
-			if (_wcsicmp(selection, L".addToROT") == 0)
+			if (_wcsicmp(selection, L"addToROT") == 0)
 				return GetBool(settings.application.addToROT);
 
-			if (_wcsicmp(selection, L".multicard") == 0)
+			if (_wcsicmp(selection, L"multicard") == 0)
 				return GetBool(settings.application.multicard);
 
 			return NULL;
 		}
 
-		startsWithLength = strStartsWith(selection, L".window");
+		startsWithLength = strStartsWith(selection, L"window.");
 		if (startsWithLength > 0)
 		{
 			selection += startsWithLength;
-			if (_wcsicmp(selection, L".startFullscreen") == 0)
+			if (_wcsicmp(selection, L"startFullscreen") == 0)
 				return GetBool(settings.window.startFullscreen);
 
-			if (_wcsicmp(selection, L".startAlwaysOnTop") == 0)
+			if (_wcsicmp(selection, L"startAlwaysOnTop") == 0)
 				return GetBool(settings.window.startAlwaysOnTop);
 
-			if (_wcsicmp(selection, L".startAtLastWindowPosition") == 0)
+			if (_wcsicmp(selection, L"startAtLastWindowPosition") == 0)
 				return GetBool(settings.window.startAtLastWindowPosition);
 
-			if (_wcsicmp(selection, L".startWithLastWindowSize") == 0)
+			if (_wcsicmp(selection, L"startWithLastWindowSize") == 0)
 				return GetBool(settings.window.startWithLastWindowSize);
 
-			if (_wcsicmp(selection, L".rememberFullscreenState") == 0)
+			if (_wcsicmp(selection, L"rememberFullscreenState") == 0)
 				return GetBool(settings.window.rememberFullscreenState);
 
-			if (_wcsicmp(selection, L".rememberAlwaysOnTopState") == 0)
+			if (_wcsicmp(selection, L"rememberAlwaysOnTopState") == 0)
 				return GetBool(settings.window.rememberAlwaysOnTopState);
 
-			if (_wcsicmp(selection, L".rememberWindowPosition") == 0)
+			if (_wcsicmp(selection, L"rememberWindowPosition") == 0)
 				return GetBool(settings.window.rememberWindowPosition);
 
-			if (_wcsicmp(selection, L".quietOnMinimise") == 0)
+			if (_wcsicmp(selection, L"quietOnMinimise") == 0)
 				return GetBool(settings.window.quietOnMinimise);
 
 			return NULL;
 		}
 
-		startsWithLength = strStartsWith(selection, L".audio");
+		startsWithLength = strStartsWith(selection, L"audio.");
 		if (startsWithLength > 0)
 		{
 			selection += startsWithLength;
-			if (_wcsicmp(selection, L".bMute") == 0)
+			if (_wcsicmp(selection, L"bMute") == 0)
 				return GetBool(settings.audio.bMute);
 
 			return NULL;
 		}
 
-		startsWithLength = strStartsWith(selection, L".video.aspectRatio");
+		startsWithLength = strStartsWith(selection, L"video.aspectRatio.");
 		if (startsWithLength > 0)
 		{
 			selection += startsWithLength;
-			if (_wcsicmp(selection, L".bOverride") == 0)
+			if (_wcsicmp(selection, L"bOverride") == 0)
 				return GetBool(settings.video.aspectRatio.bOverride);
 
 			return NULL;
+		}
+	}
+
+	startsWithLength = strStartsWith(selection, L"bool.");
+	if (startsWithLength > 0)
+	{
+		selection += startsWithLength;
+
+		startsWithLength = strStartsWith(selection, L"1");
+		if (startsWithLength > 0)
+			return GetBool((long)1);
+
+		startsWithLength = strStartsWith(selection, L"0");
+		if (startsWithLength > 0)
+			return GetBool((long)0);
+
+		startsWithLength = strStartsWith(selection, L"true");
+		if (startsWithLength > 0)
+			return GetBool((long)1);
+
+		startsWithLength = strStartsWith(selection, L"false");
+		if (startsWithLength > 0)
+			return GetBool((long)0);
+
+		return NULL;
+	}
+
+	startsWithLength = strStartsWith(selection, L"status.");
+	if (startsWithLength > 0)
+	{
+		selection += startsWithLength;
+
+		startsWithLength = strStartsWith(selection, L"1");
+		if (startsWithLength > 0)
+			return GetStatus((long)1);
+
+		startsWithLength = strStartsWith(selection, L"0");
+		if (startsWithLength > 0)
+			return GetStatus((long)0);
+
+		startsWithLength = strStartsWith(selection, L"true");
+		if (startsWithLength > 0)
+			return GetStatus((long)1);
+
+		startsWithLength = strStartsWith(selection, L"false");
+		if (startsWithLength > 0)
+			return GetStatus((long)0);
+
+		LPWSTR pValue = GetTempItem(selection);
+		if (pValue)
+		{
+			pValue = GetStatusString(pValue);
+			return pValue;
+		}
+		return NULL;
+	}
+
+	startsWithLength = strStartsWith(selection, L"string.");
+	if (startsWithLength > 0)
+	{
+		selection += startsWithLength;
+
+		LPWSTR pValue = NULL;
+		strCopy(pValue, selection);
+		return pValue;
+	}
+
+	return GetTempItem(selection);
+}
+
+LPWSTR AppData::GetTempItem(LPWSTR selection)
+{
+	if (!selection)
+		return NULL;
+
+	long startsWithLength = strStartsWith(selection, L"temps.");
+	if (startsWithLength > 0)
+	{
+		selection += startsWithLength;
+
+		startsWithLength = strStartsWith(selection, L"bools.");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			int pos = StringToLong(selection);
+			if (pos > 9 || pos < 0)
+				return NULL;
+
+			return GetBool(temps.bools[pos]);
+		}
+
+		startsWithLength = strStartsWith(selection, L"ints.");
+		if (startsWithLength > 0)
+		{
+			LPWSTR pValue = NULL;
+			selection += startsWithLength;
+			int pos = StringToLong(selection);
+			if (pos > 9 || pos < 0)
+				return NULL;
+
+			strCopy(pValue, temps.ints[pos]);
+			return pValue;
+		}
+
+		startsWithLength = strStartsWith(selection, L"longs.");
+		if (startsWithLength > 0)
+		{
+			LPWSTR pValue = NULL;
+			selection += startsWithLength;
+			int pos = StringToLong(selection);
+			if (pos > 9 || pos < 0)
+				return NULL;
+
+			strCopy(pValue, temps.longs[pos]);
+			return pValue;
+		}
+
+		startsWithLength = strStartsWith(selection, L"lpstr.");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			int pos = StringToLong(selection);
+			if (pos > 9 || pos < 0)
+				return NULL;
+
+			return temps.lpstr[pos];
 		}
 	}
 	return NULL;
@@ -438,6 +592,33 @@ BOOL AppData::GetBool(LPWSTR lpwstr)
 		return FALSE;
 
 	return (_wcsicmp(lpwstr, L"true") == 0);
+}
+
+LPWSTR AppData::GetStatus(long value)
+{
+	if (value >= 2 || value < 0)
+		return STATUSVALUE[0];
+
+	return STATUSVALUE[value];
+}
+
+LPWSTR AppData::GetStatusString(LPWSTR lpwstr)
+{
+	if (!lpwstr)
+		return NULL;
+
+	if (_wcsicmp(lpwstr, L"true") == 0 || _wcsicmp(lpwstr, L"1") == 0)
+		return STATUSVALUE[1];
+	
+	return STATUSVALUE[0];
+}
+
+BOOL AppData::GetStatus(LPWSTR lpwstr)
+{
+	if (!lpwstr)
+		return FALSE;
+
+	return (_wcsicmp(lpwstr, L"enabled") == 0);
 }
 
 
@@ -1378,5 +1559,9 @@ void AppData::SetZoom(int newZoom)
 {
 	zoom = (newZoom < 1) ? 1 : newZoom;
 }
+USES_CONVERSION;
+::OutputDebugString(W2T(selection));
+::OutputDebugString(W2T(selection));
+
 
 */

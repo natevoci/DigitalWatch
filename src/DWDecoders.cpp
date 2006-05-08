@@ -35,11 +35,17 @@ DWDecoder::DWDecoder(XMLElement *pElement)
 {
 	m_pElement = pElement;
 	m_pElement->AddRef();
+	index = NULL;
+	name = NULL;
 }
 
 DWDecoder::~DWDecoder()
 {
 	m_pElement->Release();
+	if (index)
+		delete[] index;
+	if (name)
+		delete[] name;
 }
 
 void DWDecoder::SetLogCallback(LogMessageCallback *callback)
@@ -357,6 +363,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 
 DWDecoders::DWDecoders() : m_filename(0)
 {
+	m_dataListName = NULL;
 }
 
 DWDecoders::~DWDecoders()
@@ -372,6 +379,22 @@ DWDecoders::~DWDecoders()
 		delete *it;
 	}
 	m_decoders.clear();
+
+	if (m_dataListName)
+		delete[] m_dataListName;
+}
+
+HRESULT DWDecoders::Destroy()
+{
+	CAutoLock decodersLock(&m_decodersLock);
+
+	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
+	for ( ; it < m_decoders.end() ; it++ )
+	{
+		delete (*it);
+	}
+	m_decoders.clear();
+	return S_OK;
 }
 
 void DWDecoders::SetLogCallback(LogMessageCallback *callback)
@@ -386,6 +409,54 @@ void DWDecoders::SetLogCallback(LogMessageCallback *callback)
 		DWDecoder *decoder = *it;
 		decoder->SetLogCallback(callback);
 	}
+}
+HRESULT DWDecoders::Initialise(IGraphBuilder *piGraphBuilder, LPWSTR listName)
+{
+	(log << "Initialising the Decoders List \n").Write();
+
+	m_piGraphBuilder = piGraphBuilder;
+	
+	if (listName)
+		strCopy(m_dataListName, listName);
+
+	(log << "Finished Initialising the Decoders List \n").Write();
+	
+	return S_OK;
+
+}
+
+LPWSTR DWDecoders::GetListName()
+{
+	if (!m_dataListName)
+		strCopy(m_dataListName, L"DecoderInfo");
+	return m_dataListName;
+}
+
+LPWSTR DWDecoders::GetListItem(LPWSTR name, long nIndex)
+{
+	CAutoLock decodersLock(&m_decodersLock);
+
+	if (nIndex >= (long)m_decoders.size())
+		return NULL;
+
+	long startsWithLength = strStartsWith(name, m_dataListName);
+	if (startsWithLength > 0)
+	{
+		name += startsWithLength;
+
+		DWDecoder *item = m_decoders.at(nIndex);
+		if (_wcsicmp(name, L".index") == 0)
+			return item->index;
+		else if (_wcsicmp(name, L".name") == 0)
+			return item->name;
+	}
+	return NULL;
+}
+
+long DWDecoders::GetListSize()
+{
+	CAutoLock decodersLock(&m_decodersLock);
+	return m_decoders.size();
 }
 
 HRESULT DWDecoders::Load(LPWSTR filename)
@@ -415,6 +486,8 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 		if (_wcsicmp(element->name, L"Decoder") == 0)
 		{
 			DWDecoder *dec = new DWDecoder(element);
+			strCopy((*dec).name, (*dec).Name());
+			strCopy((*dec).index, item+1);
 			dec->SetLogCallback(m_pLogCallback);
 			m_decoders.push_back(dec);
 		}

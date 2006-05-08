@@ -76,10 +76,14 @@ DWDumpInputPin::DWDumpInputPin(DWDump *pDump, LPUNKNOWN pUnk, CBaseFilter *pFilt
     m_pDump(pDump),
     m_tLast(0)
 {
+	m_writeBufferSize = 4096*32;
+	m_writeBuffer =	new BYTE[m_writeBufferSize];
+    m_writeBufferLen = 0;
 }
 
 DWDumpInputPin::~DWDumpInputPin()
 {
+	delete[] m_writeBuffer;
 }
 
 HRESULT DWDumpInputPin::CheckMediaType(const CMediaType *)
@@ -92,6 +96,9 @@ HRESULT DWDumpInputPin::BreakConnect()
     if (m_pDump->m_pPosition != NULL) {
         m_pDump->m_pPosition->ForceRefresh();
     }
+
+	m_writeBufferSize = sizeof(m_writeBuffer);
+    m_writeBufferLen = 0;
 
     return CRenderedInputPin::BreakConnect();
 }
@@ -132,7 +139,35 @@ STDMETHODIMP DWDumpInputPin::Receive(IMediaSample *pSample)
         return hr;
     }
 
-    return m_pDump->Write(pbData, pSample->GetActualDataLength());
+//    return m_pDump->Write(pbData, pSample->GetActualDataLength());
+    return WriteBufferSample(pbData, pSample->GetActualDataLength());
+}
+
+HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
+{
+	if (sampleLen >= m_writeBufferSize)
+	{
+		m_writeBufferSize = 0;
+		return m_pDump->Write(&pbData[0], sampleLen);
+	}
+
+
+	HRESULT hr;
+	//copy the sample to the write buffer      
+	if(m_writeBufferSize >  m_writeBufferLen + sampleLen)
+	{
+		memcpy(m_writeBuffer + m_writeBufferLen, &pbData[0], sampleLen);
+		m_writeBufferLen += sampleLen;
+	}
+	else
+	{
+		if FAILED(hr = m_pDump->Write(m_writeBuffer, m_writeBufferLen))
+			return hr;
+
+		m_writeBufferLen = sampleLen;
+		memcpy(m_writeBuffer, &pbData[0], sampleLen);
+	}
+	return S_OK;
 }
 
 STDMETHODIMP DWDumpInputPin::EndOfStream(void)
@@ -145,6 +180,8 @@ STDMETHODIMP DWDumpInputPin::EndOfStream(void)
 STDMETHODIMP DWDumpInputPin::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {
     m_tLast = 0;
+	m_writeBufferSize = sizeof(m_writeBuffer);
+    m_writeBufferLen = 0;
     return S_OK;
 
 }

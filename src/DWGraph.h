@@ -49,7 +49,7 @@ public:
 	HRESULT Stop();
 	HRESULT Stop(IGraphBuilder *piGraphBuilder);
 	HRESULT Pause(BOOL bPause);
-	HRESULT Pause(IGraphBuilder *piGraphBuilder = NULL);
+	HRESULT Pause(IGraphBuilder *piGraphBuilder, BOOL bSink);
 
 	HRESULT Cleanup();
 	HRESULT Cleanup(IGraphBuilder *piGraphBuilder);
@@ -74,6 +74,8 @@ public:
 
 	BOOL IsPlaying();
 	BOOL IsPaused();
+
+	HRESULT SetMediaTypeDecoder(int index, LPWSTR decoderName);
 
 protected:
 	void CalculateVideoRect(double aspectRatio = 0);

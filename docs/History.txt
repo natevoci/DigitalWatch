@@ -29,6 +29,13 @@ nate:
 
 bear:
 Changes:
+- Implemented a decoder settings menu. You can now choose which decoder to use from the Settings Menu.
+- Fixed a bug where it was not setting the correct service ID to the sink graphs.
+- Fixed a bug where you could not add a network from "TV Watch" Mode.
+- Fixed a bug in where it was crashing on a channel change when it was stopping the player.
+- Implemented a Device settings menu. You can now enable & disable cards, as well as rotate there order.
+- Added a small change to pause the graph before we change channel then start the graph again to fix the problem of upsetting WS captures.
+- Added device settings to the settings menu.
 - Added a fix to work around the dntvlive mini driver problem that causes the tuner to change in other instances.
 - Changed the graph rebuild method when changing channels in Timeshifting mode, it will now create a new sink graph if another card is free and then the player will change over to it before closing the previous sink graph. This improves the visual channel change to give a 1sec display change.
 - Implemented a "QuietWhenMinimised" option in Global settings, it lets you close the player when timeshifting if the application is minimised. It will restart when the application is restored and will seek to the present time.

@@ -27,6 +27,8 @@
 #include "LogMessage.h"
 #include "DWDecoders.h"
 #include <vector>
+#include "IDWOSDDataList.h"
+#include "FilterGraphTools.h"
 
 class DWMediaTypes;
 class DWMediaType : public LogMessageCaller
@@ -36,37 +38,56 @@ public:
 	DWMediaType();
 	virtual ~DWMediaType();
 
+	LPWSTR index;
+	LPWSTR decoder;
 	LPWSTR name;
 	GUID majortype;
     GUID subtype;
     GUID formattype;
 
 	DWDecoder *GetDecoder();
+	HRESULT SaveToXML(XMLElement *pElement);
 
 private:
 	DWDecoder *m_pDecoder;
 };
 
-class DWMediaTypes : public LogMessageCaller
+class DWMediaTypes : public LogMessageCaller, public IDWOSDDataList
 {
 public:
 	DWMediaTypes();
 	virtual ~DWMediaTypes();
 
+	//IDWOSDDataList Methods
+	virtual LPWSTR GetListName();
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
+	virtual long GetListSize();
+
+	HRESULT Destroy();
 	virtual void SetLogCallback(LogMessageCallback *callback);
+	HRESULT Initialise(IGraphBuilder *piGraphBuilder, LPWSTR listName);
 
 	void SetDecoders(DWDecoders *pDecoders);
 
 	HRESULT Load(LPWSTR filename);
+	BOOL SaveMediaTypes(LPWSTR filename = NULL);
+	HRESULT SetMediaTypeDecoder(int index, LPWSTR decoderName);
+	HRESULT MakeFile(LPWSTR filename);
+	void SetListItem(int index, LPWSTR name, LPWSTR value);
+	DWDecoder *GetAutoDecoder(DWMediaType *mediaType);
 
 	DWMediaType *FindMediaType(AM_MEDIA_TYPE *mt);
 
 private:
+	CComPtr <IGraphBuilder> m_piGraphBuilder;
+	FilterGraphTools graphTools;
+
 	std::vector<DWMediaType *> m_mediaTypes;
 	CCritSec m_mediaTypesLock;
 	DWDecoders *m_pDecoders;
 
 	LPWSTR m_filename;
+	LPWSTR m_dataListName;
 };
 
 #endif

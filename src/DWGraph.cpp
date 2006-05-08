@@ -111,11 +111,14 @@ BOOL DWGraph::Initialise()
 	if FAILED(hr = m_decoders.Load((LPWSTR)&file))
 		return (log << "Failed to load decoders: " << hr << "\n").Write(hr);
 
+	g_pOSD->Data()->AddList(&m_decoders);
+
 	m_mediaTypes.SetDecoders(&m_decoders);
 	swprintf((LPWSTR)&file, L"%sMediaTypes.xml", g_pData->application.appPath);
 	if FAILED(hr = m_mediaTypes.Load((LPWSTR)&file))
 		return (log << "Failed to load mediatypes: " << hr << "\n").Write(hr);
 
+	g_pOSD->Data()->AddList(&m_mediaTypes);
 
 	//--- COM should already be initialized ---
 
@@ -202,6 +205,8 @@ HRESULT DWGraph::Start(IGraphBuilder *piGraphBuilder, BOOL bSink)
 
 	if (!piGraphBuilder)
 		return (log << "Sink Graph Builder interface is NULL\n").Write(E_POINTER);
+
+	ASSERT(piGraphBuilder != NULL);
 
 	HRESULT hr;
 
@@ -300,11 +305,17 @@ HRESULT DWGraph::Stop(IGraphBuilder *piGraphBuilder)
 	if (!piGraphBuilder)
 		return (log << "Graph Builder interface is NULL\n").Write(E_POINTER);
 
+//(log << "got piGraphBuilder ok: " << (int)piGraphBuilder << "\n").Write();
+	ASSERT(piGraphBuilder != NULL);
+//(log << "got ASSERT piGraphBuilder ok: " << (int)piGraphBuilder << "\n").Write();
+
 	HRESULT hr;
 
 	CComPtr<IMediaControl> piMediaControl;
 	if FAILED(hr = piGraphBuilder->QueryInterface(&piMediaControl))
 		return (log << "Failed to get Graph media control: " << hr << "\n").Write(hr);
+
+//(log << "got the Graph media control: " << (int)piMediaControl << "\n").Write();
 
 	if FAILED(hr = piMediaControl->Stop())
 		return (log << "Failed to stop graph: " << hr << "\n").Write(hr);
@@ -345,22 +356,38 @@ HRESULT DWGraph::Pause(BOOL bPause)
 	return hr;
 }
 
-HRESULT DWGraph::Pause(IGraphBuilder *piGraphBuilder)
+HRESULT DWGraph::Pause(IGraphBuilder *piGraphBuilder, BOOL bSink)
 {
 	(log << "Pausing DW Graph\n").Write();
 	LogMessageIndent indent(&log);
 
 	if (!piGraphBuilder)
-		piGraphBuilder = m_piGraphBuilder;
+		return (log << "Graph Builder interface is NULL\n").Write(E_POINTER);
+
+	ASSERT(piGraphBuilder);
 
 	HRESULT hr;
+
+	if (!bSink)
+	{
+		hr = InitialiseVideoPosition(piGraphBuilder);
+		if FAILED(hr)
+			return (log << "Failed to Initialise Video Rendering: " << hr << "\n").Write(hr);
+	}
 
 	CComPtr<IMediaControl> piMediaControl;
 	if FAILED(hr = piGraphBuilder->QueryInterface(&piMediaControl))
 		return (log << "Failed to get Graph media control: " << hr << "\n").Write(hr);
 
 	if FAILED(hr = piMediaControl->Pause())
-		return (log << "Failed to stop graph: " << hr << "\n").Write(hr);
+		return (log << "Failed to Pause graph: " << hr << "\n").Write(hr);
+
+	if (!bSink)
+	{
+		hr = ApplyColorControls(piGraphBuilder);
+		hr = SetVolume(piGraphBuilder, g_pData->values.audio.volume);
+		hr = Mute(piGraphBuilder, g_pData->values.audio.bMute);
+	}
 
 	indent.Release();
 	(log << "Finished Pausing DW Graph : " << hr << "\n").Write();
@@ -832,3 +859,7 @@ BOOL DWGraph::IsPaused()
 	return m_bPaused;
 }
 
+HRESULT DWGraph::SetMediaTypeDecoder(int index, LPWSTR decoderName)
+{
+	return m_mediaTypes.SetMediaTypeDecoder(index, decoderName);
+}

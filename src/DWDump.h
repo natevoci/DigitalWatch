@@ -64,6 +64,14 @@ public:
     HRESULT BreakConnect();
 
     STDMETHODIMP NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
+
+private:
+
+	HRESULT WriteBufferSample(byte* pbData,long sampleLen);
+	long  m_writeBufferLen;
+	long  m_writeBufferSize;
+	BYTE* m_writeBuffer;
+
 };
 
 class DWDump : public CUnknown, public IFileSinkFilter

@@ -1263,7 +1263,174 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetTempBool") == 0)
+	{
+		if (command->LHS.ParameterCount != 2)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
+		n1 = StringToLong(command->LHS.Parameter[0]);
+		n2 = StringToLong(command->LHS.Parameter[1]);
+		if (n1 > 9 || n1 < 0)
+			return (log << "TVControl::ExecuteGlobalCommand - First Parameter is out of Range 0->9 : " << command->LHS.Function << "\n").Show(E_FAIL);
+	
+		g_pData->temps.bools[n1] = n2;
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetTempInt") == 0)
+	{
+		if (command->LHS.ParameterCount != 2)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+		n2 = StringToLong(command->LHS.Parameter[1]);
+		if (n1 > 9 || n1 < 0)
+			return (log << "TVControl::ExecuteGlobalCommand - First Parameter is out of Range 0->9 : " << command->LHS.Function << "\n").Show(E_FAIL);
+	
+		g_pData->temps.ints[n1] = n2;
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetTempLong") == 0)
+	{
+		if (command->LHS.ParameterCount != 2)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+		n2 = StringToLong(command->LHS.Parameter[1]);
+		if (n1 > 9 || n1 < 0)
+			return (log << "TVControl::ExecuteGlobalCommand - First Parameter is out of Range 0->9 : " << command->LHS.Function << "\n").Show(E_FAIL);
+	
+		g_pData->temps.longs[n1] = n2;
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetTempString") == 0)
+	{
+		if (command->LHS.ParameterCount != 2)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+		if (n1 > 9 || n1 < 0)
+			return (log << "TVControl::ExecuteGlobalCommand - First Parameter is out of Range 0->9 : " << command->LHS.Function << "\n").Show(E_FAIL);
+	
+		if (command->LHS.Parameter[1] == NULL)
+		{
+			if(g_pData->temps.lpstr[n1])
+			{
+				delete [] g_pData->temps.lpstr[n1];
+				g_pData->temps.lpstr[n1] = NULL;
+			}
+		}
+		else
+			strCopy(g_pData->temps.lpstr[n1], command->LHS.Parameter[1]);
+
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetDataItem") == 0)
+	{
+		if (command->LHS.ParameterCount != 2)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.Parameter[0] == NULL || command->LHS.Parameter[1] == NULL)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 valid parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pOSD->Data()->SetItem(command->LHS.Parameter[0], command->LHS.Parameter[1]);
+		return S_OK;
+	}
+	else if (_wcsicmp(pCurr, L"SetDVBTDeviceStatus") == 0)
+	{
+		if (command->LHS.ParameterCount != 2)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.Parameter[0] == NULL || command->LHS.Parameter[1] == NULL)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 valid parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (m_pActiveSource && _wcsicmp(m_pActiveSource->GetSourceType(), L"BDA") == NULL)
+		{
+			return S_FALSE;
+		}
+
+		std::vector<DWSource *>::iterator it = m_sources.begin();
+		for ( ; it < m_sources.end() ; it++ )
+		{
+			DWSource *source = *it;
+			LPWSTR pType = source->GetSourceType();
+
+			if (_wcsicmp(pType, L"BDA") == 0)
+				return source->ExecuteCommand(command);
+		}
+		return S_FALSE;
+	}
+	else if (_wcsicmp(pCurr, L"SetDVBTDevicePosition") == 0)
+	{
+		if (command->LHS.ParameterCount != 2)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.Parameter[0] == NULL || command->LHS.Parameter[1] == NULL)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 2 valid parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (m_pActiveSource && _wcsicmp(m_pActiveSource->GetSourceType(), L"BDA") == NULL)
+		{
+			return S_FALSE;
+		}
+
+		std::vector<DWSource *>::iterator it = m_sources.begin();
+		for ( ; it < m_sources.end() ; it++ )
+		{
+			DWSource *source = *it;
+			LPWSTR pType = source->GetSourceType();
+
+			if (_wcsicmp(pType, L"BDA") == 0)
+				return source->ExecuteCommand(command);
+		}
+		return S_FALSE;
+	}
+	else if (_wcsicmp(pCurr, L"RemoveDVBTDevice") == 0)
+	{
+		if (m_pActiveSource && _wcsicmp(m_pActiveSource->GetSourceType(), L"BDA") == NULL)
+		{
+			return S_FALSE;
+		}
+
+		std::vector<DWSource *>::iterator it = m_sources.begin();
+		for ( ; it < m_sources.end() ; it++ )
+		{
+			DWSource *source = *it;
+			LPWSTR pType = source->GetSourceType();
+
+			if (_wcsicmp(pType, L"BDA") == 0)
+				return source->ExecuteCommand(command);
+		}
+		return S_FALSE;
+	}
+	else if (_wcsicmp(pCurr, L"ParseDVBTDevices") == 0)
+	{
+		if (m_pActiveSource && _wcsicmp(m_pActiveSource->GetSourceType(), L"BDA") == NULL)
+		{
+			return S_FALSE;
+		}
+
+		std::vector<DWSource *>::iterator it = m_sources.begin();
+		for ( ; it < m_sources.end() ; it++ )
+		{
+			DWSource *source = *it;
+			LPWSTR pType = source->GetSourceType();
+
+			if (_wcsicmp(pType, L"BDA") == 0)
+				return source->ExecuteCommand(command);
+		}
+		return S_FALSE;
+	}
+	else if (_wcsicmp(pCurr, L"SetMediaTypeDecoder") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 2)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		return m_pFilterGraph->SetMediaTypeDecoder(n1, command->LHS.Parameter[1]);
+	}
 
 
 	/*

@@ -779,7 +779,11 @@ HRESULT DWOSDData::ReplaceVariable(LPWSTR pSrc, long *pSrcUsed, LPWSTR pResult, 
 		if (_snwprintf(pResult, resultSize, L"%s%i", pResult, g_pData->values.video.overlay.gamma) < 0)
 			return S_FALSE;
 	}
-
+	else if (_wcsnicmp(pCurr, L"temps.", 6) == 0)
+	{
+		if (_snwprintf(pResult, resultSize, L"%s%s", pResult, g_pData->GetTempItem(pCurr)) < 0)
+			return S_FALSE;
+	}
 	else if (_wcsnicmp(pCurr, L"window.", 7) == 0)
 	{
 		pCurr += 7;

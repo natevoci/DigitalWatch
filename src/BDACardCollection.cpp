@@ -35,11 +35,14 @@
 BDACardCollection::BDACardCollection()
 {
 	m_filename = NULL;
+	m_dataListName = NULL;
 }
 
 BDACardCollection::~BDACardCollection()
 {
 	Destroy();
+	if (m_dataListName)
+		delete[] m_dataListName;
 }
 
 HRESULT BDACardCollection::Destroy()
@@ -70,6 +73,52 @@ void BDACardCollection::SetLogCallback(LogMessageCallback *callback)
 		BDACard *card = *it;
 		card->SetLogCallback(callback);
 	}
+}
+
+LPWSTR BDACardCollection::GetListName()
+{
+	if (!m_dataListName)
+		strCopy(m_dataListName, L"DVBTDeviceInfo");
+	return m_dataListName;
+}
+
+LPWSTR BDACardCollection::GetListItem(LPWSTR name, long nIndex)
+{
+	CAutoLock listLock(&m_listLock);
+
+	if (nIndex >= (long)cards.size())
+		return NULL;
+
+	long startsWithLength = strStartsWith(name, m_dataListName);
+	if (startsWithLength > 0)
+	{
+		name += startsWithLength;
+
+		LPWSTR pValue = NULL;
+		BDACard *item = cards.at(nIndex);
+		if (_wcsicmp(name, L".index") == 0)
+		{
+			strCopy(pValue, item->index);
+			return pValue;
+		}
+		else if (_wcsicmp(name, L".active") == 0)
+		{
+			strCopy(pValue, item->bActive);
+			return pValue;
+		}
+		else if (_wcsicmp(name, L".name") == 0)
+		{
+			strCopy(pValue, item->tunerDevice.strFriendlyName);
+			return pValue;
+		}
+	}
+	return NULL;
+}
+
+long BDACardCollection::GetListSize()
+{
+	CAutoLock listLock(&m_listLock);
+	return cards.size();
 }
 
 BOOL BDACardCollection::LoadCards()
@@ -140,6 +189,95 @@ void BDACardCollection::AddCardToList(BDACard* currCard)
 	}
 }
 
+HRESULT BDACardCollection::UpdateCardStatus(int index, int status)
+{
+	HRESULT hr = S_FALSE;
+
+	CAutoLock listLock(&m_listLock);
+	std::vector<BDACard *>::iterator it = cards.begin();
+	for ( ; it < cards.end() ; it++ )
+	{
+		if ((*it)->index == index)
+		{
+			(*it)->bActive = status;
+			if (SaveCards())
+				return S_OK;
+		}
+	};
+	return hr;
+}
+
+HRESULT BDACardCollection::SetCardPosition(int index, int dir)
+{
+	HRESULT hr = S_FALSE;
+
+	int count = 1;
+	CAutoLock listLock(&m_listLock);
+	std::vector<BDACard *>::iterator it = cards.begin();
+	for ( ; it < cards.end() ; it++ )
+	{
+		if ((*it)->index == index)
+		{
+			BDACard *card = (*it);
+			if (dir)
+			{
+				if (count > 1)
+				{
+					it--;
+					cards.insert(it, card);
+					it++;
+					it++;
+					cards.erase(it);
+					if (SaveCards())
+						return S_OK;
+				}
+			}
+			else
+			{
+				if (count < cards.size())
+				{
+					it++;
+					it++;
+					cards.insert(it, card);
+					it--;
+					it--;
+					cards.erase(it);
+					if (SaveCards())
+						return S_OK;
+				}
+			}
+		}
+		count++;
+	};
+	return hr;
+}
+
+HRESULT BDACardCollection::RemoveCard(int index)
+{
+	HRESULT hr = S_FALSE;
+
+	CAutoLock listLock(&m_listLock);
+	std::vector<BDACard *>::iterator it = cards.begin();
+	for ( ; it < cards.end() ; it++ )
+	{
+		if ((*it)->index == index)
+		{
+			BDACard *card = (*it);
+			cards.erase(it);
+			SaveCards();
+//			cards.insert(it, card);
+			return S_OK;
+		}
+	};
+	return hr;
+}
+
+HRESULT BDACardCollection::ReloadCards()
+{
+	LoadCardsFromHardware();
+	return S_OK;
+}
+  
 BOOL BDACardCollection::SaveCards(LPWSTR filename)
 {
 	XMLDocument file;
@@ -243,7 +381,7 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 	if (cards.size() == 0)
 		return (log << "No cards found\n").Show(FALSE);
 
-
+	int count = 1;
 	// Deactivate cards that were detected last time but not this time.
 	std::vector<BDACard *>::iterator it = cards.begin();
 	for ( ; it != cards.end() ; it++ )
@@ -254,8 +392,13 @@ BOOL BDACardCollection::LoadCardsFromHardware()
 			card->bActive = FALSE;
 			card->nDetected = 0;
 		}
-		if (card->nDetected == 2)
+		else if (card->nDetected == 2)
 			card->nDetected = 0;
+		else
+		{
+			card->index = count;
+			count++;
+		}
 	}
 
 	indent.Release();

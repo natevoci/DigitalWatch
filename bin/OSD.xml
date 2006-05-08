@@ -485,7 +485,7 @@ $(() - $(
 			<text>Settings</text>
 			<onSelect>
 				ExitMenu(-1)
-				ShowMenu(AppSetup)
+				ShowMenu("AppSetup")
 			</onSelect>
 		</item>
 
@@ -564,6 +564,24 @@ $(() - $(
 			<text> DSNetwork</text>
 			<onSelect>ShowMenu(DSNetworkSetup)</onSelect>
 			<onRight>ShowMenu(DSNetworkSetup)</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> DVB-T Devices</text>
+			<onSelect>ShowMenu(DVBTDeviceSetup)</onSelect>
+			<onRight>ShowMenu(DVBTDeviceSetup)</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> A - V Decoders</text>
+			<onSelect>ShowMenu(DecoderSetup)</onSelect>
+			<onRight>ShowMenu(DecoderSetup)</onRight>
 		</item>
 
 		<item>
@@ -2223,6 +2241,190 @@ $(() - $(
 		</item>
 
 	</list>
+</window>
+
+<window name="DVBTDeviceSetup">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="DVBTDeviceOptions">
+		<pos x=240 y=100 />
+		<size width=340 height=400 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<itemList>
+			<source>DVBTDeviceInfo</source>
+			<text> $(DVBTDeviceInfo.index) - $(DVBTDeviceInfo.Name)</text>
+			<onSelect>SetDataItem("SelectedCardIndex", $(DVBTDeviceInfo.index)) SetDataItem("SelectedCardStatus", $(DVBTDeviceInfo.active)) ShowMenu("DVBTDeviceState")</onSelect>
+			<onRight>SetDataItem("SelectedCardIndex", $(DVBTDeviceInfo.index)) SetDataItem("SelectedCardStatus", $(DVBTDeviceInfo.active)) ShowMenu("DVBTDeviceState")</onRight>
+		</itemList>
+	</list>
+</window>
+
+<window name="DVBTDeviceState">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("DVBTDeviceSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	<list name="DVBTDeviceStateOptions">
+		<pos x=600 y=100 />
+		<size width=160 height=400 />
+		<selection>status.$(SelectedCardStatus)</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Enabled</text>
+			<onSelect>SetDataItem("SelectedCardStatus", "1") SetDVBTDeviceStatus($(SelectedCardIndex), "1") ShowMenu("DVBTDeviceState")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Disabled</text>
+			<onSelect>SetDataItem("SelectedCardStatus", "0") SetDVBTDeviceStatus($(SelectedCardIndex), "0") ShowMenu("DVBTDeviceState")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Move Up</text>
+			<onSelect>SetDVBTDevicePosition($(SelectedCardIndex), "1") ExitMenu() ShowMenu("DVBTDeviceSetup")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Move Down</text>
+			<onSelect>SetDVBTDevicePosition($(SelectedCardIndex), "0") ExitMenu() ShowMenu("DVBTDeviceSetup")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Remove</text>
+			<onSelect>RemoveDVBTDevice($(SelectedCardIndex)) ExitMenu() ShowMenu("DVBTDeviceSetup")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Re-Load All</text>
+			<onSelect>ParseDVBTDevices() ExitMenu() ShowMenu("DVBTDeviceSetup")</onSelect>
+		</item>
+	</list> 
+</window>
+
+<window name="DecoderSetup">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="DecoderOptions">
+		<pos x=240 y=100 />
+		<size width=200 height=400 />
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<itemList>
+			<source>MediaTypeInfo</source>
+			<text> $(MediaTypeInfo.Name)</text>
+			<onSelect>SetDataItem("SelectedMediaType", $(MediaTypeInfo.Name)) SetDataItem("MediaTypeIndex", $(MediaTypeInfo.index)) SetDataItem("MediaTypeDecoder", $(MediaTypeInfo.decoder)) ShowMenu("DecoderList")</onSelect>
+			<onRight>SetDataItem("SelectedMediaType", $(MediaTypeInfo.Name)) SetDataItem("MediaTypeIndex", $(MediaTypeInfo.index)) SetDataItem("MediaTypeDecoder", $(MediaTypeInfo.decoder)) ShowMenu("DecoderList")</onRight>
+		</itemList>
+	</list>
+</window>
+
+<window name="DecoderList">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("DecoderSetup")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="DecoderListOptions">
+		<pos x=240 y=100 />
+		<size width=500 height=400 />
+		<selection>string.$(MediaTypeDecoder).end</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<itemList>
+			<source>DecoderInfo</source>
+			<text> $(DecoderInfo.Name)</text>
+			<onSelect>SetMediaTypeDecoder($(MediaTypeIndex), $(DecoderInfo.Name))  SetDataItem("MediaTypeDecoder", $(DecoderInfo.Name)) ShowMenu("DecoderList")</onSelect>
+			<onRight>SetMediaTypeDecoder($(MediaTypeIndex), $(DecoderInfo.Name))  SetDataItem("MediaTypeDecoder", $(DecoderInfo.Name)) ShowMenu("DecoderList")</onRight>
+		</itemList>
+	</list>
+
+	<label>
+		<pos x=384 y=500 />
+		<text>Selected Decoder for $(SelectedMediaType) Stream Type: - $(MediaTypeDecoder)</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
 </window>
 
 <window name="TVChannelSetup">

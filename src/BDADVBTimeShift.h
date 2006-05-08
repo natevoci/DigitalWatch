@@ -156,6 +156,7 @@ private:
 	BOOL m_bInitialised;
 	long m_rtTimeShiftStart;
 	long m_rtTimeShiftDuration;
+	long m_rtSizeMonitor;
 
 	std::vector<TunerSinkGraphItem*> m_tuners;
 	BDADVBTimeShiftTuner *m_pCurrentTuner;

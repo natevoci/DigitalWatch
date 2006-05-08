@@ -562,7 +562,7 @@ void DVBMpeg2DataParser::StartScanThread()
 {
 	HRESULT hr;
 
-//	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 //SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
 	try
 	{

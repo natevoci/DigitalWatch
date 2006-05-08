@@ -37,6 +37,7 @@ BDACard::BDACard()
 	bActive = FALSE;
 	bNew = FALSE;
 	nDetected = 0;
+	index = 0;
 }
 
 BDACard::~BDACard()

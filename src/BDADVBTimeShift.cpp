@@ -27,6 +27,7 @@
 #include "LogMessage.h"
 
 #include "StreamFormats.h"
+#include "tsfilesource//MediaFormats.h"
 #include <ks.h> // Must be included before ksmedia.h
 #include <ksmedia.h> // Must be included before bdamedia.h
 #include "bdamedia.h"
@@ -71,10 +72,20 @@ BDADVBTimeShift::BDADVBTimeShift() : m_strSourceType(L"BDATimeShift")
 	m_rotEntry = 0;
 	m_rtTimeShiftStart = 0;
 	m_rtTimeShiftDuration = 0;
+	m_rtSizeMonitor = 0;
 	m_cardId = 0;
 
 	g_pOSD->Data()->AddList(&channels);
 	g_pOSD->Data()->AddList(&frequencyList);
+
+	//Get list of BDA capture cards
+	wchar_t file[MAX_PATH];
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+	cardList.LoadCards((LPWSTR)&file);
+	if (cardList.cards.size() == 0)
+		(log << "Could not find any BDA cards\n").Show();
+	else
+		g_pOSD->Data()->AddList(&cardList);
 }
 
 BDADVBTimeShift::~BDADVBTimeShift()
@@ -150,8 +161,10 @@ TunerSinkGraphItem *BDADVBTimeShift::GetCurrentTunerGraph()
 	TunerSinkGraphItem *tuner = new TunerSinkGraphItem;
 	tuner->pSink = m_pCurrentSink;
 	tuner->pTuner = m_pCurrentTuner;
-	tuner->pFilterList = m_pCurrentFilterList;
-	tuner->piGraphBuilder = m_piSinkGraphBuilder;
+	if (m_pCurrentFilterList)
+		tuner->pFilterList = m_pCurrentFilterList;
+	if (m_piSinkGraphBuilder)
+		tuner->piGraphBuilder = m_piSinkGraphBuilder;
 	tuner->rotEntry = m_rotEntry;
 	tuner->cardId = m_cardId;
 	return tuner;
@@ -159,6 +172,9 @@ TunerSinkGraphItem *BDADVBTimeShift::GetCurrentTunerGraph()
 
 void BDADVBTimeShift::SetCurrentTunerGraph(TunerSinkGraphItem *tuner)
 {
+	if (!tuner)
+		return;
+
 	m_pCurrentSink = tuner->pSink;
 	m_pCurrentTuner = tuner->pTuner;
 	m_pCurrentFilterList = tuner->pFilterList;
@@ -177,10 +193,13 @@ HRESULT BDADVBTimeShift::SaveCurrentTunerItem(TunerSinkGraphItem **tuner)
 	(*tuner)->pTuner = m_pCurrentTuner;
 	(*tuner)->pFilterList = m_pCurrentFilterList;
 	(*tuner)->piGraphBuilder = m_piSinkGraphBuilder;
-	(*tuner)->isRecording = m_pCurrentSink->IsRecording();
+	if (m_pCurrentSink)
+		(*tuner)->isRecording = m_pCurrentSink->IsRecording();
 	(*tuner)->rotEntry = m_rotEntry;
-	(*tuner)->networkId = m_pCurrentNetwork->networkId;
-	(*tuner)->serviceId = m_pCurrentService->serviceId;
+	if (m_pCurrentNetwork)
+		(*tuner)->networkId = m_pCurrentNetwork->networkId;
+	if (m_pCurrentService)
+		(*tuner)->serviceId = m_pCurrentService->serviceId;
 	(*tuner)->cardId = m_cardId;
 	return NO_ERROR;
 }
@@ -215,6 +234,17 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		break;
 	};
 
+	for (i = 0; i < g_pOSD->Data()->GetListCount(cardList.GetListName()); i++)
+	{
+		if (g_pOSD->Data()->GetListFromListName(cardList.GetListName()) != &cardList)
+		{
+			(log << "Cards List is not the same, Rotating List\n").Write();
+			g_pOSD->Data()->RotateList(g_pOSD->Data()->GetListFromListName(cardList.GetListName()));
+		}
+		(log << "Cards List found to be the same\n").Write();
+		break;
+	};
+
 	(log << "Clearing All TVChannels.Services Lists\n").Write();
 	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Services");
 
@@ -244,12 +274,40 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		return hr;
 
 	//Get list of BDA capture cards
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
-	cardList.LoadCards((LPWSTR)&file);
-	cardList.SaveCards();
 	if (cardList.cards.size() == 0)
 		return (log << "Could not find any BDA cards\n").Show(E_FAIL);
+	else
+	{
+		g_pOSD->Data()->ClearAllListNames(L"DVBTDeviceInfo");
+		cardList.Destroy();
+		swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+		cardList.LoadCards((LPWSTR)&file);
+		cardList.SaveCards();
+	}
+	g_pOSD->Data()->AddList(&cardList);
 
+	//
+	//Set the Sinkgraphs Affinity as high priority
+	//
+//	DWORD procAffinity = 0;
+//	DWORD sysAffinity = 0;
+//	if (GetProcessAffinityMask(GetCurrentProcess(), &procAffinity, &sysAffinity))
+//		if (sysAffinity > 1)
+//		{
+//			SetThreadAffinityMask(GetCurrentThread(), 0x01);
+//			SetProcessAffinityMask(GetCurrentProcess(), 0x01);
+//		}
+//		else
+//			sysAffinity = 0;
+
+//	int processPriority = GetPriorityClass(GetCurrentProcess());
+//	SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+//	int threadPriority = GetThreadPriority(GetCurrentThread());
+//	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+
+	//
+	//Create the list of sink graphs
+	//
 	CAutoLock tunersLock(&m_tunersLock);
 	std::vector<BDACard *>::iterator it = cardList.cards.begin();
 	for ( ; it != cardList.cards.end() ; it++ )
@@ -261,13 +319,24 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 			tuner->cardId = m_tuners.size();
 
 			//--- Create Graph ---
+
 			if FAILED(hr = tuner->piGraphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER))
+			{
+//				SetPriorityClass(GetCurrentProcess(), processPriority);
+//				SetProcessAffinityMask(GetCurrentProcess(), procAffinity);
+//				SetThreadAffinityMask(GetCurrentThread(), procAffinity);
+//				SetThreadPriority(GetCurrentThread(), threadPriority);
 				return (log << "Failed Creating TimeShift Sink Graph Builder: " << hr << "\n").Write();
+			}
 
 			if (g_pData->settings.application.addToROT)
 			{
 				if FAILED(hr = graphTools.AddToRot(tuner->piGraphBuilder, &tuner->rotEntry))
 				{
+//					SetPriorityClass(GetCurrentProcess(), processPriority);
+//					SetProcessAffinityMask(GetCurrentProcess(), procAffinity);
+//					SetThreadAffinityMask(GetCurrentThread(), procAffinity);
+//					SetThreadPriority(GetCurrentThread(), threadPriority);
 					return (log << "Failed adding the TimeShift Sink graph to ROT: " << hr << "\n").Write();
 				}
 			}
@@ -275,12 +344,24 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 			tuner->pSink = new BDADVBTSink();
 			tuner->pSink->SetLogCallback(m_pLogCallback);
 			if FAILED(hr = tuner->pSink->Initialise(tuner->piGraphBuilder, m_tuners.size()))
+			{
+//				SetPriorityClass(GetCurrentProcess(), processPriority);
+//				SetProcessAffinityMask(GetCurrentProcess(), procAffinity);
+//				SetThreadAffinityMask(GetCurrentThread(), procAffinity);
+//				SetThreadPriority(GetCurrentThread(), threadPriority);
 				return (log << "Failed to Initialise Sink Filters" << hr << "\n").Write(hr);
+			}
 
 			tuner->pFilterList = new FilterPropList();
 			tuner->pFilterList->SetLogCallback(m_pLogCallback);
 			if FAILED(hr = tuner->pFilterList->Initialise(tuner->piGraphBuilder, L"FilterTSInfo"))
+			{
+//				SetPriorityClass(GetCurrentProcess(), processPriority);
+//				SetProcessAffinityMask(GetCurrentProcess(), procAffinity);
+//				SetThreadAffinityMask(GetCurrentThread(), procAffinity);
+//				SetThreadPriority(GetCurrentThread(), threadPriority);
 				return (log << "Failed to Initialise Filter Properties List" << hr << "\n").Write(hr);
+			}
 
 			g_pOSD->Data()->AddList(tuner->pFilterList);
 
@@ -305,6 +386,11 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		}
 	};
 
+//	SetPriorityClass(GetCurrentProcess(), processPriority);
+//	SetProcessAffinityMask(GetCurrentProcess(), procAffinity);
+//	SetThreadAffinityMask(GetCurrentThread(), procAffinity);
+//	SetThreadPriority(GetCurrentThread(), threadPriority);
+
 	if (m_tuners.size() == 0)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"There are no active BDA cards");
@@ -323,7 +409,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 
 HRESULT BDADVBTimeShift::Destroy()
 {
-	(log << "Destroying BDA Source\n").Write();
+	(log << "Destroying BDA Time ShiftSource\n").Write();
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
@@ -398,7 +484,7 @@ HRESULT BDADVBTimeShift::Destroy()
 	channels.Destroy();
 
 	indent.Release();
-	(log << "Finished Destroying BDA Source\n").Write();
+	(log << "Finished Destroying BDA Time Shift Source\n").Write();
 
 	return S_OK;
 }
@@ -641,9 +727,54 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 
 		return OpenDisplay();
 	}
+	else if (_wcsicmp(pCurr, L"SetDVBTDeviceStatus") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
+		if (command->LHS.ParameterCount > 2)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
+		n1 = StringToLong(command->LHS.Parameter[0]);
 
+		n2 = 0;
+		if (command->LHS.ParameterCount >= 2)
+			n2 = StringToLong(command->LHS.Parameter[1]);
+
+		return cardList.UpdateCardStatus(n1, n2);
+	}
+	else if (_wcsicmp(pCurr, L"SetDVBTDevicePosition") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 2)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		n2 = 0;
+		if (command->LHS.ParameterCount >= 2)
+			n2 = StringToLong(command->LHS.Parameter[1]);
+
+		return cardList.SetCardPosition(n1, n2);
+	}
+	else if (_wcsicmp(pCurr, L"RemoveDVBTDevice") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		return cardList.RemoveCard(n1);
+	}
+	else if (_wcsicmp(pCurr, L"ParseDVBTDevices") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return cardList.ReloadCards();
+	}
 
 	if (m_pCurrentFileSource)
 		return m_pCurrentFileSource->ExecuteCommand(command);
@@ -760,8 +891,9 @@ DVBTChannels *BDADVBTimeShift::GetChannels()
 
 void BDADVBTimeShift::ThreadProc()
 {
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 
+	m_rtSizeMonitor = timeGetTime()/60000;
 	m_rtTimeShiftStart = timeGetTime()/60000;
 	m_rtTimeShiftDuration = m_rtTimeShiftStart;
 
@@ -1014,17 +1146,22 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 	g_pOSD->Data()->SetItem(L"recordingicon", L"C");
 	g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
-	// Stop background thread
+	// Stop the Current Tuner Scanner thread
+	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+		if FAILED(hr = m_pCurrentTuner->StopScanning())
+			(log << "Failed to Stop the Current Tuner from Scanning\n").Write();
+
+	// Stop our Player background thread
 	if FAILED(hr = StopThread())
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
 	if (hr == S_FALSE)
 		(log << "Killed thread\n").Write();
 
-	(log << "Checking if the Service is already running in a graph or we have Multicard option Enabled.\n").Write();
 	//Check if service already running or we have multicard set
 	if (m_pDWGraph->IsPlaying() || g_pData->values.application.multicard)
 	{
-		//Save the current sink tuner graph	
+		(log << "Checking if the Service is already running in a graph or we have Multicard option Enabled.\n").Write();
+		//Save the current sink tuner graph, Note:- Requires deleting if unused.
 		TunerSinkGraphItem *tuner = GetCurrentTunerGraph();
 
 		CAutoLock tunersLock(&m_tunersLock);
@@ -1034,8 +1171,9 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			if (it == m_tuners.end())
 				break; //exit if no more graphs
 
-			// if graph is running then its free to test for the Service
-			if ((*it)->pTuner && (*it)->pTuner->IsActive())
+			// if graph is running then its free to test for the Network & or Service
+			if ((*it)->pTuner && (*it)->pTuner->IsActive() &&
+				m_pCurrentNetwork && m_pCurrentService)
 			{
 				// Test for same service if TSMux or same Network if FULL Mux
 				if (((*it)->networkId && m_pCurrentNetwork && //Full Mux
@@ -1053,6 +1191,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 					// Do data stuff
 					UpdateData(frequency, bandwidth);
 
+					m_rtSizeMonitor = timeGetTime()/60000;
 					m_rtTimeShiftStart = timeGetTime()/60000;
 					m_rtTimeShiftDuration = m_rtTimeShiftStart;
 
@@ -1062,18 +1201,21 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 						if FAILED(hr = ReLoadTimeShiftFile())
 						{
 							(log << "Failed to Reload Timeshift File\n").Write();
+							//Restore the old tuner sink graph
+							SetCurrentTunerGraph(tuner);
 							continue;
 						}
 					}
-					else //If not playing then load and run player
+					//If not playing then load and run player
+					else if FAILED(hr = LoadFileSource())
 					{
-						if FAILED(hr = LoadFileSource())
-						{
-							(log << "Failed to load File Source Filters\n").Write();
-							if FAILED(hr = UnloadFileSource())
-								(log << "Failed to unload File Source Filters\n").Write();
-							continue;
-						}
+						(log << "Failed to load File Source Filters\n").Write();
+						if FAILED(hr = UnloadFileSource())
+							(log << "Failed to unload File Source Filters\n").Write();
+
+						//Restore the old tuner sink graph
+						SetCurrentTunerGraph(tuner);
+						continue;
 					}
 
 					//Move current tuner to back of list so that other cards will be used next
@@ -1085,6 +1227,10 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 
 					UpdateStatusDisplay();
 
+					// Start the background thread for updating channels
+					if FAILED(hr = m_pCurrentTuner->StartScanning())
+						(log << "Failed to start channel scanning: " << hr << "\n").Write();
+ 
 					// Start the background thread for updating statistics
 					if FAILED(hr = StartThread())
 						(log << "Failed to start background thread: " << hr << "\n").Write();
@@ -1102,10 +1248,10 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 	}
 
 	hr = S_OK;
-	(log << "The Service is not already in a running graph so look for free tuner card and load it.\n").Write();
 	//If service is not already running then look for free card and load it
 	if (m_pDWGraph->IsPlaying() &&	g_pData->settings.application.multicard)
 	{
+		(log << "The Service is not already in a running graph so look for free tuner card and load it.\n").Write();
 		//Save the current sink tuner graph	
 		TunerSinkGraphItem *tuner = GetCurrentTunerGraph();
 
@@ -1129,12 +1275,10 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 					if FAILED(hr = UnLoadSinkGraph())
 						(log << "Failed to Unload Sink Graph\n").Write();
 
+					//Restore the old tuner sink graph
+					SetCurrentTunerGraph(tuner);
 					continue;
 				}
-
-				if (tuner->pTuner && tuner->pTuner->IsActive())
-					if FAILED(hr = tuner->pTuner->StopScanning())
-						(log << "Failed to Stop the previous Tuner from Scanning\n").Write();
 
 				//Move current tuner to back of list so that other cards will be used next
 				SaveCurrentTunerItem(&tuner);
@@ -1144,6 +1288,10 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				RotateFilterList();
 
 				UpdateStatusDisplay();
+
+				// Start the background thread for updating channels
+				if FAILED(hr = m_pCurrentTuner->StartScanning())
+					(log << "Failed to start channel scanning: " << hr << "\n").Write();
 
 				// Start the background thread for updating statistics
 				if FAILED(hr = StartThread())
@@ -1179,12 +1327,12 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 		if (m_pDWGraph->IsPlaying())
 		{
 			// skip if the service is the same graph as the current graph
-			if ((*it)->pTuner == m_pCurrentTuner)
-			break;
+			if ((*it)->pTuner == tuner->pTuner)
+			continue;
 		}
 
 		//TODO: Check if recording
-		if ((*it)->pSink && g_pData->values.capture.format && (*it)->pSink->IsRecording())
+		if (g_pData->values.capture.format && (*it)->pSink && (*it)->pSink->IsRecording())
 		{
 			g_pData->values.application.multicard = TRUE;
 			(log << "Unable to use this sink graph, Recording Still in Progress\n").Write();
@@ -1199,33 +1347,64 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			if FAILED(hr = UnLoadSinkGraph())
 			{
 				(log << "Failed to UnLoad the Sink Graph\n").Write();
+				//Restore the old tuner sink graph
+				SetCurrentTunerGraph(tuner);
+				continue;
 			}
 		}
 
 		// Reload the tuner sink graph and player
 		if FAILED(hr = LoadSinkGraph(frequency, bandwidth))
 		{
+			(log << "Failed to Load the Sink Graph\n").Write();
 			if FAILED(hr = UnLoadSinkGraph())
 				(log << "Failed to Unload Sink Graph\n").Write();
 
-			(log << "Failed to Load the Sink Graph\n").Write();
+			//Restore the old tuner sink graph
+			SetCurrentTunerGraph(tuner);
 			continue;
 		}
 
-		// Stop the tuner scanning in the previous graph
-		if (tuner->pTuner && tuner->pTuner->IsActive())
-			if FAILED(hr = tuner->pTuner->StopScanning())
-				(log << "Failed to Stop the previous Tuner from Scanning\n").Write();
-
 		//Move current tuner to back of list so that other cards will be used next
-		TunerSinkGraphItem *tuner = new TunerSinkGraphItem;
-		SaveCurrentTunerItem(&tuner);
+		TunerSinkGraphItem *tunerNext = new TunerSinkGraphItem;
+		SaveCurrentTunerItem(&tunerNext);
 		m_tuners.erase(it);
-		m_tuners.push_back(tuner);
+		m_tuners.push_back(tunerNext);
 
 		RotateFilterList();
 	
 		UpdateStatusDisplay();
+
+		// Start the background thread for updating channels
+		if FAILED(hr = m_pCurrentTuner->StartScanning())
+			(log << "Failed to start channel scanning: " << hr << "\n").Write();
+ 
+		// Start the background thread for updating statistics
+			if FAILED(hr = StartThread())
+				(log << "Failed to start background thread: " << hr << "\n").Write();
+
+		//Check if old graph is still recording
+		if (g_pData->values.capture.format &&
+			tuner->pTuner != tunerNext->pTuner &&
+			tuner->pSink && tuner->pSink->IsRecording())
+		{
+			g_pData->values.application.multicard = TRUE;
+			(log << "Unable to unload the old sink graph, Recording Still in Progress\n").Write();
+		}
+		else if (tuner->pTuner != tunerNext->pTuner && tuner->pTuner->IsActive() &&	!g_pData->settings.application.multicard) 
+		{
+			SetCurrentTunerGraph(tuner);
+
+			// Now that were playing a new tuner sink graph lets unload the old one so its free to use
+			if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+			{
+				if FAILED(hr = UnLoadSinkGraph())
+				{
+					(log << "Failed to UnLoad the old Sink Graph\n").Write();
+				}
+			}
+			SetCurrentTunerGraph(tunerNext);
+		}
 
 		indent.Release();
 		(log << "Finished Setting Channel\n").Write();
@@ -1253,7 +1432,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 	//Restore the old tuner sink graph
 	SetCurrentTunerGraph(tuner);
 
-	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())	// if sink graph is still running 
+	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())	// if current sink graph is still running 
 	{
 		//TODO: Check if recording
 		if (m_pCurrentSink && g_pData->values.capture.format && m_pCurrentSink->IsRecording())
@@ -1276,7 +1455,13 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				}
 			}
 
+			RotateFilterList();
+			
 			UpdateStatusDisplay();
+
+			// Start the background thread for updating channels
+			if FAILED(hr = m_pCurrentTuner->StartScanning())
+				(log << "Failed to start channel scanning: " << hr << "\n").Write();
 
 			// Start the background thread for updating statistics
 			if FAILED(hr = StartThread())
@@ -1301,16 +1486,40 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 		return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 	}
 
-	UpdateStatusDisplay();
+	it = m_tuners.begin();
+	for ( ; TRUE; /*check for end of list done after graph is cleaned up*/ it++ ) 
+	{
+		// check for end of list done here
+		if (it == m_tuners.end())
+			break;
 
-	//Move current tuner to back of list so that other cards will be used next
-	SaveCurrentTunerItem(&tuner);
-	m_tuners.erase(it);
-	m_tuners.push_back(tuner);
+		if ((*it)->pTuner == m_pCurrentTuner)
+		{
+			//Move current tuner to back of list so that other cards will be used next
+			SaveCurrentTunerItem(&tuner);
+			m_tuners.erase(it);
+			m_tuners.push_back(tuner);
 
-	RotateFilterList();
+			RotateFilterList();
+			
+			UpdateStatusDisplay();
 
-	return (log << "Failed to start a new graph: " << hr << "\n").Write(hr);
+			// Start the background thread for updating channels
+			if FAILED(hr = m_pCurrentTuner->StartScanning())
+				(log << "Failed to start channel scanning: " << hr << "\n").Write();
+ 
+			// Start the background thread for updating statistics
+				if FAILED(hr = StartThread())
+					(log << "Failed to start background thread: " << hr << "\n").Write();
+
+			indent.Release();
+			(log << "Finished Setting Channel\n").Write();
+			return S_OK;
+		}
+	};
+
+	delete tuner;
+	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
 
 void BDADVBTimeShift::UpdateStatusDisplay()
@@ -1325,10 +1534,6 @@ void BDADVBTimeShift::UpdateStatusDisplay()
 
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
-		// Stop Tuner Scanner while recording
-		if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
-			if FAILED(m_pCurrentTuner->StopScanning())
-				(log << "Failed to Stop the Tuner from Scanning while recording.\n").Write();
 	}
 	else
 	{
@@ -1393,17 +1598,17 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 
 		UpdateStatusDisplay();
 
-		// Start the background thread for updating statistics
-		if FAILED(hr = StartThread())
-			(log << "Failed to start background thread: " << hr << "\n").Write();
-
-
 		if (!m_pCurrentSink || !m_pCurrentSink->IsRecording())
 		{
 			// Start the background thread for updating channels
 			if FAILED(hr = m_pCurrentTuner->StartScanning())
 				(log << "Failed to start channel scanning: " << hr << "\n").Write();
  		}
+
+		// Start the background thread for updating statistics
+		if FAILED(hr = StartThread())
+			(log << "Failed to start background thread: " << hr << "\n").Write();
+
 	}
 
 	return hr;
@@ -1467,6 +1672,11 @@ HRESULT BDADVBTimeShift::CloseDisplay()
 {
 	HRESULT hr = S_OK;
 
+	// Stop Tuner Scanner while Recording
+	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+		if FAILED(hr = m_pCurrentTuner->StopScanning())
+			(log << "Failed to Stop the previous Tuner from Scanning while Recording.\n").Write();
+
 	// Stop background thread
 	if FAILED(hr = StopThread())
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
@@ -1495,7 +1705,27 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 {
 	(log << "Loading Sink Graph No: " << m_cardId << "\n").Write();
 	HRESULT hr = S_OK;
+/*
+	DWORD procAffinity = 0;
+	DWORD sysAffinity = 0;
+	if (GetProcessAffinityMask(GetCurrentProcess(), &procAffinity, &sysAffinity))
+		if (sysAffinity > 1)
+		{
+			SetThreadAffinityMask(GetCurrentThread(), 0x01);
+			SetProcessAffinityMask(GetCurrentProcess(), 0x01);
+		}
+		else
+			sysAffinity = 0;
 
+	int processPriority = GetPriorityClass(GetCurrentProcess());
+	SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+
+	int threadPriority = GetThreadPriority(GetCurrentThread());
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+*/	
+	
+	
+	
 	if FAILED(hr = LoadTuner())
 		return (log << "Failed to load Source Tuner: " << hr << "\n").Write(hr);
 
@@ -1527,13 +1757,7 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 			sinkFail = FALSE;
 	}
 
-	// Set the thread state to keep the computer awake
-//		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
-
-	// Set priority to HIGH
-//	SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
-
-	if FAILED(hr = m_pDWGraph->Pause(m_piSinkGraphBuilder))
+	if FAILED(hr = m_pDWGraph->Pause(m_piSinkGraphBuilder, TRUE))
 	{
 		HRESULT hr2;
 		if FAILED(hr2 = m_pDWGraph->Stop(m_piSinkGraphBuilder))
@@ -1571,10 +1795,11 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 		if (m_pCurrentNetwork)
 			g_pTv->ShowOSDItem(L"Channel", 10);
 
+		m_rtSizeMonitor = timeGetTime()/60000;
 		m_rtTimeShiftStart = timeGetTime()/60000;
 		m_rtTimeShiftDuration = m_rtTimeShiftStart;
 
-
+/*
 		//Check if service already running
 		if (m_pDWGraph->IsPlaying())
 		{
@@ -1585,10 +1810,15 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 
 			(log << "TSFileSource Now Unloaded.\n").Write();
 		}
-
+*/
 		if FAILED(hr = LoadFileSource())
 			return (log << "Failed to load File Source Filters: " << hr << "\n").Write(hr);
 	}
+
+//	SetPriorityClass(GetCurrentProcess(), processPriority);
+//	SetProcessAffinityMask(GetCurrentProcess(), procAffinity);
+//	SetThreadAffinityMask(GetCurrentThread(), procAffinity);
+//	SetThreadPriority(GetCurrentThread(), threadPriority);
 
 	// Start the background thread for updating channels
 	if FAILED(hr = m_pCurrentTuner->StartScanning())
@@ -1607,10 +1837,6 @@ HRESULT BDADVBTimeShift::UnLoadSinkGraph()
 	(log << "UnLoading Sink Graph No: " << m_cardId << "\n").Write();
 
 	HRESULT hr = S_OK;
-
-	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
-		if FAILED(hr = m_pCurrentTuner->StopScanning())
-			(log << "Failed to Stop the previous Tuner from Scanning\n").Write();
 
 	if FAILED(hr = m_pDWGraph->Stop(m_piSinkGraphBuilder))
 		(log << "Failed to Stop Sink Graph\n").Write();
@@ -1840,7 +2066,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 		//
 		//Load the TSFileSource with the file, render & run
 		//
-		if FAILED(hr = m_pCurrentFileSource->Load(pFileName))//LoadTSFile(pFileName, m_pCurrentService, NULL))
+		if FAILED(hr = m_pCurrentFileSource->Load(pFileName))//FastLoad(pFileName, m_pCurrentService, NULL))
 		{
 			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
 			g_pTv->ShowOSDItem(L"Warnings", 5);
@@ -1911,7 +2137,6 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 		CMediaType cmt;
 		cmt.InitMediaType();
 		cmt.SetType(&MEDIATYPE_Stream);
-//		if (g_pData->values.timeshift.format != 4)
 		if (g_pData->values.timeshift.format != 3)
 			cmt.SetSubtype(&MEDIASUBTYPE_MPEG2_TRANSPORT);
 		else
@@ -1922,7 +2147,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 		//
 		//Load the TSFileSource with the file, render & run
 		//
-		if FAILED(hr = m_pCurrentFileSource->LoadTSFile(pFileName, m_pCurrentService, &cmt))
+		if FAILED(hr = m_pCurrentFileSource->FastLoad(pFileName, m_pCurrentService, &cmt))
 		{
 			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
 			g_pTv->ShowOSDItem(L"Warnings", 5);
@@ -2175,15 +2400,17 @@ HRESULT BDADVBTimeShift::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *s
 
 	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
 	mediaType.majortype = MEDIATYPE_Audio;
-	//mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
-	mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
+	mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
+//	mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
 	mediaType.bFixedSizeSamples = TRUE;
 	mediaType.bTemporalCompression = 0;
 	mediaType.lSampleSize = 1;
 	mediaType.formattype = FORMAT_WaveFormatEx;
 	mediaType.pUnk = NULL;
-	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
-	mediaType.pbFormat = g_MPEG1AudioFormat;
+	mediaType.cbFormat = sizeof(MPEG2AudioFormat);
+//	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
+	mediaType.pbFormat = MPEG2AudioFormat;
+//	mediaType.pbFormat = g_MPEG1AudioFormat;
 
 	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, streamsRendered);
 }
@@ -2305,9 +2532,64 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 
 	if (m_pCurrentSink  && g_pData->values.timeshift.bufferMinutes && (g_pData->values.timeshift.bufferMinutes <= m_rtTimeShiftDuration))
 	{
-		m_rtTimeShiftStart = timeGetTime()/60000;;
+		m_rtTimeShiftStart = timeGetTime()/60000;
 		m_pCurrentSink->UpdateTSFileSink(TRUE);
 	}
+
+
+	// Wait up to up to 2 min to check of file size to refresh the file buffers
+	if (m_pCurrentSink && m_pDWGraph->IsPlaying() && m_rtSizeMonitor + 2 < timeGetTime()/60000)
+	{
+		m_rtSizeMonitor = timeGetTime()/60000;
+		//
+		//Wait until the file has grown to the specified size or break if no flow for sepcified time
+		//
+		CAutoLock tunersLock(&m_tunersLock);
+		std::vector<TunerSinkGraphItem*>::iterator it = m_tuners.begin();
+		for ( ; TRUE; /*check for end of list done after graph is cleaned up*/ it++ ) 
+		{
+			// check for end of list done here
+			if (it == m_tuners.end())
+				break;
+
+			//Check if player already running this sink graph
+			if (m_pDWGraph->IsPlaying())
+			{
+				// skip if the service is the same graph as the current graph
+				if ((*it)->pTuner == m_pCurrentTuner)
+				continue;
+			}
+
+			// if graph is running then lets test the file
+			if ((*it)->pTuner && (*it)->pTuner->IsActive())
+			{
+				LPOLESTR pFileName = NULL;
+				if((*it)->pSink)
+					(*it)->pSink->GetCurFile(&pFileName);
+
+				if (!pFileName)
+					continue;
+
+				int count =0;
+				int maxcount =0;
+				__int64 fileSize = 0;
+				__int64 fileSizeSave = 0;
+		
+				(log << "Refreshing the Time Shift File in the File Buffers: " << pFileName << "\n").Write();
+				while(SUCCEEDED((*it)->pSink->GetCurFileSize(&fileSize)) &&
+					fileSize < 20000 &&
+						count < 20)
+				{
+					(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
+					count++;
+					maxcount++;
+					fileSizeSave++;
+					Sleep(100);
+				}
+			}
+		};
+	}
+
 
 /*
 	// Set Signal Statistics

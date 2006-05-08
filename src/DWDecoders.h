@@ -26,6 +26,7 @@
 #include "StdAfx.h"
 #include "LogMessage.h"
 #include "XMLDocument.h"
+#include "IDWOSDDataList.h"
 #include "FilterGraphTools.h"
 #include "DWOnScreenDisplay.h"
 #include <vector>
@@ -39,6 +40,8 @@ public:
 
 	void SetLogCallback(LogMessageCallback *callback);
 
+	LPWSTR index;
+	LPWSTR name;
 	LPWSTR Name();
 
 	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin);
@@ -49,11 +52,19 @@ private:
 	FilterGraphTools graphTools;
 };
 
-class DWDecoders : public LogMessageCaller
+class DWDecoders : public LogMessageCaller, public IDWOSDDataList
 {
 public:
 	DWDecoders();
 	virtual ~DWDecoders();
+
+	//IDWOSDDataList Methods
+	virtual LPWSTR GetListName();
+	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
+	virtual long GetListSize();
+
+	HRESULT Destroy();
+	HRESULT Initialise(IGraphBuilder *piGraphBuilder, LPWSTR listName);
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
@@ -62,10 +73,13 @@ public:
 	DWDecoder *Item(LPWSTR pName);
 
 private:
+	CComPtr <IGraphBuilder> m_piGraphBuilder;
+
 	std::vector<DWDecoder *> m_decoders;
 	CCritSec m_decodersLock;
 
 	LPWSTR m_filename;
+	LPWSTR m_dataListName;
 };
 
 #endif

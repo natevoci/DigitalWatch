@@ -31,6 +31,8 @@
 
 DWMediaType::DWMediaType()
 {
+	index = NULL;
+	decoder = NULL;
 	name = NULL;
 	memset((void*)&majortype, 0, sizeof(GUID));
 	memset((void*)&subtype, 0, sizeof(GUID));
@@ -40,13 +42,51 @@ DWMediaType::DWMediaType()
 
 DWMediaType::~DWMediaType()
 {
+	if (index)
+		delete[] index;
+	if (decoder)
+		delete[] decoder;
 	if (name)
-		delete name;
+		delete[] name;
 }
 
 DWDecoder *DWMediaType::GetDecoder()
 {
 	return m_pDecoder;
+}
+
+HRESULT DWMediaType::SaveToXML(XMLElement *pElement)
+{
+	pElement->Attributes.Add(new XMLAttribute(L"name", name));
+
+	LPOLESTR clsid = NULL;
+
+	XMLElement *xmlMediaType;
+	xmlMediaType = new XMLElement(L"MajorType");
+	StringFromCLSID(majortype, &clsid);
+	xmlMediaType->Attributes.Add(new XMLAttribute(L"clsid", clsid));
+	pElement->Elements.Add(xmlMediaType);
+
+	xmlMediaType = new XMLElement(L"SubType");
+	StringFromCLSID(subtype, &clsid);
+	xmlMediaType->Attributes.Add(new XMLAttribute(L"clsid", clsid));
+	pElement->Elements.Add(xmlMediaType);
+
+	xmlMediaType = new XMLElement(L"FormatType");
+	StringFromCLSID(formattype, &clsid);
+	xmlMediaType->Attributes.Add(new XMLAttribute(L"clsid", clsid));
+	pElement->Elements.Add(xmlMediaType);
+
+	XMLElement *xmlDecoder;
+	xmlDecoder = new XMLElement(L"Decoder");
+	if (decoder)
+		xmlDecoder->Attributes.Add(new XMLAttribute(L"name", decoder));
+	else
+		xmlDecoder->Attributes.Add(new XMLAttribute(L"name", L""));
+
+	pElement->Elements.Add(xmlDecoder);
+
+	return S_OK;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -57,6 +97,7 @@ DWMediaTypes::DWMediaTypes()
 {
 	m_filename = NULL;
 	m_pDecoders = NULL;
+	m_dataListName = NULL;
 }
 
 DWMediaTypes::~DWMediaTypes()
@@ -72,6 +113,22 @@ DWMediaTypes::~DWMediaTypes()
 		delete *it;
 	}
 	m_mediaTypes.clear();
+
+	if (m_dataListName)
+		delete[] m_dataListName;
+}
+
+HRESULT DWMediaTypes::Destroy()
+{
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+
+	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
+	for ( ; it < m_mediaTypes.end() ; it++ )
+	{
+		delete (*it);
+	}
+	m_mediaTypes.clear();
+	return S_OK;
 }
 
 void DWMediaTypes::SetLogCallback(LogMessageCallback *callback)
@@ -86,6 +143,97 @@ void DWMediaTypes::SetLogCallback(LogMessageCallback *callback)
 		DWMediaType *mediaType = *it;
 		mediaType->SetLogCallback(callback);
 	}
+}
+
+HRESULT DWMediaTypes::Initialise(IGraphBuilder *piGraphBuilder, LPWSTR listName)
+{
+	(log << "Initialising the MediaTypes List \n").Write();
+
+	m_piGraphBuilder = piGraphBuilder;
+	
+	if (listName)
+		strCopy(m_dataListName, listName);
+
+	(log << "Finished Initialising the MediaTypes List \n").Write();
+	
+	return S_OK;
+
+}
+
+LPWSTR DWMediaTypes::GetListName()
+{
+	if (!m_dataListName)
+		strCopy(m_dataListName, L"MediaTypeInfo");
+	return m_dataListName;
+}
+
+LPWSTR DWMediaTypes::GetListItem(LPWSTR name, long nIndex)
+{
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+
+	if (nIndex >= (long)m_mediaTypes.size())
+		return NULL;
+
+	long startsWithLength = strStartsWith(name, m_dataListName);
+	if (startsWithLength > 0)
+	{
+		name += startsWithLength;
+
+		DWMediaType *item = m_mediaTypes.at(nIndex);
+		if (_wcsicmp(name, L".index") == 0)
+			return item->index;
+		else if (_wcsicmp(name, L".decoder") == 0)
+			return item->decoder;
+		else if (_wcsicmp(name, L".name") == 0)
+			return item->name;
+	}
+	return NULL;
+}
+
+void DWMediaTypes::SetListItem(int index, LPWSTR name, LPWSTR value)
+{
+	if (!name || !value)
+		return;
+
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
+	for ( ; it < m_mediaTypes.end() ; it++ )
+	{
+		if (_wtoi((*it)->index) == index)
+		{
+			if (_wcsicmp(name, L"decoder") == 0)
+			{
+				strCopy((*it)->decoder, value);
+				(*it)->m_pDecoder = m_pDecoders->Item(value);
+				return;
+			}
+			else if (_wcsicmp(name, L"majortype") == 0)
+			{
+				CComBSTR bstrCLSID(value);
+				CLSIDFromString(bstrCLSID, &(*it)->majortype);
+				return;
+			}
+			else if (_wcsicmp(name, L"subtype") == 0)
+			{
+				CComBSTR bstrCLSID(value);
+				CLSIDFromString(bstrCLSID, &(*it)->subtype);
+				return;
+			}
+			else if (_wcsicmp(name, L"formattype") == 0)
+			{
+				CComBSTR bstrCLSID(value);
+				CLSIDFromString(bstrCLSID, &(*it)->formattype);
+				return;
+			}
+		}
+	}
+	return;
+}
+
+long DWMediaTypes::GetListSize()
+{
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+	return m_mediaTypes.size();
 }
 
 void DWMediaTypes::SetDecoders(DWDecoders *pDecoders)
@@ -114,7 +262,6 @@ DWMediaType *DWMediaTypes::FindMediaType(AM_MEDIA_TYPE *mt)
 
 HRESULT DWMediaTypes::Load(LPWSTR filename)
 {
-	CAutoLock mediaTypesLock(&m_mediaTypesLock);
 
 	(log << "Loading Media Types file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
@@ -130,12 +277,19 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 	file.SetLogCallback(m_pLogCallback);
 	if FAILED(hr = file.Load(m_filename))
 	{
-		return (log << "Could not load media types file: " << m_filename << "\n").Show(hr);
+		(log << "Could not load media types file: " << m_filename << "\n").Show();
+		if FAILED(MakeFile(filename))
+			return (log << "Could not load or make the Media Types File: " << m_filename << "\n").Show(hr);
+
+		if FAILED(hr = file.Load(m_filename))
+			return (log << "Could not load or make the Media Types File: " << m_filename << "\n").Show(hr);
 	}
 
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
 	XMLAttribute *attr;
+
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
 
 	int elementCount = file.Elements.Count();
 	for ( int item=0 ; item<elementCount ; item++ )
@@ -151,6 +305,7 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 			mt->SetLogCallback(m_pLogCallback);
 
 			strCopy(mt->name, attr->value);
+			strCopy(mt->index, item+1);
 
 			subelement = element->Elements.Item(L"MajorType");
 			if (subelement)
@@ -195,6 +350,10 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 				if (attr)
 				{
 					mt->m_pDecoder = m_pDecoders->Item(attr->value);
+					if (mt->m_pDecoder)
+						strCopy(mt->decoder, mt->m_pDecoder->Name());
+					else
+						strCopy(mt->decoder, L"None");
 				}
 			}
 
@@ -206,7 +365,151 @@ HRESULT DWMediaTypes::Load(LPWSTR filename)
 
 	indent.Release();
 	(log << "Finished loading media types file : " << hr << "\n").Write();
+	return S_OK;
+}
+
+BOOL DWMediaTypes::SaveMediaTypes(LPWSTR filename)
+{
+	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
+
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
+	for ( ; it < m_mediaTypes.end() ; it++ )
+	{
+		XMLElement *pElement = new XMLElement(L"MediaType");
+		DWMediaType *pMediaType = *it;
+		pMediaType->SaveToXML(pElement);
+		file.Elements.Add(pElement);
+	}
+	
+	if (filename)
+		file.Save(filename);
+	else
+		file.Save(m_filename);
+		
+	return TRUE;
+}
+
+HRESULT DWMediaTypes::SetMediaTypeDecoder(int index, LPWSTR decoderName)
+{
+
+	SetListItem(index, L"decoder", decoderName);
+
+	if (!SaveMediaTypes())
+		return (log << "Unable to save the Media Types File \n").Write(E_FAIL);
 
 	return S_OK;
 }
 
+HRESULT DWMediaTypes::MakeFile(LPWSTR filename)
+{
+	(log << "Making the Media Types file: " << filename << "\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+	if (m_pDecoders == NULL)
+		return (log << "m_pDecoders must be set before calling DWMediaTypes::MakeFile\n").Write(E_FAIL);
+
+	strCopy(m_filename, filename);
+
+	std::vector<DWMediaType *> mediaTypes;
+
+	DWMediaType *mt = new DWMediaType();
+	mt->SetLogCallback(m_pLogCallback);
+	//MPEG2 Video
+	mt->index = L"1";
+	mt->name = L"MPEG2 Video";
+	CLSIDFromString(L"{73646976-0000-0010-8000-00AA00389B71}", &mt->majortype); //KSDATAFORMAT_TYPE_VIDEO
+	CLSIDFromString(L"{E06D8026-DB46-11CF-B4D1-00805F6CBBEA}", &mt->subtype); //MEDIASUBTYPE_MPEG2_VIDEO
+	CLSIDFromString(L"{E06D80E3-DB46-11CF-B4D1-00805F6CBBEA}", &mt->formattype); //FORMAT_MPEG2Video
+	mt->m_pDecoder = GetAutoDecoder(mt);
+	if (mt->m_pDecoder)
+		strCopy(mt->decoder, mt->m_pDecoder->Name());
+	mediaTypes.push_back(mt);
+
+	//MPEG Audio
+	mt = new DWMediaType();
+	mt->SetLogCallback(m_pLogCallback);
+	mt->index = L"2";
+	mt->name = L"MPEG Audio";
+	CLSIDFromString(L"{73647561-0000-0010-8000-00AA00389B71}", &mt->majortype); //MEDIATYPE_Audio
+	CLSIDFromString(L"{00000050-0000-0010-8000-00AA00389B71}", &mt->subtype); //MEDIASUBTYPE_MPEG1AudioPayload
+	CLSIDFromString(L"{05589F81-C356-11CE-BF01-00AA0055595A}", &mt->formattype); //FORMAT_WaveFormatEx
+	mt->m_pDecoder = GetAutoDecoder(mt);
+	if (mt->m_pDecoder)
+		strCopy(mt->decoder, mt->m_pDecoder->Name());
+	mediaTypes.push_back(mt);
+
+	//MPEG2 Audio
+	mt = new DWMediaType();
+	mt->SetLogCallback(m_pLogCallback);
+	mt->index = L"3";
+	mt->name = L"MPEG2 Audio";
+	CLSIDFromString(L"{73647561-0000-0010-8000-00AA00389B71}", &mt->majortype); //MEDIATYPE_Audio
+	CLSIDFromString(L"{E06D802B-DB46-11CF-B4D1-00805F6CBBEA}", &mt->subtype); //MEDIASUBTYPE_MPEG2_AUDIO
+	CLSIDFromString(L"{05589F81-C356-11CE-BF01-00AA0055595A}", &mt->formattype); //FORMAT_WaveFormatEx
+	mt->m_pDecoder = GetAutoDecoder(mt);
+	if (mt->m_pDecoder)
+		strCopy(mt->decoder, mt->m_pDecoder->Name());
+	mediaTypes.push_back(mt);
+
+	//AC3 Audio
+	mt = new DWMediaType();
+	mt->SetLogCallback(m_pLogCallback);
+	mt->index = L"4";
+	mt->name = L"AC3 Audio";
+	CLSIDFromString(L"{73647561-0000-0010-8000-00AA00389B71}", &mt->majortype); //MEDIATYPE_Audio
+	CLSIDFromString(L"{E06D802C-DB46-11CF-B4D1-00805F6CBBEA}", &mt->subtype); //MEDIATYPE_DOLBY_AC3
+	CLSIDFromString(L"{05589F81-C356-11CE-BF01-00AA0055595A}", &mt->formattype); //FORMAT_WaveFormatEx
+	mt->m_pDecoder = GetAutoDecoder(mt);
+	if (mt->m_pDecoder)
+		strCopy(mt->decoder, mt->m_pDecoder->Name());
+	mediaTypes.push_back(mt);
+
+	//Teletext
+	mt = new DWMediaType();
+	mt->SetLogCallback(m_pLogCallback);
+	mt->index = L"5";
+	mt->name = L"Teletext";
+	CLSIDFromString(L"{455F176C-4B06-47CE-9AEF-8CAEF73DF7B5}", &mt->majortype); //KSDATAFORMAT_TYPE_MPEG2_SECTIONS
+	CLSIDFromString(L"{E436EB8E-524F-11CE-9F53-0020AF0BA770}", &mt->subtype); //KSDATAFORMAT_SUBTYPE_NONE
+	CLSIDFromString(L"{0F6417D6-C318-11D0-A43F-00A0C9223196}", &mt->formattype); //KSDATAFORMAT_SPECIFIER_NONE
+	mt->m_pDecoder = GetAutoDecoder(mt);
+	if (mt->m_pDecoder)
+		strCopy(mt->decoder, mt->m_pDecoder->Name());
+	mediaTypes.push_back(mt);
+
+	XMLDocument file;
+	file.SetLogCallback(m_pLogCallback);
+	std::vector<DWMediaType *>::iterator it = mediaTypes.begin();
+	for ( ; it < mediaTypes.end() ; it++ )
+	{
+		XMLElement *pElement = new XMLElement(L"MediaType");
+		DWMediaType *pMediaType = *it;
+		pMediaType->SaveToXML(pElement);
+		file.Elements.Add(pElement);
+	}
+	
+	if (filename)
+		file.Save(filename);
+	else
+		file.Save(m_filename);
+
+	it = mediaTypes.begin();
+	for ( ; it < mediaTypes.end() ; it++ )
+	{
+		delete (*it);
+	}
+	mediaTypes.clear();
+
+	indent.Release();
+	(log << "Finished Making the Media Types File.\n").Write();
+	return S_OK;
+}
+
+DWDecoder *DWMediaTypes::GetAutoDecoder(DWMediaType *mediaType)
+{
+	return NULL;
+}

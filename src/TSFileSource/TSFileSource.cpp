@@ -254,7 +254,6 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 		return GetFilterList();
 	}
 
-
 	//Just referencing these variables to stop warnings.
 	n1 = 0;
 	n2 = 0;
@@ -299,7 +298,7 @@ HRESULT TSFileSource::Load(LPWSTR pCmdLine)
 	return LoadFile(pCmdLine);
 }
 
-HRESULT TSFileSource::LoadTSFile(LPWSTR pCmdLine, DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt)
+HRESULT TSFileSource::FastLoad(LPWSTR pCmdLine, DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt)
 {
 	if (!m_pDWGraph)
 		return (log << "Filter graph not set in TSFileSource::Play\n").Write(E_FAIL);
@@ -320,7 +319,7 @@ HRESULT TSFileSource::ReLoad(LPWSTR pCmdLine)
 
 void TSFileSource::ThreadProc()
 {
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 
 	while (!ThreadIsStopping())
 	{
@@ -363,8 +362,8 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
-
-	if (m_pDWGraph->IsPlaying())
+/*
+	if (FALSE && m_pDWGraph->IsPlaying())
 	{
 		if FAILED(hr = m_pDWGraph->Stop())
 			return (log << "Failed to stop DWGraph\n").Write(hr);
@@ -402,29 +401,10 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 		UpdateData();
 		g_pTv->ShowOSDItem(L"Position", 10);
-	/*
-		// If it's a .tsbuffer file then seek to the end
-		long length = wcslen(pFilename);
-		if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0))
-		{
-			SeekTo(100);
-		}
-	*/
 
 		return S_OK;
 	}
-
-
-
-
-
-
-
-
-
-
-
-
+*/
 	if FAILED(hr = m_pDWGraph->Stop())
 		return (log << "Failed to stop DWGraph\n").Write(hr);
 
@@ -1199,6 +1179,8 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter)
 	piTSFilepSource->SetCreateTSPinOnDemux(0);
 	piTSFilepSource->SetCreateTxtPinOnDemux(0);
 	piTSFilepSource->SetFixedAspectRatio(0);
+	piTSFilepSource->SetAutoMode(1);
+	piTSFilepSource->SetRateControlMode(0);
 
 	return S_OK;
 }

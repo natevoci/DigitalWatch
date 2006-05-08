@@ -325,6 +325,31 @@ HRESULT DWOSDListItem::Draw(long tickCount)
 	HRESULT hr;
 
 	LPWSTR pStr = NULL;
+	if (m_pwcsOnSelect)
+	{
+		//Replace Tokens
+		g_pOSD->Data()->ReplaceTokens(m_pwcsOnSelect, pStr);
+		if (pStr)
+		{
+			strCopy(m_pwcsOnSelect, pStr);
+			delete[] pStr;
+			pStr = NULL;
+		}
+	}
+
+	if (m_pSelectedName)
+	{
+		//Replace Tokens
+		g_pOSD->Data()->ReplaceTokens(m_pSelectedName, pStr);
+		if (pStr)
+		{
+			strCopy(m_pSelectedName, pStr);
+			delete[] pStr;
+			pStr = NULL;
+		}
+	}
+
+//	LPWSTR pStr = NULL;
 	//Replace Tokens
 	g_pOSD->Data()->ReplaceTokens(m_wszText, pStr);
 
@@ -689,8 +714,21 @@ HRESULT DWOSDList::Draw(long tickCount)
 				item->m_nWidth = m_nWidth;
 				
 				LPWSTR selection = g_pData->GetSelectionItem(m_pSelectedName);
-				if (item->m_wszText && selection)
-						item->SetSelect((wcsstr(item->m_wszText, selection) != NULL));
+				if (selection && wcsstr(selection, L".") && selection < wcsstr(selection, L"."))
+				{
+					LPWSTR wsztemp = NULL;
+					strCopy(wsztemp, selection, wcsstr(selection, L".") - selection);
+					if (item->m_wszText && wsztemp)
+						item->SetSelect((wcsstr(item->m_wszText, wsztemp) != NULL) && 
+										(wcslen(item->m_wszText) <= wcslen(wsztemp)+1));
+					if(wsztemp)
+						delete[] wsztemp;
+				}
+				else
+				{
+					if (item->m_wszText && selection)
+						item->SetSelect(wcsstr(item->m_wszText, selection) != NULL);
+				}
 
 				item->SetHighlight((itemID == m_nHighlightedItem));
 				item->Render(tickCount);

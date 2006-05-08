@@ -391,12 +391,26 @@
     </>
 </Decoder>
 
-<Decoder name="InterVideo Audio Decoder">
+<Decoder name="DScalar Audio Decoder">
 	<MediaType name="MPEG Audio" />
 	<MediaType name="MPEG2 Audio" />
 	<MediaType name="AC3 Audio" />
 	
-    <LoadFilter clsid="{0246CA20-776D-11D2-8010-00104B9B8592}" name="InterVideo Audio Decoder" />
+    <LoadFilter clsid="{D2CA75C2-05A1-4915-88A8-D433F876D186}" name="DScalar Audio Decoder" />
+    <AudioRenderer name="Default DirectSound Device" />
+    
+    <InputFilter name="DScalar Audio Decoder" />
+    <Connect>
+    	<From name="DScalar Audio Decoder" />
+    	<To name="Default DirectSound Device" />
+    </>
+</Decoder>
+
+<Decoder name="InterVideo Audio Decoder">
+	<MediaType name="MPEG2 Audio" />
+	<MediaType name="AC3 Audio" />
+	
+    <LoadFilter clsid="{7E2E0DC1-31FD-11D2-9C21-00104B3801F6}" name="InterVideo Audio Decoder" />
     <AudioRenderer name="Default DirectSound Device" />
     
     <InputFilter name="InterVideo Audio Decoder" />
