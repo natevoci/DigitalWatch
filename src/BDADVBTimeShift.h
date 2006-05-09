@@ -85,6 +85,7 @@ public:
 
 	virtual BOOL IsRecording();
 	virtual HRESULT ReLoadTimeShiftFile();
+	virtual HRESULT LoadRecordFile();
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);

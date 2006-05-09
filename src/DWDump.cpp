@@ -2,8 +2,14 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+#include <math.h>
+#include <crtdbg.h>
 #include <streams.h>
 #include "DWDump.h"
+#include "BDATYPES.H"
+#include "KS.H"
+#include "KSMEDIA.H"
+#include "BDAMedia.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWDumpFilter
@@ -76,14 +82,40 @@ DWDumpInputPin::DWDumpInputPin(DWDump *pDump, LPUNKNOWN pUnk, CBaseFilter *pFilt
     m_pDump(pDump),
     m_tLast(0)
 {
+//Frodo code changes
+    m_restBufferLen = 0;
+	m_PacketErrors = 0;
+//Frodo code changes
+
 	m_writeBufferSize = 4096*32;
 	m_writeBuffer =	new BYTE[m_writeBufferSize];
     m_writeBufferLen = 0;
+
+	m_WriteSampleSize = 0;
+	m_WriteBufferSize = 0;
+	m_WriteThreadActive = FALSE;
 }
 
 DWDumpInputPin::~DWDumpInputPin()
 {
 	delete[] m_writeBuffer;
+	Clear();
+}
+
+void DWDumpInputPin::Clear()
+{
+	StopThread(500);
+	CAutoLock BufferLock(&m_BufferLock);
+	std::vector<BYTE *>::iterator it = m_Array.begin();
+	for ( ; it != m_Array.end() ; it++ )
+	{
+		delete[] *it;
+	}
+	m_Array.clear();
+
+	m_WriteSampleSize = 0;
+	m_WriteBufferSize = 0;
+	m_WriteThreadActive = FALSE;
 }
 
 HRESULT DWDumpInputPin::CheckMediaType(const CMediaType *)
@@ -93,6 +125,8 @@ HRESULT DWDumpInputPin::CheckMediaType(const CMediaType *)
 
 HRESULT DWDumpInputPin::BreakConnect()
 {
+	Clear();
+
     if (m_pDump->m_pPosition != NULL) {
         m_pDump->m_pPosition->ForceRefresh();
     }
@@ -106,6 +140,329 @@ HRESULT DWDumpInputPin::BreakConnect()
 STDMETHODIMP DWDumpInputPin::ReceiveCanBlock()
 {
     return S_FALSE;
+}
+
+HRESULT DWDumpInputPin::Run(REFERENCE_TIME tStart)
+{
+	StartThread();
+	return CBaseInputPin::Run(tStart);
+}
+
+//Frodo code changes
+HRESULT DWDumpInputPin::Filter(byte* pbData,long sampleLen)
+{
+	HRESULT hr;
+	int packet = 0;
+	BOOL bProg = FALSE;
+	_AMMediaType *mtype = &m_mt;
+	if (mtype->majortype == MEDIATYPE_Stream &&
+		((mtype->subtype == MEDIASUBTYPE_MPEG2_TRANSPORT) | (mtype->subtype == KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT)))
+	{
+		//filter transport Packets
+		packet = 188;
+	}
+	else if (mtype->majortype == MEDIATYPE_Stream &&
+		mtype->subtype == MEDIASUBTYPE_MPEG2_PROGRAM)
+	{
+		//filter mpeg2 es Packets
+		bProg = TRUE;
+		packet = 2048;
+	}
+	else
+	{
+		//Write raw data method
+		return WriteBufferSample(pbData, sampleLen);
+	}
+
+	int off=-1;
+
+	// did last media sample we received contain a incomplete transport packet at the end? 
+	if (m_restBufferLen>0) 
+	{ 
+       //yep then we copy the remaining bytes of the packet first 
+		int len=packet-m_restBufferLen;
+
+		//remaining bytes of packet  
+		if (len>0 && len < packet)  
+		{         
+			if (m_restBufferLen>=0 && m_restBufferLen+len < packet+2)    
+			{      
+				memcpy(&m_restBuffer[m_restBufferLen], pbData, len);
+
+				if(!bProg)
+				{
+					//check if this is indeed a transport packet  
+					if(m_restBuffer[0]==0x47)   
+					{     
+						if FAILED(hr = WriteBufferSample(m_restBuffer,packet))
+							return hr;
+					}
+
+					//set offset ...   
+					if (pbData[len]==0x47 && pbData[len+packet]==0x47 && pbData[len+2*packet]==0x47)    
+					{    
+						off=len;   
+					}      
+					else             
+					{                 
+						m_restBufferLen=0;      
+					}  
+				}
+				else
+				{
+					if (((0xFF&pbData[0])<<24
+					| (0xFF&pbData[1])<<16
+					| (0xFF&pbData[2])<<8
+					| (0xFF&pbData[3])) == 0x1BA)
+					{
+						if FAILED(hr = WriteBufferSample(m_restBuffer,packet))   
+							return hr;
+					}
+
+					//set offset ...   
+					if (((0xFF&pbData[len])<<24
+						| (0xFF&pbData[len+1])<<16
+						| (0xFF&pbData[len+2])<<8
+						| (0xFF&pbData[len+3])) == 0x1BA &&
+						((0xFF&pbData[len+packet])<<24
+						| (0xFF&pbData[len+packet+1])<<16
+						| (0xFF&pbData[len+packet+2])<<8
+						| (0xFF&pbData[len+packet+3])) == 0x1BA &&
+						((0xFF&pbData[len+2*packet])<<24
+						| (0xFF&pbData[len+2*packet+1])<<16
+						| (0xFF&pbData[len+2*packet+2])<<8
+						| (0xFF&pbData[len+2*packet+3])) == 0x1BA)    
+					{    
+						off=len;   
+					}      
+					else             
+					{                 
+						m_restBufferLen=0;      
+					}  
+				}
+			}       
+			else    
+			{       
+				m_restBufferLen=0;   
+			}   
+		}      
+		else     
+		{      
+			m_restBufferLen=0;   
+		}  
+	}
+
+	// is offset set ?   
+	if (off==-1)  
+	{     
+		//no then find first 3 transport packets in mediasample  
+		for (int i=0; i < sampleLen-2*packet;++i)  
+		{         
+			if(!bProg)
+			{
+				if (pbData[i]==0x47 && pbData[i+packet]==0x47 && pbData[i+2*packet]==0x47) 
+				{     
+					//found first 3 ts packets 
+					//set the offset     
+					off=i;    
+					break;     
+				} 
+			}
+			else
+			{
+				if (((0xFF&pbData[i])<<24
+					| (0xFF&pbData[i+1])<<16
+					| (0xFF&pbData[i+2])<<8
+					| (0xFF&pbData[i+3])) == 0x1BA &&
+					((0xFF&pbData[i+packet])<<24
+					| (0xFF&pbData[i+packet+1])<<16
+					| (0xFF&pbData[i+packet+2])<<8
+					| (0xFF&pbData[i+packet+3])) == 0x1BA &&
+					((0xFF&pbData[i+2*packet])<<24
+					| (0xFF&pbData[i+2*packet+1])<<16
+					| (0xFF&pbData[i+2*packet+2])<<8
+					| (0xFF&pbData[i+2*packet+3])) == 0x1BA)    
+				{     
+					//found first 3 mpeg2 es packets
+					//set the offset     
+					off=i;    
+					break;     
+				} 
+			}
+		}   
+	} 
+	
+	if (off<0)   
+	{       
+		off=0; 
+    }
+
+	DWORD t;
+	PBYTE pData = new BYTE[sampleLen];
+	DWORD pos = 0;
+    //loop through all transport packets in the media sample   
+	for(t=off;t<(DWORD)sampleLen;t+=packet)   
+	{
+        //sanity check 
+		if (t+packet > sampleLen)
+			break;
+		
+		if(!bProg)
+		{
+			//is this a transport packet   
+			if(pbData[t]==0x47)     
+			{     
+				memcpy(&pData[pos], &pbData[t], packet);
+				pos += packet;
+			} 
+			else
+				m_PacketErrors++;
+		}
+		else
+		{
+			//is this a mpeg2 es packet   
+			if (((0xFF&pbData[t])<<24
+				| (0xFF&pbData[t+1])<<16
+				| (0xFF&pbData[t+2])<<8
+				| (0xFF&pbData[t+3])) == 0x1BA)    
+			{     
+				memcpy(&pData[pos], &pbData[t], packet);
+				pos += packet;
+			}
+			else
+				m_PacketErrors++;
+
+		}
+	};
+
+	if (pos)
+		if FAILED(hr = WriteBufferSample(&pData[0], pos))
+		{
+			delete [] pData;
+			return hr;
+		}
+
+	delete [] pData;
+
+    //calculate if there's a incomplete transport packet at end of media sample   
+	m_restBufferLen=(sampleLen-off); 
+	if (m_restBufferLen>0) 
+	{       
+		m_restBufferLen/=packet;    
+		m_restBufferLen *=packet;   
+		m_restBufferLen=(sampleLen-off)-m_restBufferLen;   
+		if (m_restBufferLen>0 && m_restBufferLen < packet)  
+		{      
+			//copy the incomplete packet in the rest buffer      
+			memcpy(m_restBuffer,&pbData[sampleLen-m_restBufferLen],m_restBufferLen); 
+		}  
+	}
+	return S_OK;
+}//Frodo code changes
+
+void DWDumpInputPin::ThreadProc()
+{
+	m_WriteThreadActive = TRUE;
+
+	int threadPriority = GetThreadPriority(GetCurrentThread());
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+	
+	while (!ThreadIsStopping(1))
+	{
+		BYTE *item = NULL;
+		long sampleLen = 0;
+		{
+			CAutoLock BufferLock(&m_BufferLock);
+			if (m_Array.size())
+			{
+				std::vector<BYTE *>::iterator it = m_Array.begin();
+				item = *it;
+				m_Array.erase(it);
+				m_WriteBufferSize -= m_WriteSampleSize;
+			}
+			else
+				Sleep(1);
+		}
+		if (item)
+		{
+			HRESULT hr = m_pDump->Write(item, m_WriteSampleSize);
+			delete[] item;
+			if (FAILED(hr))
+			{
+				CAutoLock BufferLock(&m_BufferLock);
+				::OutputDebugString(TEXT("DWDumpInputPin::ThreadProc:Write Fail."));
+				std::vector<BYTE *>::iterator it = m_Array.begin();
+				for ( ; it != m_Array.end() ; it++ )
+				{
+					delete[] *it;
+				}
+				m_Array.clear();
+				m_WriteBufferSize = 0;
+			}
+		}
+//		Sleep(1);
+	}
+	Clear();
+	return;
+}
+
+HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
+{
+	HRESULT hr;
+
+	//
+	//Only start buffering after 32mB has been written for quick starting
+	//
+	if (!m_WriteSampleSize && m_WriteBufferSize < 32000000 || !m_WriteThreadActive)
+	{
+		int threadPriority = GetThreadPriority(GetCurrentThread());
+		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+		hr = m_pDump->Write(pbData, sampleLen);
+		SetThreadPriority(GetCurrentThread(), threadPriority);
+		m_WriteBufferSize += sampleLen;
+		return hr;
+	}
+
+	//
+	//Now start using the buffer thread
+	if (!m_WriteSampleSize)
+	{
+		m_WriteBufferSize = 0;
+		m_WriteSampleSize += sampleLen;
+	}
+
+	//
+	//If buffer thread is active and the buffer is not full
+	//
+	if(m_WriteThreadActive && m_WriteBufferSize + sampleLen < 64000000)
+	{
+		BYTE *newItem = new BYTE[sampleLen];
+		//Return fail if out of memory
+		if (!newItem)
+		{
+			::OutputDebugString(TEXT("DWDumpInputPin::WriteBufferSample:Out of Memory."));
+			return S_OK;
+		}
+
+		memcpy(newItem, &pbData[0], sampleLen);
+		CAutoLock BufferLock(&m_BufferLock);
+		m_Array.push_back(newItem);
+		m_WriteBufferSize += sampleLen;
+		return S_OK;
+	}
+	//
+	//else clear the buffer
+	::OutputDebugString(TEXT("DWDumpInputPin::WriteBufferSample:Buffer Full error."));
+	CAutoLock BufferLock(&m_BufferLock);
+	::OutputDebugString(TEXT("DWDumpInputPin::ThreadProc:Write Fail."));
+	std::vector<BYTE *>::iterator it = m_Array.begin();
+	for ( ; it != m_Array.end() ; it++ )
+	{
+		delete[] *it;
+	}
+	m_Array.clear();
+	m_WriteBufferSize = 0;
+	return S_OK;
 }
 
 STDMETHODIMP DWDumpInputPin::Receive(IMediaSample *pSample)
@@ -139,39 +496,19 @@ STDMETHODIMP DWDumpInputPin::Receive(IMediaSample *pSample)
         return hr;
     }
 
-//    return m_pDump->Write(pbData, pSample->GetActualDataLength());
-    return WriteBufferSample(pbData, pSample->GetActualDataLength());
-}
+	return WriteBufferSample(pbData,pSample->GetActualDataLength()); 
 
-HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
-{
-	if (sampleLen >= m_writeBufferSize)
-	{
-		m_writeBufferSize = 0;
-		return m_pDump->Write(&pbData[0], sampleLen);
-	}
+//Frodo code changes
+//	return m_pDump->Write(pbData, pSample->GetActualDataLength());
 
-
-	HRESULT hr;
-	//copy the sample to the write buffer      
-	if(m_writeBufferSize >  m_writeBufferLen + sampleLen)
-	{
-		memcpy(m_writeBuffer + m_writeBufferLen, &pbData[0], sampleLen);
-		m_writeBufferLen += sampleLen;
-	}
-	else
-	{
-		if FAILED(hr = m_pDump->Write(m_writeBuffer, m_writeBufferLen))
-			return hr;
-
-		m_writeBufferLen = sampleLen;
-		memcpy(m_writeBuffer, &pbData[0], sampleLen);
-	}
-	return S_OK;
+//	return Filter(pbData,pSample->GetActualDataLength()); 
+	
+//Frodo code changes
 }
 
 STDMETHODIMP DWDumpInputPin::EndOfStream(void)
 {
+	Clear();
     CAutoLock lock(m_pReceiveLock);
     return CRenderedInputPin::EndOfStream();
 
@@ -179,11 +516,33 @@ STDMETHODIMP DWDumpInputPin::EndOfStream(void)
 
 STDMETHODIMP DWDumpInputPin::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate)
 {
-    m_tLast = 0;
+	Clear();
+	m_PacketErrors = 0;
+	m_restBufferLen=0;
 	m_writeBufferSize = sizeof(m_writeBuffer);
     m_writeBufferLen = 0;
+	m_tLast = 0;
     return S_OK;
+}
 
+void DWDumpInputPin::PrintLongLong(LPCTSTR lstring, __int64 value)
+{
+	TCHAR sz[100];
+	double dVal = value;
+	double len = log10(dVal);
+	int pos = len;
+	sz[pos+1] = '\0';
+	while (pos >= 0)
+	{
+		int val = value % 10;
+		sz[pos] = '0' + val;
+		value /= 10;
+		pos--;
+	}
+	TCHAR szout[100];
+	wsprintf(szout, TEXT("%05i - %s %s\n"), debugcount, lstring, sz);
+	::OutputDebugString(szout);
+	debugcount++;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -348,8 +707,8 @@ HRESULT DWDump::OpenFile()
                          FILE_SHARE_READ,       // Share access
                          NULL,                  // Security
                          CREATE_ALWAYS,         // Open flags
-                         (DWORD) FILE_FLAG_WRITE_THROUGH,             // More flags
-//                         (DWORD) 0,             // More flags
+//                         (DWORD) FILE_FLAG_WRITE_THROUGH,             // More flags
+                         (DWORD) 0,             // More flags
                          NULL);                 // Template
 
     if (m_hFile == INVALID_HANDLE_VALUE) 

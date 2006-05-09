@@ -11,6 +11,7 @@
   <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
   <Key code='G'>				GetTSFilterList() ShowMenu("TSFilterList")</>
   <Key code='W'>				ReLoadTimeShiftFile()</>
+ <Key code='W' shift>			LoadRecordFile()</>
  <Key code='Q'>				MinimiseBuffers()</>
  <Key code=81 shift>			CloseBuffers()</>
  <Key code=81 alt>			MinimiseDisplay()</>

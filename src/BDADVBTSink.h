@@ -105,8 +105,8 @@ public:
 	HRESULT UnPauseRecording(DVBTChannels_Service* pService);
 	BOOL IsRecording(void);
 	BOOL IsPaused(void);
-	HRESULT GetCurFile(LPOLESTR *ppszFileName);
-	HRESULT GetCurFileSize(__int64 *pllFileSize);
+	HRESULT GetCurFile(LPOLESTR *ppszFileName, BOOL bTimeShiftSink = TRUE);
+	HRESULT GetCurFileSize(__int64 *pllFileSize, BOOL bTimeShiftSink = TRUE);
 	HRESULT GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize);
 	HRESULT UpdateTSFileSink(BOOL bAutoMode = FALSE);
 

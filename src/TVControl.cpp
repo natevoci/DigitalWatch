@@ -1122,6 +1122,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		g_pData->settings.window.quietOnMinimise = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetCloseBuffersOnMinimise") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.window.closeBuffersOnMinimise = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetStartWithAudioMuted") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -2356,30 +2364,27 @@ HRESULT TVControl::OnTimer(int wParam)
 
 HRESULT TVControl::OnMinimize()
 {
-	if (!g_pData->settings.window.quietOnMinimise)
-		return S_OK;
-
 	HRESULT hr = S_OK;
 
+	if (g_pData->settings.window.closeBuffersOnMinimise)
 	{
 		ParseLine command;
 		command.Parse(L"CloseBuffers");
 		if (m_pActiveSource)
 			hr = m_pActiveSource->ExecuteCommand(&command);
 	}
-	ParseLine command;
-	command.Parse(L"CloseDisplay");
-	if (m_pActiveSource)
-		hr = m_pActiveSource->ExecuteCommand(&command);
-
+	if (g_pData->settings.window.quietOnMinimise)
+	{
+		ParseLine command;
+		command.Parse(L"CloseDisplay");
+		if (m_pActiveSource)
+			hr = m_pActiveSource->ExecuteCommand(&command);
+	}
 	return hr;
 }
 
 HRESULT TVControl::OnRestore()
 {
-//	if (!g_pData->settings.window.quietOnMinimise)
-//		return S_OK;
-
 	HRESULT hr = S_OK;
 
 	ParseLine command;

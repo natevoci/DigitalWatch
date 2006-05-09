@@ -29,7 +29,9 @@ nate:
 
 bear:
 Changes:
-- Implemented a decoder settings menu. You can now choose which decoder to use from the Settings Menu.
+- Changed the file Writing flags back to normal file buffering, double buffering is now active in both the TSFileSink and DWDump filters.
+- Added a CloseBuffersOnMinimise setting, This just means that when you minimise the application via the mouse you can option to close any unused sink graphs or not.
+- Added a LoadRecordFile function to the timeshift shift "W" key so yo can now view the recorded file.- Implemented a decoder settings menu. You can now choose which decoder to use from the Settings Menu.
 - Fixed a bug where it was not setting the correct service ID to the sink graphs.
 - Fixed a bug where you could not add a network from "TV Watch" Mode.
 - Fixed a bug in where it was crashing on a channel change when it was stopping the player.

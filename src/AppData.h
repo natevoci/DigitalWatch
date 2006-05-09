@@ -94,6 +94,7 @@ public:
 			BOOL rememberAlwaysOnTopState;
 			BOOL rememberWindowPosition;
 			BOOL quietOnMinimise;
+			BOOL closeBuffersOnMinimise;
 		} window;
 
 		struct VALUES_AUDIO

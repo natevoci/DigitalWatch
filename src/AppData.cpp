@@ -82,6 +82,7 @@ AppData::AppData()
 	settings.window.rememberAlwaysOnTopState = TRUE;
 	settings.window.rememberWindowPosition = TRUE;
 	settings.window.quietOnMinimise = FALSE;
+	settings.window.closeBuffersOnMinimise = FALSE;
 
 	settings.audio.volume = 100;
 	settings.audio.bMute = FALSE;
@@ -357,6 +358,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"quietOnMinimise") == 0)
 				return GetBool(settings.window.quietOnMinimise);
+
+			if (_wcsicmp(selection, L"closeBuffersOnMinimise") == 0)
+				return GetBool(settings.window.closeBuffersOnMinimise);
 
 			return NULL;
 		}
@@ -869,6 +873,11 @@ HRESULT AppData::LoadSettings()
 					settings.window.quietOnMinimise = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"closeBuffersOnMinimise") == 0)
+				{
+					settings.window.closeBuffersOnMinimise = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 
 			}
 			continue;
@@ -1321,6 +1330,7 @@ HRESULT AppData::SaveSettings()
 		pWindow->Elements.Add(new XMLElement(L"RememberAlwaysOnTopState", (settings.window.rememberAlwaysOnTopState ? L"True" : L"False")));
 		pWindow->Elements.Add(new XMLElement(L"RememberWindowPosition", (settings.window.rememberWindowPosition ? L"True" : L"False")));
 		pWindow->Elements.Add(new XMLElement(L"QuietOnMinimise", (settings.window.quietOnMinimise ? L"True" : L"False")));
+		pWindow->Elements.Add(new XMLElement(L"CloseBuffersOnMinimise", (settings.window.closeBuffersOnMinimise ? L"True" : L"False")));
 	}
 
 	XMLElement *pAudio = new XMLElement(L"Audio");

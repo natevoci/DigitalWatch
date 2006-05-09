@@ -1,5 +1,5 @@
 /**
- *	DWSource.cpp
+ *	DWThread.cpp
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -83,9 +83,9 @@ HRESULT DWThread::StopThread(DWORD dwTimeoutMilliseconds)
 	return hr;
 }
 
-BOOL DWThread::ThreadIsStopping()
+BOOL DWThread::ThreadIsStopping(DWORD dwTimeoutMilliseconds)
 {
-	DWORD result = WaitForSingleObject(m_hStopEvent, 10);
+	DWORD result = WaitForSingleObject(m_hStopEvent, dwTimeoutMilliseconds);
 	return (result != WAIT_TIMEOUT);
 }
 

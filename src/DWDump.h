@@ -22,6 +22,8 @@
 
 #ifndef DWDUMP_H
 #define DWDUMP_H
+#include <vector>
+#include "DWThread.h"	
 
 
 class DWDump;
@@ -43,7 +45,7 @@ private:
 	DWDump* const m_pDump;
 };
 
-class DWDumpInputPin : public CRenderedInputPin
+class DWDumpInputPin : public CRenderedInputPin, public DWThread
 {
     DWDump   * const m_pDump;           // Main renderer object
     CCritSec * const m_pReceiveLock;    // Sample critical section
@@ -62,15 +64,32 @@ public:
     HRESULT CheckMediaType(const CMediaType *);
 
     HRESULT BreakConnect();
+	HRESULT Run(REFERENCE_TIME tStart);
 
     STDMETHODIMP NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tStop, double dRate);
+	virtual void ThreadProc();
+	void Clear();
 
 private:
 
+	std::vector<BYTE *> m_Array;
+	__int64 m_writeBufferSize;
+	CCritSec m_BufferLock;
+
+	HRESULT Filter(byte* rawData,long len);
 	HRESULT WriteBufferSample(byte* pbData,long sampleLen);
+	BYTE  m_restBuffer[4096];
+	long  m_restBufferLen;
 	long  m_writeBufferLen;
-	long  m_writeBufferSize;
-	BYTE* m_writeBuffer;
+	BYTE*  m_writeBuffer;
+	__int64 m_PacketErrors;
+
+
+	long  m_WriteSampleSize;
+	long  m_WriteBufferSize;
+	void PrintLongLong(LPCTSTR lstring, __int64 value);
+	BOOL m_WriteThreadActive;
+	int debugcount;
 
 };
 

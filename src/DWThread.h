@@ -1,5 +1,5 @@
 /**
- *	DWSource.h
+ *	DWThread.h
  *	Copyright (C) 2005 Nate
  *
  *	This file is part of DigitalWatch, a free DTV watching and recording
@@ -33,7 +33,7 @@ public:
 	HRESULT StartThread();
 	HRESULT StopThread(DWORD dwTimeoutMilliseconds = 1000);
 
-	BOOL ThreadIsStopping();
+	BOOL ThreadIsStopping(DWORD dwTimeoutMilliseconds = 10);
 
 protected:
 	void InternalThreadProc();

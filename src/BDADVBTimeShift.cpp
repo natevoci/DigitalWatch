@@ -676,6 +676,13 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 
 		return ReLoadTimeShiftFile();
 	}
+	else if (_wcsicmp(pCurr, L"LoadRecordFile") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return LoadRecordFile();
+	}
 	if (_wcsicmp(pCurr, L"ShowTSFilter") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -1608,6 +1615,82 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 		// Start the background thread for updating statistics
 		if FAILED(hr = StartThread())
 			(log << "Failed to start background thread: " << hr << "\n").Write();
+
+	}
+
+	return hr;
+}
+
+HRESULT BDADVBTimeShift::LoadRecordFile()
+{
+	HRESULT hr;
+
+	//Check if service already running
+	if (m_pDWGraph->IsPlaying())
+	{
+		LPOLESTR pFileName = NULL;
+		if(m_pCurrentSink)
+			m_pCurrentSink->GetCurFile(&pFileName, FALSE);
+
+		if (!pFileName)
+		{
+			hr = E_FAIL;
+			return (log << "Failed to Get Sink Filter File Name: " << hr << "\n").Write(hr);
+		}
+
+		// Wait up to 2 sec for file to grow
+		int count =0;
+		__int64 fileSize = 0;
+		(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
+		while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize, FALSE)) &&
+				fileSize < (__int64)20000 && count < 20)
+		{
+			Sleep(100);
+			(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
+			count++;
+		}
+
+//		g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+//		g_pTv->ShowOSDItem(L"Warnings", 2);
+		if FAILED(hr = m_pCurrentFileSource->ReLoad(pFileName))
+			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
+
+		m_pCurrentFileSource->SeekTo(100);
+
+		UpdateStatusDisplay();
+	}
+	else if (m_pCurrentTuner && m_pCurrentTuner->IsActive())	// if sink graph is still running 
+	{
+		LPOLESTR pFileName = NULL;
+		if(m_pCurrentSink)
+			m_pCurrentSink->GetCurFile(&pFileName, FALSE);
+
+		if (!pFileName)
+		{
+			hr = E_FAIL;
+			return (log << "Failed to Get Sink Filter File Name: " << hr << "\n").Write(hr);
+		}
+
+		// Wait up to 2 sec for file to grow
+		int count =0;
+		__int64 fileSize = 0;
+		(log << "Waiting for the Sink File to grow: " << pFileName << "\n").Write();
+		while(SUCCEEDED(hr = m_pCurrentSink->GetCurFileSize(&fileSize, FALSE)) &&
+				fileSize < (__int64)20000 && count < 20)
+		{
+			Sleep(100);
+			(log << "Waiting for Sink File to Build: " << fileSize << " Bytes\n").Write();
+			count++;
+		}
+
+//		g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
+//		g_pTv->ShowOSDItem(L"Warnings", 2);
+		if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
+			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
+
+		m_pCurrentFileSource->SeekTo(100);
+
+		UpdateStatusDisplay();
 
 	}
 

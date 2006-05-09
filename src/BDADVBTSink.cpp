@@ -1220,32 +1220,30 @@ BOOL BDADVBTSink::IsPaused(void)
 	return m_pCurrentFileSink->IsPaused();
 }
 
-HRESULT BDADVBTSink::GetCurFile(LPOLESTR *ppszFileName)
+HRESULT BDADVBTSink::GetCurFile(LPOLESTR *ppszFileName, BOOL bTimeShiftSink)
 {
 	if (!ppszFileName)
 		return E_INVALIDARG;
 
-	if(m_intTimeShiftType && m_pCurrentTShiftSink)
+	if(bTimeShiftSink && m_intTimeShiftType && m_pCurrentTShiftSink)
 		return m_pCurrentTShiftSink->GetCurFile(ppszFileName);
 
-//	if((m_intFileSinkType & 0x07) && m_pCurrentFileSink)
 	if(m_intFileSinkType < 4 && m_pCurrentFileSink)
 		return m_pCurrentFileSink->GetCurFile(ppszFileName);
 
 	return FALSE;
 }
 
-HRESULT BDADVBTSink::GetCurFileSize(__int64 *pllFileSize)
+HRESULT BDADVBTSink::GetCurFileSize(__int64 *pllFileSize, BOOL bTimeShiftSink)
 {
 	if (!pllFileSize)
 		return E_INVALIDARG;
 
 	*pllFileSize = 0;
 
-	if(m_intTimeShiftType && m_pCurrentTShiftSink)
+	if(bTimeShiftSink && m_intTimeShiftType && m_pCurrentTShiftSink)
 		return m_pCurrentTShiftSink->GetCurFileSize(pllFileSize);
 
-//	if((m_intFileSinkType & 0x07) && m_pCurrentFileSink)
 	if(m_intFileSinkType < 4 && m_pCurrentFileSink)
 		return m_pCurrentFileSink->GetCurFileSize(pllFileSize);
 
