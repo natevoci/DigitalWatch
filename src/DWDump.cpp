@@ -91,7 +91,6 @@ DWDumpInputPin::DWDumpInputPin(DWDump *pDump, LPUNKNOWN pUnk, CBaseFilter *pFilt
 	m_writeBuffer =	new BYTE[m_writeBufferSize];
     m_writeBufferLen = 0;
 
-	m_WriteSampleSize = 0;
 	m_WriteBufferSize = 0;
 	m_WriteThreadActive = FALSE;
 }
@@ -106,14 +105,13 @@ void DWDumpInputPin::Clear()
 {
 	StopThread(500);
 	CAutoLock BufferLock(&m_BufferLock);
-	std::vector<BYTE *>::iterator it = m_Array.begin();
+	std::vector<BUFFERINFO>::iterator it = m_Array.begin();
 	for ( ; it != m_Array.end() ; it++ )
 	{
-		delete[] *it;
+		delete[] *(&it->sample);
 	}
 	m_Array.clear();
 
-	m_WriteSampleSize = 0;
 	m_WriteBufferSize = 0;
 	m_WriteThreadActive = FALSE;
 }
@@ -367,7 +365,7 @@ void DWDumpInputPin::ThreadProc()
 	int threadPriority = GetThreadPriority(GetCurrentThread());
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 	
-	while (!ThreadIsStopping(1))
+	while (!ThreadIsStopping(0))
 	{
 		BYTE *item = NULL;
 		long sampleLen = 0;
@@ -375,26 +373,27 @@ void DWDumpInputPin::ThreadProc()
 			CAutoLock BufferLock(&m_BufferLock);
 			if (m_Array.size())
 			{
-				std::vector<BYTE *>::iterator it = m_Array.begin();
-				item = *it;
+				std::vector<BUFFERINFO>::iterator it = m_Array.begin();
+				item = *(&it->sample);
+				sampleLen = *(&it->size);
 				m_Array.erase(it);
-				m_WriteBufferSize -= m_WriteSampleSize;
+				m_WriteBufferSize -= sampleLen;
 			}
 			else
 				Sleep(1);
 		}
 		if (item)
 		{
-			HRESULT hr = m_pDump->Write(item, m_WriteSampleSize);
+			HRESULT hr = m_pDump->Write(item, sampleLen);
 			delete[] item;
 			if (FAILED(hr))
 			{
 				CAutoLock BufferLock(&m_BufferLock);
 				::OutputDebugString(TEXT("DWDumpInputPin::ThreadProc:Write Fail."));
-				std::vector<BYTE *>::iterator it = m_Array.begin();
+				std::vector<BUFFERINFO>::iterator it = m_Array.begin();
 				for ( ; it != m_Array.end() ; it++ )
 				{
-					delete[] *it;
+					delete[] *(&it->sample);
 				}
 				m_Array.clear();
 				m_WriteBufferSize = 0;
@@ -409,26 +408,17 @@ void DWDumpInputPin::ThreadProc()
 HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
 {
 	HRESULT hr;
-
+	long bufferLen = 32768/2;
 	//
-	//Only start buffering after 32mB has been written for quick starting
+	//Only start buffering if the buffer thread is active
 	//
-	if (!m_WriteSampleSize && m_WriteBufferSize < 32000000 || !m_WriteThreadActive)
+	if (!m_WriteThreadActive)
 	{
 		int threadPriority = GetThreadPriority(GetCurrentThread());
 		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 		hr = m_pDump->Write(pbData, sampleLen);
 		SetThreadPriority(GetCurrentThread(), threadPriority);
-		m_WriteBufferSize += sampleLen;
 		return hr;
-	}
-
-	//
-	//Now start using the buffer thread
-	if (!m_WriteSampleSize)
-	{
-		m_WriteBufferSize = 0;
-		m_WriteSampleSize += sampleLen;
 	}
 
 	//
@@ -436,29 +426,58 @@ HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
 	//
 	if(m_WriteThreadActive && m_WriteBufferSize + sampleLen < 64000000)
 	{
-		BYTE *newItem = new BYTE[sampleLen];
-		//Return fail if out of memory
-		if (!newItem)
+		//use the sample packet size for the buffer
+		if(sampleLen <= bufferLen)
 		{
-			::OutputDebugString(TEXT("DWDumpInputPin::WriteBufferSample:Out of Memory."));
-			return S_OK;
+			BUFFERINFO newItem;
+			newItem.sample = new BYTE[sampleLen];
+			//Return if we are out of memory
+			if (!newItem.sample)
+			{
+				::OutputDebugString(TEXT("DWDumpInputPin::WriteBufferSample:Out of Memory."));
+				return S_OK;
+			}
+			//store the sample in the temp buffer
+			memcpy(newItem.sample, &pbData[0], sampleLen);
+			newItem.size = sampleLen;
+			CAutoLock BufferLock(&m_BufferLock);
+			m_Array.push_back(newItem);
+			m_WriteBufferSize += sampleLen;
 		}
-
-		memcpy(newItem, &pbData[0], sampleLen);
-		CAutoLock BufferLock(&m_BufferLock);
-		m_Array.push_back(newItem);
-		m_WriteBufferSize += sampleLen;
+		else
+		{
+			long pos = 0;
+			//break up the sample into smaller packets
+			for (long i = sampleLen; i > 0; i -= bufferLen)
+			{
+				long size = ((i/bufferLen) != 0)*bufferLen + ((i/bufferLen) == 0)*i;
+				BUFFERINFO newItem;
+				newItem.sample = new BYTE[size];
+				//Return if we are out of memory
+				if (!newItem.sample)
+				{
+					::OutputDebugString(TEXT("DWDumpInputPin::WriteBufferSample:Out of Memory."));
+					return S_OK;
+				}
+				//store the sample in the temp buffer
+				memcpy(newItem.sample, &pbData[pos], size);
+				newItem.size = size;
+				CAutoLock BufferLock(&m_BufferLock);
+				m_Array.push_back(newItem);
+				m_WriteBufferSize += size;
+				pos += size;
+			}
+		}
 		return S_OK;
 	}
-	//
 	//else clear the buffer
 	::OutputDebugString(TEXT("DWDumpInputPin::WriteBufferSample:Buffer Full error."));
 	CAutoLock BufferLock(&m_BufferLock);
 	::OutputDebugString(TEXT("DWDumpInputPin::ThreadProc:Write Fail."));
-	std::vector<BYTE *>::iterator it = m_Array.begin();
+	std::vector<BUFFERINFO>::iterator it = m_Array.begin();
 	for ( ; it != m_Array.end() ; it++ )
 	{
-		delete[] *it;
+		delete[] *(&it->sample);
 	}
 	m_Array.clear();
 	m_WriteBufferSize = 0;

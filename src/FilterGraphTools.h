@@ -74,6 +74,9 @@ public:
 	//BDA functions
 	HRESULT InitDVBTTuningSpace(CComPtr <ITuningSpace> &piTuningSpace);
 	HRESULT CreateDVBTTuneRequest(CComPtr <ITuningSpace> piTuningSpace, CComPtr <ITuneRequest> &pExTuneRequest, long frequency, long bandwidth);
+	HRESULT ClearDemuxPids(CComPtr<IBaseFilter>& pFilter);
+	HRESULT ClearDemuxPins(IPin *pIPin);
+	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
 };
 
 #endif

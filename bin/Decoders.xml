@@ -5,9 +5,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
     	<From name="Mpeg2Dec Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -18,9 +18,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <VideoRenderer name="VMR7" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
     	<From name="Mpeg2Dec Video Decoder" />
     	<To name="VMR7" />
@@ -31,9 +31,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
     	<From name="Mpeg2Dec Video Decoder" />
     	<To name="VMR9" />
@@ -44,9 +44,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <VideoRenderer name="VMR9Windowless" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
     	<From name="Mpeg2Dec Video Decoder" />
     	<To name="VMR9Windowless" />
@@ -57,9 +57,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <VideoRenderer name="VMR9Renderless" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
     	<From name="Mpeg2Dec Video Decoder" />
     	<To name="VMR9Renderless" />
@@ -70,10 +70,10 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
+    <InputFilter name="Mpeg2Dec Video Decoder" />
     <LoadFilter clsid="{0B390488-D80F-4A68-8408-48DC199F0E97}" name="ffdshow" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Mpeg2Dec Video Decoder" />
     <Connect>
     	<From name="Mpeg2Dec Video Decoder" />
     	<To name="ffdshow" />
@@ -88,9 +88,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{F8904F1F-0371-4471-8866-90E6281ABDB6}" name="DScaler Video Decoder" />
+    <InputFilter name="DScaler Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="DScaler Video Decoder" />
     <Connect>
     	<From name="DScaler Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -101,9 +101,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{F8904F1F-0371-4471-8866-90E6281ABDB6}" name="DScaler Video Decoder" />
+    <InputFilter name="DScaler Video Decoder" />
     <VideoRenderer name="VMR7" />
 
-    <InputFilter name="DScaler Video Decoder" />
     <Connect>
     	<From name="DScaler Video Decoder" />
     	<To name="VMR7" />
@@ -114,9 +114,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{F8904F1F-0371-4471-8866-90E6281ABDB6}" name="DScaler Video Decoder" />
+    <InputFilter name="DScaler Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="DScaler Video Decoder" />
     <Connect>
     	<From name="DScaler Video Decoder" />
     	<To name="VMR9" />
@@ -127,9 +127,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{CE1B27BE-851B-45DD-AB26-44389A8F71B4}" name="GPL MPEG-1/2 Decoder" />
+    <InputFilter name="GPL MPEG-1/2 Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="GPL MPEG-1/2 Decoder" />
     <Connect>
     	<From name="GPL MPEG-1/2 Decoder" />
     	<To name="Overlay Mixer" />
@@ -140,9 +140,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{CE1B27BE-851B-45DD-AB26-44389A8F71B4}" name="GPL MPEG-1/2 Decoder" />
+    <InputFilter name="GPL MPEG-1/2 Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="GPL MPEG-1/2 Decoder" />
     <Connect>
     	<From name="GPL MPEG-1/2 Decoder" />
     	<To name="VMR9" />
@@ -153,9 +153,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{DD1C057A-FE99-477C-835F-3A89EF577C6F}" name="Cyberlink DTV Video Decoder" />
+    <InputFilter name="Cyberlink DTV Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Cyberlink DTV Video Decoder" />
     <Connect>
     	<From name="Cyberlink DTV Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -166,9 +166,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{DD1C057A-FE99-477C-835F-3A89EF577C6F}" name="Cyberlink DTV Video Decoder" />
+    <InputFilter name="Cyberlink DTV Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="Cyberlink DTV Video Decoder" />
     <Connect>
     	<From name="Cyberlink DTV Video Decoder" />
     	<To name="VMR9" />
@@ -179,9 +179,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{CA61C7F0-03B5-11D9-9669-0800200C9A66}" name="DNTV Live Video Decoder" />
+    <InputFilter name="DNTV Live Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="DNTV Live Video Decoder" />
     <Connect>
     	<From name="DNTV Live Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -192,9 +192,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{CA61C7F0-03B5-11D9-9669-0800200C9A66}" name="DNTV Live Video Decoder" />
+    <InputFilter name="DNTV Live Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="DNTV Live Video Decoder" />
     <Connect>
     	<From name="DNTV Live Video Decoder" />
     	<To name="VMR9" />
@@ -205,9 +205,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{9BB7C73D-EC42-4288-8006-D5D8350B1DF3}" name="Cyberlink6 Video Decoder" />
+    <InputFilter name="Cyberlink6 Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Cyberlink6 Video Decoder" />
     <Connect>
     	<From name="Cyberlink6 Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -218,9 +218,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{9BB7C73D-EC42-4288-8006-D5D8350B1DF3}" name="Cyberlink6 Video Decoder" />
+    <InputFilter name="Cyberlink6 Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="Cyberlink6 Video Decoder" />
     <Connect>
     	<From name="Cyberlink6 Video Decoder" />
     	<To name="VMR9" />
@@ -231,9 +231,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{9BC1B781-85E3-11D2-98D0-0080C84E9C39}" name="Cyberlink Video/SP Decoder" />
+    <InputFilter name="Cyberlink Video/SP Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Cyberlink Video/SP Decoder" />
     <Connect>
     	<From name="Cyberlink Video/SP Decoder" />
     	<To name="Overlay Mixer" />
@@ -244,9 +244,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{9BC1B781-85E3-11D2-98D0-0080C84E9C39}" name="Cyberlink Video/SP Decoder" />
+    <InputFilter name="Cyberlink Video/SP Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="Cyberlink Video/SP Decoder" />
     <Connect>
     	<From name="Cyberlink Video/SP Decoder" />
     	<To name="VMR9" />
@@ -257,9 +257,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{0246CA20-776D-11D2-8010-00104B9B8592}" name="Intervideo Video Decoder" />
+    <InputFilter name="Intervideo Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Intervideo Video Decoder" />
     <Connect>
     	<From name="Intervideo Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -270,9 +270,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{0246CA20-776D-11D2-8010-00104B9B8592}" name="Intervideo Video Decoder" />
+    <InputFilter name="Intervideo Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="Intervideo Video Decoder" />
     <Connect>
     	<From name="Intervideo Video Decoder" />
     	<To name="VMR9" />
@@ -283,9 +283,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{F50B3F13-19C4-11CF-AA9A-02608C9BABA2}" name="Elecard Video Decoder" />
+    <InputFilter name="Elecard Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="Elecard Video Decoder" />
     <Connect>
     	<From name="Elecard Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -296,9 +296,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{F50B3F13-19C4-11CF-AA9A-02608C9BABA2}" name="Elecard Video Decoder" />
+    <InputFilter name="Elecard Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="Elecard Video Decoder" />
     <Connect>
     	<From name="Elecard Video Decoder" />
     	<To name="VMR9" />
@@ -309,9 +309,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{71E4616A-DB5E-452B-8CA5-71D9CC7805E9}" name="NVIDIA Video Decoder" />
+    <InputFilter name="NVIDIA Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="NVIDIA Video Decoder" />
     <Connect>
     	<From name="NVIDIA Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -322,9 +322,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{71E4616A-DB5E-452B-8CA5-71D9CC7805E9}" name="NVIDIA Video Decoder" />
+    <InputFilter name="NVIDIA Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="NVIDIA Video Decoder" />
     <Connect>
     	<From name="NVIDIA Video Decoder" />
     	<To name="VMR9" />
@@ -335,9 +335,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{04FE9017-F873-410E-871E-AB91661A4EF7}" name="ffdshow Video Decoder" />
+    <InputFilter name="ffdshow Video Decoder" />
     <VideoRenderer name="Overlay Mixer" />
 
-    <InputFilter name="ffdshow Video Decoder" />
     <Connect>
     	<From name="ffdshow Video Decoder" />
     	<To name="Overlay Mixer" />
@@ -348,9 +348,9 @@
 	<MediaType name="MPEG2 Video" />
 	
     <LoadFilter clsid="{04FE9017-F873-410E-871E-AB91661A4EF7}" name="ffdshow Video Decoder" />
+    <InputFilter name="ffdshow Video Decoder" />
     <VideoRenderer name="VMR9" />
 
-    <InputFilter name="ffdshow Video Decoder" />
     <Connect>
     	<From name="ffdshow Video Decoder" />
     	<To name="VMR9" />

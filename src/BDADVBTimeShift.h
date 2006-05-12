@@ -52,20 +52,13 @@ public:
 	BOOL isRecording;
 	long networkId;
 	long serviceId;
+	CComPtr <IBaseFilter> pBDAMpeg2Demux;
+	CComPtr <IMpeg2Demultiplexer> piMpeg2Demux;
 };
 
 class TSFileSource;
 class BDADVBTimeShift : public DWSource, public DWThread
 {
-
-typedef struct TunerInfo
-{
-	BDADVBTimeShiftTuner *tuners;
-	BDADVBTSink *sinks;
-	TSFileSource *fileSources;
-	DWGraph *graphs;
-
-} TUNERINFO;
 
 public:
 	BDADVBTimeShift();
@@ -178,7 +171,7 @@ private:
 	DWGraph *m_pDWGraph;
 
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
-	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
+	CComPtr <IBaseFilter> m_pBDAMpeg2Demux;
 	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
 	CComPtr <IGraphBuilder> m_piSinkGraphBuilder;
 

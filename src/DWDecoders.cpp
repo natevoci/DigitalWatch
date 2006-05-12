@@ -74,6 +74,8 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 	//       the renderer's window won't get owned by DW.
 	RENDER_METHOD renderMethod = RENDER_METHOD_DEFAULT;
 
+	CComPtr <IBaseFilter> piNewFilter;
+
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
 	XMLAttribute *attr = NULL;
@@ -97,7 +99,10 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 			if ((attr == NULL) || (attr->value[0] == '\0'))
 				continue;
 
-			CComPtr <IBaseFilter> piNewFilter;
+//			CComPtr <IBaseFilter> piNewFilter;
+			if(piNewFilter) 
+				piNewFilter.Release();
+
 			hr = graphTools.AddFilter(piGraphBuilder, clsid, &piNewFilter, attr->value);
 			if (hr != S_OK)
 				return (log << "Error: Can't Add " << attr->value << " : " << hr << "\n").Show(hr);
@@ -122,43 +127,167 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				CComPtr <IBaseFilter> piOMFilter;
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_OverlayMixer, &piOMFilter, pName);
 				if (hr != S_OK)
-					return (log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Show(hr);
+				{
+//					return (log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Show(hr);
+					(log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Write();
+					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+					if (hr != S_OK)
+						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+					continue;
+				}
+
+				//Check if overlay is in use
+				if(piNewFilter) 
+				{
+					hr = graphTools.ConnectFilters(piGraphBuilder, piNewFilter, piOMFilter);
+					if (hr != S_OK) //-2147467259)// == 0x800040207) //DDERR_CURRENTLYNOTAVAIL)
+					{
+						(log << "Error: Can't connect to overlay mixer, already be in use: " << hr << "\n").Write();
+						DestroyFilter(piGraphBuilder, piOMFilter);
+						hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+						if (hr != S_OK)
+							return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+						continue;
+					}
+					else if (hr == S_OK)
+					{
+						CComPtr<IPin>pOPin;
+						graphTools.FindPin(piNewFilter, L"Video Output", &pOPin, REQUESTED_PINDIR_OUTPUT);
+						if(pOPin)
+							piGraphBuilder->Disconnect(pOPin);
+						else
+							graphTools.FindPin(piNewFilter, L"Output", &pOPin, REQUESTED_PINDIR_OUTPUT);
+							if(pOPin)
+								piGraphBuilder->Disconnect(pOPin);
+
+						CComPtr<IPin>pIPin;
+						graphTools.FindPin(piOMFilter, L"Input0", &pIPin, REQUESTED_PINDIR_INPUT);
+						if(pIPin)
+							piGraphBuilder->Disconnect(pIPin);
+					}
+				}
 
 				CComPtr <IDDrawExclModeVideo> piDDrawExclMode;
 				piOMFilter.QueryInterface(&piDDrawExclMode);
 				if (piDDrawExclMode == NULL)
-					return (log << "Error: Could not QI for IDDrawExclModeVideo\n").Write(hr);
+				{
+//					return (log << "Error: Could not QI for IDDrawExclModeVideo\n").Write(hr);
+					(log << "Error: Could not QI for IDDrawExclModeVideo\n").Write();
+					DestroyFilter(piGraphBuilder, piOMFilter);
+					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+					if (hr != S_OK)
+						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+					continue;
+				}
 
 				DWRenderer *pOSDRenderer;
 				hr = g_pOSD->GetOSDRenderer(&pOSDRenderer);
 				if FAILED(hr)
-					return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
+				{
+//					return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
+					(log << "Failed to get OSD Renderer: " << hr << "\n").Write();
+					piDDrawExclMode.Release();
+					DestroyFilter(piGraphBuilder, piOMFilter);
+					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+					if (hr != S_OK)
+						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+					continue;
+				}
 
 				DWRendererDirectDraw *pOSDRendererDirectDraw = dynamic_cast<DWRendererDirectDraw *>(pOSDRenderer);
 				if (!pOSDRendererDirectDraw)
-					return (log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write(E_FAIL);
+				{
+//					return (log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write(E_FAIL);
+					(log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write();
+					pOSDRenderer->Destroy();
+					piDDrawExclMode.Release();
+					DestroyFilter(piGraphBuilder, piOMFilter);
+					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+					if (hr != S_OK)
+						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+					continue;
+				}
 
 				IDDrawExclModeVideoCallback *pOverlayCallback;
 				hr = pOSDRendererDirectDraw->GetDirectDraw()->GetOverlayCallbackInterface(&pOverlayCallback);
 				if FAILED(hr)
-					return (log << "Failed to get overlay callback interface: " << hr << "\n").Write(hr);
+				{
+//					return (log << "Failed to get overlay callback interface: " << hr << "\n").Write(hr);
+					(log << "Failed to get overlay callback interface: " << hr << "\n").Write();
+					pOSDRendererDirectDraw->Destroy();
+					pOSDRenderer->Destroy();
+					piDDrawExclMode.Release();
+					DestroyFilter(piGraphBuilder, piOMFilter);
+					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+					if (hr != S_OK)
+						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+					continue;
+				}
 
 				hr = piDDrawExclMode->SetCallbackInterface(pOverlayCallback, 0);
 				if FAILED(hr)
-					return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
+				{
+//					return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
+					(log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Write();
+					pOverlayCallback->Release();
+					pOSDRendererDirectDraw->Destroy();
+					pOSDRenderer->Destroy();
+					piDDrawExclMode.Release();
+					DestroyFilter(piGraphBuilder, piOMFilter);
+					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+					if (hr != S_OK)
+						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+					continue;
+				}
 
 				CComPtr <IBaseFilter> piVRFilter;
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoRenderer, &piVRFilter, L"Video Renderer");
 				if (hr != S_OK)
-					return (log << "Error: Can't Add Video Renderer: " << hr << "\n").Show(hr);
+				{
+//					return (log << "Error: Can't Add Video Renderer: " << hr << "\n").Show(hr);
+					(log << "Error: Can't Add Video Renderer: " << hr << "\n").Write();
+					pOverlayCallback->Release();
+					pOSDRendererDirectDraw->Destroy();
+					pOSDRenderer->Destroy();
+					piDDrawExclMode.Release();
+					DestroyFilter(piGraphBuilder, piOMFilter);
+					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+					if (hr != S_OK)
+						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+					continue;
+				}
 
 				hr = graphTools.ConnectFilters(piGraphBuilder, piOMFilter, piVRFilter);
 				if (hr != S_OK)
-					return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
-				
-				//Set renderer method
-				renderMethod = RENDER_METHOD_OverlayMixer;
-				g_pOSD->SetRenderMethod(renderMethod);
+				{
+//					return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
+					(log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Write();
+					DestroyFilter(piGraphBuilder, piVRFilter);
+					pOverlayCallback->Release();
+					pOSDRendererDirectDraw->Destroy();
+					pOSDRenderer->Destroy();
+					piDDrawExclMode.Release();
+					DestroyFilter(piGraphBuilder, piOMFilter);
+					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
+					if (hr != S_OK)
+						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
+
+					continue;
+				}
+				else
+				{
+					//Set renderer method
+					renderMethod = RENDER_METHOD_OverlayMixer;
+					g_pOSD->SetRenderMethod(renderMethod);
+				}
 			}
 			else if (_wcsicmp(pName, L"VMR7") == 0 && !g_pData->values.application.multiple)
 			{
@@ -355,6 +484,53 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 		}
 	}
 	return S_OK;
+}
+
+HRESULT DWDecoder::RenderWindowLess(IGraphBuilder *piGraphBuilder,
+									IPin *piSourcePin,
+									RENDER_METHOD *pRenderMethod,
+									LPWSTR pName)
+{
+	HRESULT hr;
+	(log << "OverLay Failed so now trying to use WindowLess Render\n").Write();
+
+	CComPtr <IBaseFilter> piVMR9Filter;
+	hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, pName);
+	if (hr != S_OK)
+		return (log << "Error: Can't Add VMR9: " << hr << "\n").Show(hr);
+
+	// Set Windowless Mode
+	CComQIPtr<IVMRFilterConfig9> piFilterConfig(piVMR9Filter);
+	if (piFilterConfig == NULL)
+		return (log << "Error: Failed to get IVMRFilterConfig9 interface\n").Show(hr);
+
+	hr = piFilterConfig->SetRenderingMode(VMR9Mode_Windowless);
+	if (hr != S_OK)
+		return (log << "Error: Can't set windowless mode: " << hr << "\n").Show(hr);
+
+	// Set the clipping window
+	CComQIPtr<IVMRWindowlessControl9> piWindowlessControl(piVMR9Filter);
+	if (piWindowlessControl == NULL)
+		return (log << "Error: Failed to get IVMRWindowlessControl9 interface\n").Show(hr);
+
+	hr = piWindowlessControl->SetVideoClippingWindow(g_pData->hWnd);
+	if (hr != S_OK)
+		return (log << "Error: Failed to set clipping window: " << hr << "\n").Show(hr);
+
+	//Set renderer method
+	*pRenderMethod = RENDER_METHOD_VMR9Windowless;
+	g_pOSD->SetRenderMethod(RENDER_METHOD_VMR9Windowless);
+
+	return hr;
+}
+
+void DWDecoder::DestroyFilter(IGraphBuilder *piGraphBuilder, CComPtr <IBaseFilter> &pFilter)
+{
+	if (pFilter && piGraphBuilder)
+	{
+		piGraphBuilder->RemoveFilter(pFilter);
+		pFilter.Release();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////

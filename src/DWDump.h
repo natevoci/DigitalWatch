@@ -23,7 +23,14 @@
 #ifndef DWDUMP_H
 #define DWDUMP_H
 #include <vector>
-#include "DWThread.h"	
+#include "DWThread.h"
+	
+typedef struct BufferInfo
+{
+	BYTE *sample;
+	long size;
+
+} BUFFERINFO;
 
 
 class DWDump;
@@ -72,7 +79,7 @@ public:
 
 private:
 
-	std::vector<BYTE *> m_Array;
+	std::vector<BUFFERINFO> m_Array;
 	__int64 m_writeBufferSize;
 	CCritSec m_BufferLock;
 
@@ -85,7 +92,6 @@ private:
 	__int64 m_PacketErrors;
 
 
-	long  m_WriteSampleSize;
 	long  m_WriteBufferSize;
 	void PrintLongLong(LPCTSTR lstring, __int64 value);
 	BOOL m_WriteThreadActive;

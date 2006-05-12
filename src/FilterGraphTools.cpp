@@ -976,3 +976,123 @@ HRESULT FilterGraphTools::CreateDVBTTuneRequest(CComPtr <ITuningSpace> piTuningS
 	return hr;
 }
 
+HRESULT FilterGraphTools::ClearDemuxPids(CComPtr<IBaseFilter>& pFilter)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pFilter == NULL)
+		return hr;
+
+	CComPtr<IPin> pOPin;
+	PIN_DIRECTION  direction;
+	// Enumerate the Demux pins
+	CComPtr<IEnumPins> pIEnumPins;
+	if (SUCCEEDED(pFilter->EnumPins(&pIEnumPins)))
+	{
+		ULONG pinfetch(0);
+		while(pIEnumPins->Next(1, &pOPin, &pinfetch) == S_OK)
+		{
+			pOPin->QueryDirection(&direction);
+			if(direction == PINDIR_OUTPUT)
+			{
+				WCHAR *pinName;
+				pOPin->QueryId(&pinName);
+				if FAILED(hr = ClearDemuxPins(pOPin))
+					(log << "Failed to Clear demux Pin" << pinName << " pin : " << hr << "\n").Write();
+			}
+			pOPin.Release();
+			pOPin = NULL;
+		}
+	}
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::ClearDemuxPins(IPin *pIPin)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pIPin == NULL)
+		return hr;
+
+	IMPEG2PIDMap* muxMapPid;
+	if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid))){
+
+		IEnumPIDMap *pIEnumPIDMap;
+		if (SUCCEEDED(muxMapPid->EnumPIDMap(&pIEnumPIDMap))){
+			ULONG pNumb = 0;
+			PID_MAP pPidMap;
+			while(pIEnumPIDMap->Next(1, &pPidMap, &pNumb) == S_OK){
+				ULONG pid = pPidMap.ulPID;
+				hr = muxMapPid->UnmapPID(1, &pid);
+			}
+		}
+		muxMapPid->Release();
+	}
+	else {
+
+		IMPEG2StreamIdMap* muxStreamMap;
+		if(SUCCEEDED(pIPin->QueryInterface (&muxStreamMap))){
+
+			IEnumStreamIdMap *pIEnumStreamMap;
+			if (SUCCEEDED(muxStreamMap->EnumStreamIdMap(&pIEnumStreamMap))){
+				ULONG pNumb = 0;
+				STREAM_ID_MAP pStreamIdMap;
+				while(pIEnumStreamMap->Next(1, &pStreamIdMap, &pNumb) == S_OK){
+					ULONG pid = pStreamIdMap.stream_id;
+					hr = muxStreamMap->UnmapStreamId(1, &pid);
+				}
+			}
+			muxStreamMap->Release();
+		}
+	}
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::VetDemuxPin(IPin* pIPin, ULONG pid)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pIPin == NULL)
+		return hr;
+
+	ULONG pids = 0;
+	IMPEG2PIDMap* muxMapPid;
+	if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid))){
+
+		IEnumPIDMap *pIEnumPIDMap;
+		if (SUCCEEDED(muxMapPid->EnumPIDMap(&pIEnumPIDMap))){
+			ULONG pNumb = 0;
+			PID_MAP pPidMap;
+			while(pIEnumPIDMap->Next(1, &pPidMap, &pNumb) == S_OK){
+				if (pid != pPidMap.ulPID)
+				{
+					pids = pPidMap.ulPID;
+					hr = muxMapPid->UnmapPID(1, &pids);
+				}
+			}
+		}
+		muxMapPid->Release();
+	}
+	else {
+
+		IMPEG2StreamIdMap* muxStreamMap;
+		if(SUCCEEDED(pIPin->QueryInterface (&muxStreamMap))){
+
+			IEnumStreamIdMap *pIEnumStreamMap;
+			if (SUCCEEDED(muxStreamMap->EnumStreamIdMap(&pIEnumStreamMap))){
+				ULONG pNumb = 0;
+				STREAM_ID_MAP pStreamIdMap;
+				while(pIEnumStreamMap->Next(1, &pStreamIdMap, &pNumb) == S_OK){
+					if (pid != pStreamIdMap.stream_id)
+					{
+						pids = pStreamIdMap.stream_id;
+						hr = muxStreamMap->UnmapStreamId(1, &pids);
+					}
+				}
+			}
+			muxStreamMap->Release();
+		}
+	}
+	return S_OK;
+}
+

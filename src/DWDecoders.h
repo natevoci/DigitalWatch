@@ -45,6 +45,11 @@ public:
 	LPWSTR Name();
 
 	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin);
+	HRESULT RenderWindowLess(IGraphBuilder *piGraphBuilder,
+								IPin *piSourcePin,
+								RENDER_METHOD *pRenderMethod,
+								LPWSTR pName);
+	void DestroyFilter(IGraphBuilder *piGraphBuilder, CComPtr <IBaseFilter> &pFilter);
 
 private:
 	XMLElement *m_pElement;

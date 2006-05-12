@@ -38,13 +38,6 @@
 class BDADVBTSource : public DWSource, public DWThread
 {
 
-typedef struct TunerInfo
-{
-	BDADVBTSourceTuner *tuners;
-	BDADVBTSink *sinks;
-
-} TUNERINFO;
-
 public:
 	BDADVBTSource();
 	virtual ~BDADVBTSource();

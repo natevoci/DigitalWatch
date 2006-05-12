@@ -1,6 +1,9 @@
 Version 2.2.0.2
 =================
 bear:
+Fixed up some objects release issues.
+Added in version information to the property pages.
+I have had to reduce the fileWriter's sample size to stop the HDD clogging with multiple instances.
 Changed back some file writing flags in the filewriter classes, this now allows for double buffereng on the FileWriter input Pin.
 Added a TSThread Class to the TSFileSink filter Pin class to help with file cashing issues.
 Removed Frodo's packet error filter code from the TSFileSink filter, was too much delay for small sample sizes.

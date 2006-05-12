@@ -29,6 +29,9 @@ nate:
 
 bear:
 Changes:
+- Added in some other changes.
+- Added some changes to allow the video decoder/overlay mixer render method to still work if the mixer is in use, will now default to windowless mode. Note: In the decoder.xml file you now need to Add the input filter prior to adding the overlay mixer.
+- Added some code to fix the picture if the Timeshift format is not set.
 - Changed the file Writing flags back to normal file buffering, double buffering is now active in both the TSFileSink and DWDump filters.
 - Added a CloseBuffersOnMinimise setting, This just means that when you minimise the application via the mouse you can option to close any unused sink graphs or not.
 - Added a LoadRecordFile function to the timeshift shift "W" key so yo can now view the recorded file.- Implemented a decoder settings menu. You can now choose which decoder to use from the Settings Menu.

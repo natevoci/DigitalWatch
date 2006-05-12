@@ -407,7 +407,7 @@ HRESULT DWMediaTypes::MakeFile(LPWSTR filename)
 	(log << "Making the Media Types file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 
-	HRESULT hr;
+//	HRESULT hr;
 
 	if (m_pDecoders == NULL)
 		return (log << "m_pDecoders must be set before calling DWMediaTypes::MakeFile\n").Write(E_FAIL);
