@@ -1,7 +1,7 @@
 <!-- DigitalWatch BDA Source Keys -->
 
   <Key code= 13>				ShowMenu("NetworkList")</>
-
+ 
   <!-- F2 and Preview button on VP remote -->
   <Key code=113>				ExitMenu(-1) ShowMenu("TVMenu")</>
   <Key code='K'>				ExitMenu(-1) ShowMenu("TVMenu")</>
@@ -30,14 +30,15 @@
  
   <Key code='A'>				ToggleOSDItem("Channel")</>
 
-  <Key code='P' shift>				ShowChannelInfo()</>
+  <Key code='P' shift>			ShowChannelInfo()</>
   <Key code='Q'>				ShowOSDItem("Signal")</>
   <Key code='E'>				ShowOSDItem("NowAndNext")</>
   <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
  
-  	
-
-
+   <!-- space -->
+  <Key code= 32>				SetSource("BDATIMESHIFT", "TS://$(CurrentServiceCmd)")</>
+  <Key code= 'T'>				SetSource("BDATIMESHIFT", "TS://$(CurrentServiceCmd)")</>
+ 
 <!-- Mouse settings -->
 
   <!-- left double click -->

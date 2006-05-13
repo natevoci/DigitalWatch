@@ -29,6 +29,9 @@ nate:
 
 bear:
 Changes:
+- Added a function to view a recording file while in timeshift mode, key shift "W", just "W" returns to the timeshift file.
+- Added a extra command to the SetSource function, can now timeshift the channel your watching by pressing pause. 
+- Fixed the Fast timeshift change method, was not updating the demux pids after the demux was connected.
 - Added in some other changes.
 - Added some changes to allow the video decoder/overlay mixer render method to still work if the mixer is in use, will now default to windowless mode. Note: In the decoder.xml file you now need to Add the input filter prior to adding the overlay mixer.
 - Added some code to fix the picture if the Timeshift format is not set.

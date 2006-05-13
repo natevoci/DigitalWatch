@@ -291,7 +291,7 @@ HRESULT TVControl::Fullscreen(int nFullScreen)
 	return (bResult ? S_OK : E_FAIL);
 }
 
-HRESULT TVControl::SetSource(LPWSTR wszSourceName)
+HRESULT TVControl::SetSource(LPWSTR wszSourceName, LPWSTR wszCommand)
 {
 	CAutoLock sourcesLock(&m_sourcesLock);
 	HRESULT hr;
@@ -325,7 +325,7 @@ HRESULT TVControl::SetSource(LPWSTR wszSourceName)
 				return (log << "Failed to initialise source: " << hr << "\n").Write();
 
 			m_pActiveSource = source;
-			if FAILED(hr = source->Load(NULL))
+			if FAILED(hr = source->Load(wszCommand))
 				return (log << "Failed to load NULL command: " << hr << "\n").Write();
 
 			return S_OK;
@@ -880,10 +880,25 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetSource") == 0)
 	{
-		if (command->LHS.ParameterCount != 1)
-			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+		if (command->LHS.ParameterCount < 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting at least 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		return SetSource(command->LHS.Parameter[0]);
+		if (command->LHS.ParameterCount > 2)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting no more than 2 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount == 1)
+			return SetSource(command->LHS.Parameter[0]);
+
+		//Replace Tokens
+		LPWSTR pStr = NULL;
+		g_pOSD->Data()->ReplaceTokens(command->LHS.Parameter[1], pStr);
+		if (pStr)
+		{
+			strCopy(command->LHS.Parameter[1], pStr);
+			delete[] pStr;
+			pStr = NULL;
+		}
+		return SetSource(command->LHS.Parameter[0], command->LHS.Parameter[1]);
 	}
 	else if (_wcsicmp(pCurr, L"VolumeUp") == 0)
 	{

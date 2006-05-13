@@ -281,7 +281,18 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 
 	//Get list of BDA capture cards
 	if (cardList.cards.size() == 0)
-		return (log << "Could not find any BDA cards\n").Show(E_FAIL);
+	{
+		wchar_t file[MAX_PATH];
+		//Get list of BDA capture cards
+		swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+		cardList.LoadCards((LPWSTR)&file);
+		if (cardList.cards.size() == 0)
+			return (log << "Could not find any BDA cards\n").Show(E_FAIL);
+		else
+			g_pOSD->Data()->AddList(&cardList);
+
+		cardList.SaveCards();
+	}
 	else
 	{
 		g_pOSD->Data()->ClearAllListNames(L"DVBTDeviceInfo");
@@ -1145,8 +1156,17 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 
 	m_pCurrentNetwork = pNetwork;
 	m_pCurrentService = pService;
-
-	return RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
+	HRESULT hr = RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
+	if (hr == S_OK && pNetwork && pService)
+	{
+		LPWSTR wsz = new WCHAR[128];
+		wsprintfW(wsz, L"%i:%i:%i/%i", pNetwork->originalNetworkId, pNetwork->transportStreamId, pNetwork->networkId, pService->serviceId);
+		g_pOSD->Data()->SetItem(L"CurrentServiceCmd", wsz);
+//		g_pOSD->Data()->SetItem(L"CurrentServiceID", pNetwork->networkName);
+//		g_pOSD->Data()->SetItem(L"CurrentNetworkID", pService->serviceName);
+		delete[] wsz;
+	}
+	return hr;
 }
 
 HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)

@@ -4,9 +4,9 @@
   <Key code= 13>				ExitMenu(-1) ShowMenu("MainMenu")</>
   <Key code= 27>				ExitMenu()</>
 
-  <Key code='T' shift>				SetSource("BDA")</>
+  <Key code='T' shift>				SetSource("BDA", "TV://$(CurrentServiceCmd)")</>
   <Key code='F' shift>				SetSource("TSFILESOURCE")</>
-  <Key code='S' shift>				SetSource("BDATIMESHIFT")</>
+  <Key code='S' shift>				SetSource("BDATIMESHIFT", "TS://$(CurrentServiceCmd)")</>
 
   <!-- Cursor-Up and Cursor-Down with shift option. Vol+ Vol- on VP remote -->
   <Key code= 38 shift>				ProgramUp()</>

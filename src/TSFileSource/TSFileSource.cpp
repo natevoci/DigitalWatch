@@ -490,6 +490,15 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
 
+	// Set Demux pids again if loaded from a TimeShift Source as the source filter will clear the demux when its connected
+	if (pService)
+	{
+		if FAILED(hr = AddDemuxPins(pService, m_piBDAMpeg2Demux, pmt))
+		{
+			(log << "Failed to Add Demux Pins\n").Write();
+		}
+	}
+
 //g_pOSD->Data()->SetItem(L"warnings", L"Starting to play the TimeShift File");
 //g_pTv->ShowOSDItem(L"Warnings", 2);
 
@@ -669,7 +678,7 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 		// Map the PID.
 		CComPtr <IMPEG2PIDMap> piPidMap;
 		CComPtr <IMPEG2StreamIdMap> piStreamIdMap;
-		if(pmt->subtype != MEDIASUBTYPE_MPEG2_PROGRAM)
+		if(!pmt || pmt->subtype != MEDIASUBTYPE_MPEG2_PROGRAM)
 		{
 			if (SUCCEEDED(hr = piPin.QueryInterface(&piPidMap)))
 			{

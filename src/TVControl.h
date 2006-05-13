@@ -62,7 +62,7 @@ public:
 	HRESULT AlwaysOnTop(int nAlwaysOnTop = 1);	//0=off, 1=on, 2=toggle
 	HRESULT Fullscreen(int nFullScreen = 1);	//0=off, 1=on, 2=toggle
 
-	HRESULT SetSource(LPWSTR wszSourceName);
+	HRESULT SetSource(LPWSTR wszSourceName, LPWSTR wszCommand = NULL);
 	HRESULT UnloadSource();
 
 	HRESULT VolumeUp(int value);

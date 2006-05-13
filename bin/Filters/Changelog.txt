@@ -1,3 +1,8 @@
+Version 2.2.0.3
+=================
+bear:
+Some minor changes to the update thread.
+
 Version 2.2.0.2
 =================
 bear:

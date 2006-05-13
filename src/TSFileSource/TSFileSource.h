@@ -56,7 +56,7 @@ public:
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);
-	virtual	HRESULT FastLoad(LPWSTR pCmdLine, DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt);
+	virtual	HRESULT FastLoad(LPWSTR pCmdLine, DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt = NULL);
 	virtual HRESULT ReLoad(LPWSTR pCmdLine);
 	virtual HRESULT SetStream(long index);
 	virtual HRESULT GetStreamList(void);
