@@ -174,7 +174,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 					DestroyTSFilters();
 				}
 				else	//Add Demux Pins (TS DSNetworking)
-					if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pTSMpeg2Demux, 1))
+					if FAILED(hr = graphTools.AddDemuxPins(pService, m_pTSMpeg2Demux, 1))
 					{
 						(log << "Failed to Add Output Pins to TS DSNetwork MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 						DestroyTSFilters();
@@ -194,7 +194,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 							else
 							{
 								graphTools.SetReferenceClock(m_pTSMpeg2Demux);
-//								m_pBDADVBTSink->ClearDemuxPids(m_pTSMpeg2Demux);
+//								graphTools.ClearDemuxPids(m_pTSMpeg2Demux);
 							}
 	}
 	else if (m_intSinkType == 3)
@@ -225,7 +225,7 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 						DestroyMPGFilters();
 					}
 					else	//Add Demux Pins (MPG DSNetworking))
-						if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pMPGMpeg2Demux))
+						if FAILED(hr = graphTools.AddDemuxPins(pService, m_pMPGMpeg2Demux))
 						{
 							(log << "Failed to Add Output Pins to MPG DSNetwork MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 							DestroyMPGFilters();

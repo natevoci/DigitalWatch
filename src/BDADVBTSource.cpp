@@ -486,6 +486,28 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 
 		return GetFilterList();
 	}
+	else if (_wcsicmp(pCurr, L"MinimiseDisplay") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pTv->MinimiseScreen();
+		return CloseDisplay();
+	}
+	else if (_wcsicmp(pCurr, L"CloseDisplay") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return CloseDisplay();
+	}
+	else if (_wcsicmp(pCurr, L"OpenDisplay") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return OpenDisplay();
+	}
 	else if (_wcsicmp(pCurr, L"SetDVBTDeviceStatus") == 0)
 	{
 		if (command->LHS.ParameterCount <= 0)
@@ -586,16 +608,29 @@ HRESULT BDADVBTSource::Load(LPWSTR pCmdLine)
 	pCmdLine += 5;
 	if (pCmdLine[0] == '\0')
 	{
-		(log << "Loading default network and service\n").Write();
-		DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
-		DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
-		if (pService)
+		LPWSTR currServiceCmd = g_pOSD->Data()->GetItem(L"CurrentServiceCmd");
+		if (g_pData->settings.application.rememberLastService &&
+			!currServiceCmd &&
+			g_pData->settings.application.lastServiceCmd &&
+			wcslen(g_pData->settings.application.lastServiceCmd) > 0)
 		{
-			return RenderChannel(pNetwork, pService);
+			(log << "Remembering the last network and service\n").Write();
+			g_pOSD->Data()->SetItem(L"CurrentServiceCmd", g_pData->settings.application.lastServiceCmd);
+			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"CurrentServiceCmd")); 
 		}
 		else
 		{
-			return (log << "No default network and service found\n").Write(S_FALSE);
+			(log << "Loading default network and service\n").Write();
+			DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
+			DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
+			if (pService)
+			{
+				return RenderChannel(pNetwork, pService);
+			}
+			else
+			{
+				return (log << "No default network and service found\n").Write(S_FALSE);
+			}
 		}
 	}
 
@@ -902,8 +937,7 @@ HRESULT BDADVBTSource::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannel
 		LPWSTR wsz = new WCHAR[128];
 		wsprintfW(wsz, L"%i:%i:%i/%i", pNetwork->originalNetworkId, pNetwork->transportStreamId, pNetwork->networkId, pService->serviceId);
 		g_pOSD->Data()->SetItem(L"CurrentServiceCmd", wsz);
-//		g_pOSD->Data()->SetItem(L"CurrentServiceID", pNetwork->networkName);
-//		g_pOSD->Data()->SetItem(L"CurrentNetworkID", pService->serviceName);
+		strCopy(g_pData->settings.application.lastServiceCmd, wsz);
 		delete[] wsz;
 	}
 	return hr;
@@ -1022,6 +1056,12 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 				(log << "Failed to stop DWGraph\n").Write();
 
 			(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write();
+			continue;
+		}
+
+		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+		{
+			(log << "Failed to Lock Channel\n").Write();
 			continue;
 		}
 
@@ -1191,6 +1231,41 @@ HRESULT BDADVBTSource::UnloadSink()
 	return S_OK;
 }
 
+HRESULT BDADVBTSource::CloseDisplay()
+{
+	HRESULT hr = S_OK;
+
+	// Stop Tuner Scanner while Recording
+	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+		if FAILED(hr = m_pCurrentTuner->StopScanning())
+			(log << "Failed to Stop the previous Tuner from Scanning while Recording.\n").Write();
+
+	// Stop background thread
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
+
+	//turn off the display by clearing the demux pins 
+	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+	{
+		if(m_piBDAMpeg2Demux)
+			graphTools.ClearDemuxPids(m_piBDAMpeg2Demux);
+	}
+	return hr;
+}
+
+HRESULT BDADVBTSource::OpenDisplay()
+{
+	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+	{
+		//turn on the display by setting the demux pins 
+		if(m_piBDAMpeg2Demux && m_pCurrentService && m_pCurrentSink)
+			graphTools.AddDemuxPins(m_pCurrentService, m_piBDAMpeg2Demux);
+	}
+	return S_OK;
+}
+
 HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService)
 {
 	if (pService == NULL)
@@ -1266,7 +1341,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels
 			continue;	//it's safe to not piPin.Release() because it'll go out of scope
 		}
 
-		if FAILED(hr = VetDemuxPin(piPin, Pid))
+		if FAILED(hr = graphTools.VetDemuxPin(piPin, Pid))
 		{
 			(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
 			continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
@@ -1296,59 +1371,12 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels
 	return hr;
 }
 
-HRESULT BDADVBTSource::VetDemuxPin(IPin* pIPin, ULONG pid)
-{
-	HRESULT hr = E_INVALIDARG;
-
-	if(pIPin == NULL)
-		return hr;
-
-	ULONG pids = 0;
-	IMPEG2PIDMap* muxMapPid;
-	if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid))){
-
-		IEnumPIDMap *pIEnumPIDMap;
-		if (SUCCEEDED(muxMapPid->EnumPIDMap(&pIEnumPIDMap))){
-			ULONG pNumb = 0;
-			PID_MAP pPidMap;
-			while(pIEnumPIDMap->Next(1, &pPidMap, &pNumb) == S_OK){
-				if (pid != pPidMap.ulPID)
-				{
-					pids = pPidMap.ulPID;
-					hr = muxMapPid->UnmapPID(1, &pids);
-				}
-			}
-		}
-		muxMapPid->Release();
-	}
-	else {
-
-		IMPEG2StreamIdMap* muxStreamMap;
-		if(SUCCEEDED(pIPin->QueryInterface (&muxStreamMap))){
-
-			IEnumStreamIdMap *pIEnumStreamMap;
-			if (SUCCEEDED(muxStreamMap->EnumStreamIdMap(&pIEnumStreamMap))){
-				ULONG pNumb = 0;
-				STREAM_ID_MAP pStreamIdMap;
-				while(pIEnumStreamMap->Next(1, &pStreamIdMap, &pNumb) == S_OK){
-					if (pid != pStreamIdMap.stream_id)
-					{
-						pids = pStreamIdMap.stream_id;
-						hr = muxStreamMap->UnmapStreamId(1, &pids);
-					}
-				}
-			}
-			muxStreamMap->Release();
-		}
-	}
-	return S_OK;
-}
-
 HRESULT BDADVBTSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
+	graphTools.GetVideoMedia(&mediaType);
+/*
 	mediaType.majortype = KSDATAFORMAT_TYPE_VIDEO;
 	mediaType.subtype = MEDIASUBTYPE_MPEG2_VIDEO;
 	mediaType.bFixedSizeSamples = TRUE;
@@ -1358,7 +1386,7 @@ HRESULT BDADVBTSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *s
 	mediaType.pUnk = NULL;
 	mediaType.cbFormat = sizeof(g_Mpeg2ProgramVideo);
 	mediaType.pbFormat = g_Mpeg2ProgramVideo;
-
+*/
 	return AddDemuxPins(pService, video, L"Video", &mediaType, streamsRendered);
 }
 
@@ -1366,7 +1394,8 @@ HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *str
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
+	graphTools.GetMP2Media(&mediaType);
+/*
 	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
 	mediaType.majortype = MEDIATYPE_Audio;
 	mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
@@ -1380,7 +1409,7 @@ HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *str
 //	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
 	mediaType.pbFormat = MPEG2AudioFormat;
 //	mediaType.pbFormat = g_MPEG1AudioFormat;
-
+*/
 	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, streamsRendered);
 }
 
@@ -1388,7 +1417,8 @@ HRESULT BDADVBTSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *str
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
+	graphTools.GetAC3Media(&mediaType);
+/*
 	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
 	mediaType.majortype = MEDIATYPE_Audio;
 	mediaType.subtype = MEDIASUBTYPE_DOLBY_AC3;
@@ -1399,7 +1429,7 @@ HRESULT BDADVBTSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *str
 	mediaType.pUnk = NULL;
 	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
 	mediaType.pbFormat = g_MPEG1AudioFormat;
-
+*/
 //	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
 	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, streamsRendered);
 }
@@ -1408,18 +1438,17 @@ HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
+	graphTools.GetTelexMedia(&mediaType);
+/*
 	mediaType.majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
 	mediaType.subtype = KSDATAFORMAT_SUBTYPE_NONE;
 	mediaType.formattype = KSDATAFORMAT_SPECIFIER_NONE;
-
+*/
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
 }
 
 void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 {
-//	return ;
-//	HRESULT hr;
 	LPWSTR str = NULL;
 	strCopy(str, L"");
 

@@ -75,7 +75,7 @@ public:
 //DWS28-02-2006	HRESULT AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType = 0, LPWSTR pFileName = NULL);
 	HRESULT AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType = 0, LPWSTR pFileName = NULL, LPWSTR pPath = NULL);
 	HRESULT NullFileName(CComPtr<IBaseFilter>& pFilter, int intSinkType);
-	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0);
+/*	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
 	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
@@ -98,7 +98,8 @@ public:
 	HRESULT StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
 	HRESULT StopSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
 	HRESULT PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
-//DWS28-02-2006	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL);
+*/
+  //DWS28-02-2006	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL);
 	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL, LPWSTR pPath = NULL);
 	HRESULT StopRecording(void);
 	HRESULT PauseRecording(void);

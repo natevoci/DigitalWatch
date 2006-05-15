@@ -29,6 +29,9 @@ nate:
 
 bear:
 Changes:
+- Started rationalise the code into the filtergraph tools class.
+- Extended the close display function on QuiteOnMinimise to the "Watch TV" mode so you can open several instances of DW and select the instance you want to watch by maximising. 
+- Added a Remember Last Service setting, as well as saving the last service used in the settings.xml file.
 - Added a function to view a recording file while in timeshift mode, key shift "W", just "W" returns to the timeshift file.
 - Added a extra command to the SetSource function, can now timeshift the channel your watching by pressing pause. 
 - Fixed the Fast timeshift change method, was not updating the demux pids after the demux was connected.

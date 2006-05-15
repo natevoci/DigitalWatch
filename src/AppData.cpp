@@ -65,6 +65,9 @@ AppData::AppData()
 	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
 	settings.application.addToROT = TRUE;
 	settings.application.multicard = FALSE;
+	settings.application.rememberLastService = TRUE;
+	settings.application.lastServiceCmd = new wchar_t[MAX_PATH];;
+	wcscpy(settings.application.lastServiceCmd, L"");
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
@@ -223,6 +226,9 @@ AppData::~AppData()
 	if (application.appPath)
 		delete[] application.appPath;
 
+	if (settings.application.lastServiceCmd)
+		delete[] settings.application.lastServiceCmd;
+
 	if (settings.capture.fileName)
 		delete[] settings.capture.fileName;
 
@@ -327,6 +333,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"multicard") == 0)
 				return GetBool(settings.application.multicard);
+
+			if (_wcsicmp(selection, L"rememberLastService") == 0)
+				return GetBool(settings.application.rememberLastService);
 
 			return NULL;
 		}
@@ -798,6 +807,18 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"MultiCard") == 0)
 				{
 					settings.application.multicard = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"RememberLastService") == 0)
+				{
+					settings.application.rememberLastService = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"LastServiceCmd") == 0)
+				{
+					if (pSubElement->value)
+						wcscpy(settings.application.lastServiceCmd, pSubElement->value);
+
 					continue;
 				}
 			}
@@ -1286,6 +1307,8 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"Priority", pValue));
 		pApplication->Elements.Add(new XMLElement(L"AddToROT", (settings.application.addToROT ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"MultiCard", (settings.application.multicard ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"RememberLastService", (settings.application.rememberLastService ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"LastServiceCmd", settings.application.lastServiceCmd));
 	}
 
 	XMLElement *pWindow = new XMLElement(L"Window");

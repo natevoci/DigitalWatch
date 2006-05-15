@@ -29,6 +29,7 @@
 #include <dshow.h>
 #include <bdatif.h>
 #include "LogMessage.h"
+#include "DVBTChannels.h"
 
 typedef enum _RequestedPinDirection
 {
@@ -77,6 +78,27 @@ public:
 	HRESULT ClearDemuxPids(CComPtr<IBaseFilter>& pFilter);
 	HRESULT ClearDemuxPins(IPin *pIPin);
 	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
+	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0);
+	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsTS(DVBTChannels_Service* pService, long *streamsRendered);
+	HRESULT GetAC3Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMP2Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMP1Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetAACMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetVideoMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetH264Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetMpeg4Media(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTIFMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTelexMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT GetTSMedia(AM_MEDIA_TYPE *pintype);
+
+private:
+		CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
+
 };
 
 #endif

@@ -36,8 +36,8 @@
   <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
  
    <!-- space -->
-  <Key code= 32>				SetSource("BDATIMESHIFT", "TS://$(CurrentServiceCmd)")</>
-  <Key code= 'T'>				SetSource("BDATIMESHIFT", "TS://$(CurrentServiceCmd)")</>
+  <Key code= 32>				SetSource("BDATIMESHIFT", "TS://$(CurrentServiceCmd)") PlayPause()</>
+  <Key code= 'T'>				SetSource("BDATIMESHIFT", "TS://$(CurrentServiceCmd)") PlayPause()</>
  
 <!-- Mouse settings -->
 

@@ -119,10 +119,7 @@ protected:
 	HRESULT UnloadFileSource();
 
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService);
-
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
-		
-	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);

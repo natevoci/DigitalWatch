@@ -867,19 +867,32 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 	pCmdLine += 5;
 	if (pCmdLine[0] == '\0')
 	{
-		(log << "Loading default network and service\n").Write();
-		DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
-		DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
-		if (pService)
+		LPWSTR currServiceCmd = g_pOSD->Data()->GetItem(L"CurrentServiceCmd");
+		if (g_pData->settings.application.rememberLastService &&
+			!currServiceCmd &&
+			g_pData->settings.application.lastServiceCmd &&
+			wcslen(g_pData->settings.application.lastServiceCmd) > 0)
 		{
-			if (pService == m_pCurrentService)
-				return S_OK;
-
-			return RenderChannel(pNetwork, pService);
+			(log << "Remembering the last network and service\n").Write();
+			g_pOSD->Data()->SetItem(L"CurrentServiceCmd", g_pData->settings.application.lastServiceCmd);
+			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"CurrentServiceCmd")); 
 		}
 		else
 		{
-			return (log << "No default network and service found\n").Write(S_FALSE);
+			(log << "Loading default network and service\n").Write();
+			DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
+			DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
+			if (pService)
+			{
+				if (pService == m_pCurrentService)
+					return S_OK;
+
+				return RenderChannel(pNetwork, pService);
+			}
+			else
+			{
+				return (log << "No default network and service found\n").Write(S_FALSE);
+			}
 		}
 	}
 
@@ -1162,8 +1175,7 @@ HRESULT BDADVBTimeShift::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChann
 		LPWSTR wsz = new WCHAR[128];
 		wsprintfW(wsz, L"%i:%i:%i/%i", pNetwork->originalNetworkId, pNetwork->transportStreamId, pNetwork->networkId, pService->serviceId);
 		g_pOSD->Data()->SetItem(L"CurrentServiceCmd", wsz);
-//		g_pOSD->Data()->SetItem(L"CurrentServiceID", pNetwork->networkName);
-//		g_pOSD->Data()->SetItem(L"CurrentNetworkID", pService->serviceName);
+		strCopy(g_pData->settings.application.lastServiceCmd, wsz);
 		delete[] wsz;
 	}
 	return hr;
@@ -1175,8 +1187,10 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 	LogMessageIndent indent(&log);
 
 	//Check the requested Service is already in the Network if FULL Mux
-	if(m_pCurrentFileSource && m_pCurrentService && m_pCurrentService->serviceName &&
-			g_pData->values.timeshift.format == 1)
+	if(g_pData->values.timeshift.format == 1 &&
+		m_pCurrentFileSource && m_pCurrentService &&
+		m_pCurrentService->serviceName
+		)
 	{
 		if SUCCEEDED(m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, FALSE))
 		{
@@ -1435,7 +1449,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				tuner->pSink && tuner->pSink->IsRecording())
 			{
 				if(tuner->pBDAMpeg2Demux)
-					tuner->pSink->ClearDemuxPids(tuner->pBDAMpeg2Demux);
+					graphTools.ClearDemuxPids(tuner->pBDAMpeg2Demux);
 
 				g_pData->values.application.multicard = TRUE;
 				(log << "Unable to unload the old sink graph, Recording Still in Progress\n").Write();
@@ -1462,7 +1476,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
 				{
 					if(m_pBDAMpeg2Demux )
-						m_pCurrentSink->ClearDemuxPids(m_pBDAMpeg2Demux);
+						graphTools.ClearDemuxPids(m_pBDAMpeg2Demux);
 
 //					if FAILED(hr = UnLoadSinkGraph())
 //					{
@@ -1839,7 +1853,7 @@ HRESULT BDADVBTimeShift::CloseDisplay()
 		if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
 		{
 			if(m_pBDAMpeg2Demux)
-				m_pCurrentSink->ClearDemuxPids(m_pBDAMpeg2Demux);
+				graphTools.ClearDemuxPids(m_pBDAMpeg2Demux);
 		}
 	}
 	return hr;
@@ -1853,7 +1867,7 @@ HRESULT BDADVBTimeShift::OpenDisplay()
 		{
 			//turn on the display by setting the demux pins 
 			if(m_pBDAMpeg2Demux && m_pCurrentService && m_pCurrentSink)
-				m_pCurrentSink->AddDemuxPins(m_pCurrentService, m_pBDAMpeg2Demux, 0);
+				graphTools.AddDemuxPins(m_pCurrentService, m_pBDAMpeg2Demux);
 		}
 	}
 	else //Check if service already running
@@ -1907,7 +1921,7 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 				if FAILED(hr = LoadDemux())
 					return (log << "Failed to Add DeMultiplexer: " << hr << "\n").Write(hr);
 
-				if FAILED(hr = AddDemuxPins(m_pCurrentService))
+				if FAILED(hr = graphTools.AddDemuxPins(m_pCurrentService, m_pBDAMpeg2Demux))
 					return (log << "Failed to Add Demux Pins: " << hr << "\n").Write(hr);
 				else
 					m_bFileSourceActive = FALSE;
@@ -1939,6 +1953,9 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 
 		return (log << "Failed to Start Graph. Possibly tuner already in use: " << hr << "\n").Write(hr);
 	}
+
+	if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+		return (log << "Failed to Lock Channel: " << hr << "\n").Write(hr);
 
 	if FAILED(hr = m_pCurrentTuner->StopTIF())
 		return (log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write(hr);
@@ -2345,18 +2362,15 @@ HRESULT BDADVBTimeShift::UnloadFileSource()
 
 	HRESULT hr;
 
+	// Stop background thread
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
+
 	if(m_pDWGraph)
 	{
-		// Stop background thread
-		if FAILED(hr = StopThread())
-			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
-
-		if (hr == S_FALSE)
-			(log << "Killed thread\n").Write();
-
-		if FAILED(hr = m_pDWGraph->Stop())
-			(log << "Failed to stop the File Source DWGraph\n").Write();
-
 		if FAILED(hr = m_pCurrentFileSource->UnloadFilters())
 			return (log << "Failed to remove File Source filters: " << hr << "\n").Write(hr);
 /*
@@ -2459,7 +2473,7 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, DVBTChanne
 			continue;	//it's safe to not piPin.Release() because it'll go out of scope
 		}
 
-		if FAILED(hr = VetDemuxPin(piPin, Pid))
+		if FAILED(hr = graphTools.VetDemuxPin(piPin, Pid))
 		{
 			(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
 			continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
@@ -2489,68 +2503,12 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, DVBTChanne
 	return hr;
 }
 
-HRESULT BDADVBTimeShift::VetDemuxPin(IPin* pIPin, ULONG pid)
-{
-	HRESULT hr = E_INVALIDARG;
-
-	if(pIPin == NULL)
-		return hr;
-
-	ULONG pids = 0;
-	IMPEG2PIDMap* muxMapPid;
-	if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid))){
-
-		IEnumPIDMap *pIEnumPIDMap;
-		if (SUCCEEDED(muxMapPid->EnumPIDMap(&pIEnumPIDMap))){
-			ULONG pNumb = 0;
-			PID_MAP pPidMap;
-			while(pIEnumPIDMap->Next(1, &pPidMap, &pNumb) == S_OK){
-				if (pid != pPidMap.ulPID)
-				{
-					pids = pPidMap.ulPID;
-					hr = muxMapPid->UnmapPID(1, &pids);
-				}
-			}
-		}
-		muxMapPid->Release();
-	}
-	else {
-
-		IMPEG2StreamIdMap* muxStreamMap;
-		if(SUCCEEDED(pIPin->QueryInterface (&muxStreamMap))){
-
-			IEnumStreamIdMap *pIEnumStreamMap;
-			if (SUCCEEDED(muxStreamMap->EnumStreamIdMap(&pIEnumStreamMap))){
-				ULONG pNumb = 0;
-				STREAM_ID_MAP pStreamIdMap;
-				while(pIEnumStreamMap->Next(1, &pStreamIdMap, &pNumb) == S_OK){
-					if (pid != pStreamIdMap.stream_id)
-					{
-						pids = pStreamIdMap.stream_id;
-						hr = muxStreamMap->UnmapStreamId(1, &pids);
-					}
-				}
-			}
-			muxStreamMap->Release();
-		}
-	}
-	return S_OK;
-}
 
 HRESULT BDADVBTimeShift::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-	mediaType.majortype = KSDATAFORMAT_TYPE_VIDEO;
-	mediaType.subtype = MEDIASUBTYPE_MPEG2_VIDEO;
-	mediaType.bFixedSizeSamples = TRUE;
-	mediaType.bTemporalCompression = 0;
-	mediaType.lSampleSize = 1;
-	mediaType.formattype = FORMAT_MPEG2Video;
-	mediaType.pUnk = NULL;
-	mediaType.cbFormat = sizeof(g_Mpeg2ProgramVideo);
-	mediaType.pbFormat = g_Mpeg2ProgramVideo;
+	graphTools.GetVideoMedia(&mediaType);
 
 	return AddDemuxPins(pService, video, L"Video", &mediaType, streamsRendered);
 }
@@ -2559,21 +2517,7 @@ HRESULT BDADVBTimeShift::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *s
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
-	mediaType.majortype = MEDIATYPE_Audio;
-	mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
-//	mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
-	mediaType.bFixedSizeSamples = TRUE;
-	mediaType.bTemporalCompression = 0;
-	mediaType.lSampleSize = 1;
-	mediaType.formattype = FORMAT_WaveFormatEx;
-	mediaType.pUnk = NULL;
-	mediaType.cbFormat = sizeof(MPEG2AudioFormat);
-//	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
-	mediaType.pbFormat = MPEG2AudioFormat;
-//	mediaType.pbFormat = g_MPEG1AudioFormat;
-
+	graphTools.GetMP2Media(&mediaType);
 	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, streamsRendered);
 }
 
@@ -2581,31 +2525,15 @@ HRESULT BDADVBTimeShift::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *s
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
-	mediaType.majortype = MEDIATYPE_Audio;
-	mediaType.subtype = MEDIASUBTYPE_DOLBY_AC3;
-	mediaType.bFixedSizeSamples = TRUE;
-	mediaType.bTemporalCompression = 0;
-	mediaType.lSampleSize = 1;
-	mediaType.formattype = FORMAT_WaveFormatEx;
-	mediaType.pUnk = NULL;
-	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
-	mediaType.pbFormat = g_MPEG1AudioFormat;
-
+	graphTools.GetAC3Media(&mediaType);
 	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, streamsRendered);
-//	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
 }
 
 HRESULT BDADVBTimeShift::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
-
-	mediaType.majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
-	mediaType.subtype = KSDATAFORMAT_SUBTYPE_NONE;
-	mediaType.formattype = KSDATAFORMAT_SPECIFIER_NONE;
-
+	graphTools.GetTelexMedia(&mediaType);
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
 }
 

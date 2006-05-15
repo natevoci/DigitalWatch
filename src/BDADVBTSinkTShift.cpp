@@ -169,7 +169,7 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 					DestroyTSFilters();
 				}
 				else	//Add Demux Pins (TS TimeShifting)
-					if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pTSMpeg2Demux, 1))
+					if FAILED(hr = graphTools.AddDemuxPins(pService, m_pTSMpeg2Demux, 1))
 					{
 						(log << "Failed to Add Output Pins to TS TimeShift MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 						DestroyTSFilters();
@@ -215,7 +215,7 @@ HRESULT BDADVBTSinkTShift::AddSinkFilters(DVBTChannels_Service* pService)
 						DestroyMPGFilters();
 					}
 					else	//Add Demux Pins (MPG TimeShifting)
-						if FAILED(hr = m_pBDADVBTSink->AddDemuxPins(pService, m_pMPGMpeg2Demux))
+						if FAILED(hr = graphTools.AddDemuxPins(pService, m_pMPGMpeg2Demux))
 						{
 							(log << "Failed to Add Output Pins to MPG TimeShift MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 								DestroyMPGFilters();

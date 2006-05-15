@@ -18,6 +18,7 @@ $(NetworkName) - Current Network Name
 $(ProgramName) - Current Program Name
 $(NetworkNumber) - Current Network Number
 $(ProgramNumber) - Current Program Number
+$(CurrentServiceCmd) - Current "ONID:TSID:NID/SID" for use with SetSource("BDA", $(CurrentServiceCmd))
 
 $(Frequency)
 $(VideoPid)
@@ -668,6 +669,15 @@ $(() - $(
 			<height>40</height>
 			<gap>10</gap>
 			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Remember Last Service</text>
+			<onSelect>ShowMenu("RememberLastService")</onSelect>
+			<onRight>ShowMenu("RememberLastService")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
 			<text> Start With Full Screen</text>
 			<onSelect>ShowMenu("StartFullscreen")</onSelect>
 			<onRight>ShowMenu("StartFullscreen")</onRight>
@@ -1018,6 +1028,51 @@ $(() - $(
 			<font height=30 weight=700 color="#FFFFFF" />
 			<text> False</text>
 			<onSelect>SetMultiCard("False") ShowMenu("MultiCards")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="RememberLastService">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="MultiCardOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.rememberLastService</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetRememberLastService("True") ShowMenu("RememberLastService")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetRememberLastService("False") ShowMenu("RememberLastService")</onSelect>
 		</item>
 	</list>
 

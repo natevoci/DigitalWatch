@@ -28,6 +28,19 @@
 #include <winerror.h>
 #include <vector>
 
+#include <ks.h>
+#include <ksmedia.h>
+#include <bdamedia.h>
+#include "dsnetifc.h"
+#include "TSFileSinkGuids.h"
+#include "Winsock.h"
+#include "TSFileSource/MediaFormats.h"
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/timeb.h>
+
 HRESULT FilterGraphTools::AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rclsid, IBaseFilter **ppiFilter, LPCWSTR pName, BOOL bSilent)
 {
 	HRESULT hr;
@@ -1096,3 +1109,466 @@ HRESULT FilterGraphTools::VetDemuxPin(IPin* pIPin, ULONG pid)
 	return S_OK;
 }
 
+HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType)
+{
+	if (pService == NULL)
+	{
+		(log << "Skipping Demux Pins. No service passed.\n").Write();
+		return E_INVALIDARG;
+	}
+
+	if (pFilter == NULL)
+	{
+		(log << "Skipping Demux Pins. No Demultiplexer passed.\n").Write();
+		return E_INVALIDARG;
+	}
+
+	(log << "Adding Sink Demux Pins\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+	if (m_piMpeg2Demux)
+		m_piMpeg2Demux.Release();
+
+	if FAILED(hr = pFilter->QueryInterface(&m_piMpeg2Demux))
+	{
+		(log << "Failed to get the IMeg2Demultiplexer Interface on the Sink Demux.\n").Write();
+		return E_FAIL;
+	}
+
+	long videoStreamsRendered;
+	long audioStreamsRendered;
+	long tsStreamsRendered;
+
+	if (intPinType)
+	{
+		// render TS
+		hr = AddDemuxPinsTS(pService, &tsStreamsRendered);
+	}
+	else
+	{
+		// render video
+		hr = AddDemuxPinsVideo(pService, &videoStreamsRendered);
+
+		// render teletext if video was rendered
+		if (videoStreamsRendered > 0)
+			hr = AddDemuxPinsTeletext(pService);
+
+		// render mp2 audio
+		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+
+		// render ac3 audio if no mp2 was rendered
+		if (audioStreamsRendered == 0)
+			hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
+	}
+/*
+	//Set reference clock
+	CComQIPtr<IReferenceClock> piRefClock(pFilter);
+	if (!piRefClock)
+		return (log << "Failed to get reference clock interface on Sink demux filter: " << hr << "\n").Write(hr);
+
+	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
+	if (!piMediaFilter)
+		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
+		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
+*/
+	if (m_piMpeg2Demux)
+		m_piMpeg2Demux.Release();
+
+	indent.Release();
+	(log << "Finished Adding Demux Pins\n").Write();
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered)
+{
+	if (pService == NULL)
+		return E_INVALIDARG;
+
+	HRESULT hr = S_OK;
+
+	long renderedStreams = 0;
+
+	if (!wcsicmp(pPinName, L"TS"))
+	{
+		long count = pService->GetStreamCount();
+
+		wchar_t text[16];
+		swprintf((wchar_t*)&text, pPinName);
+
+		CComPtr <IPin> piPin;
+
+		// Get the Pin
+		CComPtr<IBaseFilter>pFilter;
+		if SUCCEEDED(hr = m_piMpeg2Demux->QueryInterface(&pFilter))
+		{
+			if FAILED(hr = pFilter->FindPin(pPinName, &piPin))
+			{
+				// Create the Pin
+				if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+				{
+					(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+					return hr;
+				}
+			}
+		}
+		else
+		{
+			// Create the Pin
+			if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+			{
+				(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+				return hr;
+			}
+		}
+
+		// Map the PID.
+		CComPtr <IMPEG2PIDMap> piPidMap;
+		if FAILED(hr = piPin.QueryInterface(&piPidMap))
+		{
+			(log << "Failed to query demux " << pPinName << " pin : " << hr << "\n").Write();
+			return hr;	//it's safe to not piPin.Release() because it'll go out of scope
+		}
+
+		for ( long currentStream=0 ; currentStream<count ; currentStream++ )
+		{
+			ULONG Pid = pService->GetStreamPID(currentStream);
+			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+			{
+				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+			}
+			renderedStreams++;
+		}
+
+		ULONG Pidarray[6] = {0x00, 0x10, 0x11, 0x12, 0x13, 0x14};
+		if FAILED(hr = piPidMap->MapPID(6, &Pidarray[0], MEDIA_TRANSPORT_PACKET))
+		{
+			(log << "Failed to map demux " << pPinName << " pin Fixed Pids : " << hr << "\n").Write();
+		}
+
+		renderedStreams++;
+	}
+	else
+	{
+		long count = pService->GetStreamCount(streamType);
+		BOOL bMultipleStreams = (pService->GetStreamCount(streamType) > 1) ? 1 : 0;
+
+		for ( long currentStream=0 ; currentStream<count ; currentStream++ )
+		{
+			ULONG Pid = pService->GetStreamPID(streamType, currentStream);
+
+			wchar_t text[16];
+			swprintf((wchar_t*)&text, pPinName);
+			if (bMultipleStreams)
+				swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
+
+			CComPtr <IPin> piPin;
+
+			// Get the Pin
+			CComPtr<IBaseFilter>pFilter;
+			if SUCCEEDED(hr = m_piMpeg2Demux->QueryInterface(&pFilter))
+			{
+				if FAILED(hr = pFilter->FindPin(pPinName, &piPin))
+				{
+					// Create the Pin
+					(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
+					LogMessageIndent indent(&log);
+
+					if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+					{
+						(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+						return hr;
+					}
+					indent.Release();
+				}
+			}
+			else
+			{
+				(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
+				LogMessageIndent indent(&log);
+
+				// Create the Pin
+				if (S_OK != (hr = m_piMpeg2Demux->CreateOutputPin(pMediaType, (wchar_t*)&text, &piPin)))
+				{
+					(log << "Failed to create demux " << pPinName << " pin : " << hr << "\n").Write();
+					return hr;
+				}
+				indent.Release();
+			}
+
+			// Map the PID.
+			CComPtr <IMPEG2PIDMap> piPidMap;
+			if FAILED(hr = piPin.QueryInterface(&piPidMap))
+			{
+				(log << "Failed to query demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;	//it's safe to not piPin.Release() because it'll go out of scope
+			}
+
+			if FAILED(hr = VetDemuxPin(piPin, Pid))
+			{
+				(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+			}
+
+			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
+			{
+				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+			}
+
+			if (renderedStreams != 0)
+				continue;
+
+			renderedStreams++;
+		}
+	}
+
+	if (streamsRendered)
+		*streamsRendered = renderedStreams;
+
+	return hr;
+}
+
+HRESULT FilterGraphTools::AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetVideoMedia(&mediaType);
+	return AddDemuxPins(pService, video, L"Video", &mediaType, streamsRendered);
+}
+
+HRESULT FilterGraphTools::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetMP2Media(&mediaType);
+	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, streamsRendered);
+}
+
+HRESULT FilterGraphTools::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetAC3Media(&mediaType);
+//	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, streamsRendered);
+}
+
+HRESULT FilterGraphTools::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+	GetTelexMedia(&mediaType);
+	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
+}
+
+HRESULT FilterGraphTools::AddDemuxPinsTS(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetTSMedia(&mediaType);
+	return AddDemuxPins(pService, unknown, L"TS", &mediaType, streamsRendered);
+}
+
+
+HRESULT FilterGraphTools::GetAC3Media(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_DOLBY_AC3;
+	pintype->cbFormat = sizeof(MPEG1AudioFormat);//sizeof(AC3AudioFormat); //
+	pintype->pbFormat = MPEG1AudioFormat;//AC3AudioFormat; //
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->formattype = FORMAT_WaveFormatEx;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetMP2Media(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_MPEG2_AUDIO; 
+	pintype->formattype = FORMAT_WaveFormatEx; 
+	pintype->cbFormat = sizeof(MPEG2AudioFormat);
+	pintype->pbFormat = MPEG2AudioFormat; 
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetMP1Media(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_MPEG1Payload;
+	pintype->formattype = FORMAT_WaveFormatEx; 
+	pintype->cbFormat = sizeof(MPEG1AudioFormat);
+	pintype->pbFormat = MPEG1AudioFormat;
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetAACMedia(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_AAC;
+	pintype->formattype = FORMAT_WaveFormatEx; 
+	pintype->cbFormat = sizeof(AACAudioFormat);
+	pintype->pbFormat = AACAudioFormat;
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetVideoMedia(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = KSDATAFORMAT_TYPE_VIDEO;
+	pintype->subtype = MEDIASUBTYPE_MPEG2_VIDEO;
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = FALSE;
+	pintype->lSampleSize = 1;
+	pintype->formattype = FORMAT_MPEG2Video;
+	pintype->pUnk = NULL;
+//	pintype->cbFormat = sizeof(Mpeg2ProgramVideo);
+//	pintype->pbFormat = Mpeg2ProgramVideo;
+	pintype->cbFormat = sizeof(g_Mpeg2ProgramVideo);
+	pintype->pbFormat = g_Mpeg2ProgramVideo;
+
+	return S_OK;
+}
+static GUID H264_SubType = {0x8D2D71CB, 0x243F, 0x45E3, {0xB2, 0xD8, 0x5F, 0xD7, 0x96, 0x7E, 0xC0, 0x9B}};
+
+HRESULT FilterGraphTools::GetH264Media(AM_MEDIA_TYPE *pintype)
+
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Video;
+//	pintype->subtype = FOURCCMap(MAKEFOURCC('h','2','6','4'));
+	pintype->subtype = H264_SubType;
+	pintype->bFixedSizeSamples = FALSE;
+	pintype->bTemporalCompression = TRUE;
+	pintype->lSampleSize = 1;
+
+	pintype->formattype = FORMAT_VideoInfo;
+	pintype->pUnk = NULL;
+	pintype->cbFormat = sizeof(H264VideoFormat);
+	pintype->pbFormat = H264VideoFormat;
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetMpeg4Media(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Video;
+	pintype->subtype = FOURCCMap(MAKEFOURCC('h','2','6','4'));
+	pintype->bFixedSizeSamples = FALSE;
+	pintype->bTemporalCompression = TRUE;
+	pintype->lSampleSize = 1;
+
+	pintype->formattype = FORMAT_VideoInfo;
+	pintype->pUnk = NULL;
+	pintype->cbFormat = sizeof(H264VideoFormat);
+	pintype->pbFormat = H264VideoFormat;
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetTIFMedia(AM_MEDIA_TYPE *pintype)
+
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
+	pintype->subtype = MEDIASUBTYPE_DVB_SI; 
+	pintype->formattype = KSDATAFORMAT_SPECIFIER_NONE;
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetTelexMedia(AM_MEDIA_TYPE *pintype)
+
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
+	pintype->subtype = KSDATAFORMAT_SUBTYPE_NONE; 
+	pintype->formattype = KSDATAFORMAT_SPECIFIER_NONE; 
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetTSMedia(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Stream;
+	pintype->subtype = KSDATAFORMAT_SUBTYPE_BDA_MPEG2_TRANSPORT; 
+	pintype->formattype = FORMAT_None; 
+
+	return S_OK;
+}

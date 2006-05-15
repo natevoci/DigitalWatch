@@ -451,6 +451,7 @@ HRESULT BDADVBTSink::NullFileName(CComPtr<IBaseFilter>& pFilter, int intSinkType
 
 	return S_OK;
 }
+/*
 
 HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType)
 {
@@ -505,7 +506,7 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseF
 		if (audioStreamsRendered == 0)
 			hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
 	}
-/*
+///\*
 	//Set reference clock
 	CComQIPtr<IReferenceClock> piRefClock(pFilter);
 	if (!piRefClock)
@@ -517,7 +518,7 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseF
 
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-*/
+/*\/
 	if (m_piMpeg2Demux)
 		m_piMpeg2Demux.Release();
 
@@ -652,7 +653,7 @@ HRESULT BDADVBTSink::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_S
 				continue;	//it's safe to not piPin.Release() because it'll go out of scope
 			}
 
-			if FAILED(hr = VetDemuxPin(piPin, Pid))
+			if FAILED(hr = graphTools.VetDemuxPin(piPin, Pid))
 			{
 				(log << "Failed to unmap demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
@@ -1114,7 +1115,7 @@ HRESULT BDADVBTSink::PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<
 
 	return hr;
 }
-
+*/
 //DWS28-02-2006	HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename)
 HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename, LPWSTR pPath)
 {

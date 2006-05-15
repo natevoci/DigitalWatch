@@ -63,6 +63,8 @@ public:
 			int priority;
 			BOOL addToROT;
 			BOOL multicard;
+			BOOL rememberLastService;
+			LPWSTR lastServiceCmd;
 			//LPWSTR logFilename;
 		} application;
 
