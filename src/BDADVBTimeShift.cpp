@@ -1725,6 +1725,12 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 			count++;
 		}
 
+		// Stop background thread
+		if FAILED(hr = StopThread())
+			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+		if (hr == S_FALSE)
+			(log << "Killed thread\n").Write();
+
 //		g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
 //		g_pTv->ShowOSDItem(L"Warnings", 2);
 		if FAILED(hr = m_pCurrentFileSource->ReLoad(pFileName))
@@ -1732,7 +1738,12 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 
 		m_pCurrentFileSource->SeekTo(100);
 
+		// Start the background thread for updating statistics
+		if FAILED(hr = StartThread())
+			(log << "Failed to start background thread: " << hr << "\n").Write();
+
 		UpdateStatusDisplay();
+
 	}
 	else if (m_pCurrentTuner && m_pCurrentTuner->IsActive())	// if sink graph is still running 
 	{
@@ -1758,6 +1769,12 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 			count++;
 		}
 
+		// Stop background thread
+		if FAILED(hr = StopThread())
+			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+		if (hr == S_FALSE)
+			(log << "Killed thread\n").Write();
+
 //		g_pOSD->Data()->SetItem(L"warnings", L"Now Loading TimeShift File");
 //		g_pTv->ShowOSDItem(L"Warnings", 2);
 		if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
@@ -1765,8 +1782,11 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 
 		m_pCurrentFileSource->SeekTo(100);
 
-		UpdateStatusDisplay();
+		// Start the background thread for updating statistics
+		if FAILED(hr = StartThread())
+			(log << "Failed to start background thread: " << hr << "\n").Write();
 
+		UpdateStatusDisplay();
 	}
 
 	return hr;
@@ -1921,7 +1941,7 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 				if FAILED(hr = LoadDemux())
 					return (log << "Failed to Add DeMultiplexer: " << hr << "\n").Write(hr);
 
-				if FAILED(hr = graphTools.AddDemuxPins(m_pCurrentService, m_pBDAMpeg2Demux))
+				if FAILED(hr = AddDemuxPins(m_pCurrentService))
 					return (log << "Failed to Add Demux Pins: " << hr << "\n").Write(hr);
 				else
 					m_bFileSourceActive = FALSE;

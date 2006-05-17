@@ -1059,12 +1059,6 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			continue;
 		}
 
-		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
-		{
-			(log << "Failed to Lock Channel\n").Write();
-			continue;
-		}
-
 		if FAILED(hr = m_pCurrentTuner->StopTIF())
 		{
 			(log << "Failed to stop the BDA TIF Filter.\n").Write();

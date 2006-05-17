@@ -29,6 +29,7 @@ nate:
 
 bear:
 Changes:
+- Fixed a few bugs regarding the ViewRecordFile function.
 - Started rationalise the code into the filtergraph tools class.
 - Extended the close display function on QuiteOnMinimise to the "Watch TV" mode so you can open several instances of DW and select the instance you want to watch by maximising. 
 - Added a Remember Last Service setting, as well as saving the last service used in the settings.xml file.

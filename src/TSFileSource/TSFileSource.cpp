@@ -520,6 +520,12 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 
 	HRESULT hr = E_FAIL;
 
+	// Stop background thread
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
+
 	if (m_pTSFileSource)
 	{
 		// Set Filename
@@ -529,6 +535,10 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 
 		if FAILED(hr = piFileSourceFilter->Load(pFilename, NULL))
 			return (log << "Failed to load filename: " << hr << "\n").Write(hr);
+
+		// Start the background thread for updating statistics
+		if FAILED(hr = StartThread())
+			return (log << "Failed to start background thread: " << hr << "\n").Write(hr);
 
 		indent.Release();
 		(log << "Finished Reloading File\n").Write();
