@@ -753,7 +753,6 @@ BOOL DVBTChannels_Network::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 		frequency = pNewNetwork->frequency;
 		bandwidth = pNewNetwork->bandwidth;
 		strCopy(networkName, pNewNetwork->networkName);
-
 		if (bExistingData)
 		{
 			(log << "New Values\n").Write();

@@ -266,6 +266,14 @@ void DVBTransponder::ParseNITDescriptors(unsigned char *buf, int remainingLength
 			{
 				(log << "Found a network name descriptor\n").Write();
 				strCopyA2W(networkName, (LPSTR)(buf+2), descriptorLen);
+
+				if (g_pData->settings.application.longNetworkName) 
+				{
+					LPWSTR tsid = new WCHAR [256];
+					wsprintfW(tsid, L"%S - %i", networkName, transportStreamId);
+					strCopy(networkName, tsid);
+				}
+
 				(log << "  Network Name = " << networkName << "\n").Write();
 				break;
 			}

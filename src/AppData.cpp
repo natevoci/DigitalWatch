@@ -66,8 +66,9 @@ AppData::AppData()
 	settings.application.addToROT = TRUE;
 	settings.application.multicard = FALSE;
 	settings.application.rememberLastService = TRUE;
-	settings.application.lastServiceCmd = new wchar_t[MAX_PATH];;
+	settings.application.lastServiceCmd = new wchar_t[MAX_PATH];
 	wcscpy(settings.application.lastServiceCmd, L"");
+	settings.application.longNetworkName = FALSE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
@@ -336,6 +337,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"rememberLastService") == 0)
 				return GetBool(settings.application.rememberLastService);
+
+			if (_wcsicmp(selection, L"longNetworkName") == 0)
+				return GetBool(settings.application.longNetworkName);
 
 			return NULL;
 		}
@@ -819,6 +823,11 @@ HRESULT AppData::LoadSettings()
 					if (pSubElement->value)
 						wcscpy(settings.application.lastServiceCmd, pSubElement->value);
 
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"LongNetworkName") == 0)
+				{
+					settings.application.longNetworkName = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
 			}
@@ -1309,6 +1318,7 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"MultiCard", (settings.application.multicard ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"RememberLastService", (settings.application.rememberLastService ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"LastServiceCmd", settings.application.lastServiceCmd));
+		pApplication->Elements.Add(new XMLElement(L"LongNetworkName", (settings.application.longNetworkName ? L"True" : L"False")));
 	}
 
 	XMLElement *pWindow = new XMLElement(L"Window");
