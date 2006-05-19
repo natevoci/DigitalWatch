@@ -302,12 +302,11 @@ HRESULT FilterPropList::ShowFilterProperties(HWND hWnd, LPWSTR filterName, int i
 							OleCreatePropertyFrame(hWnd, 0, 0, filterInfo.achName, 1, &piFilterUnk, caGUID.cElems, caGUID.pElems, 0, 0, NULL);
 							piFilterUnk->Release();
 						}
-					}
-					if (caGUID.pElems)
 						CoTaskMemFree(caGUID.pElems);
+					}
 				}
+				filterInfo.pGraph->Release(); 
 			}
-			filterInfo.pGraph->Release(); 
 			refCount = pFilter->Release();
 			pFilter = NULL;
 			count++;

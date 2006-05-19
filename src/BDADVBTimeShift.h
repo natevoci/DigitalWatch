@@ -84,6 +84,8 @@ public:
 	virtual HRESULT Load(LPWSTR pCmdLine);
 	virtual	HRESULT GetFilterList(void);
 	virtual	HRESULT ShowFilter(LPWSTR filterName);
+	HRESULT SetStream(long index);
+	HRESULT SetStreamName(LPWSTR pService, BOOL bEnable);
 
 	DVBTChannels *GetChannels();
 	int m_cardId;

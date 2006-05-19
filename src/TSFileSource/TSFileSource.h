@@ -90,6 +90,7 @@ private:
 	const LPWSTR m_strSourceType;
 
 	BOOL m_bInitialised;
+	CCritSec m_listLock;
 
 	DWGraph *m_pDWGraph;
 	CComPtr <IGraphBuilder> m_piGraphBuilder;

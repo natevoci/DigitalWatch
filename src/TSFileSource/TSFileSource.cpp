@@ -1023,18 +1023,38 @@ HRESULT TSFileSource::UpdateData()
 
 HRESULT TSFileSource::SetStream(long index)
 {
+	CAutoLock listLock(&m_listLock);
+	HRESULT hr;
 	IAMStreamSelect *pIAMStreamSelect;
-	HRESULT hr = m_pTSFileSource->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
+	hr = m_pTSFileSource->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
 	if (SUCCEEDED(hr))
 	{
-		hr = pIAMStreamSelect->Enable((index & 0xff), AMSTREAMSELECTENABLE_ENABLE);
+		// Stop background thread
+		if FAILED(hr = StopThread())
+		{
+			pIAMStreamSelect->Release();
+			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+		}
+		if (hr == S_FALSE)
+			(log << "Killed thread\n").Write();
+
+		HRESULT hr2 = pIAMStreamSelect->Enable((index & 0xff), AMSTREAMSELECTENABLE_ENABLE);
 		pIAMStreamSelect->Release();
+
+		// Start the background thread for updating statistics
+		if FAILED(hr = StartThread())
+			return (log << "Failed to start background thread: " << hr << "\n").Write(hr);
+
+		if FAILED (hr2)
+			return (log << "Failed to Enable Stream Select: " << hr2 << "\n").Write(hr2);
 	}
+
 	return hr;
 }
 
 HRESULT TSFileSource::GetStreamList(void)
 {
+	CAutoLock listLock(&m_listLock);
 	HRESULT hr = S_OK;
 
 	if FAILED(hr = streamList.LoadStreamList())
@@ -1073,8 +1093,19 @@ HRESULT TSFileSource::GetFilterList(void)
 HRESULT TSFileSource::ShowFilter(LPWSTR filterName)
 {
 	HRESULT hr;
+
+	// Stop background thread
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
+
 	if FAILED(hr = filterList.ShowFilterProperties(g_pData->hWnd, filterName, 0))
 		return (log << "Failed to Show the Filter Property Page: " << hr << "\n").Write(hr);
+
+	// Start the background thread for updating statistics
+	if FAILED(hr = StartThread())
+		return (log << "Failed to start background thread: " << hr << "\n").Write(hr);
 
 	return hr;
 }

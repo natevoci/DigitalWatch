@@ -29,6 +29,7 @@ nate:
 
 bear:
 Changes:
+- Solved a few stream selection locking problems by turning on and off of some updating threads.
 - Added a extended network name option to the settings menu so that the network name can be identified by adding the TSID value.
 - Fixed a few bugs regarding the ViewRecordFile function.
 - Started rationalise the code into the filtergraph tools class.

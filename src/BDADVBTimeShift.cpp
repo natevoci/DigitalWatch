@@ -696,6 +696,15 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 
 		return TogglePauseRecording(n1);
 	}
+	if (_wcsicmp(pCurr, L"SetStream") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		return SetStream(n1);
+	}
 	else if (_wcsicmp(pCurr, L"ReLoadTimeShiftFile") == 0)
 	{
 		if (command->LHS.ParameterCount != 0)
@@ -1192,7 +1201,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 		m_pCurrentService->serviceName
 		)
 	{
-		if SUCCEEDED(m_pCurrentFileSource->SetStreamName(m_pCurrentService->serviceName, FALSE))
+		if SUCCEEDED(SetStreamName(m_pCurrentService->serviceName, FALSE))
 		{
 			(log << "Requested Service is already available within the current Full Mux Network.\n").Write();
 			return S_OK;
@@ -2815,6 +2824,48 @@ HRESULT BDADVBTimeShift::GetFilterList(void)
 	return hr;
 }
 
+HRESULT BDADVBTimeShift::SetStreamName(LPWSTR pService, BOOL bEnable)
+{
+	HRESULT hr;
+	HRESULT hr2 = NOERROR;
+	// Stop background thread
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
+
+	if(m_pCurrentFileSource)
+		hr2 = m_pCurrentFileSource->SetStreamName(pService, bEnable);
+
+	// Start the background thread for updating statistics
+	if FAILED(hr = StartThread())
+		(log << "Failed to start background thread: " << hr << "\n").Write();
+
+	return hr2;
+}
+
+HRESULT BDADVBTimeShift::SetStream(long index)
+{
+	HRESULT hr;
+	HRESULT hr2 = NOERROR;
+	// Stop background thread
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
+
+	if(m_pCurrentFileSource)
+		hr2 = m_pCurrentFileSource->SetStream(index);
+
+	// Start the background thread for updating statistics
+	if FAILED(hr = StartThread())
+		(log << "Failed to start background thread: " << hr << "\n").Write();
+
+	return hr2;
+}
+
 HRESULT BDADVBTimeShift::ShowFilter(LPWSTR filterName)
 {
 	HRESULT hr = S_FALSE;
@@ -2822,8 +2873,19 @@ HRESULT BDADVBTimeShift::ShowFilter(LPWSTR filterName)
 	if (!m_pCurrentFilterList)
 		return (log << "Failed to get a Filter Property List: " << hr << "\n").Write(hr);
 
+	// Stop background thread
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
+
 	if FAILED(hr = m_pCurrentFilterList->ShowFilterProperties(g_pData->hWnd, filterName, 0))
 		return (log << "Failed to Show the Filter Property Page: " << hr << "\n").Write(hr);
+
+	// Start the background thread for updating statistics
+	if FAILED(hr = StartThread())
+		(log << "Failed to start background thread: " << hr << "\n").Write();
 
 	return hr;
 }

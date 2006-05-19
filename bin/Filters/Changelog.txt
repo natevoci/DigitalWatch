@@ -1,6 +1,7 @@
 Version 2.2.0.3
 =================
 bear:
+Fixed a PAT and ONIT parsing bug for UK users.
 Fixed another locking bug as well as checked all of the other locks in the CTSFileSource Class.
 Fixed a bug where the filter would lock if it was stopped before the pids were parsed.see PidParser().
 Some minor changes to the update thread.

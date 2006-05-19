@@ -227,6 +227,32 @@
    	</>
 </Decoder>
 
+<Decoder name="Cyberlink7 Video Decoder">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{8ACD52ED-9C2D-4008-9129-DCE955D86065}" name="Cyberlink7 Video Decoder" />
+    <InputFilter name="Cyberlink7 Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <Connect>
+    	<From name="Cyberlink7 Video Decoder" />
+    	<To name="Overlay Mixer" />
+   	</>
+</Decoder>
+
+<Decoder name="Cyberlink7 Video Decoder - VMR9">
+	<MediaType name="MPEG2 Video" />
+	
+    <LoadFilter clsid="{8ACD52ED-9C2D-4008-9129-DCE955D86065}" name="Cyberlink7 Video Decoder" />
+    <InputFilter name="Cyberlink7 Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <Connect>
+    	<From name="Cyberlink7 Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
 <Decoder name="CyberLink PowerDVD Video Decoder">
 	<MediaType name="MPEG2 Video" />
 	
