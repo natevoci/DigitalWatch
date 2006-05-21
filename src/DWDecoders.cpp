@@ -567,7 +567,7 @@ HRESULT DWDecoders::Destroy()
 	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
 	for ( ; it < m_decoders.end() ; it++ )
 	{
-		delete (*it);
+		delete *it;
 	}
 	m_decoders.clear();
 	return S_OK;

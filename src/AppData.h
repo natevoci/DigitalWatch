@@ -65,6 +65,7 @@ public:
 			BOOL multicard;
 			BOOL rememberLastService;
 			LPWSTR lastServiceCmd;
+			LPWSTR currentServiceCmd;
 			BOOL longNetworkName;
 			//LPWSTR logFilename;
 		} application;

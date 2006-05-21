@@ -21,7 +21,7 @@ DigitalWatch TODO
     - Need to add an OSD log of some sort so we can display changes to services
     - Once it's done transfer it to ScanChannelsBDA
   - Will need to create a new way to store state information about channels
-    - Last channel
+    - Last channel....................... done by Bear.
     - current service for each network
   - Update SetChannel to take ONID, TSID, and NID
 
@@ -49,19 +49,19 @@ DigitalWatch TODO
 	  - How to turn Auto Update On/Off
 	  - Delete?
 	  - Language/Audio Selection
-	- Filter Properties
-      - Menu to list filters being used and bring up properties dialog
-	- Settings page
-	  - capture paths, sizes etc...
-	  - Audio and Video decoder selection
-        - Menu to choose decoders for media types.
+	- Filter Properties....................done by bear.
+      - Menu to list filters being used and bring up properties dialog....................done by bear.
+	- Settings page....................done by bear.
+	  - capture paths, sizes etc.......................done by bear.
+	  - Audio and Video decoder selection....................done by bear.
+        - Menu to choose decoders for media types.....................done by bear.
 
 - Add File source
   - Perhaps a generic file playback will do since TSFileSource can be registered to be a default source for .ts files.
   or
   - Add a FileTypes.xml file to map different file types to different sources
 
-- Add DSNetwork source.
+- Add DSNetwork source.....................done by bear.
   - class DSNetworkSink built into , and class DSNetworkSource : DWSource
       Will need to add more stuff to DVBInput like BOOL CanLock() and BOOL CanSetPids()
 
@@ -102,7 +102,7 @@ Enhancements
 - Timer to put the computer to sleep.
 - Timer to shutdown the computer.
     These need to not happen if currently recording.
-- Stop graph and make screen black. Kinda like a power button that doesn't turn the pc off.
+- Stop graph and make screen black. Kinda like a power button that doesn't turn the pc off.....................done by bear.
 
 -----------------
  DigitalWatch KB

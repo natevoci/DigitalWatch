@@ -125,7 +125,7 @@ HRESULT DWMediaTypes::Destroy()
 	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
 	for ( ; it < m_mediaTypes.end() ; it++ )
 	{
-		delete (*it);
+		delete *it;
 	}
 	m_mediaTypes.clear();
 	return S_OK;

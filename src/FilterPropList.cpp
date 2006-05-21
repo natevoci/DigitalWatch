@@ -68,7 +68,7 @@ HRESULT FilterPropList::Destroy()
 	std::vector<FilterPropListItem *>::iterator it = m_list.begin();
 	for ( ; it < m_list.end() ; it++ )
 	{
-		delete (*it);
+		if (*it) delete *it;
 	}
 	m_list.clear();
 	return S_OK;

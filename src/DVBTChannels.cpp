@@ -885,7 +885,7 @@ HRESULT DVBTChannels_NetworkList::Clear()
 	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
 	for ( ; it != m_networks.end() ; it++ )
 	{
-		delete *it;
+		if (*it) delete *it;
 	}
 	m_networks.clear();
 

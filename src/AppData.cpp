@@ -68,6 +68,8 @@ AppData::AppData()
 	settings.application.rememberLastService = TRUE;
 	settings.application.lastServiceCmd = new wchar_t[MAX_PATH];
 	wcscpy(settings.application.lastServiceCmd, L"");
+	settings.application.currentServiceCmd = new wchar_t[MAX_PATH];
+	wcscpy(settings.application.currentServiceCmd, L"");
 	settings.application.longNetworkName = FALSE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
@@ -229,6 +231,9 @@ AppData::~AppData()
 
 	if (settings.application.lastServiceCmd)
 		delete[] settings.application.lastServiceCmd;
+
+	if (settings.application.currentServiceCmd)
+		delete[] settings.application.currentServiceCmd;
 
 	if (settings.capture.fileName)
 		delete[] settings.capture.fileName;

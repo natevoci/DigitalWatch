@@ -203,11 +203,13 @@ LRESULT DigitalWatchWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
 		break;
 	case WM_SIZE:
 		lResult = DefWindowProc(hWnd, message, wParam, lParam);
-		g_pTv->OnSize();
+//		g_pTv->OnSize();
 		if (wParam == SIZE_MINIMIZED)
 			g_pTv->OnMinimize();
 		else if (wParam == SIZE_RESTORED || wParam == SIZE_MAXIMIZED)
 			g_pTv->OnRestore();
+
+		g_pTv->OnSize();
 		break;
 	case WM_MOVE:
 		lResult = DefWindowProc(hWnd, message, wParam, lParam);

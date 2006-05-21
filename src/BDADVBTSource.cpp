@@ -291,6 +291,12 @@ HRESULT BDADVBTSource::Destroy()
 
 	m_piGraphBuilder.Release();
 
+	g_pOSD->Data()->ClearAllListNames(L"FrequencyList");
+	g_pOSD->Data()->ClearAllListNames(L"FilterInfo");
+	g_pOSD->Data()->ClearAllListNames(L"DVBTDeviceInfo");
+	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Services");
+	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Networks");
+	
 	cardList.Destroy();
 	frequencyList.Destroy();
 	channels.Destroy();
@@ -359,7 +365,7 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 0)
 			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		//return LastChannel();
+		return LastChannel();
 	}
 	else if (_wcsicmp(pCurr, L"SetFrequency") == 0)
 	{
@@ -615,8 +621,15 @@ HRESULT BDADVBTSource::Load(LPWSTR pCmdLine)
 			wcslen(g_pData->settings.application.lastServiceCmd) > 0)
 		{
 			(log << "Remembering the last network and service\n").Write();
-			g_pOSD->Data()->SetItem(L"CurrentServiceCmd", g_pData->settings.application.lastServiceCmd);
-			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"CurrentServiceCmd")); 
+			g_pOSD->Data()->SetItem(L"LastServiceCmd", g_pData->settings.application.lastServiceCmd);
+			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"LastServiceCmd")); 
+		}
+		else if (currServiceCmd &&
+			g_pData->settings.application.currentServiceCmd &&
+			wcslen(g_pData->settings.application.currentServiceCmd) > 0)
+		{
+			(log << "Changing to the current network and service\n").Write();
+			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"CurrenttServiceCmd")); 
 		}
 		else
 		{
@@ -625,6 +638,9 @@ HRESULT BDADVBTSource::Load(LPWSTR pCmdLine)
 			DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
 			if (pService)
 			{
+				if (pService == m_pCurrentService)
+					return S_OK;
+
 				return RenderChannel(pNetwork, pService);
 			}
 			else
@@ -921,6 +937,27 @@ HRESULT BDADVBTSource::ProgramDown()
 	return RenderChannel(pNetwork, pService);
 }
 
+HRESULT BDADVBTSource::LastChannel()
+{
+	if(!m_pCurrentTuner)
+		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);
+
+	if (g_pOSD->Data()->GetItem(L"LastOriginalNetworkId")  &&
+		g_pOSD->Data()->GetItem(L"LastNetworkId")  &&
+		g_pOSD->Data()->GetItem(L"LastTransportStreamId")  &&
+		g_pOSD->Data()->GetItem(L"LastServiceId"))
+	{
+
+		long lastOriginalNetworkId = _wtoi(g_pOSD->Data()->GetItem(L"LastOriginalNetworkId"));
+		long lastTransportStreamId = _wtoi(g_pOSD->Data()->GetItem(L"LastTransportStreamId"));
+		long lastNetworkId = _wtoi(g_pOSD->Data()->GetItem(L"LastNetworkId"));
+		long lastServiceId = _wtoi(g_pOSD->Data()->GetItem(L"LastServiceId"));
+
+		return SetChannel(lastOriginalNetworkId, lastTransportStreamId, lastNetworkId, lastServiceId);
+	}
+	return S_OK;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // graph building methods
@@ -928,19 +965,59 @@ HRESULT BDADVBTSource::ProgramDown()
 
 HRESULT BDADVBTSource::RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService)
 {
+	if (m_pCurrentNetwork && m_pCurrentService)
+		UpdateLastItemList();	
+
 	m_pCurrentNetwork = pNetwork;
 	m_pCurrentService = pService;
 
 	HRESULT hr = RenderChannel(pNetwork->frequency, pNetwork->bandwidth);
 	if (hr == S_OK && pNetwork && pService)
 	{
-		LPWSTR wsz = new WCHAR[128];
-		wsprintfW(wsz, L"%i:%i:%i/%i", pNetwork->originalNetworkId, pNetwork->transportStreamId, pNetwork->networkId, pService->serviceId);
-		g_pOSD->Data()->SetItem(L"CurrentServiceCmd", wsz);
-		strCopy(g_pData->settings.application.lastServiceCmd, wsz);
-		delete[] wsz;
+		UpdateCurrentItemList();
+		strCopy(g_pData->settings.application.lastServiceCmd, g_pData->settings.application.currentServiceCmd);
 	}
 	return hr;
+}
+
+void BDADVBTSource::UpdateLastItemList(void)
+{
+	LPWSTR pValue = NULL;
+	strCopy(pValue, m_pCurrentNetwork->originalNetworkId);
+	g_pOSD->Data()->SetItem(L"LastOriginalNetworkId", pValue);
+	strCopy(pValue, m_pCurrentNetwork->transportStreamId);
+	g_pOSD->Data()->SetItem(L"LastTransportStreamId", pValue);
+	strCopy(pValue, m_pCurrentNetwork->networkId);
+	g_pOSD->Data()->SetItem(L"LastNetworkId", pValue);
+	strCopy(pValue, m_pCurrentService->serviceId);
+	g_pOSD->Data()->SetItem(L"LastServiceId", pValue);
+	if (pValue) delete[] pValue;
+
+	LPWSTR wsz = new WCHAR[128];
+	wsprintfW(wsz, L"%i:%i:%i/%i", m_pCurrentNetwork->originalNetworkId, m_pCurrentNetwork->transportStreamId, m_pCurrentNetwork->networkId, m_pCurrentService->serviceId);
+	g_pOSD->Data()->SetItem(L"LastServiceCmd", wsz);
+	strCopy(g_pData->settings.application.lastServiceCmd, wsz);
+	delete[] wsz;
+}
+
+void BDADVBTSource::UpdateCurrentItemList(void)
+{
+	LPWSTR pValue = NULL;
+	strCopy(pValue, m_pCurrentNetwork->originalNetworkId);
+	g_pOSD->Data()->SetItem(L"CurrentOriginalNetworkId", pValue);
+	strCopy(pValue, m_pCurrentNetwork->transportStreamId);
+	g_pOSD->Data()->SetItem(L"CurrentTransportStreamId", pValue);
+	strCopy(pValue, m_pCurrentNetwork->networkId);
+	g_pOSD->Data()->SetItem(L"CurrentNetworkId", pValue);
+	strCopy(pValue, m_pCurrentService->serviceId);
+	g_pOSD->Data()->SetItem(L"CurrentServiceId", pValue);
+	if (pValue) delete[] pValue;
+
+	LPWSTR wsz = new WCHAR[128];
+	wsprintfW(wsz, L"%i:%i:%i/%i", m_pCurrentNetwork->originalNetworkId, m_pCurrentNetwork->transportStreamId, m_pCurrentNetwork->networkId, m_pCurrentService->serviceId);
+	g_pOSD->Data()->SetItem(L"CurrentServiceCmd", wsz);
+	strCopy(g_pData->settings.application.currentServiceCmd, wsz);
+	delete[] wsz;
 }
 
 HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)

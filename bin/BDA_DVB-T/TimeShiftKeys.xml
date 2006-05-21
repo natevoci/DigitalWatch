@@ -1,8 +1,8 @@
 <!-- DigitalWatch BDATimeShift Source Keys -->
 
   <Key code= 13>				ShowMenu("NetworkList")</>
-  <Key code= 114>				ShowMenu("NetworkList")</>
-  <Key code= 115>				GetStreamList() ShowMenu("StreamList")</>
+  <Key code= 114>			ShowMenu("NetworkList")</>
+  <Key code= 115>			GetStreamList() ShowMenu("StreamList")</>
 
   <!-- F2 and Preview button on VP remote -->
   <Key code=113>				ExitMenu(-1) ShowMenu("TVMenu")</>

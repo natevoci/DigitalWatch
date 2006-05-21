@@ -29,6 +29,8 @@ nate:
 
 bear:
 Changes:
+- Slight change to the minimise/restore function to remove some error messages from the log.
+- Added the LastChannel function to the Watch TV  Timeshift modes.
 - Solved a few stream selection locking problems by turning on and off of some updating threads.
 - Added a extended network name option to the settings menu so that the network name can be identified by adding the TSID value.
 - Fixed a few bugs regarding the ViewRecordFile function.

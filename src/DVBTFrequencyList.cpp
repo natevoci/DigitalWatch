@@ -72,7 +72,7 @@ HRESULT DVBTFrequencyList::Destroy()
 	std::vector<DVBTFrequencyListItem *>::iterator it = m_list.begin();
 	for ( ; it < m_list.end() ; it++ )
 	{
-		delete (*it);
+		delete *it;
 	}
 	m_list.clear();
 	return S_OK;

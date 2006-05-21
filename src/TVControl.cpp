@@ -296,6 +296,15 @@ HRESULT TVControl::SetSource(LPWSTR wszSourceName, LPWSTR wszCommand)
 	CAutoLock sourcesLock(&m_sourcesLock);
 	HRESULT hr;
 
+	if (m_pActiveSource && _wcsicmp(wszSourceName, m_pActiveSource->GetSourceType()) == 0
+		&& wcslen(wszSourceName) == wcslen(m_pActiveSource->GetSourceType()))
+	{
+		if FAILED(hr = m_pActiveSource->Load(wszCommand))
+			return (log << "Failed to load NULL command: " << hr << "\n").Write();
+
+		return S_OK;
+	}
+
 	std::vector<DWSource *>::iterator it = m_sources.begin();
 	for ( ; it < m_sources.end() ; it++ )
 	{

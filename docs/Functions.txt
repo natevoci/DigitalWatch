@@ -1,6 +1,214 @@
 ----------------------
-DigitalWatch Functions
+DigitalWatch II Functions
 ----------------------
+
+TVControl:
+================================================================================================
+
+- "AlwaysOnTop(False/True)" Sets the Application window to always show on top. 
+- "Fullscreen(False/True)"
+- "SetSource(Source Name, [command/$Token])" Source name = BDA or BDATimeShift, command = "TV:\\" or "TS:\\", token = $(list item).eg $(LastServiceCmd)
+- "VolumeUp(value)"
+- "VolumeDown(value)"
+- "Mute(value)"
+- "SetColorControls(value, value, value, value, value)"
+- "Zoom(value)"
+- "ZoomIn(value)"
+- "ZoomOut(value)"
+- "ZoomMode(value)"
+- "AspectRatio(value, [value, value])"
+- "ShowMenu(string)"
+- "ExitMenu([value])"
+- "ShowOSDItem(value, [value])"
+- "HideOSDItem(value)"
+- "ToggleOSDItem(value)"
+
+Application Setting Functions:--------------------------------------
+
+"SetMultiple(False/True)" OSD Selection match = settings.application.multiple
+"SetDisableScreenSaver(True/False)" OSD Selection match = settings.application.disableScreenSaver
+"SetPriority(value)" OSD Selection match = settings.application.priority
+"SetAddToROT(False/True)" OSD Selection match = settings.application.addToROT
+"SetStartFullscreen()" OSD Selection match = settings.window.startFullscreen
+"SetStartAlwaysOnTop()" OSD Selection match = settings.window.startAlwaysOnTop
+"SetStartAtLastWindowPosition()" OSD Selection match = settings.window.startAtLastWindowPosition
+"SetStartWithLastWindowSize()" OSD Selection match = settings.window.startWithLastWindowSize
+"SetRememberFullscreenState()" OSD Selection match = settings.window.rememberFullscreenState
+"SetRememberAlwaysOnTopState()" OSD Selection match = settings.window.rememberAlwaysOnTopState
+"SetRememberWindowPosition()" OSD Selection match = settings.window.rememberWindowPosition
+"SetQuietOnMinimise()" OSD Selection match = settings.window.quietOnMinimise
+"SetCloseBuffersOnMinimise()" OSD Selection match = settings.window.closeBuffersOnMinimise
+"SetStartWithAudioMuted()" OSD Selection match = settings.audio.bMute
+"SetAspectRatioOverride()" OSD Selection match = settings.video.aspectRatio.bOverride
+"SetCaptureFormat()" OSD Selection match = settings.capture.format
+"SetCaptureFolder()"  
+"SetCaptureName()" 
+"SetTimeShiftFormat()" OSD Selection match = settings.timeshift.format
+"SetTimeShiftFolder()" 
+"SetTimeShiftChange()"
+"SetTimeShiftBuffer()" 
+"SetMultiCard()" OSD Selection match = settings.application.multicard
+"SetRememberLastService()" OSD Selection match = settings.application.rememberLastService
+"SetLongNetworkName()" OSD Selection match = settings.application.longNetworkName
+"SetDSNetworkFormat()" OSD Selection match = settings.dsnetwork.format
+"SetDSNetworkIP()"
+"SetDSNetworkPort()"
+"SetDSNetworkNic()"
+"SetDataItem(token, param)"
+"SetDVBTDeviceStatus()"
+"SetDVBTDevicePosition()"
+"RemoveDVBTDevice()"
+"ParseDVBTDevices()"
+"SetMediaTypeDecoder()"
+===============================================================================================
+
+
+
+
+
+"()" OSD Selection match = 
+"()" OSD Selection match = 
+"()" OSD Selection match = 
+"()" OSD Selection match = 
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()""()" OSD Selection match = 
+"()" OSD Selection match = 
+"()" OSD Selection match = 
+"()" OSD Selection match = 
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()""()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()""()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()""()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()""()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+"()"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 This file has not been updated for DW2 yet.
 

@@ -73,9 +73,12 @@ protected:
 	virtual HRESULT NetworkDown();
 	virtual HRESULT ProgramUp();
 	virtual HRESULT ProgramDown();
+	virtual HRESULT LastChannel();
 
 	// graph building methods
 	HRESULT RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService);
+	void UpdateLastItemList(void);
+	void UpdateCurrentItemList(void);
 	virtual HRESULT RenderChannel(int frequency, int bandwidth);
 
 	HRESULT LoadTuner();
