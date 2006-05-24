@@ -52,6 +52,8 @@ public:
 	LPWSTR m_pOnLeft;
 	LPWSTR m_pOnRight;
 	LPWSTR m_pSelectedName;
+	LPWSTR m_pMaskedName;
+	LPWSTR m_pMaskText;
 };
 
 // DWOSDListItem
@@ -88,9 +90,11 @@ protected:
 	DWOSDImage* m_pBackgroundImage;
 	DWOSDImage* m_pHighlightImage;
 	DWOSDImage* m_pSelectedImage;
+	DWOSDImage* m_pMaskedImage;
 
 	LPWSTR m_pSelectedName;
-
+	LPWSTR m_pMaskedName;
+	LPWSTR m_wszMask;
 };
 
 // DWOSDList
@@ -142,6 +146,7 @@ protected:
 	CCritSec m_itemsToRenderLock;
 
 	LPWSTR m_pSelectedName;
+	LPWSTR m_pMaskedName;
 
 };
 

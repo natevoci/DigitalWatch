@@ -42,6 +42,8 @@ DWOSDControl::DWOSDControl(DWSurface* pSurface)
 	m_bHighlighted = FALSE;
 	m_bCanSelect = FALSE;
 	m_bSelected = FALSE;
+	m_bCanMask = FALSE;
+	m_bMasked = FALSE;
 	m_pwcsOnUp = NULL;
 	m_pwcsOnDown = NULL;
 	m_pwcsOnLeft = NULL;
@@ -171,3 +173,17 @@ BOOL DWOSDControl::IsSelected()
 	return m_bSelected;
 }
 
+void DWOSDControl::SetMask(BOOL bMasked)
+{
+	m_bMasked = bMasked;
+}
+
+BOOL DWOSDControl::CanMask()
+{
+	return m_bCanMask;
+}
+
+BOOL DWOSDControl::IsMasked()
+{
+	return m_bMasked;
+}

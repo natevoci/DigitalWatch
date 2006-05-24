@@ -29,6 +29,8 @@ nate:
 
 bear:
 Changes:
+- Added a emboss image to the settings menu to mask out decoders that do not match the media type selected.
+- Added a Cycle Cards option in the settings menu so the cards will not cycle.
 - Slight change to the minimise/restore function to remove some error messages from the log.
 - Added the LastChannel function to the Watch TV  Timeshift modes.
 - Solved a few stream selection locking problems by turning on and off of some updating threads.

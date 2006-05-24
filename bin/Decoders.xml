@@ -447,6 +447,7 @@
 </Decoder>
 
 <Decoder name="AC3Filter Audio Decoder">
+	<MediaType name="MPEG2 Audio" />
 	<MediaType name="AC3 Audio" />
 
     <LoadFilter clsid="{A753A1EC-973E-4718-AF8E-A3F554D45C44}" name="AC3Filter" />
@@ -501,6 +502,7 @@
 <Decoder name="ffdshow Audio Decoder">
 	<MediaType name="MPEG Audio" />
 	<MediaType name="MPEG2 Audio" />
+	<MediaType name="AC3 Audio" />
 	
     <LoadFilter clsid="{0F40E1E5-4F79-4988-B1A9-CC98794E6B55}" name="ffdshow Audio Decoder" />
     <AudioRenderer name="Default DirectSound Device" />

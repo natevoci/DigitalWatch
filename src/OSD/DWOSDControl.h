@@ -59,6 +59,10 @@ public:
 	BOOL CanSelect();
 	BOOL IsSelected();
 
+	void SetMask(BOOL bMasked);
+	BOOL CanMask();
+	BOOL IsMasked();
+
 	DWSurface* m_pSurface;
 
 protected:
@@ -73,6 +77,8 @@ protected:
 	BOOL m_bHighlighted;
 	BOOL m_bCanSelect;
 	BOOL m_bSelected;
+	BOOL m_bCanMask;
+	BOOL m_bMasked;
 	LPWSTR m_pwcsOnUp;
 	LPWSTR m_pwcsOnDown;
 	LPWSTR m_pwcsOnLeft;

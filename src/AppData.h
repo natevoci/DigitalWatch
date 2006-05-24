@@ -63,6 +63,7 @@ public:
 			int priority;
 			BOOL addToROT;
 			BOOL multicard;
+			BOOL cyclecards;
 			BOOL rememberLastService;
 			LPWSTR lastServiceCmd;
 			LPWSTR currentServiceCmd;

@@ -11,7 +11,7 @@ DigitalWatch TODO
 
 - Change ColorControls to use a standard range Br:-100<0<100 Co:-100<0<100 Hu:-180<0<180 Sa:-100<0<100
 
-- Make changing channels not change cards be default in release build
+- Make changing channels not change cards be default in release build....................done by bear.
 
 - use CLSID_DVBTNetworkProvider instead of the raw CLSID when initing the tuning space
 

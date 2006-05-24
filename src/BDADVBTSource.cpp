@@ -622,14 +622,22 @@ HRESULT BDADVBTSource::Load(LPWSTR pCmdLine)
 		{
 			(log << "Remembering the last network and service\n").Write();
 			g_pOSD->Data()->SetItem(L"LastServiceCmd", g_pData->settings.application.lastServiceCmd);
-			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"LastServiceCmd")); 
+			LPWSTR pTemp = new WCHAR[MAX_PATH];
+			wsprintfW(pTemp, L"%S%S", pCmdLine, g_pOSD->Data()->GetItem(L"LastServiceCmd"));
+			strCopy(pCmdLine, pTemp);
+			delete[] pTemp;
+//			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"LastServiceCmd")); 
 		}
 		else if (currServiceCmd &&
 			g_pData->settings.application.currentServiceCmd &&
 			wcslen(g_pData->settings.application.currentServiceCmd) > 0)
 		{
 			(log << "Changing to the current network and service\n").Write();
-			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"CurrenttServiceCmd")); 
+			LPWSTR pTemp = new WCHAR[MAX_PATH];
+			wsprintfW(pTemp, L"%S%S", pCmdLine, g_pOSD->Data()->GetItem(L"CurrenttServiceCmd"));
+			strCopy(pCmdLine, pTemp);
+			delete[] pTemp;
+//			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"CurrenttServiceCmd")); 
 		}
 		else
 		{
@@ -1155,8 +1163,11 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		}
 
 		//Move current tuner to back of list so that other cards will be used next
-		m_tuners.erase(it);
-		m_tuners.push_back(m_pCurrentTuner);
+		if (g_pData->settings.application.cyclecards)
+		{
+			m_tuners.erase(it);
+			m_tuners.push_back(m_pCurrentTuner);
+		}
 		
 		g_pOSD->Data()->SetItem(L"recordingicon", L"");
 		if (m_pCurrentSink && m_pCurrentSink->IsRecording())

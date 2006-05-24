@@ -56,6 +56,10 @@ protected:
 	DWOSDImage* m_pBackgroundImage;
 	DWOSDImage* m_pHighlightImage;
 	DWOSDImage* m_pSelectedImage;
+	DWOSDImage* m_pMaskedImage;
+
+	LPWSTR m_wszMask;
+	
 
 };
 

@@ -65,6 +65,7 @@ AppData::AppData()
 	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
 	settings.application.addToROT = TRUE;
 	settings.application.multicard = FALSE;
+	settings.application.cyclecards = FALSE;
 	settings.application.rememberLastService = TRUE;
 	settings.application.lastServiceCmd = new wchar_t[MAX_PATH];
 	wcscpy(settings.application.lastServiceCmd, L"");
@@ -339,6 +340,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"multicard") == 0)
 				return GetBool(settings.application.multicard);
+
+			if (_wcsicmp(selection, L"cyclecards") == 0)
+				return GetBool(settings.application.cyclecards);
 
 			if (_wcsicmp(selection, L"rememberLastService") == 0)
 				return GetBool(settings.application.rememberLastService);
@@ -816,6 +820,11 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"MultiCard") == 0)
 				{
 					settings.application.multicard = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"CycleCards") == 0)
+				{
+					settings.application.cyclecards = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"RememberLastService") == 0)
@@ -1321,6 +1330,7 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"Priority", pValue));
 		pApplication->Elements.Add(new XMLElement(L"AddToROT", (settings.application.addToROT ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"MultiCard", (settings.application.multicard ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"CycleCards", (settings.application.cyclecards ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"RememberLastService", (settings.application.rememberLastService ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"LastServiceCmd", settings.application.lastServiceCmd));
 		pApplication->Elements.Add(new XMLElement(L"LongNetworkName", (settings.application.longNetworkName ? L"True" : L"False")));

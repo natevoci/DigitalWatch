@@ -47,12 +47,20 @@ DWOSDButton::DWOSDButton(DWSurface* pSurface) : DWOSDControl(pSurface)
 	m_pBackgroundImage = NULL;
 	m_pHighlightImage = NULL;
 	m_pSelectedImage = NULL;
+	m_pMaskedImage = NULL;
+	m_bCanSelect = FALSE;
+	m_bSelected = FALSE;
+	m_bCanMask = FALSE;
+	m_bMasked = FALSE;
+	m_wszMask = NULL;
 }
 
 DWOSDButton::~DWOSDButton()
 {
 	if (m_wszText)
 		delete[] m_wszText;
+	if (m_wszMask)
+		delete[] m_wszMask;
 }
 
 HRESULT DWOSDButton::LoadFromXML(XMLElement *pElement)
@@ -91,6 +99,11 @@ HRESULT DWOSDButton::LoadFromXML(XMLElement *pElement)
 		{
 			if (element->value)
 				strCopy(m_wszText, element->value);
+		}
+		else if (_wcsicmp(element->name, L"masktext") == 0)
+		{
+			if (element->value)
+				strCopy(m_wszMask, element->value);
 		}
 		else if (_wcsicmp(element->name, L"font") == 0)
 		{
@@ -159,6 +172,14 @@ HRESULT DWOSDButton::LoadFromXML(XMLElement *pElement)
 					{
 						m_pSelectedImage = g_pOSD->GetImage(subelement->value);
 						m_bCanSelect = TRUE;
+					}
+				}
+				else if (_wcsicmp(subelement->name, L"maskedImage") == 0)
+				{
+					if (subelement->value)
+					{
+						m_pMaskedImage = g_pOSD->GetImage(subelement->value);
+						m_bCanMask = TRUE;
 					}
 				}
 			}
@@ -269,6 +290,17 @@ HRESULT DWOSDButton::Draw(long tickCount)
 			//TODO: draw something since no image was supplied
 		}
 	}
+
+	if (m_bMasked)
+	{
+		if (m_pMaskedImage)
+			m_pMaskedImage->Draw(m_pSurface, m_nPosX, m_nPosY, m_nWidth, m_nHeight);
+		else
+		{
+			//TODO: draw something since no image was supplied
+		}
+	}
+
 
 	long nPosX = m_nPosX;
 	long nPosY = m_nPosY;

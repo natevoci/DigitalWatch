@@ -42,7 +42,9 @@ public:
 
 	LPWSTR index;
 	LPWSTR name;
+	LPWSTR maskname;
 	LPWSTR Name();
+	LPWSTR MaskName();
 
 	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin);
 	HRESULT RenderWindowLess(IGraphBuilder *piGraphBuilder,

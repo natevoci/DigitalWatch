@@ -38,6 +38,7 @@ DWOSDWindow::DWOSDWindow()
 	m_pHighlightedControl = NULL;
 	m_bHideWindowsBehindThisOne = FALSE;
 	m_pSelectedName = NULL;
+	m_pMaskedName = NULL;
 }
 
 DWOSDWindow::~DWOSDWindow()
@@ -47,6 +48,9 @@ DWOSDWindow::~DWOSDWindow()
 
 	if (m_pSelectedName)
 		delete[] m_pSelectedName;
+
+	if (m_pMaskedName)
+		delete[] m_pMaskedName;
 
 	ClearParameters();
 
@@ -151,6 +155,16 @@ HRESULT DWOSDWindow::OnSelected(LPWSTR lpName)
 		return S_FALSE;
 
 	m_pSelectedName = lpName;
+
+	return S_OK;
+}
+
+HRESULT DWOSDWindow::OnMasked(LPWSTR lpName)
+{
+	if (lpName == NULL)
+		return S_FALSE;
+
+	m_pMaskedName = lpName;
 
 	return S_OK;
 }
@@ -286,13 +300,17 @@ HRESULT DWOSDWindow::LoadFromXML(XMLElement *pElement)
 		}
 		else if (_wcsicmp(element->name, L"selection") == 0 && element->value)
 		{
-			if (m_pSelectedName)
-				delete[] m_pSelectedName;
-
 			strCopy(m_pSelectedName, element->value);
 
 			if (m_pSelectedName)
 				m_pHighlightedControl->SetSelect(TRUE);
+		}
+		else if (_wcsicmp(element->name, L"maskname") == 0 && element->value)
+		{
+			strCopy(m_pMaskedName, element->value);
+
+			if (m_pMaskedName)
+				m_pHighlightedControl->SetMask(TRUE);
 		}
 
 		if (control)

@@ -54,6 +54,7 @@ public:
 	HRESULT OnRight();
 	HRESULT OnSelect();
 	HRESULT OnSelected(LPWSTR lpName);
+	HRESULT OnMasked(LPWSTR lpName);
 
 	BOOL HideWindowsBehindThisOne();
 
@@ -69,6 +70,8 @@ private:
 
 	LPWSTR m_pName;
 	LPWSTR m_pSelectedName;
+	LPWSTR m_pMaskedName;
+
 	std::vector<DWOSDControl *> m_controls;
 	CCritSec m_controlsLock;
 

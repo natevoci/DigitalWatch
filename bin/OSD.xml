@@ -100,6 +100,14 @@ $(() - $(
 	<stretchArea left=17 right=408 />
 </image>
 
+<image name="MaskedButton">
+	<filename>images\grey-button-mask.bmp</filename>
+	<colorkey>#FF000000</colorkey>
+	<!--<stretchArea left=17 top=17 right=408 bottom=49 />-->
+	<stretchArea left=17 right=408 />
+</image>
+
+
 <image name="BrownBackground">
 	<filename>images\brown-button.bmp</filename>
 	<colorkey>#000000</colorkey>
@@ -669,6 +677,15 @@ $(() - $(
 			<height>40</height>
 			<gap>10</gap>
 			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Cycle Cards</text>
+			<onSelect>ShowMenu("CycleCards")</onSelect>
+			<onRight>ShowMenu("CycleCards")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
 			<text> Remember Last Service</text>
 			<onSelect>ShowMenu("RememberLastService")</onSelect>
 			<onRight>ShowMenu("RememberLastService")</onRight>
@@ -1037,6 +1054,51 @@ $(() - $(
 			<font height=30 weight=700 color="#FFFFFF" />
 			<text> False</text>
 			<onSelect>SetMultiCard("False") ShowMenu("MultiCards")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="CycleCards">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="CycleCardOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.cyclecards</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetCycleCards("True") ShowMenu("CycleCards")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetCycleCards("False") ShowMenu("CycleCards")</onSelect>
 		</item>
 	</list>
 
@@ -2560,6 +2622,7 @@ $(() - $(
 		<pos x=240 y=100 />
 		<size width=500 height=400 />
 		<selection>string.$(MediaTypeDecoder).end</selection>
+		<maskname>$(SelectedMediaType)</maskname>
 		
 		<itemTemplate>
 			<height>40</height>
@@ -2569,13 +2632,15 @@ $(() - $(
 			<background>
 				<image>BrownButton</image>
 				<highlightImage>GreenButton</highlightImage>
-				<selectedImage>SelectedButton</SelectedImage>
+				<selectedImage>SelectedButton</selectedImage>
+				<maskedImage>MaskedButton</maskedImage>
 			</background>
 		</itemTemplate>
 
 		<itemList>
 			<source>DecoderInfo</source>
 			<text> $(DecoderInfo.Name)</text>
+			<masktext>$(DecoderInfo.MaskName)</masktext>
 			<onSelect>SetMediaTypeDecoder($(MediaTypeIndex), $(DecoderInfo.Name))  SetDataItem("MediaTypeDecoder", $(DecoderInfo.Name)) ShowMenu("DecoderList")</onSelect>
 			<onRight>SetMediaTypeDecoder($(MediaTypeIndex), $(DecoderInfo.Name))  SetDataItem("MediaTypeDecoder", $(DecoderInfo.Name)) ShowMenu("DecoderList")</onRight>
 		</itemList>

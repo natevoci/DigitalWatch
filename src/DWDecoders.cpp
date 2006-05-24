@@ -37,6 +37,7 @@ DWDecoder::DWDecoder(XMLElement *pElement)
 	m_pElement->AddRef();
 	index = NULL;
 	name = NULL;
+	maskname = NULL;
 }
 
 DWDecoder::~DWDecoder()
@@ -46,6 +47,8 @@ DWDecoder::~DWDecoder()
 		delete[] index;
 	if (name)
 		delete[] name;
+	if (maskname)
+		delete[] maskname;
 }
 
 void DWDecoder::SetLogCallback(LogMessageCallback *callback)
@@ -58,6 +61,16 @@ void DWDecoder::SetLogCallback(LogMessageCallback *callback)
 LPWSTR DWDecoder::Name()
 {
 	XMLAttribute *attr = m_pElement->Attributes.Item(L"name");
+	if (attr)
+	{
+		return attr->value;
+	}
+	return L"";
+}
+
+LPWSTR DWDecoder::MaskName()
+{
+	XMLAttribute *attr = m_pElement->Attributes.Item(L"maskname");
 	if (attr)
 	{
 		return attr->value;
@@ -625,7 +638,42 @@ LPWSTR DWDecoders::GetListItem(LPWSTR name, long nIndex)
 			return item->index;
 		else if (_wcsicmp(name, L".name") == 0)
 			return item->name;
+		else if (_wcsicmp(name, L".maskname") == 0)
+			return item->maskname;
 	}
+	else
+	{
+		startsWithLength = strStartsWith(name, L"GetMaskFromName.");
+		if (startsWithLength > 0)
+		{
+			name += startsWithLength;
+
+			std::vector<DWDecoder *>::iterator it = m_decoders.begin();
+			for ( ; it != m_decoders.end() ; it++ )
+			{
+				DWDecoder *item = *it;
+				if (_wcsicmp(name, item->name) == 0)
+					return item->maskname;
+			}
+		}
+		else
+		{
+			startsWithLength = strStartsWith(name, L"GetIndexFromName.");
+			if (startsWithLength > 0)
+			{
+				name += startsWithLength;
+
+				std::vector<DWDecoder *>::iterator it = m_decoders.begin();
+				for ( ; it != m_decoders.end() ; it++ )
+				{
+					DWDecoder *item = *it;
+					if (_wcsicmp(name, item->name) == 0)
+						return item->index;
+				}
+			}
+		}
+	}
+
 	return NULL;
 }
 
@@ -664,6 +712,23 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 			DWDecoder *dec = new DWDecoder(element);
 			strCopy((*dec).name, (*dec).Name());
 			strCopy((*dec).index, item+1);
+
+			LPWSTR pMaskName = new WCHAR[MAX_PATH];
+			int element2Count = element->Elements.Count();
+			for ( int item2=0 ; item2<element2Count ; item2++ )
+			{
+				XMLElement *element2 = element->Elements.Item(item2);
+				if (_wcsicmp(element2->name, L"MediaType") == 0)
+				{
+					XMLAttribute *attr = element2->Attributes.Item(L"name");
+					if (attr)
+					{
+						wsprintfW(pMaskName, L"%S%S.", (*dec).maskname, attr->value);
+						strCopy((*dec).maskname, pMaskName);
+					}
+				}
+			}
+
 			dec->SetLogCallback(m_pLogCallback);
 			m_decoders.push_back(dec);
 		}
