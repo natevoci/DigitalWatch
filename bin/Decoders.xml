@@ -383,6 +383,18 @@
    	</>
 </Decoder>
 
+<Decoder name="Main Concept H264-AVC Video Decoder - VMR9">
+	<MediaType name="H264 Video" />
+	
+    <LoadFilter clsid="{7C0D0340-71D5-4E7E-A77F-2059A2E5AF57}" name="Main Concept H264-AVC Video Decoder" />
+    <InputFilter name="Main Concept H264-AVC Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <Connect>
+    	<From name="Main Concept H264-AVC Video Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
 
 
 <!--
@@ -525,6 +537,22 @@
 	<InputFilter name="NVIDIA Audio Decoder" />
 	<Connect>
 		<From name="NVIDIA Audio Decoder" />
+		<To name="Default DirectSound Device" />
+	</>
+</Decoder>
+
+<Decoder name="Elecard Audio Decoder">
+	<MediaType name="MPEG Audio" />
+	<MediaType name="MPEG2 Audio" />
+	<MediaType name="AC3 Audio" />
+	<MediaType name="AAC Audio" />
+
+	<LoadFilter clsid="{F6C4C97D-FBFF-433F-B099-B96A12D32391}" name="Elecard Audio Decoder" />
+	<AudioRenderer name="Default DirectSound Device" />
+
+	<InputFilter name="Elecard Audio Decoder" />
+	<Connect>
+		<From name="Elecard Audio Decoder" />
 		<To name="Default DirectSound Device" />
 	</>
 </Decoder>

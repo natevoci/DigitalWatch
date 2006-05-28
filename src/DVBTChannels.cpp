@@ -132,6 +132,15 @@ void DVBTChannels_Service::SetLogCallback(LogMessageCallback *callback)
 	}
 }
 
+void DVBTChannels_Service::AddStream(DVBTChannels_Stream* pStream)
+{
+	if(!pStream)
+		return;
+
+	CAutoLock lock(&m_streamsLock);
+	m_streams.push_back(pStream);
+}
+
 HRESULT DVBTChannels_Service::LoadFromXML(XMLElement *pElement)
 {
 	CAutoLock lock(&m_streamsLock);

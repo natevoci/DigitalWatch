@@ -68,6 +68,7 @@ public:
 			LPWSTR lastServiceCmd;
 			LPWSTR currentServiceCmd;
 			BOOL longNetworkName;
+			BOOL decoderTest;
 			//LPWSTR logFilename;
 		} application;
 

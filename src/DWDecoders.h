@@ -46,7 +46,7 @@ public:
 	LPWSTR Name();
 	LPWSTR MaskName();
 
-	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin);
+	HRESULT AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, BOOL bForceConnect = FALSE);
 	HRESULT RenderWindowLess(IGraphBuilder *piGraphBuilder,
 								IPin *piSourcePin,
 								RENDER_METHOD *pRenderMethod,

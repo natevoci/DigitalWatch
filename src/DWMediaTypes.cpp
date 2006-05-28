@@ -199,7 +199,7 @@ void DWMediaTypes::SetListItem(int index, LPWSTR name, LPWSTR value)
 	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
 	for ( ; it < m_mediaTypes.end() ; it++ )
 	{
-		if (_wtoi((*it)->index) == index)
+		if (_wtoi((*it)->index) == index + 1)
 		{
 			if (_wcsicmp(name, L"decoder") == 0)
 			{
@@ -391,10 +391,20 @@ BOOL DWMediaTypes::SaveMediaTypes(LPWSTR filename)
 	return TRUE;
 }
 
-HRESULT DWMediaTypes::SetMediaTypeDecoder(int index, LPWSTR decoderName)
+LPWSTR DWMediaTypes::GetMediaTypeDecoder(int index)
+{
+	LPWSTR searchItem = new WCHAR[21];
+	strCopy(searchItem, L"MediaTypeInfo.decoder");
+	return GetListItem(searchItem, index);
+}
+
+HRESULT DWMediaTypes::SetMediaTypeDecoder(int index, LPWSTR decoderName, BOOL bKeep)
 {
 
 	SetListItem(index, L"decoder", decoderName);
+
+	if (!bKeep)
+		return S_OK;
 
 	if (!SaveMediaTypes())
 		return (log << "Unable to save the Media Types File \n").Write(E_FAIL);
@@ -429,10 +439,23 @@ HRESULT DWMediaTypes::MakeFile(LPWSTR filename)
 		strCopy(mt->decoder, mt->m_pDecoder->Name());
 	mediaTypes.push_back(mt);
 
-	//MPEG Audio
+	//H264 Video
 	mt = new DWMediaType();
 	mt->SetLogCallback(m_pLogCallback);
 	mt->index = L"2";
+	mt->name = L"H264 Video";
+	CLSIDFromString(L"{73646976-0000-0010-8000-00AA00389B71}", &mt->majortype); //KSDATAFORMAT_TYPE_VIDEO
+	CLSIDFromString(L"{8D2D71CB-243F-45E3-B2D8-5FD7967EC09B}", &mt->subtype); //H264_SubType
+	CLSIDFromString(L"{05589f80-c356-11ce-bf01-00aa0055595a}", &mt->formattype); //FORMAT_VideoInfo
+	mt->m_pDecoder = GetAutoDecoder(mt);
+	if (mt->m_pDecoder)
+		strCopy(mt->decoder, mt->m_pDecoder->Name());
+	mediaTypes.push_back(mt);
+
+	//MPEG Audio
+	mt = new DWMediaType();
+	mt->SetLogCallback(m_pLogCallback);
+	mt->index = L"3";
 	mt->name = L"MPEG Audio";
 	CLSIDFromString(L"{73647561-0000-0010-8000-00AA00389B71}", &mt->majortype); //MEDIATYPE_Audio
 	CLSIDFromString(L"{00000050-0000-0010-8000-00AA00389B71}", &mt->subtype); //MEDIASUBTYPE_MPEG1AudioPayload
@@ -445,7 +468,7 @@ HRESULT DWMediaTypes::MakeFile(LPWSTR filename)
 	//MPEG2 Audio
 	mt = new DWMediaType();
 	mt->SetLogCallback(m_pLogCallback);
-	mt->index = L"3";
+	mt->index = L"4";
 	mt->name = L"MPEG2 Audio";
 	CLSIDFromString(L"{73647561-0000-0010-8000-00AA00389B71}", &mt->majortype); //MEDIATYPE_Audio
 	CLSIDFromString(L"{E06D802B-DB46-11CF-B4D1-00805F6CBBEA}", &mt->subtype); //MEDIASUBTYPE_MPEG2_AUDIO
@@ -458,7 +481,7 @@ HRESULT DWMediaTypes::MakeFile(LPWSTR filename)
 	//AC3 Audio
 	mt = new DWMediaType();
 	mt->SetLogCallback(m_pLogCallback);
-	mt->index = L"4";
+	mt->index = L"5";
 	mt->name = L"AC3 Audio";
 	CLSIDFromString(L"{73647561-0000-0010-8000-00AA00389B71}", &mt->majortype); //MEDIATYPE_Audio
 	CLSIDFromString(L"{E06D802C-DB46-11CF-B4D1-00805F6CBBEA}", &mt->subtype); //MEDIATYPE_DOLBY_AC3
@@ -468,10 +491,23 @@ HRESULT DWMediaTypes::MakeFile(LPWSTR filename)
 		strCopy(mt->decoder, mt->m_pDecoder->Name());
 	mediaTypes.push_back(mt);
 
+	//AAC Audio
+	mt = new DWMediaType();
+	mt->SetLogCallback(m_pLogCallback);
+	mt->index = L"6";
+	mt->name = L"AAC Audio";
+	CLSIDFromString(L"{73647561-0000-0010-8000-00AA00389B71}", &mt->majortype); //MEDIATYPE_Audio
+	CLSIDFromString(L"{000000FF-0000-0010-8000-00AA00389B71}", &mt->subtype); //MEDIASUBTYPE_AAC
+	CLSIDFromString(L"{05589F81-C356-11CE-BF01-00AA0055595A}", &mt->formattype); //FORMAT_WaveFormatEx
+	mt->m_pDecoder = GetAutoDecoder(mt);
+	if (mt->m_pDecoder)
+		strCopy(mt->decoder, mt->m_pDecoder->Name());
+	mediaTypes.push_back(mt);
+
 	//Teletext
 	mt = new DWMediaType();
 	mt->SetLogCallback(m_pLogCallback);
-	mt->index = L"5";
+	mt->index = L"7";
 	mt->name = L"Teletext";
 	CLSIDFromString(L"{455F176C-4B06-47CE-9AEF-8CAEF73DF7B5}", &mt->majortype); //KSDATAFORMAT_TYPE_MPEG2_SECTIONS
 	CLSIDFromString(L"{E436EB8E-524F-11CE-9F53-0020AF0BA770}", &mt->subtype); //KSDATAFORMAT_SUBTYPE_NONE

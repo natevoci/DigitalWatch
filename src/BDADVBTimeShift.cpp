@@ -210,6 +210,11 @@ HRESULT BDADVBTimeShift::SaveCurrentTunerItem(TunerSinkGraphItem **tuner)
 	return NO_ERROR;
 }
 
+BOOL BDADVBTimeShift::IsInitialised()
+{
+	return m_bInitialised;
+}
+
 HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 {
 	m_bFileSourceActive = TRUE;
@@ -824,6 +829,68 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 
 		return cardList.ReloadCards();
 	}
+	else if (_wcsicmp(pCurr, L"SetMediaTypeDecoder") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 2 or 4 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 4)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (!command->LHS.Parameter[1] && !command->LHS.Parameter[2])
+			return (log << "Expecting 3 or 4 valid parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		//Get the media type index value
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		if (n1)
+			n1--;
+
+		//Save the current decoder selection
+		LPWSTR decoder = NULL;
+		LPWSTR pTemp = m_pDWGraph->GetMediaTypeDecoder(n1);
+		if(pTemp)
+			strCopy(decoder, pTemp);
+
+		//check if new decoder has correct media type specified
+		if (wcsstr(command->LHS.Parameter[2], command->LHS.Parameter[3]) == NULL)
+		{
+			(log << "Error, now restoring the previous Decoder: " << decoder << " for Media type: "<< command->LHS.Parameter[3]<< "\n").Show();
+			g_pOSD->Data()->SetItem(L"MediaTypeDecoder", decoder);
+			return (log << "Unable to match MediaTypes between: " << command->LHS.Parameter[2] << " with "<< command->LHS.Parameter[3]<< "\n").Show(E_FAIL);
+		}
+
+		if (g_pData->settings.application.decoderTest)
+		{
+
+			g_pOSD->Data()->SetItem(L"warnings", L"Decoder testing in progress, Please wait a few seconds.");
+			g_pTv->ShowOSDItem(L"Warnings", 2);
+			//Set the new decoder in the list
+			m_pDWGraph->SetMediaTypeDecoder(n1, command->LHS.Parameter[1], FALSE);
+
+			//if requested we can test the decoder connection
+			if (command->LHS.Parameter[3])
+				if FAILED(TestDecoderSelection(command->LHS.Parameter[3]))
+				{
+					g_pOSD->Data()->SetItem(L"warnings", L"Decoder Test Failed, Please check the log for details.");
+					g_pTv->ShowOSDItem(L"Warnings", 5);
+					(log << "Error, now restoring the previous Decoder: " << decoder << " for Media type: "<< command->LHS.Parameter[3]<< "\n").Show();
+					g_pOSD->Data()->SetItem(L"MediaTypeDecoder", decoder);
+					m_pDWGraph->SetMediaTypeDecoder(n1, decoder, FALSE);
+					CurrentChannel();
+					delete[] decoder;
+					return (log << "Unable to connect the Selected Decoder: " << command->LHS.Parameter[1] << " using Media type: "<< command->LHS.Parameter[3]<< "\n").Show(E_FAIL);
+				}
+			g_pOSD->Data()->SetItem(L"warnings", L"Decoder testing completed Ok.");
+			g_pTv->ShowOSDItem(L"Warnings", 2);
+		}
+
+		(log << "Setting the Selected Decoder: " << command->LHS.Parameter[1] << " for Media type: "<< command->LHS.Parameter[3]<< "\n").Show();
+		g_pOSD->Data()->SetItem(L"MediaTypeDecoder", command->LHS.Parameter[1]);
+		m_pDWGraph->SetMediaTypeDecoder(n1, command->LHS.Parameter[1]);
+		delete[] decoder;
+		return CurrentChannel();
+	}
 
 	if (m_pCurrentFileSource)
 		return m_pCurrentFileSource->ExecuteCommand(command);
@@ -879,6 +946,8 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 	if (_wcsnicmp(pCmdLine, L"ts://", 5) != 0)
 		return S_FALSE;
 
+	LPWSTR pTempCmdLine = NULL;
+
 	pCmdLine += 5;
 	if (pCmdLine[0] == '\0')
 	{
@@ -890,25 +959,20 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 		{
 			(log << "Remembering the last network and service\n").Write();
 			g_pOSD->Data()->SetItem(L"LastServiceCmd", g_pData->settings.application.lastServiceCmd);
-			LPWSTR pTemp = new WCHAR[MAX_PATH];
-			wsprintfW(pTemp, L"%S%S", pCmdLine, g_pOSD->Data()->GetItem(L"LastServiceCmd"));
-			strCopy(pCmdLine, pTemp);
-			delete[] pTemp;
-//			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"LastServiceCmd")); 
+			strCopy(pTempCmdLine, g_pData->settings.application.lastServiceCmd);
 		}
 		else if (currServiceCmd &&
 			g_pData->settings.application.currentServiceCmd &&
 			wcslen(g_pData->settings.application.currentServiceCmd) > 0)
 		{
 			(log << "Changing to the current network and service\n").Write();
-			LPWSTR pTemp = new WCHAR[MAX_PATH];
-			wsprintfW(pTemp, L"%S%S", pCmdLine, g_pOSD->Data()->GetItem(L"CurrenttServiceCmd"));
-			strCopy(pCmdLine, pTemp);
-			delete[] pTemp;
-//			wcscat(pCmdLine, g_pOSD->Data()->GetItem(L"CurrenttServiceCmd")); 
+			strCopy(pTempCmdLine, g_pOSD->Data()->GetItem(L"CurrenttServiceCmd"));
 		}
 		else
 		{
+			if (pTempCmdLine)
+				delete[] pTempCmdLine;
+
 			(log << "Loading default network and service\n").Write();
 			DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
 			DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
@@ -925,13 +989,15 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 			}
 		}
 	}
+	else
+		strCopy(pTempCmdLine, pCmdLine);
 
 	long originalNetworkId = 0;
 	long transportStreamId = 0;
 	long networkId = 0;
 	long serviceId = 0;
 
-	LPWSTR pStart = wcschr(pCmdLine, L'/');
+	LPWSTR pStart = wcschr(pTempCmdLine, L'/');
 	if (pStart)
 	{
 		pStart[0] = 0;
@@ -939,10 +1005,16 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 		serviceId = StringToLong(pStart);
 	}
 
-	pStart = pCmdLine;
+	pStart = pTempCmdLine;
 	LPWSTR pColon = wcschr(pStart, L':');
 	if (!pColon)
+	{
+		if (pTempCmdLine)
+			delete[] pTempCmdLine;
+
 		return (log << "bad format - originalNetworkId:transportStreamId:networkId[/serviceId]\n").Write(S_FALSE);
+	}
+	
 	pColon[0] = 0;
 	originalNetworkId = StringToLong(pStart);
 	pColon[0] = ':';
@@ -950,13 +1022,22 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 	pStart = pColon+1;
 	pColon = wcschr(pStart, L':');
 	if (!pColon)
+	{
+		if (pTempCmdLine)
+			delete[] pTempCmdLine;
+
 		return (log << "bad format - originalNetworkId:transportStreamId:networkId[/serviceId]\n").Write(S_FALSE);
+	}
+	
 	pColon[0] = 0;
 	transportStreamId = StringToLong(pStart);
 	pColon[0] = ':';
 	pStart = pColon+1;
 
 	networkId = StringToLong(pStart);
+
+	if (pTempCmdLine)
+		delete[] pTempCmdLine;
 
 	return SetChannel(originalNetworkId, transportStreamId, networkId, serviceId);
 }
@@ -1187,10 +1268,54 @@ HRESULT BDADVBTimeShift::ProgramDown()
 	return RenderChannel(pNetwork, pService);
 }
 
-HRESULT BDADVBTimeShift::LastChannel()
+HRESULT BDADVBTimeShift::CurrentChannel(BOOL bForce)
 {
 	if(!m_pCurrentTuner)
-		return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);
+	{
+		if (g_pData->settings.application.currentServiceCmd && wcslen(g_pData->settings.application.currentServiceCmd))
+		{
+			LPWSTR wsz = new WCHAR[MAX_PATH];
+			wsprintfW(wsz, L"ts://%S", g_pData->settings.application.currentServiceCmd);
+			Load (wsz);
+			delete[] wsz;
+			return S_OK;
+		}
+		else
+			return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);
+	}
+
+	if (g_pOSD->Data()->GetItem(L"CurrentOriginalNetworkId")  &&
+		g_pOSD->Data()->GetItem(L"CurrentNetworkId")  &&
+		g_pOSD->Data()->GetItem(L"CurrentTransportStreamId")  &&
+		g_pOSD->Data()->GetItem(L"CurrentServiceId") &&
+		bForce)
+	{
+
+		long currentOriginalNetworkId = _wtoi(g_pOSD->Data()->GetItem(L"CurrentOriginalNetworkId"));
+		long currentTransportStreamId = _wtoi(g_pOSD->Data()->GetItem(L"CurrentTransportStreamId"));
+		long currentNetworkId = _wtoi(g_pOSD->Data()->GetItem(L"CurrentNetworkId"));
+		long currentServiceId = _wtoi(g_pOSD->Data()->GetItem(L"CurrentServiceId"));
+
+		return SetChannel(currentOriginalNetworkId, currentTransportStreamId, currentNetworkId, currentServiceId);
+	}
+	return S_OK;
+}
+
+HRESULT BDADVBTimeShift::LastChannel()
+{
+	if(!m_pCurrentTuner) 
+	{
+		if (g_pData->settings.application.lastServiceCmd && wcslen(g_pData->settings.application.lastServiceCmd))
+		{
+			LPWSTR wsz = new WCHAR[MAX_PATH];
+			wsprintfW(wsz, L"tv://%S", g_pData->settings.application.lastServiceCmd);
+			Load (wsz);
+			delete[] wsz;
+			return S_OK;
+		}
+		else
+			return (log << "There are no Tuner Class Loaded\n").Write(E_POINTER);
+	}
 
 	if (g_pOSD->Data()->GetItem(L"LastOriginalNetworkId")  &&
 		g_pOSD->Data()->GetItem(L"LastNetworkId")  &&
@@ -1246,7 +1371,7 @@ void BDADVBTimeShift::UpdateLastItemList(void)
 	g_pOSD->Data()->SetItem(L"LastServiceId", pValue);
 	if (pValue) delete[] pValue;
 
-	LPWSTR wsz = new WCHAR[128];
+	LPWSTR wsz = new WCHAR[MAX_PATH];
 	wsprintfW(wsz, L"%i:%i:%i/%i", m_pCurrentNetwork->originalNetworkId, m_pCurrentNetwork->transportStreamId, m_pCurrentNetwork->networkId, m_pCurrentService->serviceId);
 	g_pOSD->Data()->SetItem(L"LastServiceCmd", wsz);
 	strCopy(g_pData->settings.application.lastServiceCmd, wsz);
@@ -1266,7 +1391,7 @@ void BDADVBTimeShift::UpdateCurrentItemList(void)
 	g_pOSD->Data()->SetItem(L"CurrentServiceId", pValue);
 	if (pValue) delete[] pValue;
 
-	LPWSTR wsz = new WCHAR[128];
+	LPWSTR wsz = new WCHAR[MAX_PATH];
 	wsprintfW(wsz, L"%i:%i:%i/%i", m_pCurrentNetwork->originalNetworkId, m_pCurrentNetwork->transportStreamId, m_pCurrentNetwork->networkId, m_pCurrentService->serviceId);
 	g_pOSD->Data()->SetItem(L"CurrentServiceCmd", wsz);
 	strCopy(g_pData->settings.application.currentServiceCmd, wsz);
@@ -2061,7 +2186,7 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 				if FAILED(hr = LoadDemux())
 					return (log << "Failed to Add DeMultiplexer: " << hr << "\n").Write(hr);
 
-				if FAILED(hr = AddDemuxPins(m_pCurrentService))
+				if FAILED(hr = AddDemuxPins(m_pCurrentService, m_pBDAMpeg2Demux))
 					return (log << "Failed to Add Demux Pins: " << hr << "\n").Write(hr);
 				else
 					m_bFileSourceActive = FALSE;
@@ -2538,11 +2663,17 @@ HRESULT BDADVBTimeShift::UnloadFileSource()
 	return S_OK;
 }
 
-HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService)
+HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, BOOL bForceConnect)
 {
 	if (pService == NULL)
 	{
 		(log << "Skipping Demux Pins. No service passed.\n").Write();
+		return E_INVALIDARG;
+	}
+
+	if (pFilter == NULL)
+	{
+		(log << "Skipping Demux Pins. No Demultiplexer passed.\n").Write();
 		return E_INVALIDARG;
 	}
 
@@ -2551,25 +2682,65 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService)
 
 	HRESULT hr;
 
+	if (m_piMpeg2Demux)
+		m_piMpeg2Demux.Release();
+
+	if FAILED(hr = pFilter->QueryInterface(&m_piMpeg2Demux))
+	{
+		(log << "Failed to get the IMeg2Demultiplexer Interface on the Sink Demux.\n").Write();
+		return E_FAIL;
+	}
+
 	long videoStreamsRendered;
 	long audioStreamsRendered;
 
 	// render video
 	hr = AddDemuxPinsVideo(pService, &videoStreamsRendered);
+	if(FAILED(hr) && bForceConnect)
+		return hr;
+
+	// render h264 video if no mpeg2 video was rendered
+	if (videoStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsH264(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
 
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
+	{
 		hr = AddDemuxPinsTeletext(pService);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
 
 	// render mp2 audio
 	hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+	if(FAILED(hr) && bForceConnect)
+		return hr;
 
 	// render ac3 audio if no mp2 was rendered
 	if (audioStreamsRendered == 0)
+	{
 		hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render aac audio if no ac3 or mp2 was rendered
+	if (audioStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
 
 	indent.Release();
 	(log << "Finished Adding Demux Pins\n").Write();
+
+	if (m_piMpeg2Demux)
+		m_piMpeg2Demux.Release();
 
 	return S_OK;
 }
@@ -2653,6 +2824,13 @@ HRESULT BDADVBTimeShift::AddDemuxPinsVideo(DVBTChannels_Service* pService, long 
 	return AddDemuxPins(pService, video, L"Video", &mediaType, streamsRendered);
 }
 
+HRESULT BDADVBTimeShift::AddDemuxPinsH264(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetH264Media(&mediaType);
+	return AddDemuxPins(pService, h264, L"Video", &mediaType, streamsRendered);
+}
+
 HRESULT BDADVBTimeShift::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
@@ -2667,6 +2845,13 @@ HRESULT BDADVBTimeShift::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *s
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
 	graphTools.GetAC3Media(&mediaType);
 	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTimeShift::AddDemuxPinsAAC(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetAACMedia(&mediaType);
+	return AddDemuxPins(pService, aac, L"Audio", &mediaType, streamsRendered);
 }
 
 HRESULT BDADVBTimeShift::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
@@ -2997,6 +3182,120 @@ HRESULT BDADVBTimeShift::ShowFilter(LPWSTR filterName)
 	// Start the background thread for updating statistics
 	if FAILED(hr = StartThread())
 		(log << "Failed to start background thread: " << hr << "\n").Write();
+
+	return hr;
+}
+
+HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
+{
+	(log << "Building the Decoder Test Graph\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr = E_FAIL;
+
+	DVBTChannels_Service* pService = new DVBTChannels_Service();
+	DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+
+	CComPtr <IGraphBuilder> piGraphBuilder2 = m_piGraphBuilder;
+	CComPtr <IGraphBuilder> piGraphBuilder;
+	CComPtr <IBaseFilter> piBDAMpeg2Demux;
+	DWORD rotEntry = 0;
+
+	while (TRUE)
+	{
+		BOOL bFound = FALSE;
+		for (int i=0 ; i<DVBTChannels_Service_PID_Types_Count ; i++ )
+		{
+			if (_wcsicmp(pwszMediaType, DVBTChannels_Service_PID_Types_String[i]) == 0)
+			{
+				pStream->Type = (DVBTChannels_Service_PID_Types)i;
+				bFound = TRUE;
+			}
+		}
+		if (bFound)
+			pService->AddStream(pStream);
+		else
+		{
+			delete pStream;
+			(log << "Failed to find a matching Media Type\n").Write();
+			break; 
+		}
+
+		if FAILED(hr = piGraphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER))
+		{
+			(log << "Failed Creating the Decoder Test Graph Builder: " << hr << "\n").Write();
+			break;
+		}
+
+		if (g_pData->settings.application.addToROT)
+		{
+			if FAILED(hr = graphTools.AddToRot(piGraphBuilder, &rotEntry))
+			{
+				(log << "Failed adding the Decoder Test graph to ROT: " << hr << "\n").Write();
+				break;
+			}
+		}
+
+		//MPEG-2 Demultiplexer (DW's)
+		if FAILED(hr = graphTools.AddFilter(piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+		{
+			(log << "Failed to add Test MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write();
+			break;
+		}
+
+		CComPtr <IMpeg2Demultiplexer> piMpeg2Demux;
+		if FAILED(hr = piBDAMpeg2Demux.QueryInterface(&piMpeg2Demux))
+		{
+			(log << "Failed to get the IMpeg2Demultiplexer Interface of the Test MPEG-2 Demultiplexer: " << hr << "\n").Write();
+			break;
+		}
+
+		m_piGraphBuilder = piGraphBuilder;
+		if FAILED(hr = AddDemuxPins(pService, piBDAMpeg2Demux, TRUE))
+		{
+			(log << "Failed to Add Demux Pins and render the graph\n").Write();
+			break;
+		}
+
+		break;
+	};
+	 
+	if (piGraphBuilder2)
+		m_piGraphBuilder = piGraphBuilder2;
+
+	if FAILED(hr)
+	{
+		(log << "Failed Building the Decoder Test Graph\n").Write();
+	}
+	else
+		(log << "Finished Building the Decoder Test Graph Ok\n").Write();
+
+	delete pService;
+
+	(log << "Cleaning up the Decoder Test Graph\n").Write();
+
+	if (!piGraphBuilder)
+		return (log << "Graph Builder interface is NULL\n").Write(E_POINTER);
+
+	if (rotEntry)
+	{
+		graphTools.RemoveFromRot(rotEntry);
+		rotEntry = 0;
+	}
+
+	if (piBDAMpeg2Demux)
+		piBDAMpeg2Demux.Release();
+
+	HRESULT hr2 = graphTools.DisconnectAllPins(piGraphBuilder);
+	if FAILED(hr2)
+		(log << "Failed to disconnect pins: " << hr << "\n").Write(hr);
+
+	hr2 = graphTools.RemoveAllFilters(piGraphBuilder);
+	if FAILED(hr2)
+		(log << "Failed to remove filters: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Finished Cleaning up the Decoder Test Graph\n").Write();
 
 	return hr;
 }

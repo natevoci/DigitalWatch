@@ -1062,6 +1062,18 @@ void DVBMpeg2DataParser::ParsePMT(unsigned char *buf, int sectionLength, int ser
 					break;
 				}
 			}
+			case 0x1B:
+			{
+				pStream->Type = h264;
+				log.showf("H264 VIDEO       : PID 0x%04x\n", pStream->PID);
+				break;
+			}
+			case 0x0F:
+			{
+				pStream->Type = aac;
+				log.showf("AAC AUDIO       : PID 0x%04x\n", pStream->PID);
+				break;
+			}
 			/* fall through */
 			default:
 			{

@@ -76,6 +76,11 @@ IGraphBuilder *TSFileSource::GetGraphBuilder(void)
 	return m_piGraphBuilder;
 }
 
+BOOL TSFileSource::IsInitialised()
+{
+	return m_bInitialised;
+}
+
 HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 {
 	m_bInitialised = TRUE;
@@ -614,6 +619,10 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	// render video
 	hr = AddDemuxPinsVideo(pService, pmt, &videoStreamsRendered);
 
+	// render h264 video if no mpeg2 video was rendered
+	if (videoStreamsRendered == 0)
+		hr = AddDemuxPinsH264(pService, pmt, &audioStreamsRendered);
+
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
 		hr = AddDemuxPinsTeletext(pService, pmt);
@@ -624,6 +633,10 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	// render ac3 audio if no mp2 was rendered
 	if (audioStreamsRendered == 0)
 		hr = AddDemuxPinsAC3(pService, pmt, &audioStreamsRendered);
+
+	// render aac audio if no ac3 or mp2 was rendered
+	if (audioStreamsRendered == 0)
+		hr = AddDemuxPinsAAC(pService, pmt, &audioStreamsRendered);
 
 	if (m_piMpeg2Demux)
 		m_piMpeg2Demux.Release();
@@ -791,6 +804,13 @@ HRESULT TSFileSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, AM_MEDIA
 	return AddDemuxPins(pService, video, L"Video", &mediaType, pmt, streamsRendered);
 }
 
+HRESULT TSFileSource::AddDemuxPinsH264(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetH264Media(&mediaType);
+	return AddDemuxPins(pService, h264, L"Video", &mediaType, pmt, streamsRendered);
+}
+
 HRESULT TSFileSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
@@ -805,6 +825,12 @@ HRESULT TSFileSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, AM_MEDIA_T
 	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, pmt, streamsRendered);
 }
 
+HRESULT TSFileSource::AddDemuxPinsAAC(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetAACMedia(&mediaType);
+	return AddDemuxPins(pService, aac, L"Audio", &mediaType, pmt, streamsRendered);
+}
 
 HRESULT TSFileSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
 {

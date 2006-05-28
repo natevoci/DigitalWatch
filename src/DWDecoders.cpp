@@ -78,7 +78,7 @@ LPWSTR DWDecoder::MaskName()
 	return L"";
 }
 
-HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
+HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, BOOL bForceConnect)
 {
 	HRESULT hr;
 
@@ -141,7 +141,9 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_OverlayMixer, &piOMFilter, pName);
 				if (hr != S_OK)
 				{
-//					return (log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Show(hr);
+					if(bForceConnect)
+						return (log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Show(hr);
+
 					(log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Write();
 					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 					if (hr != S_OK)
@@ -156,8 +158,13 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 					hr = graphTools.ConnectFilters(piGraphBuilder, piNewFilter, piOMFilter);
 					if (hr != S_OK) //-2147467259)// == 0x800040207) //DDERR_CURRENTLYNOTAVAIL)
 					{
-						(log << "Error: Can't connect to overlay mixer, already be in use: " << hr << "\n").Write();
 						DestroyFilter(piGraphBuilder, piOMFilter);
+
+						if(bForceConnect)
+							return (log << "Error: Can't connect to overlay mixer, already be in use " << hr << "\n").Show(hr);
+						else
+							(log << "Error: Can't connect to overlay mixer, already be in use: " << hr << "\n").Write();
+
 						hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 						if (hr != S_OK)
 							return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
@@ -186,9 +193,12 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				piOMFilter.QueryInterface(&piDDrawExclMode);
 				if (piDDrawExclMode == NULL)
 				{
-//					return (log << "Error: Could not QI for IDDrawExclModeVideo\n").Write(hr);
-					(log << "Error: Could not QI for IDDrawExclModeVideo\n").Write();
 					DestroyFilter(piGraphBuilder, piOMFilter);
+					if(bForceConnect)
+						return (log << "Error: Could not QI for IDDrawExclModeVideo\n").Write(hr);
+					else
+						(log << "Error: Could not QI for IDDrawExclModeVideo\n").Write();
+
 					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 					if (hr != S_OK)
 						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
@@ -200,10 +210,14 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = g_pOSD->GetOSDRenderer(&pOSDRenderer);
 				if FAILED(hr)
 				{
-//					return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
-					(log << "Failed to get OSD Renderer: " << hr << "\n").Write();
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
+
+					if(bForceConnect)
+						return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
+					else
+						(log << "Failed to get OSD Renderer: " << hr << "\n").Write();
+
 					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 					if (hr != S_OK)
 						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
@@ -214,11 +228,15 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				DWRendererDirectDraw *pOSDRendererDirectDraw = dynamic_cast<DWRendererDirectDraw *>(pOSDRenderer);
 				if (!pOSDRendererDirectDraw)
 				{
-//					return (log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write(E_FAIL);
-					(log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write();
 					pOSDRenderer->Destroy();
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
+
+					if(bForceConnect)
+						return (log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write(E_FAIL);
+					else
+						(log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write();
+
 					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 					if (hr != S_OK)
 						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
@@ -230,12 +248,16 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = pOSDRendererDirectDraw->GetDirectDraw()->GetOverlayCallbackInterface(&pOverlayCallback);
 				if FAILED(hr)
 				{
-//					return (log << "Failed to get overlay callback interface: " << hr << "\n").Write(hr);
-					(log << "Failed to get overlay callback interface: " << hr << "\n").Write();
 					pOSDRendererDirectDraw->Destroy();
 					pOSDRenderer->Destroy();
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
+
+					if(bForceConnect)
+						return (log << "Failed to get overlay callback interface: " << hr << "\n").Write(hr);
+					else
+						(log << "Failed to get overlay callback interface: " << hr << "\n").Write();
+
 					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 					if (hr != S_OK)
 						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
@@ -246,13 +268,17 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = piDDrawExclMode->SetCallbackInterface(pOverlayCallback, 0);
 				if FAILED(hr)
 				{
-//					return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
-					(log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Write();
 					pOverlayCallback->Release();
 					pOSDRendererDirectDraw->Destroy();
 					pOSDRenderer->Destroy();
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
+
+					if(bForceConnect)
+						return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
+					else
+						(log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Write();
+
 					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 					if (hr != S_OK)
 						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
@@ -264,13 +290,17 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoRenderer, &piVRFilter, L"Video Renderer");
 				if (hr != S_OK)
 				{
-//					return (log << "Error: Can't Add Video Renderer: " << hr << "\n").Show(hr);
-					(log << "Error: Can't Add Video Renderer: " << hr << "\n").Write();
 					pOverlayCallback->Release();
 					pOSDRendererDirectDraw->Destroy();
 					pOSDRenderer->Destroy();
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
+
+					if(bForceConnect)
+						return (log << "Error: Can't Add Video Renderer: " << hr << "\n").Show(hr);
+					else
+						(log << "Error: Can't Add Video Renderer: " << hr << "\n").Write();
+
 					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 					if (hr != S_OK)
 						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
@@ -281,14 +311,18 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 				hr = graphTools.ConnectFilters(piGraphBuilder, piOMFilter, piVRFilter);
 				if (hr != S_OK)
 				{
-//					return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
-					(log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Write();
 					DestroyFilter(piGraphBuilder, piVRFilter);
 					pOverlayCallback->Release();
 					pOSDRendererDirectDraw->Destroy();
 					pOSDRenderer->Destroy();
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
+
+					if(bForceConnect)
+						return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
+					else
+						(log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Write();
+
 					hr = RenderWindowLess(piGraphBuilder, piSourcePin, &renderMethod, pName);
 					if (hr != S_OK)
 						return (log << "Error: Can't use Windowless Render either: " << hr << "\n").Show(hr);;
@@ -723,7 +757,7 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 					XMLAttribute *attr = element2->Attributes.Item(L"name");
 					if (attr)
 					{
-						wsprintfW(pMaskName, L"%S%S.", (*dec).maskname, attr->value);
+						wsprintfW(pMaskName, L"%S%S ", (*dec).maskname, attr->value);
 						strCopy((*dec).maskname, pMaskName);
 					}
 				}

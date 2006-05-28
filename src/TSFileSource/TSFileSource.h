@@ -50,6 +50,7 @@ public:
 
 	virtual HRESULT ExecuteCommand(ParseLine* command);
 
+	virtual BOOL IsInitialised();
 	virtual BOOL IsRecording();
 	virtual HRESULT SeekTo(long percentage);
 	virtual HRESULT Skip(long seconds);
@@ -75,8 +76,10 @@ protected:
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, int intPinType = 0);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsH264(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered);
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL);
 	HRESULT SetSourceInterface(IBaseFilter *pFilter);
 

@@ -75,7 +75,8 @@ public:
 	BOOL IsPlaying();
 	BOOL IsPaused();
 
-	HRESULT SetMediaTypeDecoder(int index, LPWSTR decoderName);
+	LPWSTR GetMediaTypeDecoder(int index);
+	HRESULT SetMediaTypeDecoder(int index, LPWSTR decoderName, BOOL bKeep = TRUE);
 
 protected:
 	void CalculateVideoRect(double aspectRatio = 0);

@@ -72,6 +72,7 @@ AppData::AppData()
 	settings.application.currentServiceCmd = new wchar_t[MAX_PATH];
 	wcscpy(settings.application.currentServiceCmd, L"");
 	settings.application.longNetworkName = FALSE;
+	settings.application.decoderTest = FALSE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
@@ -349,6 +350,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"longNetworkName") == 0)
 				return GetBool(settings.application.longNetworkName);
+
+			if (_wcsicmp(selection, L"decoderTest") == 0)
+				return GetBool(settings.application.decoderTest);
 
 			return NULL;
 		}
@@ -844,6 +848,11 @@ HRESULT AppData::LoadSettings()
 					settings.application.longNetworkName = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"DecoderTest") == 0)
+				{
+					settings.application.decoderTest = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 			}
 			continue;
 		}
@@ -1334,6 +1343,7 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"RememberLastService", (settings.application.rememberLastService ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"LastServiceCmd", settings.application.lastServiceCmd));
 		pApplication->Elements.Add(new XMLElement(L"LongNetworkName", (settings.application.longNetworkName ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"DecoderTest", (settings.application.decoderTest ? L"True" : L"False")));
 	}
 
 	XMLElement *pWindow = new XMLElement(L"Window");

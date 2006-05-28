@@ -71,7 +71,8 @@ public:
 
 	HRESULT Load(LPWSTR filename);
 	BOOL SaveMediaTypes(LPWSTR filename = NULL);
-	HRESULT SetMediaTypeDecoder(int index, LPWSTR decoderName);
+	LPWSTR GetMediaTypeDecoder(int index);
+	HRESULT SetMediaTypeDecoder(int index, LPWSTR decoderName, BOOL bKeep = TRUE);
 	HRESULT MakeFile(LPWSTR filename);
 	void SetListItem(int index, LPWSTR name, LPWSTR value);
 	DWDecoder *GetAutoDecoder(DWMediaType *mediaType);

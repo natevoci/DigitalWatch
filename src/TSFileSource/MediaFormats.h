@@ -78,8 +78,7 @@ static BYTE Mpeg2ProgramVideo [] = {
 };
 
 static 
-BYTE
-g_Mpeg2ProgramVideo [] = {
+BYTE g_Mpeg2ProgramVideo [] = {
 	0x00, 0x00, 0x00, 0x00,							//  .hdr.rcSource.left
 	0x00, 0x00, 0x00, 0x00,							//  .hdr.rcSource.top
 	0xd0, 0x02, 0x00, 0x00,							//  .hdr.rcSource.right

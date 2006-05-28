@@ -47,6 +47,7 @@ public:
 	//Keys, ControlBar, OSD, Menu, etc...
 
 	virtual BOOL IsRecording() = FALSE;
+	virtual BOOL IsInitialised() = FALSE;
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
 	virtual HRESULT Load(LPWSTR pCmdLine);

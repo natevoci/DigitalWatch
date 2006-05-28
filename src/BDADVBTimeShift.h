@@ -76,6 +76,7 @@ public:
 	virtual HRESULT ExecuteCommand(ParseLine* command);
 	//Keys, ControlBar, OSD, Menu, etc...
 
+	virtual BOOL IsInitialised();
 	virtual BOOL IsRecording();
 	virtual HRESULT ReLoadTimeShiftFile();
 	virtual HRESULT LoadRecordFile();
@@ -84,6 +85,7 @@ public:
 	virtual HRESULT Load(LPWSTR pCmdLine);
 	virtual	HRESULT GetFilterList(void);
 	virtual	HRESULT ShowFilter(LPWSTR filterName);
+	virtual	HRESULT TestDecoderSelection(LPWSTR pwszMediaType);
 	HRESULT SetStream(long index);
 	HRESULT SetStreamName(LPWSTR pService, BOOL bEnable);
 
@@ -101,6 +103,7 @@ protected:
 	virtual HRESULT ProgramUp();
 	virtual HRESULT ProgramDown();
 	virtual HRESULT LastChannel();
+	virtual HRESULT CurrentChannel(BOOL bForce = FALSE);
 
 	// graph building methods
 	HRESULT RenderChannel(DVBTChannels_Network* pNetwork, DVBTChannels_Service* pService);
@@ -123,11 +126,13 @@ protected:
 	HRESULT LoadFileSource();
 	HRESULT UnloadFileSource();
 
-	HRESULT AddDemuxPins(DVBTChannels_Service* pService);
+	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, BOOL bForceConnection = FALSE);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsH264(DVBTChannels_Service* pService, long *streamsRendered);
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, long *streamsRendered);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 
 	void UpdateData(long frequency = 0, long bandwidth = 0);

@@ -1151,6 +1151,10 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<I
 		// render video
 		hr = AddDemuxPinsVideo(pService, &videoStreamsRendered);
 
+		// render h264 video if no mpeg2 video was rendered
+		if (videoStreamsRendered == 0)
+			hr = AddDemuxPinsH264(pService, &audioStreamsRendered);
+
 		// render teletext if video was rendered
 		if (videoStreamsRendered > 0)
 			hr = AddDemuxPinsTeletext(pService);
@@ -1161,6 +1165,10 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<I
 		// render ac3 audio if no mp2 was rendered
 		if (audioStreamsRendered == 0)
 			hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
+
+		// render aac audio if no ac3 or mp2 was rendered
+		if (audioStreamsRendered == 0)
+			hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
 	}
 /*
 	//Set reference clock
@@ -1341,6 +1349,13 @@ HRESULT FilterGraphTools::AddDemuxPinsVideo(DVBTChannels_Service* pService, long
 	return AddDemuxPins(pService, video, L"Video", &mediaType, streamsRendered);
 }
 
+HRESULT FilterGraphTools::AddDemuxPinsH264(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetH264Media(&mediaType);
+	return AddDemuxPins(pService, h264, L"Video", &mediaType, streamsRendered);
+}
+
 HRESULT FilterGraphTools::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
@@ -1353,6 +1368,13 @@ HRESULT FilterGraphTools::AddDemuxPinsAC3(DVBTChannels_Service* pService, long *
 	AM_MEDIA_TYPE mediaType;
 	GetAC3Media(&mediaType);
 //	return AddDemuxPins(pService, ac3, L"AC3", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, streamsRendered);
+}
+
+HRESULT FilterGraphTools::AddDemuxPinsAAC(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetAACMedia(&mediaType);
 	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, streamsRendered);
 }
 
@@ -1478,6 +1500,7 @@ HRESULT FilterGraphTools::GetVideoMedia(AM_MEDIA_TYPE *pintype)
 
 	return S_OK;
 }
+//{8D2D71CB-243F-45E3-B2D8-5FD7967EC09B}
 static GUID H264_SubType = {0x8D2D71CB, 0x243F, 0x45E3, {0xB2, 0xD8, 0x5F, 0xD7, 0x96, 0x7E, 0xC0, 0x9B}};
 
 HRESULT FilterGraphTools::GetH264Media(AM_MEDIA_TYPE *pintype)

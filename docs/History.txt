@@ -29,6 +29,8 @@ nate:
 
 bear:
 Changes:
+- Added support for h264 media type, can't tell if it works as have no access to a broadcast.
+- Added a Decoder Test function to the decoder selection method, to use you need to enable decoder test setting in the settings menu.
 - Added a emboss image to the settings menu to mask out decoders that do not match the media type selected.
 - Added a Cycle Cards option in the settings menu so the cards will not cycle.
 - Slight change to the minimise/restore function to remove some error messages from the log.

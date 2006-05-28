@@ -81,8 +81,10 @@ public:
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsH264(DVBTChannels_Service* pService, long *streamsRendered);
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, long *streamsRendered);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsTS(DVBTChannels_Service* pService, long *streamsRendered);
 	HRESULT GetAC3Media(AM_MEDIA_TYPE *pintype);

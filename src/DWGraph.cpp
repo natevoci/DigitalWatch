@@ -859,7 +859,13 @@ BOOL DWGraph::IsPaused()
 	return m_bPaused;
 }
 
-HRESULT DWGraph::SetMediaTypeDecoder(int index, LPWSTR decoderName)
+LPWSTR DWGraph::GetMediaTypeDecoder(int index)
 {
-	return m_mediaTypes.SetMediaTypeDecoder(index, decoderName);
+	return m_mediaTypes.GetMediaTypeDecoder(index);
 }
+
+HRESULT DWGraph::SetMediaTypeDecoder(int index, LPWSTR decoderName, BOOL bKeep)
+{
+	return m_mediaTypes.SetMediaTypeDecoder(index, decoderName, bKeep);
+}
+

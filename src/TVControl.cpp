@@ -1281,6 +1281,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		g_pData->settings.application.longNetworkName = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetDecoderTest") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.decoderTest = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetDSNetworkFormat") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -1477,15 +1485,48 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetMediaTypeDecoder") == 0)
 	{
-		if (command->LHS.ParameterCount <= 0)
-			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+		if (m_pActiveSource && _wcsicmp(m_pActiveSource->GetSourceType(), L"BDA") == NULL)
+		{
+			return S_FALSE;
+		}
 
-		if (command->LHS.ParameterCount > 2)
-			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+		HRESULT hr;
+		std::vector<DWSource *>::iterator it = m_sources.begin();
+		for ( ; it < m_sources.end() ; it++ )
+		{
+			DWSource *source = *it;
+			LPWSTR pType = source->GetSourceType();
 
-		n1 = StringToLong(command->LHS.Parameter[0]);
+			if (_wcsicmp(pType, L"BDA") == 0)
+			{
+				if (m_pActiveSource)
+				{
+					if (m_pActiveSource && m_pActiveSource->IsRecording())
+					{
+						g_pTv->ShowOSDItem(L"Recording", 5);
+						g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
+						g_pTv->ShowOSDItem(L"Warnings", 5);
+						g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+						g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
+						return S_FALSE;
+					}
 
-		return m_pFilterGraph->SetMediaTypeDecoder(n1, command->LHS.Parameter[1]);
+					//TODO: create a m_pActiveSource->DisconnectFromGraph() method
+					m_pActiveSource->Destroy();
+					m_pActiveSource = NULL;
+				}
+
+				if FAILED(hr = source->Initialise(m_pFilterGraph))
+					return (log << "Failed to initialise source: " << hr << "\n").Write();
+
+				m_pActiveSource = source;
+				if FAILED(hr = source->ExecuteCommand(command))
+					return (log << "Failed to load command: " << hr << "\n").Write();
+
+				return S_OK;
+			}
+		}
+		return S_FALSE;
 	}
 
 

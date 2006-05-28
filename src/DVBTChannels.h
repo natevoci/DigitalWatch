@@ -37,8 +37,10 @@ enum DVBTChannels_Service_PID_Types
 {
 	unknown,
 	video,
+	h264,
 	mp2,
 	ac3,
+	aac,
 	teletext,
 	pmt,
 	pcr,
@@ -48,9 +50,10 @@ enum DVBTChannels_Service_PID_Types
 static const LPWSTR DVBTChannels_Service_PID_Types_String[] =
 {
 	L"Unknown",
-	L"Video",
-	L"MPEG-2 Audio",
+	L"MPEG2 Video",
+	L"MPEG2 Audio",
 	L"AC3 Audio",
+	L"AAC Audio",
 	L"Teletext",
 	L"PMT",
 	L"PCR"
@@ -84,6 +87,7 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
+	void AddStream(DVBTChannels_Stream* pStream);
 	HRESULT LoadFromXML(XMLElement *pElement);
 	HRESULT SaveToXML(XMLElement *pElement);
 
