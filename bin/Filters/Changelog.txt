@@ -1,8 +1,13 @@
+Version 2.2.0.4
+=================
+bear:
+Added an extra test to exclude the Cyberlink Demux Filter from connecting, seems that it is unable to support MS Demux Interfaces Properly.
+
 Version 2.2.0.3
 =================
 bear:
 Fixed a problem in the PMT parser code that was causing false detection of extra streams for some files.
-Added a function to get the available free disk space so the TSFileSink Filter will begin reusing the old files if the HDD runs out of space.
+Added an function to get the available free disk space so the TSFileSink Filter will begin reusing the old files if the HDD runs out of space.
 Fixed a crashing problem when used with other demux's that don't fully support the MS Demux interface methods like cyberlink.
 Fixed some locking issues.
 Fixed a PAT and ONIT parsing bug for UK users.
