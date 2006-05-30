@@ -525,7 +525,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-/*
+
 	// If it's a .tsbuffer file then seek to the end
 	long length = wcslen(pFilename);
 	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0) && timeshiftService)
@@ -534,9 +534,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	}
 	else	//Do this to set the Filtergraph seek time since changing the reference clock upsets the demux
 		SeekTo(0);
-*/
-	if(!timeshiftService)
-		SeekTo(0);
+
 
 //g_pOSD->Data()->SetItem(L"warnings", L"Starting to play the TimeShift File");
 //g_pTv->ShowOSDItem(L"Warnings", 2);
