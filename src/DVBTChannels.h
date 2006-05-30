@@ -51,6 +51,7 @@ static const LPWSTR DVBTChannels_Service_PID_Types_String[] =
 {
 	L"Unknown",
 	L"MPEG2 Video",
+	L"H264 Video",
 	L"MPEG2 Audio",
 	L"AC3 Audio",
 	L"AAC Audio",

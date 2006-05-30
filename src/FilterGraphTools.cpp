@@ -1153,7 +1153,7 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<I
 
 		// render h264 video if no mpeg2 video was rendered
 		if (videoStreamsRendered == 0)
-			hr = AddDemuxPinsH264(pService, &audioStreamsRendered);
+			hr = AddDemuxPinsH264(pService, &videoStreamsRendered);
 
 		// render teletext if video was rendered
 		if (videoStreamsRendered > 0)

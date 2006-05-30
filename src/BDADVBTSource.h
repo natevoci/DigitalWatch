@@ -93,12 +93,11 @@ protected:
 
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, BOOL bForceConnect = FALSE);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
-	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsH264(DVBTChannels_Service* pService, long *streamsRendered);
+	HRESULT AddDemuxPinsH264(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, long *streamsRendered);
+	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 
 	void UpdateData(long frequency = 0, long bandwidth = 0);

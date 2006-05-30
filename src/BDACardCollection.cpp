@@ -525,7 +525,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 				break;
 			}
 
-			//(log << "Connection failed, trying next card\n").Write();
+			(log << "Connection failed, trying next card\n").Write();
 			piBDADemod.Release();
 			delete *ppDemodDevice;
 			*ppDemodDevice = NULL;

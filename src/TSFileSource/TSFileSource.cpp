@@ -418,15 +418,39 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	if (bOwnFilename)
 		delete[] pFilename;
 
-	if FAILED(hr = SetSourceInterface(m_pTSFileSource))
+	//Set flag for timeshift
+	BOOL timeshiftService = FALSE;
+	if (pService)
+		timeshiftService = TRUE;
+
+	//creates a dummy service and gets the media types from the file source
+	if FAILED(hr = SetSourceInterface(m_pTSFileSource, &pService))
 	{
 		return (log << "Failed to Set ITSFileSource Interface: " << hr << "\n").Write(hr);
 	}
-	
-	if FAILED(hr = SetRate(0.99))
+
+	//Get the file source media type if pmt is NULL
+	if (!timeshiftService && pmt == NULL)
 	{
-		return (log << "Failed to Set File Source Rate: " << hr << "\n").Write(hr);
+		CComPtr<IPin>piPin;
+		if (SUCCEEDED(m_pTSFileSource->FindPin(L"Out", &piPin) && piPin))
+		{
+			CComPtr <IEnumMediaTypes> piMediaTypes;
+			if SUCCEEDED(piPin->EnumMediaTypes(&piMediaTypes))
+			{
+				while (piMediaTypes->Next(1, &pmt, 0) == NOERROR)
+				{
+					break;
+				};
+			}
+		}
 	}
+	
+	if (timeshiftService)
+		if FAILED(hr = SetRate(0.99))
+		{
+			return (log << "Failed to Set File Source Rate: " << hr << "\n").Write(hr);
+		}
 	
 //g_pOSD->Data()->SetItem(L"warnings", L"Setting up to play the TimeShift File");
 //g_pTv->ShowOSDItem(L"Warnings", 2);
@@ -434,40 +458,60 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &m_piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		return (log << "Failed to add DW MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write(hr);
 
-	// Set Demux pids if loaded from a TimeShift Source
+	// Set Demux pids if loaded from a TimeShift Source of we have pids from the file source
 	if (pService)
 	{
-		if FAILED(hr = AddDemuxPins(pService, m_piBDAMpeg2Demux, pmt))
+		// Set Demux pins to force the MS demux into the correct mode
+		if FAILED(hr = AddDemuxPins(pService, m_piBDAMpeg2Demux, pmt, FALSE)) //No Render Pins
+		{
+			(log << "Failed to Add Demux Pins\n").Write();
+		}
+
+		if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pTSFileSource, m_piBDAMpeg2Demux))
+			return (log << "Failed to connect TSFileSource to MPEG2 Demultiplexer: " << hr << "\n").Write(hr);
+
+		// Set Demux pids again if loaded from a TimeShift Source as the source filter will clear the demux when its connected
+		if FAILED(hr = AddDemuxPins(pService, m_piBDAMpeg2Demux, pmt)) //Render the pins
 		{
 			(log << "Failed to Add Demux Pins\n").Write();
 		}
 	}
-
-	if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pTSFileSource, m_piBDAMpeg2Demux))
-		return (log << "Failed to connect TSFileSource to MPEG2 Demultiplexer: " << hr << "\n").Write(hr);
-
-	// Render output pins
-	CComPtr <IEnumPins> piEnumPins;
-	if SUCCEEDED(hr = m_piBDAMpeg2Demux->EnumPins( &piEnumPins ))
+	else
 	{
-		CComPtr <IPin> piPin;
-		while (piPin.Release(), piEnumPins->Next(1, &piPin, 0) == NOERROR )
+		if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pTSFileSource, m_piBDAMpeg2Demux))
+			return (log << "Failed to connect TSFileSource to MPEG2 Demultiplexer: " << hr << "\n").Write(hr);
+
+		// Render output pins
+		CComPtr <IEnumPins> piEnumPins;
+		if SUCCEEDED(hr = m_piBDAMpeg2Demux->EnumPins( &piEnumPins ))
 		{
-			PIN_INFO pinInfo;
-			piPin->QueryPinInfo(&pinInfo);
-			if (pinInfo.pFilter)
-				pinInfo.pFilter->Release();	//QueryPinInfo adds a reference to the filter.
-
-			if (pinInfo.dir == PINDIR_OUTPUT)
+			CComPtr <IPin> piPin;
+			while (piPin.Release(), piEnumPins->Next(1, &piPin, 0) == NOERROR )
 			{
-				if FAILED(hr = m_pDWGraph->RenderPin(piPin))
-				{
-					(log << "Failed to render " << pinInfo.achName << " stream : " << hr << "\n").Write();
-				}
-			}
+				PIN_INFO pinInfo;
+				piPin->QueryPinInfo(&pinInfo);
+				if (pinInfo.pFilter)
+					pinInfo.pFilter->Release();	//QueryPinInfo adds a reference to the filter.
 
-			piPin.Release();
+				if (pinInfo.dir == PINDIR_OUTPUT)
+				{
+					if FAILED(hr = m_pDWGraph->RenderPin(piPin))
+					{
+						(log << "Failed to render " << pinInfo.achName << " stream : " << hr << "\n").Write();
+					}
+				}
+				piPin.Release();
+			}
 		}
+	}
+
+	//clear all objects if they exist outside of timeshifting
+	if (!timeshiftService)
+	{
+		if (pService)
+			delete pService;
+		if (pmt)
+			delete pmt;
 	}
 
 	//Set reference clock
@@ -481,15 +525,18 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-
-	// Set Demux pids again if loaded from a TimeShift Source as the source filter will clear the demux when its connected
-	if (pService)
+/*
+	// If it's a .tsbuffer file then seek to the end
+	long length = wcslen(pFilename);
+	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0) && timeshiftService)
 	{
-		if FAILED(hr = AddDemuxPins(pService, m_piBDAMpeg2Demux, pmt))
-		{
-			(log << "Failed to Add Demux Pins\n").Write();
-		}
+		SeekTo(100);
 	}
+	else	//Do this to set the Filtergraph seek time since changing the reference clock upsets the demux
+		SeekTo(0);
+*/
+	if(!timeshiftService)
+		SeekTo(0);
 
 //g_pOSD->Data()->SetItem(L"warnings", L"Starting to play the TimeShift File");
 //g_pTv->ShowOSDItem(L"Warnings", 2);
@@ -502,14 +549,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	UpdateData();
 	g_pTv->ShowOSDItem(L"Position", 10);
-/*
-	// If it's a .tsbuffer file then seek to the end
-	long length = wcslen(pFilename);
-	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0))
-	{
-		SeekTo(100);
-	}
-*/
+
 	// Start the background thread for updating statistics
 	if FAILED(hr = StartThread())
 		return (log << "Failed to start background thread: " << hr << "\n").Write(hr);
@@ -585,7 +625,7 @@ HRESULT TSFileSource::UnloadFilters()
 	return S_OK;
 }
 
-HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, int intPinType)
+HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, BOOL bRender)
 {
 	if (pService == NULL)
 	{
@@ -615,28 +655,29 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 
 	long videoStreamsRendered;
 	long audioStreamsRendered;
+	long teletextStreamsRendered;
 
 	// render video
-	hr = AddDemuxPinsVideo(pService, pmt, &videoStreamsRendered);
+	hr = AddDemuxPinsVideo(pService, pmt, &videoStreamsRendered, bRender);
 
 	// render h264 video if no mpeg2 video was rendered
 	if (videoStreamsRendered == 0)
-		hr = AddDemuxPinsH264(pService, pmt, &audioStreamsRendered);
+		hr = AddDemuxPinsH264(pService, pmt, &videoStreamsRendered, bRender);
 
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
-		hr = AddDemuxPinsTeletext(pService, pmt);
+		hr = AddDemuxPinsTeletext(pService, pmt, &teletextStreamsRendered, bRender);
 
 	// render mp2 audio
-	hr = AddDemuxPinsMp2(pService, pmt, &audioStreamsRendered);
+	hr = AddDemuxPinsMp2(pService, pmt, &audioStreamsRendered, bRender);
 
 	// render ac3 audio if no mp2 was rendered
 	if (audioStreamsRendered == 0)
-		hr = AddDemuxPinsAC3(pService, pmt, &audioStreamsRendered);
+		hr = AddDemuxPinsAC3(pService, pmt, &audioStreamsRendered, bRender);
 
 	// render aac audio if no ac3 or mp2 was rendered
 	if (audioStreamsRendered == 0)
-		hr = AddDemuxPinsAAC(pService, pmt, &audioStreamsRendered);
+		hr = AddDemuxPinsAAC(pService, pmt, &audioStreamsRendered, bRender);
 
 	if (m_piMpeg2Demux)
 		m_piMpeg2Demux.Release();
@@ -647,7 +688,7 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	return S_OK;
 }
 
-HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
 {
 	if (pService == NULL)
 		return E_INVALIDARG;
@@ -787,6 +828,19 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 		if (renderedStreams != 0)
 			continue;
 
+		if (bRender)
+		{
+			CComPtr<IPin>pOPin;
+			if (piPin && piPin->ConnectedTo(&pOPin) && !pOPin)
+			{
+				if FAILED(hr = m_pDWGraph->RenderPin(piPin))
+				{
+					(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
+					continue;
+				}
+			}
+		}
+
 		renderedStreams++;
 	}
 
@@ -796,48 +850,48 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 	return hr;
 }
 
-HRESULT TSFileSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+HRESULT TSFileSource::AddDemuxPinsVideo(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
 	graphTools.GetVideoMedia(&mediaType);
-	return AddDemuxPins(pService, video, L"Video", &mediaType, pmt, streamsRendered);
+	return AddDemuxPins(pService, video, L"Video", &mediaType, pmt, streamsRendered, bRender);
 }
 
-HRESULT TSFileSource::AddDemuxPinsH264(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+HRESULT TSFileSource::AddDemuxPinsH264(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
 {
 	AM_MEDIA_TYPE mediaType;
 	graphTools.GetH264Media(&mediaType);
-	return AddDemuxPins(pService, h264, L"Video", &mediaType, pmt, streamsRendered);
+	return AddDemuxPins(pService, h264, L"Video", &mediaType, pmt, streamsRendered, bRender);
 }
 
-HRESULT TSFileSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+HRESULT TSFileSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
 {
 	AM_MEDIA_TYPE mediaType;
 	graphTools.GetMP2Media(&mediaType);
-	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, pmt, streamsRendered);
+	return AddDemuxPins(pService, mp2, L"Audio", &mediaType, pmt, streamsRendered, bRender);
 }
 
-HRESULT TSFileSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+HRESULT TSFileSource::AddDemuxPinsAC3(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
 {
 	AM_MEDIA_TYPE mediaType;
 	graphTools.GetAC3Media(&mediaType);
-	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, pmt, streamsRendered);
+	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, pmt, streamsRendered, bRender);
 }
 
-HRESULT TSFileSource::AddDemuxPinsAAC(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+HRESULT TSFileSource::AddDemuxPinsAAC(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
 {
 	AM_MEDIA_TYPE mediaType;
 	graphTools.GetAACMedia(&mediaType);
-	return AddDemuxPins(pService, aac, L"Audio", &mediaType, pmt, streamsRendered);
+	return AddDemuxPins(pService, aac, L"Audio", &mediaType, pmt, streamsRendered, bRender);
 }
 
-HRESULT TSFileSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered)
+HRESULT TSFileSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
 	graphTools.GetTelexMedia(&mediaType);
-	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, pmt, streamsRendered);
+	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, pmt, streamsRendered, bRender);
 }
 
 HRESULT TSFileSource::PlayPause()
@@ -952,9 +1006,9 @@ HRESULT TSFileSource::SetRate(double dRate)
 	return S_OK;
 }
 
-HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter)
+HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Service** pService)
 {
-	if (!pFilter)
+	if (!pFilter || !pService)
 		return E_INVALIDARG;
 
 	HRESULT hr = E_NOINTERFACE;
@@ -977,9 +1031,105 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter)
 	piTSFilepSource->SetAutoMode(1);
 	piTSFilepSource->SetRateControlMode(0);
 
+	//if no service already defined then try and get the media type from the file
+	if (!(*pService))
+	{
+		*pService = new DVBTChannels_Service();
+		DVBTChannels_Stream *pStream = NULL;
+
+		USHORT pid = 0, pid2 = 0;
+		BYTE *ptMedia = new BYTE[128];
+		LPWSTR mediaType = NULL;
+
+		piTSFilepSource->GetVideoPidType(ptMedia);
+		if (stricmp((const char *)ptMedia, "H.264") == 0)
+			strCopy(mediaType, L"H264 Video");
+		else if (stricmp((const char *)ptMedia, "MPEG 4") == 0)
+			strCopy(mediaType, L"MPEG4 Video");
+		else
+			strCopy(mediaType, L"MPEG2 Video");
+
+		piTSFilepSource->GetVideoPid(&pid);
+		if (pid)
+			if SUCCEEDED(hr = LoadMediaStreamType(pid, mediaType, &pStream))
+				(*pService)->AddStream(pStream);
+
+		piTSFilepSource->GetAACPid(&pid);
+		piTSFilepSource->GetAAC2Pid(&pid2);
+		if (pid || pid2)
+		{
+			strCopy(mediaType, L"AAC Audio");
+			if SUCCEEDED(hr = LoadMediaStreamType(pid, mediaType, &pStream))
+				(*pService)->AddStream(pStream);
+		}
+		
+		strCopy(mediaType, L"MPEG Audio");
+		piTSFilepSource->GetMP2Mode(&pid);
+		if (pid)
+			strCopy(mediaType, L"MPEG2 Audio");
+
+		piTSFilepSource->GetAudioPid(&pid);
+		piTSFilepSource->GetAudio2Pid(&pid2);
+		if (pid || pid2)
+		{
+			if SUCCEEDED(hr = LoadMediaStreamType(pid, mediaType, &pStream))
+				(*pService)->AddStream(pStream);
+		}
+			
+		piTSFilepSource->GetAC3Pid(&pid);
+		piTSFilepSource->GetAC3_2Pid(&pid2);
+		if (pid || pid2)
+		{
+			if SUCCEEDED(hr = LoadMediaStreamType(pid, L"AC3 Audio", &pStream))
+				(*pService)->AddStream(pStream);
+		}
+
+		piTSFilepSource->GetTelexPid(&pid);
+		if (pid)
+		{
+			if SUCCEEDED(hr = LoadMediaStreamType(pid, L"Teletext", &pStream))
+				(*pService)->AddStream(pStream);
+		}
+
+		if(mediaType)
+			delete[] mediaType;
+
+		if(ptMedia)
+			delete[] ptMedia;
+		
+
+		//if we failed to find a media type then null service
+		if (!(*pService))
+		{
+			delete *pService;
+			*pService = NULL;
+		}
+	}
+
 	return S_OK;
 }
 
+HRESULT TSFileSource::LoadMediaStreamType(USHORT pid, LPWSTR pwszMediaType, DVBTChannels_Stream** pStream )
+{
+	//Return if stream is not null
+	if (!pStream)
+		return E_INVALIDARG;
+
+	HRESULT hr = E_FAIL;
+	
+	//Search for a matching media type and save into the service
+	for (int i=0 ; i<DVBTChannels_Service_PID_Types_Count ; i++ )
+	{
+		if (_wcsicmp(pwszMediaType, DVBTChannels_Service_PID_Types_String[i]) == 0)
+		{
+			*pStream = new DVBTChannels_Stream();
+			(*pStream)->Type = (DVBTChannels_Service_PID_Types)i;
+			(*pStream)->PID = pid;
+			return S_OK;
+		}
+	}
+	return hr;
+}
 
 
 HRESULT TSFileSource::UpdateData()

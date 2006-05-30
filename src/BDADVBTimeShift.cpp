@@ -2702,7 +2702,7 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 	// render h264 video if no mpeg2 video was rendered
 	if (videoStreamsRendered == 0)
 	{
-		hr = AddDemuxPinsH264(pService, &audioStreamsRendered);
+		hr = AddDemuxPinsH264(pService, &videoStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -2799,10 +2799,14 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, DVBTChanne
 		if (renderedStreams != 0)
 			continue;
 
-		if FAILED(hr = m_pDWGraph->RenderPin(m_piSinkGraphBuilder, piPin))
+		CComPtr<IPin>pOPin;
+		if (piPin && piPin->ConnectedTo(&pOPin) && !pOPin)
 		{
-			(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
-			continue;
+			if FAILED(hr = m_pDWGraph->RenderPin(m_piSinkGraphBuilder, piPin))
+			{
+				(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
+				continue;
+			}
 		}
 
 		renderedStreams++;
@@ -3193,11 +3197,31 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 
 	HRESULT hr = E_FAIL;
 
+	// Stop the Current Tuner Scanner thread
+	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+		if FAILED(hr = m_pCurrentTuner->StopScanning())
+			(log << "Failed to Stop the Current Tuner from Scanning\n").Write();
+
+	if FAILED(hr = StopThread())
+		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+	if (hr == S_FALSE)
+		(log << "Killed thread\n").Write();
+
+	if FAILED(hr = m_pDWGraph->Stop())
+		(log << "Failed to stop DWGraph\n").Write();
+
+	if FAILED(hr = UnloadSink())
+		(log << "Failed to unload Sink Filters\n").Write();
+
+	if FAILED(hr = UnloadTuner())
+		(log << "Failed to unload tuner\n").Write();
+
+	if FAILED(hr = m_pDWGraph->Cleanup())
+		(log << "Failed to cleanup DWGraph\n").Write();
+
 	DVBTChannels_Service* pService = new DVBTChannels_Service();
 	DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
 
-	CComPtr <IGraphBuilder> piGraphBuilder2 = m_piGraphBuilder;
-	CComPtr <IGraphBuilder> piGraphBuilder;
 	CComPtr <IBaseFilter> piBDAMpeg2Demux;
 	DWORD rotEntry = 0;
 
@@ -3212,6 +3236,7 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 				bFound = TRUE;
 			}
 		}
+
 		if (bFound)
 			pService->AddStream(pStream);
 		else
@@ -3221,36 +3246,13 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 			break; 
 		}
 
-		if FAILED(hr = piGraphBuilder.CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER))
-		{
-			(log << "Failed Creating the Decoder Test Graph Builder: " << hr << "\n").Write();
-			break;
-		}
-
-		if (g_pData->settings.application.addToROT)
-		{
-			if FAILED(hr = graphTools.AddToRot(piGraphBuilder, &rotEntry))
-			{
-				(log << "Failed adding the Decoder Test graph to ROT: " << hr << "\n").Write();
-				break;
-			}
-		}
-
 		//MPEG-2 Demultiplexer (DW's)
-		if FAILED(hr = graphTools.AddFilter(piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
 		{
 			(log << "Failed to add Test MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write();
 			break;
 		}
 
-		CComPtr <IMpeg2Demultiplexer> piMpeg2Demux;
-		if FAILED(hr = piBDAMpeg2Demux.QueryInterface(&piMpeg2Demux))
-		{
-			(log << "Failed to get the IMpeg2Demultiplexer Interface of the Test MPEG-2 Demultiplexer: " << hr << "\n").Write();
-			break;
-		}
-
-		m_piGraphBuilder = piGraphBuilder;
 		if FAILED(hr = AddDemuxPins(pService, piBDAMpeg2Demux, TRUE))
 		{
 			(log << "Failed to Add Demux Pins and render the graph\n").Write();
@@ -3260,9 +3262,6 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 		break;
 	};
 	 
-	if (piGraphBuilder2)
-		m_piGraphBuilder = piGraphBuilder2;
-
 	if FAILED(hr)
 	{
 		(log << "Failed Building the Decoder Test Graph\n").Write();
@@ -3274,23 +3273,18 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 
 	(log << "Cleaning up the Decoder Test Graph\n").Write();
 
-	if (!piGraphBuilder)
-		return (log << "Graph Builder interface is NULL\n").Write(E_POINTER);
-
-	if (rotEntry)
-	{
-		graphTools.RemoveFromRot(rotEntry);
-		rotEntry = 0;
-	}
+	HRESULT hr2 = m_pDWGraph->Stop();
+	if FAILED(hr2)
+		(log << "Failed to stop DWGraph\n").Write();
 
 	if (piBDAMpeg2Demux)
 		piBDAMpeg2Demux.Release();
 
-	HRESULT hr2 = graphTools.DisconnectAllPins(piGraphBuilder);
+	hr2 = graphTools.DisconnectAllPins(m_piGraphBuilder);
 	if FAILED(hr2)
 		(log << "Failed to disconnect pins: " << hr << "\n").Write(hr);
 
-	hr2 = graphTools.RemoveAllFilters(piGraphBuilder);
+	hr2 = graphTools.RemoveAllFilters(m_piGraphBuilder);
 	if FAILED(hr2)
 		(log << "Failed to remove filters: " << hr << "\n").Write(hr);
 
