@@ -118,7 +118,7 @@ HRESULT TSFileStreamList::LoadStreamList(BOOL bLogOutput)
 
 	LogMessageIndent indent(&log);
 
-	IAMStreamSelect *pIAMStreamSelect;
+	CComPtr<IAMStreamSelect>pIAMStreamSelect;
 	hr = pFilter->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
 	if (SUCCEEDED(hr))
 	{

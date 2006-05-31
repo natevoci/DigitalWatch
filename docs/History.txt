@@ -29,6 +29,7 @@ nate:
 
 bear:
 Changes:
+- Fixed a few bugs that were causing problems with rendering decoders.
 - Fixed a few bugs to get the application to play h264 ts files, also fixed a problem with playing mpg files.
 - Added support for h264 media type, can't tell if it works as have no access to a broadcast.
 - Added a Decoder Test function to the decoder selection method, to use you need to enable decoder test setting in the settings menu.

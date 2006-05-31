@@ -1595,3 +1595,80 @@ HRESULT FilterGraphTools::GetTSMedia(AM_MEDIA_TYPE *pintype)
 
 	return S_OK;
 }
+
+HRESULT FilterGraphTools::DisconnectOutputPins(IBaseFilter *pFilter)
+{
+	CComPtr<IPin> pOPin;
+	PIN_DIRECTION  direction;
+	// Enumerate the Demux pins
+	CComPtr<IEnumPins> pIEnumPins;
+	if (SUCCEEDED(pFilter->EnumPins(&pIEnumPins)))
+	{
+
+		ULONG pinfetch(0);
+		while(pIEnumPins->Next(1, &pOPin, &pinfetch) == S_OK)
+		{
+
+			pOPin->QueryDirection(&direction);
+			if(direction == PINDIR_OUTPUT)
+			{
+				// Get an instance of the Demux control interface
+				CComPtr<IMpeg2Demultiplexer> muxInterface;
+				if(SUCCEEDED(pFilter->QueryInterface (&muxInterface)))
+				{
+					LPWSTR pinName = L"";
+					pOPin->QueryId(&pinName);
+					muxInterface->DeleteOutputPin(pinName);
+					muxInterface.Release();
+				}
+				else
+				{
+					IPin *pIPin = NULL;
+					pOPin->ConnectedTo(&pIPin);
+					if (pIPin)
+					{
+						pOPin->Disconnect();
+						pIPin->Disconnect();
+						pIPin->Release();
+					}
+				}
+
+			}
+			pOPin.Release();
+			pOPin = NULL;
+		}
+	}
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::DisconnectInputPins(IBaseFilter *pFilter)
+{
+	CComPtr<IPin> pIPin;
+	PIN_DIRECTION  direction;
+	// Enumerate the Demux pins
+	CComPtr<IEnumPins> pIEnumPins;
+	if (SUCCEEDED(pFilter->EnumPins(&pIEnumPins)))
+	{
+
+		ULONG pinfetch(0);
+		while(pIEnumPins->Next(1, &pIPin, &pinfetch) == S_OK)
+		{
+
+			pIPin->QueryDirection(&direction);
+			if(direction == PINDIR_INPUT)
+			{
+				IPin *pOPin = NULL;
+				pIPin->ConnectedTo(&pOPin);
+				if (pOPin)
+				{
+					pOPin->Disconnect();
+					pIPin->Disconnect();
+					pOPin->Release();
+				}
+			}
+			pIPin.Release();
+			pIPin = NULL;
+		}
+	}
+	return S_OK;
+}

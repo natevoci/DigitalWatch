@@ -510,8 +510,6 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	{
 		if (pService)
 			delete pService;
-		if (pmt)
-			delete pmt;
 	}
 
 	//Set reference clock
@@ -1103,7 +1101,7 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 			*pService = NULL;
 		}
 	}
-
+	piTSFilepSource.Release();
 	return S_OK;
 }
 
@@ -1199,21 +1197,21 @@ HRESULT TSFileSource::SetStream(long index)
 {
 	CAutoLock listLock(&m_listLock);
 	HRESULT hr;
-	IAMStreamSelect *pIAMStreamSelect;
+	CComPtr<IAMStreamSelect>pIAMStreamSelect;
 	hr = m_pTSFileSource->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
 	if (SUCCEEDED(hr))
 	{
 		// Stop background thread
 		if FAILED(hr = StopThread())
 		{
-			pIAMStreamSelect->Release();
+//			pIAMStreamSelect->Release();
 			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
 		}
 		if (hr == S_FALSE)
 			(log << "Killed thread\n").Write();
 
 		HRESULT hr2 = pIAMStreamSelect->Enable((index & 0xff), AMSTREAMSELECTENABLE_ENABLE);
-		pIAMStreamSelect->Release();
+//		pIAMStreamSelect->Release();
 
 		// Start the background thread for updating statistics
 		if FAILED(hr = StartThread())

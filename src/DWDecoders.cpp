@@ -173,19 +173,8 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 					}
 					else if (hr == S_OK)
 					{
-						CComPtr<IPin>pOPin;
-						graphTools.FindPin(piNewFilter, L"Video Output", &pOPin, REQUESTED_PINDIR_OUTPUT);
-						if(pOPin)
-							piGraphBuilder->Disconnect(pOPin);
-						else
-							graphTools.FindPin(piNewFilter, L"Output", &pOPin, REQUESTED_PINDIR_OUTPUT);
-							if(pOPin)
-								piGraphBuilder->Disconnect(pOPin);
-
-						CComPtr<IPin>pIPin;
-						graphTools.FindPin(piOMFilter, L"Input0", &pIPin, REQUESTED_PINDIR_INPUT);
-						if(pIPin)
-							piGraphBuilder->Disconnect(pIPin);
+						graphTools.DisconnectOutputPins(piNewFilter);
+						graphTools.DisconnectInputPins(piOMFilter);
 					}
 				}
 

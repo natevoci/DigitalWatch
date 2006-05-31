@@ -236,7 +236,7 @@
 
     <Connect>
     	<From name="Cyberlink7 Video Decoder" />
-    	<To name="Overlay Mixer" />
+   	<To name="Overlay Mixer"/>
    	</>
 </Decoder>
 
@@ -380,6 +380,24 @@
     <Connect>
     	<From name="ffdshow Video Decoder" />
     	<To name="VMR9" />
+   	</>
+</Decoder>
+
+<Decoder name="Main Concept H264-AVC Video Decoder">
+	<MediaType name="H264 Video" />
+    <LoadFilter clsid="{7C0D0340-71D5-4E7E-A77F-2059A2E5AF57}" name="Main Concept H264-AVC Video Decoder" />
+    <LoadFilter clsid="{1643E180-90F5-11CE-97D5-00AA0055595A}" name="Color Space Converter" />
+    <InputFilter name="Main Concept H264-AVC Video Decoder" />
+    <Connect>
+    	<From name="Main Concept H264-AVC Video Decoder" />
+    	<To name="Color Space Converter" />
+   	</>
+
+    <VideoRenderer name="Overlay Mixer" />
+
+    <Connect>
+    	<From name="Color Space Converter" />
+    	<To name="Overlay Mixer" />
    	</>
 </Decoder>
 

@@ -97,6 +97,8 @@ public:
 	HRESULT GetTIFMedia(AM_MEDIA_TYPE *pintype);
 	HRESULT GetTelexMedia(AM_MEDIA_TYPE *pintype);
 	HRESULT GetTSMedia(AM_MEDIA_TYPE *pintype);
+	HRESULT DisconnectOutputPins(IBaseFilter *pFilter);
+	HRESULT DisconnectInputPins(IBaseFilter *pFilter);
 
 private:
 		CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
