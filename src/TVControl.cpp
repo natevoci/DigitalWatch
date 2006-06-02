@@ -1290,6 +1290,27 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		g_pData->settings.application.resumeLastTime = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetResumeSize") == 0)
+	{
+		LPWSTR pValue = NULL;
+		strCopy(pValue, g_pData->settings.application.resumesize);
+
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The Max Number of Resume Items to be Saved", &pValue) == FALSE )
+		{
+			if (pValue)
+				delete[] pValue;
+
+			return S_OK;
+		}
+
+		if (pValue)
+		{
+			g_pData->settings.application.resumesize = _wtoi(pValue);
+			delete[] pValue;
+		}
+		
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetLongNetworkName") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)

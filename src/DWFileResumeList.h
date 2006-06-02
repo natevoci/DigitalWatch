@@ -51,7 +51,7 @@ public:
 
 	HRESULT Destroy();
 
-	HRESULT Initialise();
+	HRESULT Initialise(int resumeSize);
 	HRESULT Load(LPWSTR filename);
 	HRESULT MakeFile(LPWSTR filename);
 	HRESULT FindResumeName(LPWSTR pResumeName, int *pIndex);
@@ -71,6 +71,7 @@ private:
 
 	LPWSTR m_dataListName;
 	LPWSTR m_filename;
+	int m_ResumeSize;
 };
 
 #endif

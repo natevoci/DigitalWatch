@@ -66,6 +66,7 @@ public:
 			BOOL cyclecards;
 			BOOL rememberLastService;
 			BOOL resumeLastTime;
+			int resumesize;
 			LPWSTR lastServiceCmd;
 			LPWSTR currentServiceCmd;
 			BOOL longNetworkName;

@@ -56,6 +56,7 @@ DWFileResumeList::DWFileResumeList()
 {
 	m_filename = NULL;
 	m_dataListName = NULL;
+	m_ResumeSize = 50;
 }
 
 DWFileResumeList::~DWFileResumeList()
@@ -86,9 +87,11 @@ void DWFileResumeList::SetLogCallback(LogMessageCallback *callback)
 	LogMessageCaller::SetLogCallback(callback);
 }
 
-HRESULT DWFileResumeList::Initialise()
+HRESULT DWFileResumeList::Initialise(int resumeSize)
 {
 	(log << "Initialising the Stream List \n").Write();
+
+	m_ResumeSize = resumeSize;
 
 	(log << "Finished Initialising the Stream List \n").Write();
 	
@@ -217,8 +220,26 @@ BOOL DWFileResumeList::Save(LPWSTR filename)
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);
 
+	int count = 1;
 	CAutoLock listLock(&m_listLock);
-	std::vector<DWFileResumeListItem *>::iterator it = m_list.begin();
+	if (!m_list.size())
+		return TRUE;
+
+	std::vector<DWFileResumeListItem *>::iterator it = m_list.end();
+	it--;
+	for ( ; it > m_list.begin() ; it-- )
+	{
+		// If it's a .tsbuffer file then skip
+		long length = wcslen((*it)->name);
+		if ((length >= 9) && (_wcsicmp((*it)->name+length-9, L".tsbuffer") == 0))
+			continue;
+
+		count++;
+		// limit list
+		if (count > m_ResumeSize)
+			break;
+	};
+
 	for ( ; it < m_list.end() ; it++ )
 	{
 		// If it's a .tsbuffer file then skip

@@ -164,7 +164,7 @@ BOOL DWGraph::Initialise()
 
 	g_pOSD->Data()->AddList(&m_mediaTypes);
 
-	m_resumeList.Initialise();
+	m_resumeList.Initialise(g_pData->settings.application.resumesize);
 	swprintf((LPWSTR)&file, L"%sResumeFile.xml", g_pData->application.appPath);
 	if FAILED(hr = m_resumeList.Load((LPWSTR)&file))
 		return (log << "Failed to load Resume List: " << hr << "\n").Write(hr);
