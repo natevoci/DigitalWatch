@@ -690,6 +690,7 @@ HRESULT TVControl::Exit()
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 		return S_FALSE;
 	}
+
 /*
 	if (m_pFilterGraph->IsRecording())
 	{
@@ -1249,6 +1250,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetResumeTimeShift") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.timeshift.resume = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetMultiCard") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -1271,6 +1280,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.application.rememberLastService = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetResumeLastTime") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.resumeLastTime = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetLongNetworkName") == 0)

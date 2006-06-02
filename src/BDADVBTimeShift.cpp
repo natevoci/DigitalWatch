@@ -1908,7 +1908,7 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 		if FAILED(hr = m_pCurrentFileSource->ReLoad(pFileName))
 			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
 
-		m_pCurrentFileSource->SeekTo(100);
+//		m_pCurrentFileSource->SeekTo(100);
 
 		UpdateStatusDisplay();
 	}
@@ -1921,7 +1921,7 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 			return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 		}
 
-		m_pCurrentFileSource->SeekTo(100);
+//		m_pCurrentFileSource->SeekTo(100);
 
 		UpdateStatusDisplay();
 
@@ -1981,7 +1981,7 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 		if FAILED(hr = m_pCurrentFileSource->ReLoad(pFileName))
 			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
 
-		m_pCurrentFileSource->SeekTo(100);
+//		m_pCurrentFileSource->SeekTo(100);
 
 		// Start the background thread for updating statistics
 		if FAILED(hr = StartThread())
@@ -2025,7 +2025,7 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 		if FAILED(hr = m_pCurrentFileSource->Load(pFileName))
 			return (log << "Failed to ReLoad File Source filters: " << hr << "\n").Write(hr);
 
-		m_pCurrentFileSource->SeekTo(100);
+//		m_pCurrentFileSource->SeekTo(100);
 
 		// Start the background thread for updating statistics
 		if FAILED(hr = StartThread())

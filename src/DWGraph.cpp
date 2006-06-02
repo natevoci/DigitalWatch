@@ -94,6 +94,50 @@ void DWGraph::SetLogCallback(LogMessageCallback *callback)
 	m_mediaTypes.SetLogCallback(callback);
 	m_decoders.SetLogCallback(callback);
 	graphTools.SetLogCallback(callback);
+	m_resumeList.SetLogCallback(callback);
+}
+
+BOOL DWGraph::SaveSettings()
+{
+	(log << "Saving Settings DWGraph\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr;
+
+	wchar_t file[MAX_PATH];
+	swprintf((LPWSTR)&file, L"%sResumeFile.xml", g_pData->application.appPath);
+	if FAILED(hr = m_resumeList.Save((LPWSTR)&file))
+		(log << "Failed to load Resume List: " << hr << "\n").Write();
+
+	indent.Release();
+	(log << "Finished Saving Settings DWGraph\n").Write();
+	return TRUE;
+}
+
+long DWGraph::GetResumePosition(LPWSTR name)
+{
+	if (!name)
+		return 0;
+
+	int index = 0;
+	if SUCCEEDED(m_resumeList.FindResumeName(name, &index))
+	{
+		LPWSTR lpwTemp = NULL;
+		strCopy(lpwTemp, L"resumeinfo.resume");
+		LPWSTR lpwPosition = m_resumeList.GetListItem(lpwTemp, index);
+		delete[] lpwTemp;
+		if (lpwPosition)
+			return _wtol(lpwPosition);
+	}
+
+	return 0;
+}
+
+void DWGraph::SetResumePosition(LPWSTR name, long lPos)
+{
+	LPWSTR lpwPosition = NULL;
+	strCopy(lpwPosition, lPos);
+	m_resumeList.SetListItem(name, lpwPosition);
 }
 
 BOOL DWGraph::Initialise()
@@ -119,6 +163,13 @@ BOOL DWGraph::Initialise()
 		return (log << "Failed to load mediatypes: " << hr << "\n").Write(hr);
 
 	g_pOSD->Data()->AddList(&m_mediaTypes);
+
+	m_resumeList.Initialise();
+	swprintf((LPWSTR)&file, L"%sResumeFile.xml", g_pData->application.appPath);
+	if FAILED(hr = m_resumeList.Load((LPWSTR)&file))
+		return (log << "Failed to load Resume List: " << hr << "\n").Write(hr);
+
+	g_pOSD->Data()->AddList(&m_resumeList);
 
 	//--- COM should already be initialized ---
 

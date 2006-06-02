@@ -27,6 +27,7 @@
 #include "LogMessage.h"
 #include "DWMediaTypes.h"
 #include "DWDecoders.h"
+#include "DWFileResumeList.h"
 #include "FilterGraphTools.h"
 #include "DWOnScreenDisplay.h"
 
@@ -38,6 +39,9 @@ public:
 
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
+	long GetResumePosition(LPWSTR name);
+	void SetResumePosition(LPWSTR name, long lPos);
+	BOOL SaveSettings();
 	BOOL Initialise();
 	BOOL Destroy();
 
@@ -99,6 +103,7 @@ private:
 
 	DWMediaTypes m_mediaTypes;
 	DWDecoders m_decoders;
+	DWFileResumeList m_resumeList;
 
 	FilterGraphTools graphTools;
 };

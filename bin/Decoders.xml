@@ -253,6 +253,32 @@
    	</>
 </Decoder>
 
+<Decoder name="CyberLink H264-AVC Decoder">
+	<MediaType name="H264 Video" />
+	
+    <LoadFilter clsid="{D12E285B-3B29-4416-BA8E-79BD81D193CC}" name="CyberLink H264-AVC Decoder" />
+    <InputFilter name="CyberLink H264-AVC Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <Connect>
+    	<From name="CyberLink H264-AVC Decoder" />
+   	<To name="Overlay Mixer"/>
+   	</>
+</Decoder>
+
+<Decoder name="CyberLink H264-AVC Decoder - VMR9">
+	<MediaType name="H264 Video" />
+	
+    <LoadFilter clsid="{D12E285B-3B29-4416-BA8E-79BD81D193CC}" name="CyberLink H264-AVC Decoder" />
+    <InputFilter name="CyberLink H264-AVC Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <Connect>
+    	<From name="CyberLink H264-AVC Decoder" />
+    	<To name="VMR9" />
+   	</>
+</Decoder>
+
 <Decoder name="CyberLink PowerDVD Video Decoder">
 	<MediaType name="MPEG2 Video" />
 	

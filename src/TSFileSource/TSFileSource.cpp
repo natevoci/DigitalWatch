@@ -150,6 +150,10 @@ HRESULT TSFileSource::Destroy()
 	{
 		if FAILED(hr = UnloadFilters())
 			(log << "Failed to unload filters\n").Write();
+
+		(log << "Saving Resume Times\n").Write();
+		m_pDWGraph->SaveSettings();
+
 	}
 
 	m_pDWGraph = NULL;
@@ -415,9 +419,6 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	if FAILED(hr = piFileSourceFilter->Load(pFilename, pmt))
 		return (log << "Failed to load filename: " << hr << "\n").Write(hr);
 
-	if (bOwnFilename)
-		delete[] pFilename;
-
 	//Set flag for timeshift
 	BOOL timeshiftService = FALSE;
 	if (pService)
@@ -524,14 +525,25 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
 
+
 	// If it's a .tsbuffer file then seek to the end
 	long length = wcslen(pFilename);
 	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0) && timeshiftService)
 	{
-		SeekTo(100);
+		long lPosition = m_pDWGraph->GetResumePosition(pFilename);
+		Seek(lPosition);
+//		SeekTo(100);
 	}
-	else	//Do this to set the Filtergraph seek time since changing the reference clock upsets the demux
-		SeekTo(0);
+	else
+	{
+		//Do this to set the Filtergraph seek time since changing the reference clock upsets the demux
+//(log << "pFilename = : "  << pFilename << "\n").Write();
+		long lPosition = m_pDWGraph->GetResumePosition(pFilename);
+		Seek(lPosition);
+	}
+
+	if (bOwnFilename)
+		delete[] pFilename;
 
 
 //g_pOSD->Data()->SetItem(L"warnings", L"Starting to play the TimeShift File");
@@ -569,6 +581,8 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 
 	if (m_pTSFileSource)
 	{
+		SaveResumePosition();
+
 		// Set Filename
 		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
 		if (!piFileSourceFilter)
@@ -576,6 +590,8 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 
 		if FAILED(hr = piFileSourceFilter->Load(pFilename, NULL))
 			return (log << "Failed to load filename: " << hr << "\n").Write(hr);
+
+		LoadResumePosition();
 
 		// Start the background thread for updating statistics
 		if FAILED(hr = StartThread())
@@ -589,6 +605,74 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 	return hr;
 }
 
+HRESULT TSFileSource::LoadResumePosition()
+{
+	HRESULT hr = NOERROR;
+	long lPosition = 0;
+
+	//Set the Resume File Time
+	if (SUCCEEDED(GetPosition(&lPosition)))
+	{
+		// Get Filename
+		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
+		if (!piFileSourceFilter)
+			(log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write();
+
+		LPOLESTR pFilename = NULL;
+		if FAILED(hr = piFileSourceFilter->GetCurFile(&pFilename, NULL))
+			(log << "Failed to get filename: " << hr << "\n").Write(hr);
+		else if (pFilename)
+		{
+			// If it's a .tsbuffer file then seek to the end
+			long length = wcslen(pFilename);
+			if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0))
+			{
+				if (g_pData->settings.timeshift.resume)
+				{
+					long lPosition = m_pDWGraph->GetResumePosition(pFilename);
+					Seek(lPosition);
+				}
+				else
+					SeekTo(100);
+			}
+			else
+			{
+				if (g_pData->settings.application.resumeLastTime)
+				{
+					//Do this to set the Filtergraph seek time since changing the reference clock upsets the demux
+					long lPosition = m_pDWGraph->GetResumePosition(pFilename);
+					Seek(lPosition);
+				}
+				else
+					SeekTo(0);
+			}
+		}
+	}
+	return S_OK;
+}
+
+HRESULT TSFileSource::SaveResumePosition()
+{
+	HRESULT hr = NOERROR;
+	long lPosition = 0;
+
+	//Set the Resume File Time
+	if (SUCCEEDED(GetPosition(&lPosition)))
+	{
+		// Get Filename
+		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
+		if (!piFileSourceFilter)
+			(log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write();
+
+		LPOLESTR pFilename = NULL;
+		if FAILED(hr = piFileSourceFilter->GetCurFile(&pFilename, NULL))
+			(log << "Failed to get filename: " << hr << "\n").Write(hr);
+		else if (pFilename)
+			m_pDWGraph->SetResumePosition(pFilename, lPosition);
+	}
+
+	return S_OK;
+}
 
 HRESULT TSFileSource::UnloadFilters()
 {
@@ -599,6 +683,8 @@ HRESULT TSFileSource::UnloadFilters()
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
 	if (hr == S_FALSE)
 		(log << "Killed thread\n").Write();
+
+	SaveResumePosition();
 
 	if (m_pDWGraph)
 	{
@@ -986,6 +1072,54 @@ HRESULT TSFileSource::SeekTo(long percentage)
 		return (log << "Failed to set positions: " << hr << "\n").Write(hr);
 
 	UpdateData();
+
+	return S_OK;
+}
+
+HRESULT TSFileSource::Seek(long position)
+{
+	HRESULT hr;
+
+	CComQIPtr<IMediaSeeking> piMediaSeeking(m_piGraphBuilder);
+
+	REFERENCE_TIME rtNow, rtStop, rtEarliest, rtLatest;
+
+	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
+		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
+
+	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest-(__int64)20000000));
+
+	rtNow = (__int64)max((__int64)rtEarliest, (__int64)position*10000);
+	rtNow = (__int64)min((__int64)rtLatest, (__int64)rtNow);
+
+	rtStop = 0;
+
+	if FAILED(piMediaSeeking->SetPositions(&rtNow, AM_SEEKING_AbsolutePositioning, &rtStop, AM_SEEKING_NoPositioning))
+		return (log << "Failed to set positions: " << hr << "\n").Write(hr);
+
+	UpdateData();
+
+	return S_OK;
+}
+
+HRESULT TSFileSource::GetPosition(long *position)
+{
+	HRESULT hr;
+
+	CComQIPtr<IMediaSeeking> piMediaSeeking(m_piGraphBuilder);
+
+	REFERENCE_TIME rtNow, rtEarliest, rtLatest;
+
+	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
+		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
+
+	if FAILED(hr = piMediaSeeking->GetCurrentPosition(&rtNow))
+		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
+
+//	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest-(__int64)20000000));
+
+//	rtNow = (__int64)max((__int64)rtEarliest, (__int64)position*10000);
+	*position = rtNow/10000;
 
 	return S_OK;
 }

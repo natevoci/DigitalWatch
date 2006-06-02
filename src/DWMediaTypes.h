@@ -74,7 +74,7 @@ public:
 	LPWSTR GetMediaTypeDecoder(int index);
 	HRESULT SetMediaTypeDecoder(int index, LPWSTR decoderName, BOOL bKeep = TRUE);
 	HRESULT MakeFile(LPWSTR filename);
-	void SetListItem(int index, LPWSTR name, LPWSTR value);
+	void SetListItem(LPWSTR name, LPWSTR value, int index = -1);
 	DWDecoder *GetAutoDecoder(DWMediaType *mediaType);
 
 	DWMediaType *FindMediaType(AM_MEDIA_TYPE *mt);

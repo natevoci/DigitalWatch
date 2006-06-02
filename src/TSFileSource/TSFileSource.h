@@ -53,6 +53,8 @@ public:
 	virtual BOOL IsInitialised();
 	virtual BOOL IsRecording();
 	virtual HRESULT SeekTo(long percentage);
+	virtual HRESULT Seek(long position);
+	virtual HRESULT GetPosition(long *position);
 	virtual HRESULT Skip(long seconds);
 
 	virtual BOOL CanLoad(LPWSTR pCmdLine);
@@ -73,6 +75,8 @@ protected:
 	// graph building methods
 	HRESULT LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService = NULL, AM_MEDIA_TYPE *pmt = NULL);
 	HRESULT ReLoadFile(LPWSTR pFilename);
+	HRESULT LoadResumePosition();
+	HRESULT SaveResumePosition();
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, BOOL bRender = TRUE);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);

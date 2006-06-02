@@ -29,6 +29,8 @@ nate:
 
 bear:
 Changes:
+- Added file resume list to application, also added settings in the global & timeshift menus.
+- Added the Cyberlink 7 h264 decoder to the decoder.xml file.
 - Fixed a few bugs that were causing problems with rendering decoders.
 - Fixed a few bugs to get the application to play h264 ts files, also fixed a problem with playing mpg files.
 - Added support for h264 media type, can't tell if it works as have no access to a broadcast.

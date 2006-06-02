@@ -67,6 +67,7 @@ AppData::AppData()
 	settings.application.multicard = FALSE;
 	settings.application.cyclecards = FALSE;
 	settings.application.rememberLastService = TRUE;
+	settings.application.resumeLastTime = TRUE;
 	settings.application.lastServiceCmd = new wchar_t[MAX_PATH];
 	wcscpy(settings.application.lastServiceCmd, L"");
 	settings.application.currentServiceCmd = new wchar_t[MAX_PATH];
@@ -116,6 +117,7 @@ AppData::AppData()
 
 	settings.timeshift.folder = new wchar_t[MAX_PATH];
 	wcscpy(settings.timeshift.folder, L"");
+	settings.timeshift.resume = TRUE;
 	settings.timeshift.dlimit = 0;
 	settings.timeshift.flimit = 0;
 	settings.timeshift.fdelay = 0;
@@ -310,6 +312,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L"buffer") == 0)
 				return settings.timeshift.buffer;
 
+			if (_wcsicmp(selection, L"resume") == 0)
+				return GetBool(settings.timeshift.resume);
+
 			return NULL;
 		}
 
@@ -347,6 +352,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"rememberLastService") == 0)
 				return GetBool(settings.application.rememberLastService);
+
+			if (_wcsicmp(selection, L"resumeLastTime") == 0)
+				return GetBool(settings.application.resumeLastTime);
 
 			if (_wcsicmp(selection, L"longNetworkName") == 0)
 				return GetBool(settings.application.longNetworkName);
@@ -836,6 +844,11 @@ HRESULT AppData::LoadSettings()
 					settings.application.rememberLastService = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"ResumeLastTime") == 0)
+				{
+					settings.application.resumeLastTime = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"LastServiceCmd") == 0)
 				{
 					if (pSubElement->value)
@@ -1128,6 +1141,11 @@ HRESULT AppData::LoadSettings()
 
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"resume") == 0)
+				{
+					settings.timeshift.resume = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"LoadDelayLimit") == 0)
 				{
 					settings.timeshift.dlimit = _wtoi(pSubElement->value);
@@ -1341,6 +1359,7 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"MultiCard", (settings.application.multicard ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"CycleCards", (settings.application.cyclecards ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"RememberLastService", (settings.application.rememberLastService ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"ResumeLastTime", (settings.application.resumeLastTime ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"LastServiceCmd", settings.application.lastServiceCmd));
 		pApplication->Elements.Add(new XMLElement(L"LongNetworkName", (settings.application.longNetworkName ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"DecoderTest", (settings.application.decoderTest ? L"True" : L"False")));
@@ -1503,6 +1522,7 @@ HRESULT AppData::SaveSettings()
 	file.Elements.Add(pTimeshift);
 	{
 		pTimeshift->Elements.Add(new XMLElement(L"Folder", settings.timeshift.folder));
+		pWindow->Elements.Add(new XMLElement(L"Resume", (settings.timeshift.resume ? L"True" : L"False")));
 		strCopy(pValue, settings.timeshift.dlimit);
 		pTimeshift->Elements.Add(new XMLElement(L"LoadDelayLimit", pValue));
 		strCopy(pValue, settings.timeshift.flimit);

@@ -695,6 +695,15 @@ $(() - $(
 			<height>40</height>
 			<gap>10</gap>
 			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Remember Last Time</text>
+			<onSelect>ShowMenu("ResumeLastTime")</onSelect>
+			<onRight>ShowMenu("ResumeLastTime")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
 			<text> Long Network Name</text>
 			<onSelect>ShowMenu("LongNetworkName")</onSelect>
 			<onRight>ShowMenu("LongNetworkName")</onRight>
@@ -1153,6 +1162,51 @@ $(() - $(
 			<font height=30 weight=700 color="#FFFFFF" />
 			<text> False</text>
 			<onSelect>SetRememberLastService("False") ShowMenu("RememberLastService")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="ResumeLastTime">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="ResumeLastTimeOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.ResumeLastTime</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetResumeLastTime("True") ShowMenu("ResumeLastTime")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetResumeLastTime("False") ShowMenu("ResumeLastTime")</onSelect>
 		</item>
 	</list>
 
@@ -2026,6 +2080,15 @@ $(() - $(
 			<onSelect>ShowMenu("TimeShiftBuffer")</onSelect>
 			<onRight>ShowMenu("TimeShiftBuffer")</onRight>
 		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Resume TimeShift</text>
+			<onSelect>ShowMenu("ResumeTimeshift")</onSelect>
+			<onRight>ShowMenu("ResumeTimeshift")</onRight>
+		</item>
 	</list>
 
 </window>
@@ -2275,6 +2338,51 @@ $(() - $(
 		<font height=20 weight=700 color="#FFFFFF" />
 		<align horizontal="centre"/>
 	</label>
+
+</window>
+
+<window name="ResumeTimeShift">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("TimeShiftSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="ResumeTimeShiftOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.timeshift.resume</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetResumeTimeShift("True") ShowMenu("ResumeTimeShift")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetResumeTimeShift("False") ShowMenu("ResumeTimeShift")</onSelect>
+		</item>
+	</list>
 
 </window>
 

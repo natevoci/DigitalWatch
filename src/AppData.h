@@ -65,6 +65,7 @@ public:
 			BOOL multicard;
 			BOOL cyclecards;
 			BOOL rememberLastService;
+			BOOL resumeLastTime;
 			LPWSTR lastServiceCmd;
 			LPWSTR currentServiceCmd;
 			BOOL longNetworkName;
@@ -143,6 +144,7 @@ public:
 			LPWSTR folder;
 			LPWSTR change;
 			LPWSTR buffer;
+			BOOL resume;
 			int dlimit;
 			int flimit;
 			int fdelay;

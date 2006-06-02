@@ -190,7 +190,7 @@ LPWSTR DWMediaTypes::GetListItem(LPWSTR name, long nIndex)
 	return NULL;
 }
 
-void DWMediaTypes::SetListItem(int index, LPWSTR name, LPWSTR value)
+void DWMediaTypes::SetListItem(LPWSTR name, LPWSTR value, int index)
 {
 	if (!name || !value)
 		return;
@@ -401,7 +401,7 @@ LPWSTR DWMediaTypes::GetMediaTypeDecoder(int index)
 HRESULT DWMediaTypes::SetMediaTypeDecoder(int index, LPWSTR decoderName, BOOL bKeep)
 {
 
-	SetListItem(index, L"decoder", decoderName);
+	SetListItem(L"decoder", decoderName, index);
 
 	if (!bKeep)
 		return S_OK;

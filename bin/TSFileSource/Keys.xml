@@ -58,7 +58,9 @@
 
   <!-- space -->
   <Key code= 32>				PlayPause()</>
-  <!-- comma and period 5 seconds jump -->
+  <Key code= 'T'>				PlayPause()</>
+
+<!-- comma and period 5 seconds jump -->
   <Key code=190>				Seek(5)</>
   <Key code=188>				Seek(-5)</>
   <!-- comma and period with alt 20 second jump -->
