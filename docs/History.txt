@@ -29,6 +29,7 @@ nate:
 
 bear:
 Changes:
+- Added the TSFileSource's Demux class to enable channel zapping in Watch TV Mode.
 - Added a size limit to the resume list, can be set in the settings.xml file.
 - Fixed a few things with the resume settings.
 - Added file resume list to application, also added settings in the global & timeshift menus.

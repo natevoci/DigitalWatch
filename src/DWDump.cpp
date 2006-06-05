@@ -42,6 +42,8 @@ STDMETHODIMP DWDumpFilter::Stop()
 {
     CAutoLock cObjectLock(m_pLock);
 
+	m_pDump->m_pPin->StopThread();
+
     if (m_pDump)
         m_pDump->CloseFile();
     

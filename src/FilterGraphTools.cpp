@@ -1672,3 +1672,61 @@ HRESULT FilterGraphTools::DisconnectInputPins(IBaseFilter *pFilter)
 	}
 	return S_OK;
 }
+
+HRESULT FilterGraphTools::DeleteOutputPins(IBaseFilter *pFilter)
+{
+    HRESULT hr = S_OK;
+	
+    PIN_DIRECTION  direction;
+	CComPtr <IPin> pIPin = NULL;
+	CComPtr <IPin> pDownstreamPin = NULL;
+	AM_MEDIA_TYPE *type;
+	
+	// Get an instance of the Demux control interface
+	CComPtr <IMpeg2Demultiplexer> muxInterface;
+	hr = pFilter->QueryInterface (&muxInterface);
+	
+	// Enumerate the Demux pins
+    CComPtr <IEnumPins> pIEnumPins;
+    hr = pFilter->EnumPins (&pIEnumPins);
+	
+    if (FAILED (hr))
+    {
+		(log << "Cannot get enumpins on Demux filter: " << hr << "\n").Write(hr);
+        return hr;
+    }
+
+    while(pIEnumPins->Next(1, &pIPin, 0) == S_OK)
+    {
+        hr = pIPin->QueryDirection(&direction);
+		
+        if(direction == PINDIR_OUTPUT)
+        {
+            pIPin->ConnectedTo(&pDownstreamPin);
+			
+            if(pDownstreamPin == NULL)
+            {
+				PIN_INFO pinInfo;
+				if (FAILED(pIPin->QueryPinInfo(&pinInfo)))
+				{
+					(log << "Cannot Get Demux Output Pin Info on Demux filter: " << hr << "\n").Write(hr);
+					return hr;
+				}
+				
+				CComPtr <IEnumMediaTypes> ppEnum;
+				if (SUCCEEDED (pIPin->EnumMediaTypes(&ppEnum)))
+				{
+					while(ppEnum->Next(1, &type, 0) == S_OK)
+					{
+						muxInterface->DeleteOutputPin(pinInfo.achName);
+					}
+				}
+				ppEnum = NULL;
+            }
+            pDownstreamPin = NULL;
+        }
+        pIPin = NULL;
+    }
+	
+	return hr;
+}

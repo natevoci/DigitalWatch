@@ -1,6 +1,7 @@
 Version 2.2.0.4
 =================
 bear:
+Fixed a posible problem with the TSFileSinkPin where it was not stopping the receive thread when the filter was stopped.
 Added a fix to the PAT parser code to fix a problem realised from germany.
 Added a fix to the FindPin() function because it was not adding a reference to the pointer.
 Added an extra test to exclude the Cyberlink Demux Filter from connecting, seems that it is unable to support MS Demux Interfaces Properly.

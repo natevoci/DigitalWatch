@@ -99,6 +99,7 @@ public:
 	HRESULT GetTSMedia(AM_MEDIA_TYPE *pintype);
 	HRESULT DisconnectOutputPins(IBaseFilter *pFilter);
 	HRESULT DisconnectInputPins(IBaseFilter *pFilter);
+	HRESULT DeleteOutputPins(IBaseFilter *pFilter);
 
 private:
 		CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;

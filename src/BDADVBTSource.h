@@ -34,6 +34,7 @@
 #include "DWThread.h"
 #include <vector>
 #include "FilterPropList.h"
+#include "DWDemux.h"
 
 class BDADVBTSource : public DWSource, public DWThread
 {
@@ -108,8 +109,6 @@ protected:
 
 	HRESULT MoveNetworkUp(long transportStreamId);
 	HRESULT MoveNetworkDown(long transportStreamId);
-//	HRESULT ToggleRecording(long mode);
-//DWS28-02-2006	HRESULT ToggleRecording(long mode, LPWSTR pFilename = NULL);
 	HRESULT ToggleRecording(long mode, LPWSTR pFilename = NULL, LPWSTR pPath = NULL);
 	HRESULT TogglePauseRecording(long mode);
 
@@ -140,6 +139,7 @@ private:
 	FilterPropList filterList;
 
 	FilterGraphTools graphTools;
+	DWDemux m_DWDemux;
 };
 
 #endif

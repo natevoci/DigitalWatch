@@ -41,14 +41,6 @@
 EXTERN_GUID(CLSID_MPEG2Multiplexer,
 0x4DF35815, 0x79C5, 0x44C8, 0x87, 0x53, 0x84, 0x7D, 0x5C, 0x9C, 0x3C, 0xF5);
 
-//{BC650178-0DE4-47DF-AF50-BBD9C7AEF5A9}
-//EXTERN_GUID(CLSID_MPEG2Multiplexer,
-//0xBC650178, 0x0DE4, 0x47DF, 0xAF, 0x50, 0xBB, 0xD9, 0xC7, 0xAE, 0xF5, 0xA9);
-
-//{6770E328-9B73-40C5-91E6-E2F321AEDE57}
-//EXTERN_GUID(CLSID_MPEG2Multiplexer,
-//0x6770E328, 0x9B73, 0x40C5, 0x91, 0xE6, 0xE2, 0xF3, 0x21, 0xAE, 0xDE, 0x57);
-
 class BDADVBTSinkTShift;
 class BDADVBTSinkFile;
 class BDADVBTSinkDSNet;
@@ -71,35 +63,8 @@ public:
 
 	BOOL IsActive();
 
-	//HRESULT AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType = 0);
-//DWS28-02-2006	HRESULT AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType = 0, LPWSTR pFileName = NULL);
 	HRESULT AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType = 0, LPWSTR pFileName = NULL, LPWSTR pPath = NULL);
 	HRESULT NullFileName(CComPtr<IBaseFilter>& pFilter, int intSinkType);
-/*	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0);
-	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
-	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
-	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered = NULL);
-	HRESULT AddDemuxPinsTS(DVBTChannels_Service* pService, long *streamsRendered);
-	HRESULT GetAC3Media(AM_MEDIA_TYPE *pintype);
-	HRESULT GetMP2Media(AM_MEDIA_TYPE *pintype);
-	HRESULT GetMP1Media(AM_MEDIA_TYPE *pintype);
-	HRESULT GetAACMedia(AM_MEDIA_TYPE *pintype);
-	HRESULT GetVideoMedia(AM_MEDIA_TYPE *pintype);
-	HRESULT GetH264Media(AM_MEDIA_TYPE *pintype);
-	HRESULT GetMpeg4Media(AM_MEDIA_TYPE *pintype);
-	HRESULT GetTIFMedia(AM_MEDIA_TYPE *pintype);
-	HRESULT GetTelexMedia(AM_MEDIA_TYPE *pintype);
-	HRESULT GetTSMedia(AM_MEDIA_TYPE *pintype);
-	HRESULT ClearDemuxPids(CComPtr<IBaseFilter>& pFilter);
-	HRESULT ClearDemuxPins(IPin *pIPin);
-	HRESULT StartSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
-	HRESULT StopSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
-	HRESULT PauseSinkChain(CComPtr<IBaseFilter>& pFilterStart, CComPtr<IBaseFilter>& pFilterEnd);
-*/
-  //DWS28-02-2006	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL);
 	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL, LPWSTR pPath = NULL);
 	HRESULT StopRecording(void);
 	HRESULT PauseRecording(void);
@@ -110,6 +75,8 @@ public:
 	HRESULT GetCurFileSize(__int64 *pllFileSize, BOOL bTimeShiftSink = TRUE);
 	HRESULT GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize);
 	HRESULT UpdateTSFileSink(BOOL bAutoMode = FALSE);
+	HRESULT ClearSinkDemuxPins();
+	HRESULT GetReferenceDemux(CComPtr<IBaseFilter>&pDemux);
 
 	BOOL SupportsRecording() { return FALSE; }
 

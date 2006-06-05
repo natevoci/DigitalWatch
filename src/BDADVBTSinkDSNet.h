@@ -63,13 +63,14 @@ public:
 
 	BOOL SetRecordingFullTS();
 	BOOL SetRecordingTSMux(long PIDs[]);
-//DWS28-02-2006	BOOL StartRecording(LPWSTR filename);
 	BOOL StartRecording(LPWSTR filename, LPWSTR pPath);
 	BOOL PauseRecording(BOOL bPause);
 	BOOL StopRecording();
 	BOOL IsRecording();
 
 	BOOL SupportsRecording() { return FALSE; }
+	HRESULT ClearSinkDemuxPins();
+	HRESULT GetReferenceDemux(CComPtr<IBaseFilter>&pDemux);
 
 private:
 	void DestroyFTSFilters();

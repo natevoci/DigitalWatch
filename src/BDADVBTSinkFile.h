@@ -65,8 +65,6 @@ public:
 
 	BOOL IsActive();
 	HRESULT AddDWDumpFilter(LPWSTR name, DWDump **pfDWDump, CComPtr <IBaseFilter> &pFilter);
-//DWS 	HRESULT StartRecording(DVBTChannels_Service* pService);
-//DWS28-02-2006	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL);
 	HRESULT StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename = NULL, LPWSTR pPath = NULL);
 	HRESULT StopRecording(void);
 	HRESULT PauseRecording(void);
@@ -75,6 +73,8 @@ public:
 	BOOL IsPaused(void);
 	HRESULT GetCurFile(LPOLESTR *ppszFileName);
 	HRESULT GetCurFileSize(__int64 *pllFileSize);
+	HRESULT ClearSinkDemuxPins();
+	HRESULT GetReferenceDemux(CComPtr<IBaseFilter>&pDemux);
 
 	BOOL SupportsRecording() { return FALSE; }
 

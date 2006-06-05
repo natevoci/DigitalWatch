@@ -522,3 +522,42 @@ HRESULT BDADVBTSinkTShift::SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAut
 	return S_OK;
 }
 
+HRESULT BDADVBTSinkTShift::ClearSinkDemuxPins()
+{
+    HRESULT hr = S_OK;
+
+	if (m_intSinkType == 1 && m_pFTSSink)
+	{
+		return S_OK;
+	}
+	else if (m_intSinkType == 2 && m_pTSMpeg2Demux)
+	{
+		graphTools.ClearDemuxPids(m_pTSMpeg2Demux);
+		return S_OK;
+	}
+	else if (m_intSinkType == 3 && m_pMPGMpeg2Demux)
+	{
+		graphTools.ClearDemuxPids(m_pMPGMpeg2Demux);
+		return S_OK;
+	}
+
+	return S_FALSE;
+}
+
+HRESULT BDADVBTSinkTShift::GetReferenceDemux(CComPtr<IBaseFilter>&pDemux)
+{
+	if (pDemux != NULL)
+		return E_INVALIDARG;
+
+    HRESULT hr = S_OK;
+
+	if (m_intSinkType == 2 && m_pTSMpeg2Demux)
+		CComQIPtr<IBaseFilter>pDemux(m_pTSMpeg2Demux);  
+	else if (m_intSinkType == 3 && m_pMPGMpeg2Demux)
+		CComQIPtr<IBaseFilter>pDemux(m_pTSMpeg2Demux);  
+
+	if (pDemux)
+		return S_OK;
+
+	return S_FALSE;
+}

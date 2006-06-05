@@ -1274,6 +1274,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		g_pData->settings.application.cyclecards = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetZapping") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.zapping = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetRememberLastService") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)

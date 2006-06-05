@@ -405,4 +405,46 @@ BOOL BDADVBTSinkDSNet::IsActive()
 	return m_bActive;
 }
 
+HRESULT BDADVBTSinkDSNet::ClearSinkDemuxPins()
+{
+    HRESULT hr = S_OK;
+
+	if (m_intSinkType == 1 && m_pFTSSink && m_pFTSDWDump)
+	{
+		return S_OK;
+	}
+	else if (m_intSinkType == 2 && m_pTSMpeg2Demux)
+	{
+		graphTools.ClearDemuxPids(m_pTSMpeg2Demux);
+//		graphTools.SetReferenceClock(m_pTSMpeg2Demux);
+		return S_OK;
+	}
+	else if (m_intSinkType == 3 && m_pMPGMpeg2Demux)
+	{
+		graphTools.ClearDemuxPids(m_pMPGMpeg2Demux);
+//		graphTools.SetReferenceClock(m_pMPGMpeg2Demux);
+		return S_OK;
+	}
+
+	return S_FALSE;
+}
+
+HRESULT BDADVBTSinkDSNet::GetReferenceDemux(CComPtr<IBaseFilter>&pDemux)
+{
+	if (pDemux != NULL)
+		return E_INVALIDARG;
+
+    HRESULT hr = S_OK;
+
+	if (m_intSinkType == 2 && m_pTSMpeg2Demux)
+		CComQIPtr<IBaseFilter>pDemux(m_pTSMpeg2Demux);  
+	else if (m_intSinkType == 3 && m_pMPGMpeg2Demux)
+		CComQIPtr<IBaseFilter>pDemux(m_pTSMpeg2Demux);  
+
+	if (pDemux)
+		return S_OK;
+
+	return S_FALSE;
+}
+
 

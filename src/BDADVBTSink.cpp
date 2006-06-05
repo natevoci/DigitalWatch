@@ -238,8 +238,6 @@ BOOL BDADVBTSink::IsActive()
 	return m_bActive;
 }
 
-//HRESULT BDADVBTSink::AddFileName(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName)
-//DWS28-02-2006 HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName)
 HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intSinkType, LPWSTR pFileName, LPWSTR pPath)
 {
 	if (ppFileName == NULL)
@@ -303,7 +301,6 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 		wcsftime(wTimeStamp, 32, L"(%Y-%m-%d %H-%M-%S)", tmTime);
 
 
-		//DWS28-02-2006
 		if (pPath != NULL)
 			  wcscpy(wPathName, pPath);
 		else
@@ -317,7 +314,6 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 					wcscpy(wServiceName, g_pData->settings.capture.fileName);
 			}
 
-		//DWS28-02-2006
         //ensures that there's always a back slash at the end
         wPathName[wcslen(wPathName)] = char(92*(int)(wPathName[wcslen(wPathName)-1]!=char(92)));
 
@@ -343,7 +339,6 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 			wsprintfW(*ppFileName, L"%S%S %S.txt", wPathName, wTimeStamp, wServiceName);
 		}
 		else
-		//DWS28-02-2006
 		{	 if (intSinkType == 2) 
 			wsprintfW(*ppFileName, L"%S%S.full.ts", wPathName, pFileName);
 		else if (intSinkType == 22) 
@@ -452,14 +447,10 @@ HRESULT BDADVBTSink::NullFileName(CComPtr<IBaseFilter>& pFilter, int intSinkType
 	return S_OK;
 }
 
-//DWS28-02-2006	HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename)
 HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFilename, LPWSTR pPath)
 {
 	if (!m_pCurrentFileSink)
 	{
-
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-//		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
 
@@ -467,15 +458,8 @@ HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFile
 	}
 
 	HRESULT hr = S_OK;
-/*
-	if (wcslen(g_pData->settings.capture.fileName))
-		g_pOSD->Data()->ReplaceTokens(g_pData->settings.capture.fileName, pFilename);
-	else
-		g_pOSD->Data()->ReplaceTokens(L"$(CurrentService)", pFilename);
-*/			
 
 	if(m_intFileSinkType)
-//DWS28-02-2006		return m_pCurrentFileSink->StartRecording(pService, pFilename);
 		return m_pCurrentFileSink->StartRecording(pService, pFilename, pPath);
 
 	return hr;
@@ -485,8 +469,6 @@ HRESULT BDADVBTSink::StopRecording(void)
 {
 	if (!m_pCurrentFileSink)
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-//		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
 
@@ -505,8 +487,6 @@ HRESULT BDADVBTSink::PauseRecording(void)
 {
 	if (!m_pCurrentFileSink)
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-//		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
 
@@ -717,3 +697,46 @@ HRESULT BDADVBTSink::UpdateTSFileSink(BOOL bAutoMode)
 	return E_FAIL;
 }
 
+HRESULT BDADVBTSink::ClearSinkDemuxPins()
+{
+    HRESULT hr = S_OK;
+
+	if (m_pCurrentFileSink)
+	{
+		return m_pCurrentFileSink->ClearSinkDemuxPins();
+	}
+
+	if (m_pCurrentTShiftSink)
+	{
+		return m_pCurrentTShiftSink->ClearSinkDemuxPins();
+	}
+
+	if (m_pCurrentDSNetSink)
+	{
+		return m_pCurrentDSNetSink->ClearSinkDemuxPins();
+	}
+
+	return S_FALSE;
+}
+
+HRESULT BDADVBTSink::GetReferenceDemux(CComPtr<IBaseFilter>&pDemux)
+{
+    HRESULT hr = S_OK;
+
+	if (m_pCurrentFileSink)
+	{
+		return m_pCurrentFileSink->GetReferenceDemux(pDemux);
+	}
+
+	if (m_pCurrentTShiftSink)
+	{
+		return m_pCurrentTShiftSink->GetReferenceDemux(pDemux);
+	}
+
+	if (m_pCurrentDSNetSink)
+	{
+		return m_pCurrentDSNetSink->GetReferenceDemux(pDemux);
+	}
+
+	return S_FALSE;
+}

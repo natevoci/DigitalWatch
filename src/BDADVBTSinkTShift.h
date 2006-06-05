@@ -67,7 +67,6 @@ public:
 
 	BOOL SetRecordingFullTS();
 	BOOL SetRecordingTSMux(long PIDs[]);
-//DWS28-02-2006	BOOL StartRecording(LPWSTR filename);
 	BOOL StartRecording(LPWSTR filename, LPWSTR pPath);
 	BOOL PauseRecording(BOOL bPause);
 	BOOL StopRecording();
@@ -76,6 +75,8 @@ public:
 	HRESULT GetCurFileSize(__int64 *pllFileSize);
 	HRESULT UpdateTSFileSink(BOOL bAutoMode = FALSE);
 	HRESULT SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAutoMode = FALSE);
+	HRESULT ClearSinkDemuxPins();
+	HRESULT GetReferenceDemux(CComPtr<IBaseFilter>&pDemux);
 
 	BOOL SupportsRecording() { return FALSE; }
 

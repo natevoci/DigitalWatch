@@ -512,8 +512,6 @@ HRESULT BDADVBTSinkFile::AddDWDumpFilter(LPWSTR name, DWDump **pfDWDump, CComPtr
 
 }
 
-//DWS HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService)
-//DWS28-02-2006 HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR pFileName)
 HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR pFileName, LPWSTR pPath)
 {
 	(log << "Recording Starting on Sink FileWriter \n").Write();
@@ -523,7 +521,6 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 	if (m_intSinkType == 1 && m_pFTSSink)
 	{
 		//Add Demux Pins (Full TS Sink's)
-//DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pFTSFileName, pService, m_pFTSSink, 2, pFileName))		
 		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pFTSFileName, pService, m_pFTSSink, 2, pFileName, pPath))		
 			(log << "Failed to Set the File Name on the Full TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
@@ -538,7 +535,6 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 		if FAILED(hr = graphTools.AddDemuxPins(pService, m_pTSMpeg2Demux, 1))
 			(log << "Failed to Add Output Pins to TS Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 
-//DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTSFileName, pService, m_pTSSink, 22, pFileName))
 		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTSFileName, pService, m_pTSSink, 22, pFileName, pPath))
 			(log << "Failed to Set the File Name on the TS Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
@@ -550,7 +546,6 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 	}
 	else if (m_intSinkType == 3 && m_pMPGSink)
 	{
-//DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 3, pFileName))
 		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pMPGFileName, pService, m_pMPGSink, 3, pFileName, pPath))
 			(log << "Failed to Set the File Name on the MPG Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
@@ -577,15 +572,12 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 			(log << "Failed to Add Output Pins to A/V Sink MPEG-2 Demultiplexer: " << hr << "\n").Write(hr);
 
 		//Add Demux Pins (Seperate A/V Sink's) Video
-//DWS28-02-2006		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pVideoFileName, pService, m_pVideoSink, 4, pFileName))
 		if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pVideoFileName, pService, m_pVideoSink, 4, pFileName, pPath))
 			(log << "Failed to Set the File Name on the Video Sink FileWriter Interface: " << hr << "\n").Write(hr);
 		else	//Add Demux Pins (Seperate A/V Sink's) Teletext
-//DWS28-02-2006			if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTelexFileName, pService, m_pTelexSink, 6, pFileName))
 			if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pTelexFileName, pService, m_pTelexSink, 6, pFileName, pPath))
 				(log << "Failed to Set the File Name on the Teletext Sink FileWriter Interface: " << hr << "\n").Write(hr);
 			else	//Add Demux Pins (Seperate A/V Sink's) Audio
-//DWS28-02-2006				if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pAudioFileName, pService, m_pAudioSink, 5, pFileName))
 				if FAILED(hr = m_pBDADVBTSink->AddFileName(&m_pAudioFileName, pService, m_pAudioSink, 5, pFileName, pPath))
 					(log << "Failed to Set the File Name on the Audio Sink FileWriter Interface: " << hr << "\n").Write(hr);
 
@@ -853,5 +845,52 @@ HRESULT BDADVBTSinkFile::GetCurFileSize(__int64 *pllFileSize)
 		return m_pBDADVBTSink->GetSinkSize(m_pTelexFileName, pllFileSize);
 
 	return hr;
+}
+
+HRESULT BDADVBTSinkFile::ClearSinkDemuxPins()
+{
+    HRESULT hr = S_OK;
+
+	if (m_intSinkType == 1 && m_pFTSSink && m_pFTSDWDump)
+	{
+		return S_OK;
+	}
+	else if (m_intSinkType == 2 && m_pTSMpeg2Demux)
+	{
+		graphTools.ClearDemuxPids(m_pTSMpeg2Demux);
+		return S_OK;
+	}
+	else if (m_intSinkType == 3 && m_pMPGMpeg2Demux)
+	{
+		graphTools.ClearDemuxPids(m_pMPGMpeg2Demux);
+		return S_OK;
+	}
+	else if (m_intSinkType == 4 && m_pAVMpeg2Demux)
+	{
+		graphTools.ClearDemuxPids(m_pAVMpeg2Demux);
+		return S_OK;
+	}
+
+	return S_FALSE;
+}
+
+HRESULT BDADVBTSinkFile::GetReferenceDemux(CComPtr<IBaseFilter>&pDemux)
+{
+	if (pDemux != NULL)
+		return E_INVALIDARG;
+
+    HRESULT hr = S_OK;
+
+	if (m_intSinkType == 2 && m_pTSMpeg2Demux)
+		CComQIPtr<IBaseFilter>pDemux(m_pTSMpeg2Demux);  
+	else if (m_intSinkType == 3 && m_pMPGMpeg2Demux)
+		CComQIPtr<IBaseFilter>pDemux(m_pTSMpeg2Demux);  
+	else if (m_intSinkType == 4 && m_pAVMpeg2Demux)
+		CComQIPtr<IBaseFilter>pDemux(m_pAVMpeg2Demux);  
+
+	if (pDemux)
+		return S_OK;
+
+	return S_FALSE;
 }
 

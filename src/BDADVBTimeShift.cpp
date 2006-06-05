@@ -647,36 +647,16 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"Recording") == 0)
 	{
-/*DWS		if (command->LHS.ParameterCount <= 0)
-			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
-
-		if (command->LHS.ParameterCount > 1)
-			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
-
-		n1 = StringToLong(command->LHS.Parameter[0]);
-
-		return ToggleRecording(n1);
-*/
 		if (command->LHS.ParameterCount <= 0)
-//DWS28-02-2006			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 			return (log << "Expecting 1 or 2 or 3 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-//DWS28-02-2006		if (command->LHS.ParameterCount > 2)
 		if (command->LHS.ParameterCount > 3)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		n2 = 0;
-/*DWS28-02-2006		
-		if (command->LHS.ParameterCount >= 2)
-		{
-			n2 = (int)command->LHS.Parameter[1];
-			return ToggleRecording(n1, (LPWSTR)n2);
-		}
-		else
-			return ToggleRecording(n1);
-*/
+
 		if (command->LHS.ParameterCount >= 3)
 		{
 			n2 = (int)command->LHS.Parameter[1];
@@ -3294,14 +3274,10 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 	return hr;
 }
 
-//HRESULT BDADVBTimeShift::ToggleRecording(long mode)
-//DWS28-02-2006 HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename)
 HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath)
 {
 	if (!m_pCurrentSink)
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-//		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
 
@@ -3310,10 +3286,8 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPa
 
 	HRESULT hr = S_OK;
 
-//DWS	WCHAR sz[32];
 	WCHAR sz[32] = L"";
 
-//	if(m_pCurrentSink->IsRecording())
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording() && ((mode == 0) || (mode == 2)))
 	{
 
@@ -3323,18 +3297,9 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPa
 		wcscpy(sz, L"Recording Stopped");
 		g_pOSD->Data()->SetItem(L"recordingicon", L"S");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 2);
-
-		// Set the thread state to keep the computer awake
-//		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
-
-		// Set priority to HIGH
-//		SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 	}
-//	else
 	else if (!m_pCurrentSink->IsRecording() && ((mode == 1) || (mode == 2)))
 	{
-//		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService))
-//DWS28-02-2006		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename))
 		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename, pPath))
 			return hr;
 
@@ -3354,8 +3319,6 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPa
 			SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 	}
 
-	//DWS if (sz != L"") this is required to avoid OSD when nothing in sz
-	//the if then else above may leave sz empty for example when trying to stop and not recording...
 	if (sz != L"")
 	{
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
@@ -3369,8 +3332,6 @@ HRESULT BDADVBTimeShift::TogglePauseRecording(long mode)
 {
 	if (!m_pCurrentSink)
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-//		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
 

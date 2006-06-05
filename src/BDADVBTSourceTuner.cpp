@@ -239,6 +239,10 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 	if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_piBDAMpeg2Demux, m_piBDASecTab))
 		return (log << "Failed to connect BDA Demux to MPEG-2 Sections and Tables: " << hr << "\n").Write(hr);
 
+	//Clear unused pins
+	if FAILED(hr = graphTools.DeleteOutputPins(m_piBDAMpeg2Demux))
+		return (log << "Failed to Delete the Output Pins on the Demux filter: " << hr << "\n").Write(hr);
+
 	m_bActive = TRUE;
 	return S_OK;
 }

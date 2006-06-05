@@ -434,25 +434,15 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"Recording") == 0)
 	{
 		if (command->LHS.ParameterCount <= 0)
-//DWS28-02-2006			return (log << "Expecting 1 or 2 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 			return (log << "Expecting 1 or 2 or 3 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-//DWS28-02-2006		if (command->LHS.ParameterCount > 2)
 		if (command->LHS.ParameterCount > 3)
 			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		n1 = StringToLong(command->LHS.Parameter[0]);
 
 		n2 = 0;
-/*DWS28-02-2006		
-		if (command->LHS.ParameterCount >= 2)
-		{
-			n2 = (int)command->LHS.Parameter[1];
-			return ToggleRecording(n1, (LPWSTR)n2);
-		}
-		else
-			return ToggleRecording(n1);
-*/
+
 		if (command->LHS.ParameterCount >= 3)
 		{
 			n2 = (int)command->LHS.Parameter[1];
@@ -1176,6 +1166,110 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		return S_OK;
 	}
 
+	//Check the requested Service is already in the Network if FULL Mux
+	if(g_pData->settings.application.zapping && m_pCurrentService && m_pCurrentTuner)
+	{
+		// Stop the Current Tuner Scanner thread
+		if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+			if FAILED(hr = m_pCurrentTuner->StopScanning())
+				(log << "Failed to Stop the Current Tuner from Scanning\n").Write();
+
+		// Stop our background thread
+		if FAILED(hr = StopThread())
+			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+		if (hr == S_FALSE)
+			(log << "Killed thread\n").Write();
+
+		// Do data stuff
+		UpdateData(frequency, bandwidth);
+		if (m_pCurrentNetwork)
+			g_pTv->ShowOSDItem(L"Channel", 10);
+		else
+			g_pTv->ShowOSDItem(L"Channel", 300);
+		// End data stuff
+/*
+		if FAILED(hr = m_pDWGraph->Stop())
+			return (log << "Failed to stop DWGraph\n").Write(hr);
+*/
+
+		//Change frequency
+		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+			return (log << "Could not Lock Channel: " << hr << "\n").Write(hr);
+
+		CComPtr <IPin> piTSPin;
+		if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
+			return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
+
+		PIN_INFO pinInfo;
+		if FAILED(hr = piTSPin->QueryPinInfo(&pinInfo))
+			return (log << "Could not get TSPin Pin Info: " << hr << "\n").Write(hr);
+/*
+		CComPtr<IBaseFilter>pDemux;
+		if (m_pCurrentSink)
+		{
+			if FAILED(hr = m_pCurrentSink->GetReferenceDemux(pDemux))
+				return (log << "Could not get the Sink Demux Reference clock: " << hr << "\n").Write(hr);
+		}
+*/
+		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, &channels, m_pCurrentNetwork, m_pCurrentService))
+		{
+			pinInfo.pFilter->Release();
+			return(log << "Failed to change the Requested Service using channel zapping.\n").Write();
+		}
+		if(pinInfo.pFilter)
+			pinInfo.pFilter->Release();
+
+	if (m_pCurrentSink)
+	{
+		if FAILED(hr = m_pCurrentSink->ClearSinkDemuxPins())
+			(log << "Failed To Set the Sink Sync Source: " << hr << "\n").Write();
+	}
+
+/*
+		if FAILED(hr = m_pDWGraph->Start())
+		{
+			HRESULT hr2;
+			if FAILED(hr2 = m_pDWGraph->Stop())
+				return(log << "Failed to stop DWGraph\n").Write(hr2);
+
+			return(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write(hr);
+		}
+*/
+		//Stop the tif filter
+		if FAILED(hr = m_pCurrentTuner->StopTIF())
+		{
+			(log << "Failed to stop the BDA TIF Filter.\n").Write();
+		}
+
+		// Start the background thread for updating channels
+		if FAILED(hr = m_pCurrentTuner->StartScanning())
+			(log << "Failed to start channel scanning: " << hr << "\n").Write();
+
+		// Start the background thread for updating statistics
+		if FAILED(hr = StartThread())
+			(log << "Failed to start background thread: " << hr << "\n").Write();
+
+		g_pOSD->Data()->SetItem(L"recordingicon", L"");
+		if (m_pCurrentSink && m_pCurrentSink->IsRecording())
+		{
+			if (m_pCurrentSink->IsPaused())
+				g_pOSD->Data()->SetItem(L"recordingicon", L"P");
+			else
+				g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+
+			g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
+		}
+		else
+			g_pTv->HideOSDItem(L"RecordingIcon");
+
+		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
+
+		indent.Release();
+		(log << "Finished Setting Channel\n").Write();
+
+		return S_OK;
+	}
+
 	// Stop background thread
 	if FAILED(hr = StopThread())
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
@@ -1890,14 +1984,10 @@ HRESULT BDADVBTSource::ShowFilter(LPWSTR filterName)
 	return hr;
 }
 
-//HRESULT BDADVBTSource::ToggleRecording(long mode)
-//DWS28-02-2006HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename)
 HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath)
 {
 	if (!m_pCurrentSink)
 	{
-//		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-//		g_pTv->ShowOSDItem(L"Recording", 5);
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
 		g_pTv->ShowOSDItem(L"Warnings", 5);
 
@@ -1906,10 +1996,8 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath
 
 	HRESULT hr = S_OK;
 
-//DWS	WCHAR sz[32];
 	WCHAR sz[32] = L"";
 
-//	if(m_pCurrentSink->IsRecording())
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording() && ((mode == 0) || (mode == 2)))
 	{
 
@@ -1920,11 +2008,8 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath
 		g_pOSD->Data()->SetItem(L"recordingicon", L"S");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 2);
 	}
-//	else
 	else if (m_pCurrentSink && !m_pCurrentSink->IsRecording() && ((mode == 1) || (mode == 2)))
 	{
-//		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService))
-//DWS28-02-2006		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename))
 		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename, pPath))
 			return hr;
 
@@ -1933,7 +2018,6 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 	}
 
-	//DWS if (sz != L"") this is required to avoid OSD when nothing in sz
 	//the if then else above may leave sz empty for example when trying to stop and not recording...
 	if (sz != L"")
 	{

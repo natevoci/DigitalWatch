@@ -365,6 +365,14 @@ SOURCE=.\src\DWDecoders.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\DWDemux.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWDemux.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\DWFileResumeList.cpp
 # End Source File
 # Begin Source File

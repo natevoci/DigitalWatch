@@ -66,6 +66,7 @@ AppData::AppData()
 	settings.application.addToROT = TRUE;
 	settings.application.multicard = FALSE;
 	settings.application.cyclecards = FALSE;
+	settings.application.zapping = TRUE;
 	settings.application.rememberLastService = TRUE;
 	settings.application.resumeLastTime = TRUE;
 	settings.application.resumesize = 50;
@@ -350,6 +351,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"cyclecards") == 0)
 				return GetBool(settings.application.cyclecards);
+
+			if (_wcsicmp(selection, L"zapping") == 0)
+				return GetBool(settings.application.zapping);
 
 			if (_wcsicmp(selection, L"rememberLastService") == 0)
 				return GetBool(settings.application.rememberLastService);
@@ -838,6 +842,11 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"CycleCards") == 0)
 				{
 					settings.application.cyclecards = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"Zapping") == 0)
+				{
+					settings.application.zapping = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"RememberLastService") == 0)
@@ -1364,6 +1373,7 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"AddToROT", (settings.application.addToROT ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"MultiCard", (settings.application.multicard ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"CycleCards", (settings.application.cyclecards ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"Zapping", (settings.application.zapping ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"RememberLastService", (settings.application.rememberLastService ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"ResumeLastTime", (settings.application.resumeLastTime ? L"True" : L"False")));
 		strCopy(pValue, settings.application.resumesize);

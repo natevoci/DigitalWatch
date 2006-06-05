@@ -64,6 +64,7 @@ public:
 			BOOL addToROT;
 			BOOL multicard;
 			BOOL cyclecards;
+			BOOL zapping;
 			BOOL rememberLastService;
 			BOOL resumeLastTime;
 			int resumesize;
