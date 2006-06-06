@@ -1146,11 +1146,6 @@ void BDADVBTSource::UpdateCurrentItemList(void)
 
 HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 {
-	(log << "Building Graph (" << frequency << ", " << bandwidth << ")\n").Write();
-	LogMessageIndent indent(&log);
-
-	HRESULT hr;
-
 	//TODO: Check if recording
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
 	{
@@ -1161,114 +1156,21 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
 		(log << "Unable to RenderChannel, Recording Still in Progress\n").Write();
-		indent.Release();
-		(log << "Finished Building Graph\n").Write();
 		return S_OK;
 	}
 
-	//Check the requested Service is already in the Network if FULL Mux
-	if(g_pData->settings.application.zapping && m_pCurrentService && m_pCurrentTuner)
+	HRESULT hr;
+
+	//Change channel using zapping code
+	if FAILED(hr = ChangeChannel(frequency, bandwidth))
 	{
-		// Stop the Current Tuner Scanner thread
-		if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
-			if FAILED(hr = m_pCurrentTuner->StopScanning())
-				(log << "Failed to Stop the Current Tuner from Scanning\n").Write();
-
-		// Stop our background thread
-		if FAILED(hr = StopThread())
-			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
-		if (hr == S_FALSE)
-			(log << "Killed thread\n").Write();
-
-		// Do data stuff
-		UpdateData(frequency, bandwidth);
-		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
-		else
-			g_pTv->ShowOSDItem(L"Channel", 300);
-		// End data stuff
-/*
-		if FAILED(hr = m_pDWGraph->Stop())
-			return (log << "Failed to stop DWGraph\n").Write(hr);
-*/
-
-		//Change frequency
-		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
-			return (log << "Could not Lock Channel: " << hr << "\n").Write(hr);
-
-		CComPtr <IPin> piTSPin;
-		if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
-			return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
-
-		PIN_INFO pinInfo;
-		if FAILED(hr = piTSPin->QueryPinInfo(&pinInfo))
-			return (log << "Could not get TSPin Pin Info: " << hr << "\n").Write(hr);
-/*
-		CComPtr<IBaseFilter>pDemux;
-		if (m_pCurrentSink)
-		{
-			if FAILED(hr = m_pCurrentSink->GetReferenceDemux(pDemux))
-				return (log << "Could not get the Sink Demux Reference clock: " << hr << "\n").Write(hr);
-		}
-*/
-		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, &channels, m_pCurrentNetwork, m_pCurrentService))
-		{
-			pinInfo.pFilter->Release();
-			return(log << "Failed to change the Requested Service using channel zapping.\n").Write();
-		}
-		if(pinInfo.pFilter)
-			pinInfo.pFilter->Release();
-
-	if (m_pCurrentSink)
-	{
-		if FAILED(hr = m_pCurrentSink->ClearSinkDemuxPins())
-			(log << "Failed To Set the Sink Sync Source: " << hr << "\n").Write();
+		(log << "Unable to change channel so lets rebuild the graph.\n").Write();
 	}
-
-/*
-		if FAILED(hr = m_pDWGraph->Start())
-		{
-			HRESULT hr2;
-			if FAILED(hr2 = m_pDWGraph->Stop())
-				return(log << "Failed to stop DWGraph\n").Write(hr2);
-
-			return(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write(hr);
-		}
-*/
-		//Stop the tif filter
-		if FAILED(hr = m_pCurrentTuner->StopTIF())
-		{
-			(log << "Failed to stop the BDA TIF Filter.\n").Write();
-		}
-
-		// Start the background thread for updating channels
-		if FAILED(hr = m_pCurrentTuner->StartScanning())
-			(log << "Failed to start channel scanning: " << hr << "\n").Write();
-
-		// Start the background thread for updating statistics
-		if FAILED(hr = StartThread())
-			(log << "Failed to start background thread: " << hr << "\n").Write();
-
-		g_pOSD->Data()->SetItem(L"recordingicon", L"");
-		if (m_pCurrentSink && m_pCurrentSink->IsRecording())
-		{
-			if (m_pCurrentSink->IsPaused())
-				g_pOSD->Data()->SetItem(L"recordingicon", L"P");
-			else
-				g_pOSD->Data()->SetItem(L"recordingicon", L"R");
-
-			g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
-		}
-		else
-			g_pTv->HideOSDItem(L"RecordingIcon");
-
-		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
-
-		indent.Release();
-		(log << "Finished Setting Channel\n").Write();
-
+	else if (hr == S_OK)
 		return S_OK;
-	}
+
+	(log << "Building Graph (" << frequency << ", " << bandwidth << ")\n").Write();
+	LogMessageIndent indent(&log);
 
 	// Stop background thread
 	if FAILED(hr = StopThread())
@@ -1420,6 +1322,124 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
 
+HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
+{
+	HRESULT hr;
+
+	//Check the requested Service is already in the Network if FULL Mux
+	if(g_pData->settings.application.zapping && m_pCurrentService && m_pCurrentTuner)
+	{
+		(log << "Change Channel using Zapping mode\n").Write();
+		LogMessageIndent indent(&log);
+
+		// Stop the Current Tuner Scanner thread
+		if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+			if FAILED(hr = m_pCurrentTuner->StopScanning())
+				(log << "Failed to Stop the Current Tuner from Scanning\n").Write();
+
+		// Stop our background thread
+		if FAILED(hr = StopThread())
+			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+		if (hr == S_FALSE)
+			(log << "Killed thread\n").Write();
+
+		// Do data stuff
+		UpdateData(frequency, bandwidth);
+		if (m_pCurrentNetwork)
+			g_pTv->ShowOSDItem(L"Channel", 10);
+		else
+			g_pTv->ShowOSDItem(L"Channel", 300);
+		// End data stuff
+/*
+		if FAILED(hr = m_pDWGraph->Stop())
+			return (log << "Failed to stop DWGraph\n").Write(hr);
+*/
+
+		//Change frequency
+		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+			return (log << "Could not Lock Channel: " << hr << "\n").Write(hr);
+
+		CComPtr <IPin> piTSPin;
+		if FAILED(hr = m_pCurrentTuner->QueryTransportStreamPin(&piTSPin))
+			return (log << "Could not get TSPin: " << hr << "\n").Write(hr);
+
+		PIN_INFO pinInfo;
+		if FAILED(hr = piTSPin->QueryPinInfo(&pinInfo))
+			return (log << "Could not get TSPin Pin Info: " << hr << "\n").Write(hr);
+/*
+		CComPtr<IBaseFilter>pDemux;
+		if (m_pCurrentSink)
+		{
+			if FAILED(hr = m_pCurrentSink->GetReferenceDemux(pDemux))
+				return (log << "Could not get the Sink Demux Reference clock: " << hr << "\n").Write(hr);
+		}
+*/
+		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, &channels, m_pCurrentNetwork, m_pCurrentService))
+		{
+			pinInfo.pFilter->Release();
+			return(log << "Failed to change the Requested Service using channel zapping.\n").Write();
+		}
+		if(pinInfo.pFilter)
+			pinInfo.pFilter->Release();
+
+		if (m_pCurrentSink&& !m_pCurrentSink->IsRecording())
+		{
+			if FAILED(hr = m_pCurrentSink->ClearSinkDemuxPins())
+				(log << "Failed To Set the Sink Sync Source: " << hr << "\n").Write();
+		}
+
+/*
+		if FAILED(hr = m_pDWGraph->Start())
+		{
+			HRESULT hr2;
+			if FAILED(hr2 = m_pDWGraph->Stop())
+				return(log << "Failed to stop DWGraph\n").Write(hr2);
+
+			return(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write(hr);
+		}
+*/
+		//Stop the tif filter
+		if FAILED(hr = m_pCurrentTuner->StopTIF())
+		{
+			(log << "Failed to stop the BDA TIF Filter.\n").Write();
+		}
+
+		// Start the background thread for updating channels
+		if FAILED(hr = m_pCurrentTuner->StartScanning())
+			(log << "Failed to start channel scanning: " << hr << "\n").Write();
+
+		// Start the background thread for updating statistics
+		if FAILED(hr = StartThread())
+			(log << "Failed to start background thread: " << hr << "\n").Write();
+
+		g_pOSD->Data()->SetItem(L"recordingicon", L"");
+		if (m_pCurrentSink && m_pCurrentSink->IsRecording())
+		{
+			if (m_pCurrentSink->IsPaused())
+				g_pOSD->Data()->SetItem(L"recordingicon", L"P");
+			else
+				g_pOSD->Data()->SetItem(L"recordingicon", L"R");
+
+			g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
+
+		}
+		else
+			g_pTv->HideOSDItem(L"RecordingIcon");
+
+		if (m_pCurrentNetwork)
+			g_pTv->ShowOSDItem(L"Channel", 10);
+
+		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
+
+		indent.Release();
+		(log << "Finished Setting Channel using Zapping\n").Write();
+
+		return S_OK;
+	}
+
+	return S_FALSE;
+}
+
 HRESULT BDADVBTSource::LoadTuner()
 {
 	(log << "Loading Tuner\n").Write();
@@ -1566,10 +1586,21 @@ HRESULT BDADVBTSource::CloseDisplay()
 
 HRESULT BDADVBTSource::OpenDisplay()
 {
+	HRESULT hr;
+
 	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
 	{
 		//turn on the display by setting the demux pins 
-		if(m_piBDAMpeg2Demux && m_pCurrentService && m_pCurrentSink)
+		//swt Change channel using zapping code
+		if FAILED(hr = ChangeChannel(m_pCurrentNetwork->frequency, m_pCurrentNetwork->bandwidth))
+		{
+			(log << "Unable to Set channel so lets rebuild the graph.\n").Write();
+		}
+		else if (hr == S_OK)
+			return S_OK;
+
+//		if(m_piBDAMpeg2Demux && m_pCurrentService && m_pCurrentSink)
+		if(m_piBDAMpeg2Demux && m_pCurrentService)
 			graphTools.AddDemuxPins(m_pCurrentService, m_piBDAMpeg2Demux);
 	}
 	return S_OK;

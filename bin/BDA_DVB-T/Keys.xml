@@ -31,7 +31,8 @@
   <Key code='A'>				ToggleOSDItem("Channel")</>
 
   <Key code='P' shift>			ShowChannelInfo()</>
-  <Key code='Q'>				ShowOSDItem("Signal")</>
+  <!-- <Key code='Q'>				ShowOSDItem("Signal")</> -->
+  <Key code='Q'>				MinimiseDisplay()</>
   <Key code='E'>				ShowOSDItem("NowAndNext")</>
   <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
  

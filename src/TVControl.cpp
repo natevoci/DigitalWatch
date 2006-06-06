@@ -1543,7 +1543,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			DWSource *source = *it;
 			LPWSTR pType = source->GetSourceType();
 
-			if (_wcsicmp(pType, L"BDA") == 0)
+			if (_wcsicmp(pType, L"TSFileSource") == 0)
 			{
 				if (m_pActiveSource)
 				{

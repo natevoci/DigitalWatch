@@ -77,6 +77,8 @@ protected:
 	HRESULT ReLoadFile(LPWSTR pFilename);
 	HRESULT LoadResumePosition();
 	HRESULT SaveResumePosition();
+	HRESULT CloseDisplay();
+	HRESULT OpenDisplay(BOOL bTest = FALSE);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, BOOL bRender = TRUE);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
@@ -86,6 +88,7 @@ protected:
 	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Service** pService);
+	HRESULT TestDecoderSelection(LPWSTR pwszMediaType);
 	HRESULT LoadMediaStreamType(USHORT pid, LPWSTR pwszMediaType, DVBTChannels_Stream** pStream );
 
 	virtual void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
@@ -101,6 +104,7 @@ private:
 	CCritSec m_listLock;
 
 	DWGraph *m_pDWGraph;
+	LPWSTR m_pFileName;
 	CComPtr <IGraphBuilder> m_piGraphBuilder;
 
 	CComPtr <IBaseFilter> m_pTSFileSource;

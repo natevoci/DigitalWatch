@@ -1843,9 +1843,7 @@ void BDADVBTimeShift::UpdateStatusDisplay()
 
 	}
 	else
-	{
 		g_pTv->HideOSDItem(L"RecordingIcon");
-	}
 
 	if (m_pCurrentNetwork)
 		g_pTv->ShowOSDItem(L"Channel", 10);

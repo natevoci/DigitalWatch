@@ -43,6 +43,7 @@ TSFileSource::TSFileSource() : m_strSourceType(L"TSFileSource")
 {
 	m_bInitialised = FALSE;
 	m_pDWGraph = NULL;
+	m_pFileName = NULL;
 	g_pOSD->Data()->AddList(&streamList);
 	g_pOSD->Data()->AddList(&filterList);
 }
@@ -50,6 +51,8 @@ TSFileSource::TSFileSource() : m_strSourceType(L"TSFileSource")
 TSFileSource::~TSFileSource()
 {
 	Destroy();
+	if (m_pFileName)
+		delete[] m_pFileName;
 }
 
 void TSFileSource::SetLogCallback(LogMessageCallback *callback)
@@ -250,6 +253,91 @@ HRESULT TSFileSource::ExecuteCommand(ParseLine* command)
 
 		return GetFilterList();
 	}
+	else if (_wcsicmp(pCurr, L"MinimiseDisplay") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pTv->MinimiseScreen();
+		return CloseDisplay();
+	}
+	else if (_wcsicmp(pCurr, L"CloseDisplay") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return CloseDisplay();
+	}
+	else if (_wcsicmp(pCurr, L"OpenDisplay") == 0)
+	{
+		if (command->LHS.ParameterCount != 0)
+			return (log << "Expecting 0 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		return OpenDisplay();
+	}
+	else if (_wcsicmp(pCurr, L"SetMediaTypeDecoder") == 0)
+	{
+		if (command->LHS.ParameterCount <= 0)
+			return (log << "Expecting 2 or 4 parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.ParameterCount > 4)
+			return (log << "Too many parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (!command->LHS.Parameter[1] && !command->LHS.Parameter[2])
+			return (log << "Expecting 3 or 4 valid parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		//Get the media type index value
+		n1 = StringToLong(command->LHS.Parameter[0]);
+
+		if (n1)
+			n1--;
+
+		//Save the current decoder selection
+		LPWSTR decoder = NULL;
+		LPWSTR pTemp = m_pDWGraph->GetMediaTypeDecoder(n1);
+		if(pTemp)
+			strCopy(decoder, pTemp);
+
+		//check if new decoder has correct media type specified
+		if (wcsstr(command->LHS.Parameter[2], command->LHS.Parameter[3]) == NULL)
+		{
+			(log << "Error, now restoring the previous Decoder: " << decoder << " for Media type: "<< command->LHS.Parameter[3]<< "\n").Show();
+			g_pOSD->Data()->SetItem(L"MediaTypeDecoder", decoder);
+			return (log << "Unable to match MediaTypes between: " << command->LHS.Parameter[2] << " with "<< command->LHS.Parameter[3]<< "\n").Show(E_FAIL);
+		}
+
+		if (g_pData->settings.application.decoderTest)
+		{
+
+			g_pOSD->Data()->SetItem(L"warnings", L"Decoder testing in progress, Please wait a few seconds.");
+			g_pTv->ShowOSDItem(L"Warnings", 2);
+			//Set the new decoder in the list
+			m_pDWGraph->SetMediaTypeDecoder(n1, command->LHS.Parameter[1], FALSE);
+
+			//if requested we can test the decoder connection
+			if (command->LHS.Parameter[3])
+				if FAILED(TestDecoderSelection(command->LHS.Parameter[3]))
+				{
+					g_pOSD->Data()->SetItem(L"warnings", L"Decoder Test Failed, Please check the log for details.");
+					g_pTv->ShowOSDItem(L"Warnings", 5);
+					(log << "Error, now restoring the previous Decoder: " << decoder << " for Media type: "<< command->LHS.Parameter[3]<< "\n").Show();
+					g_pOSD->Data()->SetItem(L"MediaTypeDecoder", decoder);
+					m_pDWGraph->SetMediaTypeDecoder(n1, decoder, FALSE);
+					OpenDisplay(TRUE);
+					delete[] decoder;
+					return (log << "Unable to connect the Selected Decoder: " << command->LHS.Parameter[1] << " using Media type: "<< command->LHS.Parameter[3]<< "\n").Show(E_FAIL);
+				}
+
+			g_pOSD->Data()->SetItem(L"warnings", L"Decoder testing completed Ok.");
+			g_pTv->ShowOSDItem(L"Warnings", 2);
+		}
+
+		(log << "Setting the Selected Decoder: " << command->LHS.Parameter[1] << " for Media type: "<< command->LHS.Parameter[3]<< "\n").Show();
+		g_pOSD->Data()->SetItem(L"MediaTypeDecoder", command->LHS.Parameter[1]);
+		m_pDWGraph->SetMediaTypeDecoder(n1, command->LHS.Parameter[1]);
+		delete[] decoder;
+		return OpenDisplay(TRUE);
+	}
 
 	//Just referencing these variables to stop warnings.
 	n1 = 0;
@@ -421,6 +509,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	//Set flag for timeshift
 	BOOL timeshiftService = FALSE;
+
 	if (pService)
 		timeshiftService = TRUE;
 
@@ -538,12 +627,28 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	{
 		//Do this to set the Filtergraph seek time since changing the reference clock upsets the demux
 //(log << "pFilename = : "  << pFilename << "\n").Write();
-		long lPosition = m_pDWGraph->GetResumePosition(pFilename);
-		Seek(lPosition);
+		if (pFilename)
+		{
+			long lPosition = m_pDWGraph->GetResumePosition(pFilename);
+			Seek(lPosition);
+		}
 	}
 
-	if (bOwnFilename)
-		delete[] pFilename;
+	//Save the current fileName
+	if (pFilename)
+	{
+		if (pFilename != m_pFileName)
+		{
+			if (m_pFileName)
+				delete[] m_pFileName;
+		}
+
+		if (!m_pFileName)
+			strCopy(m_pFileName, pFilename);
+
+		if (bOwnFilename)
+			delete[] pFilename;
+	}
 
 
 //g_pOSD->Data()->SetItem(L"warnings", L"Starting to play the TimeShift File");
@@ -669,6 +774,33 @@ HRESULT TSFileSource::SaveResumePosition()
 			(log << "Failed to get filename: " << hr << "\n").Write(hr);
 		else if (pFilename)
 			m_pDWGraph->SetResumePosition(pFilename, lPosition);
+	}
+
+	return S_OK;
+}
+
+HRESULT TSFileSource::CloseDisplay()
+{
+	HRESULT hr = S_OK;
+
+	//Check if service already running
+	if (m_pDWGraph->IsPlaying())
+	{
+		if FAILED(hr = UnloadFilters())
+			return (log << "Failed to Unload the File Source Filters: " << hr << "\n").Write(hr);
+	}
+	return hr;
+}
+
+HRESULT TSFileSource::OpenDisplay(BOOL bTest)
+{
+	 //Check if service already running
+	if (!m_pDWGraph->IsPlaying())
+	{
+		if (m_pFileName)
+			return 	LoadFile(m_pFileName);
+		else if (!bTest)
+			return 	LoadFile(NULL);
 	}
 
 	return S_OK;
@@ -1237,6 +1369,95 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 	}
 	piTSFilepSource.Release();
 	return S_OK;
+}
+
+HRESULT TSFileSource::TestDecoderSelection(LPWSTR pwszMediaType)
+{
+	(log << "Building the Decoder Test Graph\n").Write();
+	LogMessageIndent indent(&log);
+
+	HRESULT hr = E_FAIL;
+
+	//Close the Graph
+	if FAILED(hr = CloseDisplay())
+	{
+		(log << "Failed to add Test MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write();
+		return hr;
+	}
+	
+	DVBTChannels_Service* pService = new DVBTChannels_Service();
+	DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+
+	CComPtr <IBaseFilter> piBDAMpeg2Demux;
+	DWORD rotEntry = 0;
+
+	while (TRUE)
+	{
+		BOOL bFound = FALSE;
+		for (int i=0 ; i<DVBTChannels_Service_PID_Types_Count ; i++ )
+		{
+			if (_wcsicmp(pwszMediaType, DVBTChannels_Service_PID_Types_String[i]) == 0)
+			{
+				pStream->Type = (DVBTChannels_Service_PID_Types)i;
+				bFound = TRUE;
+			}
+		}
+
+		if (bFound)
+			pService->AddStream(pStream);
+		else
+		{
+			delete pStream;
+			(log << "Failed to find a matching Media Type\n").Write();
+			break; 
+		}
+
+		//MPEG-2 Demultiplexer (DW's)
+		if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.demuxclsid, &piBDAMpeg2Demux, L"DW MPEG-2 Demultiplexer"))
+		{
+			(log << "Failed to add Test MPEG-2 Demultiplexer to the graph: " << hr << "\n").Write();
+			break;
+		}
+
+		if FAILED(hr = AddDemuxPins(pService, piBDAMpeg2Demux, NULL, TRUE))
+		{
+			(log << "Failed to Add Demux Pins and render the graph\n").Write();
+			break;
+		}
+
+		break;
+	};
+	 
+	if FAILED(hr)
+	{
+		(log << "Failed Building the Decoder Test Graph\n").Write();
+	}
+	else
+		(log << "Finished Building the Decoder Test Graph Ok\n").Write();
+
+	delete pService;
+
+	(log << "Cleaning up the Decoder Test Graph\n").Write();
+
+	HRESULT hr2 = m_pDWGraph->Stop();
+	if FAILED(hr2)
+		(log << "Failed to stop DWGraph\n").Write();
+
+	if (piBDAMpeg2Demux)
+		piBDAMpeg2Demux.Release();
+
+	hr2 = graphTools.DisconnectAllPins(m_piGraphBuilder);
+	if FAILED(hr2)
+		(log << "Failed to disconnect pins: " << hr << "\n").Write(hr);
+
+	hr2 = graphTools.RemoveAllFilters(m_piGraphBuilder);
+	if FAILED(hr2)
+		(log << "Failed to remove filters: " << hr << "\n").Write(hr);
+
+	indent.Release();
+	(log << "Finished Cleaning up the Decoder Test Graph\n").Write();
+
+	return hr;
 }
 
 HRESULT TSFileSource::LoadMediaStreamType(USHORT pid, LPWSTR pwszMediaType, DVBTChannels_Stream** pStream )

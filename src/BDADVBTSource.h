@@ -85,6 +85,7 @@ protected:
 	void UpdateCurrentItemList(void);
 	virtual HRESULT RenderChannel(int frequency, int bandwidth);
 
+	HRESULT ChangeChannel(int frequency, int bandwidth);
 	HRESULT LoadTuner();
 	HRESULT UnloadTuner();
 	HRESULT LoadSink();

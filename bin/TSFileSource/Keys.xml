@@ -9,7 +9,8 @@
   <Key code='U'>				GetStreamList() ShowMenu("StreamList")</>
   <Key code='F'>				GetFilterList() ShowMenu("FilterList")</>
   <Key code='K'>				ExitMenu(-1) ShowMenu("TVMenu")</>
-
+  <Key code='Q'>				MinimiseDisplay()</>
+ 
   <!-- keyboard numbers -->
   <Key code='0'>				SeekTo(100)</>
   <Key code='1'>				SeekTo(10)</>
