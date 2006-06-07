@@ -1323,7 +1323,15 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, DVBTChann
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
 
-			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
+			if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+			{
+				if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PAYLOAD))
+				{
+					(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+				}
+			}
+			else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 			{
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope

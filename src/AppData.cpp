@@ -777,6 +777,14 @@ HRESULT AppData::LoadSettings()
 
 	if FAILED(hr = file.Load(filename))
 	{
+		USES_CONVERSION;
+		TCHAR szFilename[MAX_PATH];
+		sprintf(szFilename, "%s\\Filters\\DWRegister.bat", W2CA(application.appPath));
+		(log << "Now Running the Filter Register bat File: " << szFilename << "\n").Show();
+		hr = WinExec(szFilename, SW_SHOW);
+		if (hr <= 31)
+			(log << "Could not Run the Filter Register bat File: " << szFilename << "\n").Show(hr);
+
 		//return (log << "Could not load channels file: " << m_filename << "\n").Show(hr);
 		return hr;
 	}

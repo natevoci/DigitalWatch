@@ -784,7 +784,10 @@ HRESULT BDADVBTSinkFile::GetCurFile(LPOLESTR *ppszFileName)
 		return E_INVALIDARG;
 
 	if(*ppszFileName)
+	{
 		delete[] *ppszFileName;
+		*ppszFileName = NULL;
+	}
 
 	if (m_intSinkType == 1)
 	{

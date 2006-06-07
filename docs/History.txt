@@ -29,6 +29,8 @@ nate:
 
 bear:
 Changes:
+- Fixed an issue with the Teletext pin data being set to the wrong media type. 
+- Fixed some minor bugs.
 - Added some Minimise/Close/Open Display() functions to the file player.
 - Fixed a problem with the diplay resizing causing the Watch TV Mode Stopping the graph.
 - Added the TSFileSource's Demux class to enable channel zapping in Watch TV Mode.

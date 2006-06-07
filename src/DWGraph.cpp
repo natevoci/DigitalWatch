@@ -323,6 +323,9 @@ HRESULT DWGraph::Start(IGraphBuilder *piGraphBuilder, BOOL bSink)
 		}
 		else
 			(log << "Failed to get filter info: " << hr << "\n").Write();
+
+		break;
+
 	} while (FALSE);
 
 	indent.Release();

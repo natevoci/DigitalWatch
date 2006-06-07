@@ -101,22 +101,40 @@ HRESULT BDADVBTSinkTShift::DestroyAll()
 	RemoveSinkFilters();
 
 	if(m_pTelexFileName)
+	{
 		delete[] m_pTelexFileName;
+		m_pTelexFileName = NULL;
+	}
 
 	if(m_pVideoFileName)
+	{
 		delete[] m_pVideoFileName;
+		m_pVideoFileName = NULL;
+	}
 
 	if(m_pAudioFileName)
+	{
 		delete[] m_pAudioFileName;
+		m_pAudioFileName = NULL;
+	}
 
 	if(m_pMPGFileName)
+	{
 		delete[] m_pMPGFileName;
+		m_pMPGFileName = NULL;
+	}
 
 	if(m_pTSFileName)
+	{
 		delete[] m_pTSFileName;
+		m_pTSFileName = NULL;
+	}
 
 	if(m_pFTSFileName)
+	{
 		delete[] m_pFTSFileName;
+		m_pFTSFileName = NULL;
+	}
 
 	m_piMediaControl.Release();
 

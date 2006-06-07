@@ -51,6 +51,7 @@ TSFileSource::TSFileSource() : m_strSourceType(L"TSFileSource")
 TSFileSource::~TSFileSource()
 {
 	Destroy();
+
 	if (m_pFileName)
 		delete[] m_pFileName;
 }
@@ -426,7 +427,6 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		// Setup the OPENFILENAME structure
 		OPENFILENAME ofn = { sizeof(OPENFILENAME), g_pData->hWnd, NULL,
 							 TEXT("Transport Stream Files (*.mpg, *.ts, *.tsbuffer, *.vob)\0*.mpg;*.ts;*.tsbuffer;*.vob\0All Files\0*.*\0\0"), NULL,
-//							 TEXT("Transport Stream Files (*.ts, *.tsbuffer)\0*.ts;*.tsbuffer\0All Files\0*.*\0\0"), NULL,
 							 0, 1,
 							 ptFilename, MAX_PATH,
 							 NULL, 0,
@@ -614,7 +614,6 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
 
-
 	// If it's a .tsbuffer file then seek to the end
 	long length = wcslen(pFilename);
 	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0) && timeshiftService)
@@ -640,7 +639,10 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		if (pFilename != m_pFileName)
 		{
 			if (m_pFileName)
+			{
 				delete[] m_pFileName;
+				m_pFileName = NULL;
+			}
 		}
 
 		if (!m_pFileName)
@@ -758,6 +760,9 @@ HRESULT TSFileSource::LoadResumePosition()
 
 HRESULT TSFileSource::SaveResumePosition()
 {
+	if (!m_pDWGraph->IsPlaying())
+		return S_FALSE;
+
 	HRESULT hr = NOERROR;
 	long lPosition = 0;
 
@@ -969,7 +974,15 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 				}
 
-				if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
+				if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+				{
+					if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PAYLOAD))
+					{
+						(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+						continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+					}
+				}
+				else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 				{
 					(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
