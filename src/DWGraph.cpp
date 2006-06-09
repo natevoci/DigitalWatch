@@ -158,6 +158,7 @@ BOOL DWGraph::Initialise()
 	g_pOSD->Data()->AddList(&m_decoders);
 
 	m_mediaTypes.SetDecoders(&m_decoders);
+	m_mediaTypes.Initialise(m_piGraphBuilder, g_pData);
 	swprintf((LPWSTR)&file, L"%sMediaTypes.xml", g_pData->application.appPath);
 	if FAILED(hr = m_mediaTypes.Load((LPWSTR)&file))
 		return (log << "Failed to load mediatypes: " << hr << "\n").Write(hr);

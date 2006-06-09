@@ -29,6 +29,7 @@
 #include <vector>
 #include "IDWOSDDataList.h"
 #include "FilterGraphTools.h"
+#include "AppData.h"
 
 class DWMediaTypes;
 class DWMediaType : public LogMessageCaller
@@ -65,7 +66,7 @@ public:
 
 	HRESULT Destroy();
 	virtual void SetLogCallback(LogMessageCallback *callback);
-	HRESULT Initialise(IGraphBuilder *piGraphBuilder, LPWSTR listName);
+	HRESULT Initialise(IGraphBuilder *piGraphBuilder, AppData *pData, LPWSTR listName = NULL);
 
 	void SetDecoders(DWDecoders *pDecoders);
 
@@ -75,7 +76,7 @@ public:
 	HRESULT SetMediaTypeDecoder(int index, LPWSTR decoderName, BOOL bKeep = TRUE);
 	HRESULT MakeFile(LPWSTR filename);
 	void SetListItem(LPWSTR name, LPWSTR value, int index = -1);
-	DWDecoder *GetAutoDecoder(DWMediaType *mediaType);
+	void GetAutoDecoder(DWMediaType *mediaType);
 
 	DWMediaType *FindMediaType(AM_MEDIA_TYPE *mt);
 
@@ -89,6 +90,7 @@ private:
 
 	LPWSTR m_filename;
 	LPWSTR m_dataListName;
+	AppData *g_pData;
 };
 
 #endif

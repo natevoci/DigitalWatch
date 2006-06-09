@@ -1,9 +1,19 @@
+<!-- ******************** SETTINGS.XML DESCRIPTION FILE *************************-->
+
 <Application>
 	<MultipleInstances> True | False </MultipleInstances> On opening the second Instance the video render will be forced to VMR9Windowless.
 	<DisableScreenSaver> True | False </DisableScreenSaver>
 	<Priority> RealTime | High | AboveNormal | Normal | BelowNormal | Low </Priority>
-	<AddToROT> True | False </AddToROT>
+	<AddToROT>default False | True</AddToROT>
 	<MultiCard>default False | True</MultiCard>If True, enables the Application to use the spare DVBT cards to create multiple Sink graphs so you can surf between them in TV TimeShift or TV Recording.
+	<CycleCards>True | False</CycleCards>
+	<Zapping>default True | False</Zapping>
+	<RememberLastService>default True | False</RememberLastService>
+	<ResumeLastTime>default True | False</ResumeLastTime>
+	<ResumeSize>50</ResumeSize>
+	<LastServiceCmd>4115:1284:12840/1344</LastServiceCmd>
+	<LongNetworkName>default False | True</LongNetworkName>
+	<DecoderTest>default True | False</DecoderTest>
 </Application>
 
 <Window>
@@ -23,6 +33,7 @@
 		Setting this to true will mean that the <Position> and <Size> values will be updated each time DW exits
 	</RememberWindowPosition>
 	<QuietOnMinimise>default False | True</QuietOnMinimise> If true will cause the application to go quiet if it is minimised. 
+	<CloseBuffersOnMinimise>True</CloseBuffersOnMinimise> Closes any sink graphs that are not current on minimise, releases card resources.
 </Window>
 
 <Audio>

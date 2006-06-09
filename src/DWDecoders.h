@@ -78,6 +78,7 @@ public:
 	HRESULT Load(LPWSTR filename);
 
 	DWDecoder *Item(LPWSTR pName);
+	DWDecoder *Item(int index);
 
 private:
 	CComPtr <IGraphBuilder> m_piGraphBuilder;

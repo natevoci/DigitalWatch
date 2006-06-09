@@ -1,16 +1,16 @@
-<!--
-  -- Video Decoders
-  -->
-<Decoder name="Mpeg2Dec Video Decoder">
-	<MediaType name="MPEG2 Video" />
-	
-    <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" />
-    <InputFilter name="Mpeg2Dec Video Decoder" />
-    <VideoRenderer name="Overlay Mixer" />
+<!-- ******************** DECODER.XML DESCRIPTION FILE *************************-->
 
-    <Connect>
-    	<From name="Mpeg2Dec Video Decoder" />
-    	<To name="Overlay Mixer" />
+
+<Decoder name="Mpeg2Dec Video Decoder"> <!--Make up a name for the decoder, do not use "." or "/" etc, "-" are ok  -->
+	<MediaType name="MPEG2 Video" /> <!--Set this the media type that the decoder will use to connect-->
+	
+    <LoadFilter clsid="{39F498AF-1A09-4275-B193-673B0BA3D478}" name="Mpeg2Dec Video Decoder" /> <!--Insert the clsid and a name for the decoder to be used, This name is the reference in the connection-->
+    <InputFilter name="Mpeg2Dec Video Decoder" /> <!--Set this to the decoder you want to connect directly to the MS Demux filter Output Pin, connection will be tested & made if it succeeds-->
+    <VideoRenderer name="Overlay Mixer" /> <!--Set this to the output render you require to use-->
+
+    <Connect> <!--This is when we connect the decoder output pin to the render-->
+    	<From name="Mpeg2Dec Video Decoder" /> <!--Set this to the name of your decoder in the loadfilter line above, pin names can also be specified-->
+    	<To name="Overlay Mixer" /> <!--name of the render, pin names can also be specified-->
    	</>
 </Decoder>
 
@@ -605,7 +605,7 @@
   -- Teletext Decoders
   -->
 <Decoder name="DVBTeletextSubtitles">
-	<!--<MediaType name="Teletext" />-->
+	<MediaType name="Teletext" />
 	
     <LoadFilter clsid="{56CEFDAD-FDF1-4C89-9082-4F3A7424AD81}" name="DVBTeletextSubtitles" />
     <LoadFilter clsid="{1643E180-90F5-11CE-97D5-00AA0055595A}" name="Color Space Converter" />
@@ -622,7 +622,7 @@
 </Decoder>
 
 <Decoder name="DVBTeletextSubtitles - VMR9">
-	<!--<MediaType name="Teletext" />-->
+	<MediaType name="Teletext" />
 	
     <LoadFilter clsid="{56CEFDAD-FDF1-4C89-9082-4F3A7424AD81}" name="DVBTeletextSubtitles" />
     <LoadFilter clsid="{1643E180-90F5-11CE-97D5-00AA0055595A}" name="Color Space Converter" />

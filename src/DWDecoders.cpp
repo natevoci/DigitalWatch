@@ -778,3 +778,20 @@ DWDecoder *DWDecoders::Item(LPWSTR pName)
 	}
 	return NULL;
 }
+
+DWDecoder *DWDecoders::Item(int index)
+{
+	CAutoLock decodersLock(&m_decodersLock);
+
+	int count = 0;
+	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
+	for ( ; it < m_decoders.end() ; it++ )
+	{
+		DWDecoder *item = *it;
+		if (index == count)
+			return item;
+
+		count++;
+	}
+	return NULL;
+}

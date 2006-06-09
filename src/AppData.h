@@ -72,6 +72,7 @@ public:
 			LPWSTR currentServiceCmd;
 			BOOL longNetworkName;
 			BOOL decoderTest;
+			BOOL autoDecoderTest;
 			//LPWSTR logFilename;
 		} application;
 
@@ -188,6 +189,7 @@ public:
 		{
 			BOOL multiple;
 			long multicard;
+			long zapping;
 		} application;
 
 		struct VALUES_WINDOW

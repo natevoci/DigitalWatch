@@ -26,6 +26,7 @@
 #include "Globals.h"
 
 #include "XMLDocument.h"
+#include <shlobj.h>
 
 #ifndef ABOVE_NORMAL_PRIORITY_CLASS
 #define ABOVE_NORMAL_PRIORITY_CLASS 0x00008000
@@ -63,9 +64,9 @@ AppData::AppData()
 	settings.application.multiple = FALSE;
 	settings.application.disableScreenSaver = TRUE;
 	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
-	settings.application.addToROT = TRUE;
-	settings.application.multicard = FALSE;
-	settings.application.cyclecards = FALSE;
+	settings.application.addToROT = FALSE;
+	settings.application.multicard = TRUE;
+	settings.application.cyclecards = TRUE;
 	settings.application.zapping = TRUE;
 	settings.application.rememberLastService = TRUE;
 	settings.application.resumeLastTime = TRUE;
@@ -75,7 +76,8 @@ AppData::AppData()
 	settings.application.currentServiceCmd = new wchar_t[MAX_PATH];
 	wcscpy(settings.application.currentServiceCmd, L"");
 	settings.application.longNetworkName = FALSE;
-	settings.application.decoderTest = FALSE;
+	settings.application.decoderTest = TRUE;
+	settings.application.autoDecoderTest = TRUE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
@@ -114,11 +116,19 @@ AppData::AppData()
 	settings.capture.fileName = new wchar_t[MAX_PATH];
 	wcscpy(settings.capture.fileName, L"");
 	settings.capture.folder = new wchar_t[MAX_PATH];
-	wcscpy(settings.capture.folder, L"");
+	swprintf(settings.capture.folder, L"%s%s", application.appPath, L"Captures");
+	if (CreateDirectoryW(settings.capture.folder, NULL) < 0)
+		(log << "Failed to Create the Capture directory: " << settings.capture.folder << "\n").Show();
+
+//	wcscpy(settings.capture.folder, L"");
 	settings.capture.format = 2;
 
 	settings.timeshift.folder = new wchar_t[MAX_PATH];
-	wcscpy(settings.timeshift.folder, L"");
+	swprintf(settings.timeshift.folder, L"%s%s", application.appPath, L"TimeShifting");
+	if (CreateDirectoryW(settings.timeshift.folder, NULL) < 0)
+		(log << "Failed to Create the TimeShifting directory: " << settings.timeshift.folder << "\n").Show();
+
+	//	wcscpy(settings.timeshift.folder, L"");
 	settings.timeshift.resume = TRUE;
 	settings.timeshift.dlimit = 0;
 	settings.timeshift.flimit = 0;
@@ -163,6 +173,7 @@ AppData::AppData()
 	//VALUES
 	values.application.multiple = FALSE; // This gets set if you have one or more instance running.
 	values.application.multicard = settings.application.multicard;
+	values.application.zapping = settings.application.zapping;
 	values.window.bFullScreen = settings.window.startFullscreen;
 	values.window.bAlwaysOnTop = settings.window.startAlwaysOnTop;
 
@@ -366,6 +377,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"decoderTest") == 0)
 				return GetBool(settings.application.decoderTest);
+
+			if (_wcsicmp(selection, L"autoDecoderTest") == 0)
+				return GetBool(settings.application.autoDecoderTest);
 
 			return NULL;
 		}
@@ -780,10 +794,10 @@ HRESULT AppData::LoadSettings()
 		USES_CONVERSION;
 		TCHAR szFilename[MAX_PATH];
 		sprintf(szFilename, "%s\\Filters\\DWRegister.bat", W2CA(application.appPath));
-		(log << "Now Running the Filter Register bat File: " << szFilename << "\n").Show();
+		(log << "About to run the Filter Register bat File: " << szFilename << "\n").Show();
 		hr = WinExec(szFilename, SW_SHOW);
-		if (hr <= 31)
-			(log << "Could not Run the Filter Register bat File: " << szFilename << "\n").Show(hr);
+		if (hr <= 31 || hr < 0)
+			(log << "Failed to Run the Filter Register bat File: " << szFilename << "\n").Show(hr);
 
 		//return (log << "Could not load channels file: " << m_filename << "\n").Show(hr);
 		return hr;
@@ -887,6 +901,11 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"DecoderTest") == 0)
 				{
 					settings.application.decoderTest = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"AutoDecoderTest") == 0)
+				{
+					settings.application.autoDecoderTest = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
 			}
@@ -1104,7 +1123,11 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"Folder") == 0)
 				{
 					if (pSubElement->value)
+					{
 						wcscpy(settings.capture.folder, pSubElement->value);
+						if (CreateDirectoryW(settings.capture.folder, NULL) < 0)
+							(log << "Failed to Create the Capture directory: " << settings.capture.folder << "\n").Show();
+					}
 
 					continue;
 				}
@@ -1195,8 +1218,11 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"Folder") == 0)
 				{
 					if (pSubElement->value)
+					{
 						wcscpy(settings.timeshift.folder, pSubElement->value);
-
+						if (CreateDirectoryW(settings.timeshift.folder, NULL) < 0)
+							(log << "Failed to Create the TimeShifting directory: " << settings.timeshift.folder << "\n").Show();
+					}
 					continue;
 				}
 			}
@@ -1389,6 +1415,7 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"LastServiceCmd", settings.application.lastServiceCmd));
 		pApplication->Elements.Add(new XMLElement(L"LongNetworkName", (settings.application.longNetworkName ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"DecoderTest", (settings.application.decoderTest ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"AutoDecoderTest", (settings.application.autoDecoderTest ? L"True" : L"False")));
 	}
 
 	XMLElement *pWindow = new XMLElement(L"Window");

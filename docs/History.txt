@@ -29,6 +29,9 @@ nate:
 
 bear:
 Changes:
+- Added folder creation for the capture & timeshifting directories.
+- Added in Auto decoder testing on first run.
+- Fixed a problem with adding networks by turning off the channel zapping mode while updating.
 - Fixed an issue with the Teletext pin data being set to the wrong media type. 
 - Fixed some minor bugs.
 - Added some Minimise/Close/Open Display() functions to the file player.

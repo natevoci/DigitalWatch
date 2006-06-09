@@ -1280,6 +1280,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.application.zapping = g_pData->GetBool(command->LHS.Parameter[0]);
+		g_pData->values.application.zapping = g_pData->settings.application.zapping;
 		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetRememberLastService") == 0)
@@ -1333,6 +1334,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		g_pData->settings.application.decoderTest = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetAutoDecoderTest") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.autoDecoderTest = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetDSNetworkFormat") == 0)

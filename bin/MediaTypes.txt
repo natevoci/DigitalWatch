@@ -1,37 +1,54 @@
+<!-- ******************** MEDIATYPES.XML DESCRIPTION FILE *************************-->
+
 <!-- DigitalWatch Media Types File -->
 <MediaType name="MPEG2 Video">
 	<MajorType  clsid="{73646976-0000-0010-8000-00AA00389B71}" /> <!--KSDATAFORMAT_TYPE_VIDEO-->
 	<SubType    clsid="{E06D8026-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--MEDIASUBTYPE_MPEG2_VIDEO-->
 	<FormatType clsid="{E06D80E3-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--FORMAT_MPEG2Video-->
-	<Decoder name="Mpeg2Dec Video Decoder" />
+	<Decoder name="Name" /> <!--Name of the decoder for this media type-->
+</MediaType>
+
+<MediaType name="H264 Video">
+	<MajorType clsid="{73646976-0000-0010-8000-00AA00389B71}" /> <!--KSDATAFORMAT_TYPE_VIDEO-->
+	<SubType clsid="{8D2D71CB-243F-45E3-B2D8-5FD7967EC09B}" /> <!--H264_SubType-->
+	<FormatType clsid="{05589F80-C356-11CE-BF01-00AA0055595A}" /> <!--FORMAT_VideoInfo-->
+	<Decoder name="Name" /> <!--Name of the decoder for this media type-->
 </MediaType>
 
 <MediaType name="MPEG Audio">
 	<MajorType  clsid="{73647561-0000-0010-8000-00AA00389B71}" /> <!--MEDIATYPE_Audio-->
 	<SubType    clsid="{00000050-0000-0010-8000-00AA00389B71}" /> <!--MEDIASUBTYPE_MPEG1AudioPayload-->
 	<FormatType clsid="{05589F81-C356-11CE-BF01-00AA0055595A}" /> <!--FORMAT_WaveFormatEx-->
-	<Decoder name="ffdshow Audio Decoder" />
+	<Decoder name="Name" /> <!--Name of the decoder for this media type-->
 </MediaType>
 
 <MediaType name="MPEG2 Audio">
 	<MajorType  clsid="{73647561-0000-0010-8000-00AA00389B71}" /> <!--KSDATAFORMAT_TYPE_AUDIO-->
 	<SubType    clsid="{E06D802B-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--MEDIASUBTYPE_MPEG2_AUDIO-->
 	<FormatType clsid="{05589F81-C356-11CE-BF01-00AA0055595A}" /> <!--FORMAT_WaveFormatEx-->
-	<Decoder name="ffdshow Audio Decoder" />
+	<Decoder name="Name" /> <!--Name of the decoder for this media type-->
 </MediaType>
 
 <MediaType name="AC3 Audio">
 	<MajorType  clsid="{73647561-0000-0010-8000-00AA00389B71}" /> <!--MEDIATYPE_Audio-->
 	<SubType    clsid="{E06D802C-DB46-11CF-B4D1-00805F6CBBEA}" /> <!--MEDIATYPE_DOLBY_AC3-->
 	<FormatType clsid="{05589F81-C356-11CE-BF01-00AA0055595A}" /> <!--FORMAT_WaveFormatEx-->
-	<Decoder name="ffdshow Audio Decoder" />
+	<Decoder name="Name" /> <!--Name of the decoder for this media type-->
+</MediaType>
+
+
+<MediaType name="AAC Audio">
+	<MajorType clsid="{73647561-0000-0010-8000-00AA00389B71}" /> <!--MEDIATYPE_Audio-->
+	<SubType clsid="{000000FF-0000-0010-8000-00AA00389B71}" /> <!--MEDIASUBTYPE_AAC-->
+	<FormatType clsid="{05589F81-C356-11CE-BF01-00AA0055595A}" /> <!--FORMAT_WaveFormatEx-->
+	<Decoder name="Name" /> <!--Name of the decoder for this media type-->
 </MediaType>
 
 <MediaType name="Teletext">
 	<MajorType  clsid="{455F176C-4B06-47CE-9AEF-8CAEF73DF7B5}" /> <!--KSDATAFORMAT_TYPE_MPEG2_SECTIONS-->
 	<Subtype    clsid="{E436EB8E-524F-11CE-9F53-0020AF0BA770}" /> <!--KSDATAFORMAT_SUBTYPE_NONE-->
 	<FormatType clsid="{0F6417D6-C318-11D0-A43F-00A0C9223196}" /> <!--KSDATAFORMAT_SPECIFIER_NONE-->
-	<!--<Decoder name="DVBTeletextSubtitles" />-->
+	<Decoder name="Name" /> <!--Name of the decoder for this media type-->
 </MediaType>
 
 <!-- TODO MPEG4 Video -->

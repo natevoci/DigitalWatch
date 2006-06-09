@@ -386,6 +386,9 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount >= 2)
 			n2 = StringToLong(command->LHS.Parameter[1]);
 
+		//Turn off channel zapping
+		g_pData->values.application.zapping = FALSE;
+
 		return SetFrequency(n1, n2);
 	}
 	else if (_wcsicmp(pCurr, L"UpdateChannels") == 0)
@@ -393,7 +396,15 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount != 0)
 			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		return UpdateChannels();
+		//Turn off channel zapping
+		g_pData->values.application.zapping = FALSE;
+
+		HRESULT hr =  UpdateChannels();
+
+		//restore channel zapping
+		g_pData->values.application.zapping = g_pData->settings.application.zapping;
+
+		return hr;
 	}
 	else if (_wcsicmp(pCurr, L"ChangeFrequencySelectionOffset") == 0)
 	{
@@ -1330,7 +1341,7 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 	HRESULT hr;
 
 	//Check the requested Service is already in the Network if FULL Mux
-	if(g_pData->settings.application.zapping && m_pCurrentService && m_pCurrentTuner)
+	if(g_pData->values.application.zapping && m_pCurrentService && m_pCurrentTuner)
 	{
 		(log << "Change Channel using Zapping mode\n").Write();
 		LogMessageIndent indent(&log);
