@@ -844,7 +844,7 @@ HRESULT TSFileSource::UnloadFilters()
 	return S_OK;
 }
 
-HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, BOOL bRender)
+HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, BOOL bRender, BOOL bForceConnect)
 {
 	if (pService == NULL)
 	{
@@ -878,25 +878,61 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 
 	// render video
 	hr = AddDemuxPinsVideo(pService, pmt, &videoStreamsRendered, bRender);
+	if(FAILED(hr) && bForceConnect)
+		return hr;
 
 	// render h264 video if no mpeg2 video was rendered
 	if (videoStreamsRendered == 0)
+	{
 		hr = AddDemuxPinsH264(pService, pmt, &videoStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render mpeg4 video if no mpeg2 or h264 video was rendered
+	if (videoStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsMpeg4(pService, pmt, &videoStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
 
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
+	{
 		hr = AddDemuxPinsTeletext(pService, pmt, &teletextStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
 
-	// render mp2 audio
-	hr = AddDemuxPinsMp2(pService, pmt, &audioStreamsRendered, bRender);
+	// render mp1 audio
+	hr = AddDemuxPinsMp1(pService, pmt, &audioStreamsRendered, bRender);
+	if(FAILED(hr) && bForceConnect)
+		return hr;
 
-	// render ac3 audio if no mp2 was rendered
+	// render mp2 audio if no mp1 was rendered
 	if (audioStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsMp2(pService, pmt, &audioStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render ac3 audio if no mp1/2 was rendered
+	if (audioStreamsRendered == 0)
+	{
 		hr = AddDemuxPinsAC3(pService, pmt, &audioStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
 
-	// render aac audio if no ac3 or mp2 was rendered
+	// render aac audio if no ac3 or mp1/2 was rendered
 	if (audioStreamsRendered == 0)
+	{
 		hr = AddDemuxPinsAAC(pService, pmt, &audioStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
 
 	if (m_piMpeg2Demux)
 		m_piMpeg2Demux.Release();
@@ -1090,6 +1126,20 @@ HRESULT TSFileSource::AddDemuxPinsH264(DVBTChannels_Service* pService, AM_MEDIA_
 	AM_MEDIA_TYPE mediaType;
 	graphTools.GetH264Media(&mediaType);
 	return AddDemuxPins(pService, h264, L"Video", &mediaType, pmt, streamsRendered, bRender);
+}
+
+HRESULT TSFileSource::AddDemuxPinsMpeg4(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetMpeg4Media(&mediaType);
+	return AddDemuxPins(pService, mpeg4, L"Video", &mediaType, pmt, streamsRendered, bRender);
+}
+
+HRESULT TSFileSource::AddDemuxPinsMp1(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetMP1Media(&mediaType);
+	return AddDemuxPins(pService, mp1, L"Audio", &mediaType, pmt, streamsRendered, bRender);
 }
 
 HRESULT TSFileSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
@@ -1398,6 +1448,8 @@ HRESULT TSFileSource::TestDecoderSelection(LPWSTR pwszMediaType)
 		return hr;
 	}
 	
+	g_pData->application.forceConnect = TRUE;
+
 	DVBTChannels_Service* pService = new DVBTChannels_Service();
 	DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
 
@@ -1432,11 +1484,12 @@ HRESULT TSFileSource::TestDecoderSelection(LPWSTR pwszMediaType)
 			break;
 		}
 
-		if FAILED(hr = AddDemuxPins(pService, piBDAMpeg2Demux, NULL, TRUE))
+		if FAILED(hr = AddDemuxPins(pService, piBDAMpeg2Demux, NULL, TRUE, TRUE))
 		{
 			(log << "Failed to Add Demux Pins and render the graph\n").Write();
 			break;
 		}
+
 
 		break;
 	};
@@ -1466,6 +1519,8 @@ HRESULT TSFileSource::TestDecoderSelection(LPWSTR pwszMediaType)
 	hr2 = graphTools.RemoveAllFilters(m_piGraphBuilder);
 	if FAILED(hr2)
 		(log << "Failed to remove filters: " << hr << "\n").Write(hr);
+
+	g_pData->application.forceConnect = FALSE;
 
 	indent.Release();
 	(log << "Finished Cleaning up the Decoder Test Graph\n").Write();

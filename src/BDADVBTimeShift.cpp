@@ -2699,6 +2699,14 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 			return hr;
 	}
 
+	// render mpeg4 video if no mpeg2 or h264 video was rendered
+	if (videoStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsMpeg4(pService, &videoStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
 	{
@@ -2707,12 +2715,20 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 			return hr;
 	}
 
-	// render mp2 audio
-	hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+	// render mp1 audio
+	hr = AddDemuxPinsMp1(pService, &audioStreamsRendered);
 	if(FAILED(hr) && bForceConnect)
 		return hr;
 
-	// render ac3 audio if no mp2 was rendered
+	// render mp2 audio if no mp1 was rendered
+	if (audioStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render ac3 audio if no mp1/2 was rendered
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
@@ -2720,7 +2736,7 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 			return hr;
 	}
 
-	// render aac audio if no ac3 or mp2 was rendered
+	// render aac audio if no ac3 or mp1/2 was rendered
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
@@ -2728,11 +2744,11 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 			return hr;
 	}
 
-	indent.Release();
-	(log << "Finished Adding Demux Pins\n").Write();
-
 	if (m_piMpeg2Demux)
 		m_piMpeg2Demux.Release();
+
+	indent.Release();
+	(log << "Finished Adding Demux Pins\n").Write();
 
 	return S_OK;
 }
@@ -2833,6 +2849,21 @@ HRESULT BDADVBTimeShift::AddDemuxPinsH264(DVBTChannels_Service* pService, long *
 	AM_MEDIA_TYPE mediaType;
 	graphTools.GetH264Media(&mediaType);
 	return AddDemuxPins(pService, h264, L"Video", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTimeShift::AddDemuxPinsMpeg4(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetMpeg4Media(&mediaType);
+	return AddDemuxPins(pService, mpeg4, L"Video", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTimeShift::AddDemuxPinsMp1(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+	graphTools.GetMP1Media(&mediaType);
+	return AddDemuxPins(pService, mp1, L"Audio", &mediaType, streamsRendered);
 }
 
 HRESULT BDADVBTimeShift::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
@@ -3224,6 +3255,7 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 
 	CComPtr <IBaseFilter> piBDAMpeg2Demux;
 	DWORD rotEntry = 0;
+	g_pData->application.forceConnect = TRUE;
 
 	while (TRUE)
 	{
@@ -3287,6 +3319,8 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 	hr2 = graphTools.RemoveAllFilters(m_piGraphBuilder);
 	if FAILED(hr2)
 		(log << "Failed to remove filters: " << hr << "\n").Write(hr);
+
+	g_pData->application.forceConnect = FALSE;
 
 	indent.Release();
 	(log << "Finished Cleaning up the Decoder Test Graph\n").Write();

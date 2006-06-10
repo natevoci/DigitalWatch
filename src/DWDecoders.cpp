@@ -78,7 +78,7 @@ LPWSTR DWDecoder::MaskName()
 	return L"";
 }
 
-HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, BOOL bForceConnect)
+HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin)
 {
 	HRESULT hr;
 
@@ -141,7 +141,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_OverlayMixer, &piOMFilter, pName);
 				if (hr != S_OK)
 				{
-					if(bForceConnect)
+					if(g_pData->application.forceConnect)
 						return (log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Show(hr);
 
 					(log << "Error: Can't Add Overlay Mixer: " << hr << "\n").Write();
@@ -160,7 +160,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 					{
 						DestroyFilter(piGraphBuilder, piOMFilter);
 
-						if(bForceConnect)
+						if(g_pData->application.forceConnect)
 							return (log << "Error: Can't connect to overlay mixer, already be in use " << hr << "\n").Show(hr);
 						else
 							(log << "Error: Can't connect to overlay mixer, already be in use: " << hr << "\n").Write();
@@ -183,7 +183,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 				if (piDDrawExclMode == NULL)
 				{
 					DestroyFilter(piGraphBuilder, piOMFilter);
-					if(bForceConnect)
+					if(g_pData->application.forceConnect)
 						return (log << "Error: Could not QI for IDDrawExclModeVideo\n").Write(hr);
 					else
 						(log << "Error: Could not QI for IDDrawExclModeVideo\n").Write();
@@ -202,7 +202,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
 
-					if(bForceConnect)
+					if(g_pData->application.forceConnect)
 						return (log << "Failed to get OSD Renderer: " << hr << "\n").Write(hr);
 					else
 						(log << "Failed to get OSD Renderer: " << hr << "\n").Write();
@@ -221,7 +221,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
 
-					if(bForceConnect)
+					if(g_pData->application.forceConnect)
 						return (log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write(E_FAIL);
 					else
 						(log << "Failed to cast OSD Renderer as DirectDraw OSD Renderer\n").Write();
@@ -242,7 +242,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
 
-					if(bForceConnect)
+					if(g_pData->application.forceConnect)
 						return (log << "Failed to get overlay callback interface: " << hr << "\n").Write(hr);
 					else
 						(log << "Failed to get overlay callback interface: " << hr << "\n").Write();
@@ -263,7 +263,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
 
-					if(bForceConnect)
+					if(g_pData->application.forceConnect)
 						return (log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Show(hr);
 					else
 						(log << "Error: Failed to set Callback interface on overlay mixer: " << hr << "\n").Write();
@@ -285,7 +285,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
 
-					if(bForceConnect)
+					if(g_pData->application.forceConnect)
 						return (log << "Error: Can't Add Video Renderer: " << hr << "\n").Show(hr);
 					else
 						(log << "Error: Can't Add Video Renderer: " << hr << "\n").Write();
@@ -307,7 +307,7 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 					piDDrawExclMode.Release();
 					DestroyFilter(piGraphBuilder, piOMFilter);
 
-					if(bForceConnect)
+					if(g_pData->application.forceConnect)
 						return (log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Show(hr);
 					else
 						(log << "Error: Can't connect overlay mixer to video renderer: " << hr << "\n").Write();
@@ -342,6 +342,10 @@ HRESULT DWDecoder::AddFilters(IGraphBuilder *piGraphBuilder, IPin *piSourcePin, 
 				hr = graphTools.AddFilter(piGraphBuilder, CLSID_VideoMixingRenderer9, &piVMR9Filter, pName);
 				if (hr != S_OK)
 					return (log << "Error: Can't Add VMR9: " << hr << "\n").Show(hr);
+
+				//Set renderer method to clear overlay first
+				renderMethod = RENDER_METHOD_VMR7;
+				g_pOSD->SetRenderMethod(renderMethod);
 
 				//Set renderer method
 				renderMethod = RENDER_METHOD_VMR9;

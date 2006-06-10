@@ -298,6 +298,42 @@ HRESULT FilterGraphTools::FindPin(IBaseFilter* piSource, LPCWSTR Id, IPin **ppiP
 	return hr;
 }
 
+HRESULT FilterGraphTools::FindAnyPin(IBaseFilter* piSource, LPCWSTR Id, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir)
+{
+	*ppiPin = NULL;
+
+	if (piSource == NULL)
+		return E_FAIL;
+
+	HRESULT hr;
+	CComPtr <IEnumPins> piEnumPins;
+	
+	if SUCCEEDED(hr = piSource->EnumPins( &piEnumPins ))
+	{
+		CComPtr <IPin> piPins;
+		while (piPins.Release(), piEnumPins->Next(1, &piPins, 0) == NOERROR )
+		{
+			PIN_INFO pinInfo;
+			hr = piPins->QueryPinInfo(&pinInfo);
+			if (pinInfo.pFilter)
+				pinInfo.pFilter->Release();	//QueryPinInfo adds a reference to the filter.
+
+			if (!Id || (Id && wcsstr(Id, pinInfo.achName) != NULL))
+			{
+				if ((eRequestedPinDir == REQUESTED_PINDIR_ANY) || (eRequestedPinDir == pinInfo.dir))
+				{
+					*ppiPin = piPins;
+					(*ppiPin)->AddRef();
+					return S_OK;
+				}
+			}
+		}
+	}
+	if (hr == S_OK)
+		return E_FAIL;
+	return hr;
+}
+
 HRESULT FilterGraphTools::FindPinByMediaType(IBaseFilter* piSource, GUID majortype, GUID subtype, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir)
 {
 	*ppiPin = NULL;
@@ -1109,7 +1145,7 @@ HRESULT FilterGraphTools::VetDemuxPin(IPin* pIPin, ULONG pid)
 	return S_OK;
 }
 
-HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType)
+HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType, BOOL bForceConnect)
 {
 	if (pService == NULL)
 	{
@@ -1150,25 +1186,61 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<I
 	{
 		// render video
 		hr = AddDemuxPinsVideo(pService, &videoStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
 
 		// render h264 video if no mpeg2 video was rendered
 		if (videoStreamsRendered == 0)
+		{
 			hr = AddDemuxPinsH264(pService, &videoStreamsRendered);
+			if(FAILED(hr) && bForceConnect)
+				return hr;
+		}
+
+		// render mpeg4 video if no mpeg2 or h264 video was rendered
+		if (videoStreamsRendered == 0)
+		{
+			hr = AddDemuxPinsMpeg4(pService, &videoStreamsRendered);
+			if(FAILED(hr) && bForceConnect)
+				return hr;
+		}
 
 		// render teletext if video was rendered
 		if (videoStreamsRendered > 0)
+		{
 			hr = AddDemuxPinsTeletext(pService);
+			if(FAILED(hr) && bForceConnect)
+				return hr;
+		}
 
-		// render mp2 audio
-		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+		// render mp1 audio
+		hr = AddDemuxPinsMp1(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
 
-		// render ac3 audio if no mp2 was rendered
+		// render mp2 audio if no mp1 was rendered
 		if (audioStreamsRendered == 0)
+		{
+			hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+			if(FAILED(hr) && bForceConnect)
+				return hr;
+		}
+
+		// render ac3 audio if no mp1/2 was rendered
+		if (audioStreamsRendered == 0)
+		{
 			hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
+			if(FAILED(hr) && bForceConnect)
+				return hr;
+		}
 
-		// render aac audio if no ac3 or mp2 was rendered
+		// render aac audio if no ac3 or mp1/2 was rendered
 		if (audioStreamsRendered == 0)
+		{
 			hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
+			if(FAILED(hr) && bForceConnect)
+				return hr;
+		}
 	}
 /*
 	//Set reference clock
@@ -1364,6 +1436,20 @@ HRESULT FilterGraphTools::AddDemuxPinsH264(DVBTChannels_Service* pService, long 
 	return AddDemuxPins(pService, h264, L"Video", &mediaType, streamsRendered);
 }
 
+HRESULT FilterGraphTools::AddDemuxPinsMpeg4(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetMpeg4Media(&mediaType);
+	return AddDemuxPins(pService, mpeg4, L"Video", &mediaType, streamsRendered);
+}
+
+HRESULT FilterGraphTools::AddDemuxPinsMp1(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetMP1Media(&mediaType);
+	return AddDemuxPins(pService, mp1, L"Audio", &mediaType, streamsRendered);
+}
+
 HRESULT FilterGraphTools::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
@@ -1383,7 +1469,7 @@ HRESULT FilterGraphTools::AddDemuxPinsAAC(DVBTChannels_Service* pService, long *
 {
 	AM_MEDIA_TYPE mediaType;
 	GetAACMedia(&mediaType);
-	return AddDemuxPins(pService, ac3, L"Audio", &mediaType, streamsRendered);
+	return AddDemuxPins(pService, aac, L"Audio", &mediaType, streamsRendered);
 }
 
 HRESULT FilterGraphTools::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)

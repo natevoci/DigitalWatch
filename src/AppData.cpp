@@ -59,6 +59,7 @@ AppData::AppData()
 	application.appPath = new wchar_t[MAX_PATH];
 	GetCommandPath(application.appPath);
 	application.bCursorVisible = TRUE;
+	application.forceConnect = FALSE;
 
 	//SETTINGS
 	settings.application.multiple = FALSE;

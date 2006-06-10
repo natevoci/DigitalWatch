@@ -466,8 +466,9 @@ HRESULT DWMediaTypes::MakeFile(LPWSTR filename)
 	mt->SetLogCallback(m_pLogCallback);
 	strCopy(mt->index, L"4");
 	strCopy(mt->name, L"MPEG Audio");
-	CLSIDFromString(L"{73647561-0000-0010-8000-00AA00389B71}", &mt->majortype); //MEDIATYPE_Audio
+	CLSIDFromString(L"{05589f81-c356-11ce-bf01-00aa0055595a}", &mt->majortype); //MEDIATYPE_Audio
 	CLSIDFromString(L"{00000050-0000-0010-8000-00AA00389B71}", &mt->subtype); //MEDIASUBTYPE_MPEG1AudioPayload
+//	CLSIDFromString(L"{e436eb81-524f-11ce-9f53-0020af0ba770}", &mt->subtype); //MEDIASUBTYPE_MPEG1Payload
 	CLSIDFromString(L"{05589F81-C356-11CE-BF01-00AA0055595A}", &mt->formattype); //FORMAT_WaveFormatEx
 	m_mediaTypes.push_back(mt);
 	GetAutoDecoder(mt);
@@ -581,6 +582,8 @@ void DWMediaTypes::GetAutoDecoder(DWMediaType *mediaType)
 			return; 
 		}
 
+		g_pData->application.forceConnect = TRUE;
+
 		for ( int i = 0 ; i < m_pDecoders->GetListSize() ; i++ )
 		{
 			DWDecoder *pDecoder = m_pDecoders->Item(i);
@@ -602,9 +605,22 @@ void DWMediaTypes::GetAutoDecoder(DWMediaType *mediaType)
 						break;
 					}
 
-					if FAILED(hr = graphTools.AddDemuxPins(pService, piBDAMpeg2Demux, TRUE))
+					if FAILED(hr = graphTools.AddDemuxPins(pService, piBDAMpeg2Demux, 0, TRUE))
 					{
 						(log << "Failed to Add Demux Pins and render the graph\n").Write();
+						break;
+					}
+
+					CComPtr <IPin> piPin;
+					if FAILED(hr = graphTools.FindAnyPin(piBDAMpeg2Demux, NULL, &piPin, REQUESTED_PINDIR_OUTPUT))
+					{
+						(log << "Failed to find an output pin: " << hr << "\n").Write();
+						break;
+					}
+
+					if FAILED(hr = pDecoder->AddFilters(piGraphBuilder, piPin))
+					{
+						(log << "Failed to render decoder\n").Write();
 						break;
 					}
 
@@ -621,12 +637,12 @@ void DWMediaTypes::GetAutoDecoder(DWMediaType *mediaType)
 					if FAILED(hr)
 						(log << "Failed to remove filters: " << hr << "\n").Write(hr);
 
-					piGraphBuilder.Release();
-
 					if (pDecoder && pDecoder->Name())
 						strCopy(mediaType->decoder, pDecoder->Name());
 					else
 						strCopy(mediaType->decoder, L"None");
+
+					g_pData->application.forceConnect = FALSE;
 
 					(log << "Found a working Decoder: " << name << " for " << mediaType->name << " Media Type has succeeded\n").Write();
 					indent.Release();
@@ -646,8 +662,6 @@ void DWMediaTypes::GetAutoDecoder(DWMediaType *mediaType)
 				hr = graphTools.RemoveAllFilters(piGraphBuilder);
 				if FAILED(hr)
 					(log << "Failed to remove filters: " << hr << "\n").Write(hr);
-
-				piGraphBuilder.Release();
 			}
 		}
 		delete pService;
@@ -655,8 +669,11 @@ void DWMediaTypes::GetAutoDecoder(DWMediaType *mediaType)
 
 	strCopy(mediaType->decoder, L"None");
 
+	g_pData->application.forceConnect = FALSE;
+
 	(log << "Finished Searching for a decoder, None Found.\n").Write();
 	indent.Release();
 
 	return;
 }
+

@@ -130,6 +130,8 @@ protected:
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsH264(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsMpeg4(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsMp1(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, long *streamsRendered = NULL);

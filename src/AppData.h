@@ -51,6 +51,7 @@ public:
 	{
 		LPWSTR appPath;
 		long bCursorVisible;
+		BOOL forceConnect;
 	} application;
 
 	//These values reflect what is stored in the settings file.

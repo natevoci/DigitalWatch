@@ -48,6 +48,7 @@ public:
 	HRESULT EnumPins(IBaseFilter* piSource);
 
 	HRESULT FindPin(IBaseFilter* piSource, LPCWSTR Id, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir = REQUESTED_PINDIR_ANY);
+	HRESULT FindAnyPin(IBaseFilter* piSource, LPCWSTR Id, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir);
 	HRESULT FindPinByMediaType(IBaseFilter* piSource, GUID majortype, GUID subtype, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir = REQUESTED_PINDIR_ANY);
 	HRESULT FindFirstFreePin(IBaseFilter* piSource, IPin **ppiPin, PIN_DIRECTION pinDirection);
 
@@ -78,10 +79,12 @@ public:
 	HRESULT ClearDemuxPids(CComPtr<IBaseFilter>& pFilter);
 	HRESULT ClearDemuxPins(IPin *pIPin);
 	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
-	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0);
+	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, int intPinType = 0, BOOL bForceConnect = FALSE);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_Service_PID_Types streamType, LPWSTR pPinName, AM_MEDIA_TYPE *pMediaType, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsVideo(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsH264(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsMpeg4(DVBTChannels_Service* pService, long *streamsRendered = NULL);
+	HRESULT AddDemuxPinsMp1(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, long *streamsRendered = NULL);
 	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, long *streamsRendered = NULL);

@@ -26,7 +26,6 @@
 #include "TVControl.h"
 #include "DigitalWatchWindow.h"
 #include "DWOnScreenDisplay.h"
-#include "AppDataList.h"
 #include "LogMessage.h"
 #include "LogMessageWriter.h"
 #include "GlobalFunctions.h"

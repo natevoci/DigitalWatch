@@ -29,6 +29,8 @@ nate:
 
 bear:
 Changes:
+- Fixed a problem with testing VRM9 render in the decoder testing.
+- Fixed some issues with the auto decoder test features, will now test correctly.
 - Added folder creation for the capture & timeshifting directories.
 - Added in Auto decoder testing on first run.
 - Fixed a problem with adding networks by turning off the channel zapping mode while updating.

@@ -1074,6 +1074,12 @@ void DVBMpeg2DataParser::ParsePMT(unsigned char *buf, int sectionLength, int ser
 				log.showf("AAC AUDIO       : PID 0x%04x\n", pStream->PID);
 				break;
 			}
+			case 0x10:
+			{
+				pStream->Type = mpeg4;
+				log.showf("MPEG4 VIDEO       : PID 0x%04x\n", pStream->PID);
+				break;
+			}
 			/* fall through */
 			default:
 			{

@@ -1664,6 +1664,14 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 			return hr;
 	}
 
+	// render mpeg4 video if no mpeg2 or h264 video was rendered
+	if (videoStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsMpeg4(pService, &videoStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
 	{
@@ -1672,12 +1680,20 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 			return hr;
 	}
 
-	// render mp2 audio
-	hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+	// render mp1 audio
+	hr = AddDemuxPinsMp1(pService, &audioStreamsRendered);
 	if(FAILED(hr) && bForceConnect)
 		return hr;
 
-	// render ac3 audio if no mp2 was rendered
+	// render mp2 audio if no mp1 was rendered
+	if (audioStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render ac3 audio if no mp1/2 was rendered
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
@@ -1685,7 +1701,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 			return hr;
 	}
 
-	// render aac audio if no ac3 or mp2 was rendered
+	// render aac audio if no ac3 or mp1/2 was rendered
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
@@ -1807,6 +1823,36 @@ HRESULT BDADVBTSource::AddDemuxPinsH264(DVBTChannels_Service* pService, long *st
 	AM_MEDIA_TYPE mediaType;
 	graphTools.GetH264Media(&mediaType);
 	return AddDemuxPins(pService, h264, L"Video", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTSource::AddDemuxPinsMpeg4(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetMpeg4Media(&mediaType);
+	return AddDemuxPins(pService, mpeg4, L"Video", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTSource::AddDemuxPinsMp1(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+	graphTools.GetMP1Media(&mediaType);
+/*
+	//mediaType.majortype = KSDATAFORMAT_TYPE_AUDIO;
+	mediaType.majortype = MEDIATYPE_Audio;
+	mediaType.subtype = MEDIASUBTYPE_MPEG2_AUDIO;
+	//mediaType.subtype = MEDIASUBTYPE_MPEG1AudioPayload;
+	mediaType.bFixedSizeSamples = TRUE;
+	mediaType.bTemporalCompression = 0;
+	mediaType.lSampleSize = 1;
+	mediaType.formattype = FORMAT_WaveFormatEx;
+	mediaType.pUnk = NULL;
+	mediaType.cbFormat = sizeof(MPEG2AudioFormat);
+//	mediaType.cbFormat = sizeof g_MPEG1AudioFormat;
+	mediaType.pbFormat = MPEG2AudioFormat;
+//	mediaType.pbFormat = g_MPEG1AudioFormat;
+*/
+	return AddDemuxPins(pService, mp1, L"Audio", &mediaType, streamsRendered);
 }
 
 HRESULT BDADVBTSource::AddDemuxPinsMp2(DVBTChannels_Service* pService, long *streamsRendered)
@@ -2114,6 +2160,7 @@ HRESULT BDADVBTSource::TestDecoderSelection(LPWSTR pwszMediaType)
 
 	CComPtr <IBaseFilter> piBDAMpeg2Demux;
 	DWORD rotEntry = 0;
+	g_pData->application.forceConnect = TRUE;
 
 	while (TRUE)
 	{
@@ -2177,6 +2224,8 @@ HRESULT BDADVBTSource::TestDecoderSelection(LPWSTR pwszMediaType)
 	hr2 = graphTools.RemoveAllFilters(m_piGraphBuilder);
 	if FAILED(hr2)
 		(log << "Failed to remove filters: " << hr << "\n").Write(hr);
+
+	g_pData->application.forceConnect = FALSE;
 
 	indent.Release();
 	(log << "Finished Cleaning up the Decoder Test Graph\n").Write();
