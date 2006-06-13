@@ -1,0 +1,16 @@
+<!-- Australian Townsville broadcast frequencies
+
+Note: 
+ Some stations broadcast 125 khz above these values
+ For example, channel 9 in Melbourne broadcasts on 191625 rather than 191500
+ Some tuners can cope with the difference but other cannot.
+-->
+
+<!-- Band IV UHF -->
+<Network Frequency="550500" Bandwidth="7" />	<!-- 31 -->
+
+<!-- Band V UHF -->
+<Network Frequency="585500" Bandwidth="7" />	<!-- 36 -->
+<Network Frequency="592500" Bandwidth="7" />	<!-- 37 -->
+<Network Frequency="599500" Bandwidth="7" />	<!-- 38 -->
+<Network Frequency="620500" Bandwidth="7" />	<!-- 41 -->

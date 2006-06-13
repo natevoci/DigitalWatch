@@ -25,8 +25,18 @@
 
 #include "StdAfx.h"
 #include "LogMessage.h"
+#include <vector>
+#include "DWThread.h"
 
-class LogMessageWriter : public LogMessageCallback
+typedef struct LOGINFO
+{
+	LPWSTR pStr;
+	int indent;
+
+} LOGINFO;
+
+
+class LogMessageWriter : public LogMessageCallback, public DWThread
 {
 public:
 	LogMessageWriter();
@@ -34,9 +44,21 @@ public:
 	void SetFilename(LPWSTR filename);
 	virtual void Write(LPWSTR pStr);
 	virtual void Clear();
+	virtual	void SetLogBufferLimit(int logBufferLimit = 0);
+	virtual int GetLogBufferLimit(void);
 private:
 	LPWSTR m_logFilename;
 	CCritSec m_logFileLock;
+
+	BOOL m_WriteThreadActive;
+	int m_LogBufferLimit;
+	std::vector<LOGINFO*> m_Array;
+	CCritSec m_BufferLock;
+
+	void ClearBuffer(void);
+	void ThreadProc(void);
+	void FlushLogBuffer(int logSize = 0);
+
 };
 
 #endif

@@ -1,0 +1,10 @@
+<!-- Australian Hobart broadcast frequencies
+
+<!-- Band III VHF -->
+<Network Frequency="184500" Bandwidth="7" />	<!-- 7  -->
+<Network Frequency="191625" Bandwidth="7" />	<!-- 8  -->
+<Network Frequency="205500" Bandwidth="7" />	<!-- 9A -->
+<Network Frequency="212500" Bandwidth="7" />	<!-- 10 -->
+<Network Frequency="219500" Bandwidth="7" />	<!-- 11 -->
+<Network Frequency="226500" Bandwidth="7" />	<!-- 12 -->
+

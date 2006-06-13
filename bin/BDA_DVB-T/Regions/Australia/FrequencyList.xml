@@ -1,0 +1,10 @@
+<!-- Australian Perth broadcast frequencies
+
+<!-- Band III VHF -->
+<Network Frequency="177500" Bandwidth="7" />	<!-- 6  -->
+<Network Frequency="191500" Bandwidth="7" />	<!-- 8  -->
+<Network Frequency="219500" Bandwidth="7" />	<!-- 11 -->
+<Network Frequency="226500" Bandwidth="7" />	<!-- 12 -->
+
+<!-- Band IV UHF -->
+<Network Frequency="536500" Bandwidth="7" />	<!-- 29 -->

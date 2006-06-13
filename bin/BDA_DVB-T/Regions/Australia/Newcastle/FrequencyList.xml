@@ -1,0 +1,8 @@
+<!-- Australian Newcastle broadcast frequencies
+
+<!-- Band V UHF -->
+<Network Frequency="585500" Bandwidth="7" />	<!-- 36 -->
+<Network Frequency="592500" Bandwidth="7" />	<!-- 37 -->
+<Network Frequency="599500" Bandwidth="7" />	<!-- 38 -->
+<Network Frequency="690500" Bandwidth="7" />	<!-- 51 -->
+<Network Frequency="704500" Bandwidth="7" />	<!-- 53 -->

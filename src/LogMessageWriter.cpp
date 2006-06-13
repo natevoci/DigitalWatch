@@ -31,14 +31,129 @@
 LogMessageWriter::LogMessageWriter()
 {
 	m_logFilename = NULL;
+	m_LogBufferLimit = 0;
+	m_WriteThreadActive = FALSE;
 }
 
 LogMessageWriter::~LogMessageWriter()
 {
 	CAutoLock logFileLock(&m_logFileLock);
+	if (m_WriteThreadActive)
+		StopThread(0);
+
+	FlushLogBuffer();
 
 	if (m_logFilename)
+	{
 		delete[] m_logFilename;
+		m_logFilename = NULL;
+	}
+
+	ClearBuffer();
+}
+
+void LogMessageWriter::ClearBuffer(void)
+{
+	CAutoLock BufferLock(&m_BufferLock);
+	std::vector<LOGINFO*>::iterator it = m_Array.begin();
+	for ( ; it != m_Array.end() ; it++ )
+	{
+		LOGINFO *logInfo = *it;
+		delete[] logInfo->pStr;
+		delete logInfo;
+	}
+	m_Array.clear();
+}
+
+void LogMessageWriter::ThreadProc(void)
+{
+	m_WriteThreadActive = TRUE;
+
+	int threadPriority = GetThreadPriority(GetCurrentThread());
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+	
+	while (!ThreadIsStopping(100))
+	{
+		FlushLogBuffer(m_LogBufferLimit);
+		Sleep(100);
+	}
+
+	m_WriteThreadActive = FALSE;
+
+	return;
+}
+
+void LogMessageWriter::FlushLogBuffer(int logSize)
+{
+	{
+		CAutoLock BufferLock(&m_BufferLock);
+		if (m_Array.size() < logSize)
+			return;
+	}
+
+	::OutputDebugString(TEXT("LogMessageWriter::ThreadProc:Write."));
+	USES_CONVERSION;
+	if (m_logFilename)
+	{
+		LogFileWriter file;
+		if SUCCEEDED(file.Open(m_logFilename, TRUE))
+		{
+			while(TRUE)
+			{
+				LOGINFO *logInfo = NULL;
+				{
+					CAutoLock BufferLock(&m_BufferLock);
+					if (m_Array.size() > 0)
+					{
+						std::vector<LOGINFO*>::iterator it = m_Array.begin();
+						logInfo = *it;
+						m_Array.erase(it);
+					}
+					else
+						break;
+				}
+
+				if (logInfo)
+				{
+					for ( int i=0 ; i<logInfo->indent ; i++ )
+					{
+						file << "  ";
+					}
+					//Write one line at a time so we can do dos style EOL's
+					LPWSTR pCurr = logInfo->pStr;
+					while (pCurr[0] != '\0')
+					{
+						LPWSTR pEOL = wcschr(pCurr, '\n');
+						if (pEOL)
+						{
+							pEOL[0] = '\0';
+							file << pCurr << file.EOL;
+							pEOL[0] = '\n';
+							pCurr = pEOL + 1;
+						}
+						else
+						{
+							file << pCurr;
+							break;
+						}
+					};
+					delete[] logInfo->pStr;
+					delete logInfo;
+				}
+			};
+			file.Close();
+		}
+	}
+}
+
+void LogMessageWriter::SetLogBufferLimit(int logBufferLimit)
+{
+	m_LogBufferLimit = logBufferLimit;
+}
+
+int LogMessageWriter::GetLogBufferLimit(void)
+{
+	return m_LogBufferLimit;
 }
 
 void LogMessageWriter::SetFilename(LPWSTR filename)
@@ -70,42 +185,26 @@ void LogMessageWriter::Write(LPWSTR pStr)
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
-		LogFileWriter file;
-		if SUCCEEDED(file.Open(m_logFilename, TRUE))
+		if(!m_WriteThreadActive)
 		{
-			for ( int i=0 ; i<m_indent ; i++ )
-			{
-				file << "  ";
-			}
-
-			//Write one line at a time so we can do dos style EOL's
-			LPWSTR pCurr = pStr;
-			while (pCurr[0] != '\0')
-			{
-				LPWSTR pEOL = wcschr(pCurr, '\n');
-				if (pEOL)
-				{
-					pEOL[0] = '\0';
-					file << pCurr << file.EOL;
-					pEOL[0] = '\n';
-					pCurr = pEOL + 1;
-				}
-				else
-				{
-					file << pCurr;
-					break;
-				}
-			}
-
-			file.Close();
+			StartThread();
 		}
+
+		LOGINFO *item = new LOGINFO;
+		item->pStr = NULL;
+		strCopy(item->pStr, pStr);
+		item->indent = m_indent;
+		CAutoLock BufferLock(&m_BufferLock);
+		m_Array.push_back(item);
 	}
+	return;
 }
 
 void LogMessageWriter::Clear()
 {
 	CAutoLock logFileLock(&m_logFileLock);
 
+	ClearBuffer();
 	USES_CONVERSION;
 	if (m_logFilename)
 	{

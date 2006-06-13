@@ -97,6 +97,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		long lastTickCount = 0;
 
+		g_DWLogWriter.SetLogBufferLimit(g_pData->settings.application.logBufferLimit);
+
 		while (WM_QUIT != msg.message)
 		{
 			// Use PeekMessage() so we can use idle time to render the scene.
@@ -123,6 +125,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		}
 
 		//KillTimer(appData->hWnd, 998);
+		g_DWLogWriter.SetLogBufferLimit();
+		(log << "Buffer Logging now completed\n").Write();
+
 	}
 
 	g_pTv->Destroy();

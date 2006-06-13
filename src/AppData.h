@@ -74,6 +74,7 @@ public:
 			BOOL longNetworkName;
 			BOOL decoderTest;
 			BOOL autoDecoderTest;
+			int logBufferLimit;
 			//LPWSTR logFilename;
 		} application;
 

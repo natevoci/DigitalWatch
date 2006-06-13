@@ -1320,6 +1320,27 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"LogBufferLimit") == 0)
+	{
+		LPWSTR pValue = NULL;
+		strCopy(pValue, g_pData->settings.application.logBufferLimit);
+
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The Max Number of Log Items held in the Buffer before writing to file", &pValue) == FALSE )
+		{
+			if (pValue)
+				delete[] pValue;
+
+			return S_OK;
+		}
+
+		if (pValue)
+		{
+			g_pData->settings.application.logBufferLimit = _wtoi(pValue);
+			delete[] pValue;
+		}
+		
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetLongNetworkName") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)

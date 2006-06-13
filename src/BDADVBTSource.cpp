@@ -795,9 +795,11 @@ void BDADVBTSource::ThreadProc()
 	}
 }
 
-HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
+//HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
+HRESULT BDADVBTSource::SetChannel(long transportStreamId, long serviceId)
 {
-	(log << "Setting Channel (" << originalNetworkId << ", " << serviceId << ")\n").Write();
+//	(log << "Setting Channel (" << originalNetworkId << ", " << serviceId << ")\n").Write();
+	(log << "Setting Channel (" << transportStreamId << ", " << serviceId << ")\n").Write();
 	LogMessageIndent indent(&log);
 
 	//TODO: Check if recording
@@ -817,10 +819,12 @@ HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
 	g_pOSD->Data()->SetItem(L"recordingicon", L"");
 	g_pTv->HideOSDItem(L"RecordingIcon");
 
-	DVBTChannels_Network* pNetwork = channels.FindNetworkByONID(originalNetworkId);
+//	DVBTChannels_Network* pNetwork = channels.FindNetworkByONID(originalNetworkId);
+	DVBTChannels_Network* pNetwork = channels.FindNetworkByTSID(transportStreamId);
 
 	if (!pNetwork)
-		return (log << "Network with original network id " << originalNetworkId << " not found\n").Write(E_POINTER);
+//		return (log << "Network with original network id " << originalNetworkId << " not found\n").Write(E_POINTER);
+		return (log << "Network with transport Stream id " << transportStreamId << " not found\n").Write(E_POINTER);
 
 	//TODO: nProgram < 0 then move to next program
 	DVBTChannels_Service* pService;
@@ -828,7 +832,8 @@ HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
 	{
 		pService = pNetwork->FindDefaultService();
 		if (!pService)
-			return (log << "There are no services for the original network " << originalNetworkId << "\n").Write(E_POINTER);
+//			return (log << "There are no services for the original network " << originalNetworkId << "\n").Write(E_POINTER);
+			return (log << "There are no services for the transport Stream Id " << transportStreamId << "\n").Write(E_POINTER);
 	}
 	else
 	{
@@ -960,7 +965,8 @@ HRESULT BDADVBTSource::NetworkUp()
 
 	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 	if (!pService)
-		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+//		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+		return (log << "There are no services for the network " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
 	return RenderChannel(pNetwork, pService);
 }
@@ -980,7 +986,8 @@ HRESULT BDADVBTSource::NetworkDown()
 
 	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 	if (!pService)
-		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+//		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+		return (log << "There are no services for the network " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
 	return RenderChannel(pNetwork, pService);
 }
@@ -2054,14 +2061,18 @@ HRESULT BDADVBTSource::ChangeFrequencySelectionOffset(long change)
 	return frequencyList.ChangeOffset(change);
 }
 
-HRESULT BDADVBTSource::MoveNetworkUp(long originalNetworkId)
+//HRESULT BDADVBTSource::MoveNetworkUp(long originalNetworkId)
+HRESULT BDADVBTSource::MoveNetworkUp(long transportStreamId)
 {
-	return channels.MoveNetworkUp(originalNetworkId);
+//	return channels.MoveNetworkUp(originalNetworkId);
+	return channels.MoveNetworkUp(transportStreamId);
 }
 
-HRESULT BDADVBTSource::MoveNetworkDown(long originalNetworkId)
+//HRESULT BDADVBTSource::MoveNetworkDown(long originalNetworkId)
+HRESULT BDADVBTSource::MoveNetworkDown(long transportStreamId)
 {
-	return channels.MoveNetworkDown(originalNetworkId);
+//	return channels.MoveNetworkDown(originalNetworkId);
+	return channels.MoveNetworkDown(transportStreamId);
 }
 
 HRESULT BDADVBTSource::GetFilterList(void)

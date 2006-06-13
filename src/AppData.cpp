@@ -79,6 +79,7 @@ AppData::AppData()
 	settings.application.longNetworkName = FALSE;
 	settings.application.decoderTest = TRUE;
 	settings.application.autoDecoderTest = TRUE;
+	settings.application.logBufferLimit = 100;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
@@ -909,6 +910,11 @@ HRESULT AppData::LoadSettings()
 					settings.application.autoDecoderTest = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"LogBufferLimit") == 0)
+				{
+					settings.application.logBufferLimit = _wtoi(pSubElement->value);
+					continue;
+				}
 			}
 			continue;
 		}
@@ -1417,6 +1423,8 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"LongNetworkName", (settings.application.longNetworkName ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"DecoderTest", (settings.application.decoderTest ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"AutoDecoderTest", (settings.application.autoDecoderTest ? L"True" : L"False")));
+		strCopy(pValue, settings.application.logBufferLimit);
+		pApplication->Elements.Add(new XMLElement(L"LogBufferLimit", pValue));
 	}
 
 	XMLElement *pWindow = new XMLElement(L"Window");

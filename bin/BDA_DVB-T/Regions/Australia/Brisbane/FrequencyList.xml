@@ -1,0 +1,10 @@
+<!-- Australian Brisbane broadcast frequencies
+
+<!-- Band III VHF -->
+<Network Frequency="177500" Bandwidth="7" />	<!-- 6  -->
+<Network Frequency="191625" Bandwidth="7" />	<!-- 8  -->
+<Network Frequency="219500" Bandwidth="7" />	<!-- 11 -->
+<Network Frequency="226500" Bandwidth="7" />	<!-- 12 -->
+
+<!-- Band V UHF -->
+<Network Frequency="585625" Bandwidth="7" />	<!-- 36 -->

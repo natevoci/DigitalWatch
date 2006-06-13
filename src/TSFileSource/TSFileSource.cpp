@@ -405,6 +405,7 @@ HRESULT TSFileSource::ReLoad(LPWSTR pCmdLine)
 
 void TSFileSource::ThreadProc()
 {
+//	 return; //*************************************************
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 
 	while (!ThreadIsStopping())

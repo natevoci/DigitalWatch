@@ -1,0 +1,13 @@
+<!-- Australian Darwin broadcast frequencies
+
+Note: 
+ Some stations broadcast 125 khz above these values
+ For example, channel 9 in Melbourne broadcasts on 191625 rather than 191500
+ Some tuners can cope with the difference but other cannot.
+-->
+
+<!-- Band IV UHF -->
+<Network Frequency="536625" Bandwidth="7" />	<!-- 29 -->
+<Network Frequency="543625" Bandwidth="7" />	<!-- 30 -->
+<Network Frequency="550500" Bandwidth="7" />	<!-- 31 -->
+<Network Frequency="557625" Bandwidth="7" />	<!-- 32 -->

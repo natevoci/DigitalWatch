@@ -1,0 +1,14 @@
+<!-- Australian Ballarat broadcast frequencies
+
+Note: 
+ Some stations broadcast 125 khz above these values
+ For example, channel 9 in Melbourne broadcasts on 191625 rather than 191500
+ Some tuners can cope with the difference but other cannot.
+-->
+
+<!-- Band V UHF -->
+<Network Frequency="592500" Bandwidth="7" />	<!-- 37 -->
+<Network Frequency="613500" Bandwidth="7" />	<!-- 40 -->
+<Network Frequency="620500" Bandwidth="7" />	<!-- 41 -->
+<Network Frequency="634500" Bandwidth="7" />	<!-- 43 -->
+<Network Frequency="655500" Bandwidth="7" />	<!-- 46 -->

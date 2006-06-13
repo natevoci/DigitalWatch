@@ -1,0 +1,15 @@
+<!-- Australian Albury broadcast frequencies
+
+Note: 
+ Some stations broadcast 125 khz above these values
+ For example, channel 9 in Melbourne broadcasts on 191625 rather than 191500
+ Some tuners can cope with the difference but other cannot.
+-->
+
+<!-- Band III VHF -->
+<Network Frequency="184500" Bandwidth="7" />	<!-- 7  -->
+<Network Frequency="191500" Bandwidth="7" />	<!-- 8  -->
+<Network Frequency="205500" Bandwidth="7" />	<!-- 9A -->
+<Network Frequency="212500" Bandwidth="7" />	<!-- 10 -->
+<Network Frequency="226625" Bandwidth="7" />	<!-- 12 -->
+

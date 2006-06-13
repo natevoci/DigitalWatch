@@ -1,0 +1,10 @@
+<!-- Australian Canberra broadcast frequencies
+
+<!-- Band III VHF -->
+<Network Frequency="177500" Bandwidth="7" />	<!-- 6  -->
+<Network Frequency="205500" Bandwidth="7" />	<!-- 9A -->
+<Network Frequency="219500" Bandwidth="7" />	<!-- 11 -->
+<Network Frequency="226500" Bandwidth="7" />	<!-- 12 -->
+
+<!-- Band IV UHF -->
+<Network Frequency="543500" Bandwidth="7" />	<!-- 30 -->

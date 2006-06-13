@@ -79,7 +79,7 @@ public:
 
 private:
 
-	std::vector<BUFFERINFO> m_Array;
+	std::vector<BUFFERINFO*> m_Array;
 	__int64 m_writeBufferSize;
 	CCritSec m_BufferLock;
 

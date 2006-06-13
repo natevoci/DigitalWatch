@@ -1,6 +1,7 @@
 Version 2.2.0.5
 =================
 bear:
+- Updated the log fileWriter class with a buffer thread.
 - Fixed a problem with the Demux code so the filter will now work better when changing streams.
 
 Version 2.2.0.4

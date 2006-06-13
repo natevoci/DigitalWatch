@@ -214,8 +214,10 @@ public:
 	//Update Methods
 	BOOL UpdateNetwork(DVBTChannels_Network *pNewNetwork);
 
-	HRESULT MoveNetworkUp(long originalNetworkId);
-	HRESULT MoveNetworkDown(long originalNetworkId);
+//	HRESULT MoveNetworkUp(long originalNetworkId);
+//	HRESULT MoveNetworkDown(long originalNetworkId);
+	HRESULT MoveNetworkUp(long transportStreamId);
+	HRESULT MoveNetworkDown(long transportStreamId);
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListName();

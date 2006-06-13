@@ -523,6 +523,7 @@ HRESULT DVBMpeg2DataParser::StartScan()
 {
 	//Start a new thread to do the scanning so that it doesn't interfere with
 	//the rest of DW operation.
+//		return S_FALSE; //*************************************************
 
 	if (m_bThreadStarted)
 		return S_FALSE;
@@ -570,8 +571,10 @@ void DVBMpeg2DataParser::StartScanThread()
 {
 	HRESULT hr;
 
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
-//SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+
+	m_logWriter.SetLogBufferLimit(g_pData->settings.application.logBufferLimit);
+
 	try
 	{
 		ResetEvent(m_hScanningDoneEvent);
@@ -669,6 +672,8 @@ void DVBMpeg2DataParser::StartScanThread()
 	{
 		(log << "Unhandled exception in DVBMpeg2DataParser::StartScanThread()\n");
 	}
+
+	m_logWriter.SetLogBufferLimit();
 	m_bThreadStarted = FALSE;
 	SetEvent(m_hScanningDoneEvent);
 

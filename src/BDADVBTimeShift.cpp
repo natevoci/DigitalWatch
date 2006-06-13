@@ -1043,6 +1043,7 @@ DVBTChannels *BDADVBTimeShift::GetChannels()
 
 void BDADVBTimeShift::ThreadProc()
 {
+//	return; //*************************************************
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 
 	m_rtSizeMonitor = timeGetTime()/60000;
@@ -1056,15 +1057,19 @@ void BDADVBTimeShift::ThreadProc()
 	}
 }
 
-HRESULT BDADVBTimeShift::SetChannel(long originalNetworkId, long serviceId)
+//HRESULT BDADVBTimeShift::SetChannel(long originalNetworkId, long serviceId)
+HRESULT BDADVBTimeShift::SetChannel(long transportStreamId, long serviceId)
 {
-	(log << "Setting Channel (" << originalNetworkId << ", " << serviceId << ")\n").Write();
+//	(log << "Setting Channel (" << originalNetworkId << ", " << serviceId << ")\n").Write();
+	(log << "Setting Channel (" << transportStreamId << ", " << serviceId << ")\n").Write();
 	LogMessageIndent indent(&log);
 
-	DVBTChannels_Network* pNetwork = channels.FindNetworkByONID(originalNetworkId);
+//	DVBTChannels_Network* pNetwork = channels.FindNetworkByONID(originalNetworkId);
+	DVBTChannels_Network* pNetwork = channels.FindNetworkByTSID(transportStreamId);
 
 	if (!pNetwork)
-		return (log << "Network with original network id " << originalNetworkId << " not found\n").Write(E_POINTER);
+//		return (log << "Network with original network id " << originalNetworkId << " not found\n").Write(E_POINTER);
+		return (log << "Network with transport Stream id " << transportStreamId << " not found\n").Write(E_POINTER);
 
 	//TODO: nProgram < 0 then move to next program
 	DVBTChannels_Service* pService;
@@ -1072,7 +1077,8 @@ HRESULT BDADVBTimeShift::SetChannel(long originalNetworkId, long serviceId)
 	{
 		pService = pNetwork->FindDefaultService();
 		if (!pService)
-			return (log << "There are no services for the original network " << originalNetworkId << "\n").Write(E_POINTER);
+//			return (log << "There are no services for the original network " << originalNetworkId << "\n").Write(E_POINTER);
+			return (log << "There are no services for the transport Stream Id" << transportStreamId << "\n").Write(E_POINTER);
 	}
 	else
 	{
@@ -1179,7 +1185,8 @@ HRESULT BDADVBTimeShift::NetworkUp()
 
 	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 	if (!pService)
-		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+//		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+		return (log << "There are no services for the transport Stream Id " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
 	if (pService == m_pCurrentService)
 		return S_OK;
@@ -1202,7 +1209,8 @@ HRESULT BDADVBTimeShift::NetworkDown()
 
 	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 	if (!pService)
-		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+//		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+		return (log << "There are no services for the transport Stream Id " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
 	if (pService == m_pCurrentService)
 		return S_OK;
@@ -2219,6 +2227,11 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 
 	if (SUCCEEDED(hr) && m_pCurrentService && bSinkGraphRendered)
 	{
+		// Stop the Current Tuner Scanner thread
+		if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+			if FAILED(hr = m_pCurrentTuner->StopScanning())
+				(log << "Failed to Stop the Current Tuner from Scanning\n").Write();
+
 		// Stop background thread
 		if FAILED(hr = StopThread())
 			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
@@ -3102,7 +3115,7 @@ HRESULT BDADVBTimeShift::UpdateChannels()
 
 		DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 		if (!pService)
-			return (log << "There are no services for the original network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
+			return (log << "There are no services for the transport Stream Id " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
 		if (pService == m_pCurrentService)
 			return S_OK;
@@ -3132,14 +3145,14 @@ HRESULT BDADVBTimeShift::ChangeFrequencySelectionOffset(long change)
 	return frequencyList.ChangeOffset(change);
 }
 
-HRESULT BDADVBTimeShift::MoveNetworkUp(long originalNetworkId)
+HRESULT BDADVBTimeShift::MoveNetworkUp(long transportStreamId)
 {
-	return channels.MoveNetworkUp(originalNetworkId);
+	return channels.MoveNetworkUp(transportStreamId);
 }
 
-HRESULT BDADVBTimeShift::MoveNetworkDown(long originalNetworkId)
+HRESULT BDADVBTimeShift::MoveNetworkDown(long transportStreamId)
 {
-	return channels.MoveNetworkDown(originalNetworkId);
+	return channels.MoveNetworkDown(transportStreamId);
 }
 
 HRESULT BDADVBTimeShift::GetFilterList(void)

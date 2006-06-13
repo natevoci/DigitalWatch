@@ -817,7 +817,8 @@ LPWSTR DVBTChannels_Network::GetListName()
 	if (!m_dataListName)
 	{
 		LPWSTR listName = new wchar_t[1024];
-		swprintf(listName, L"TVChannels.Services.%i", this->originalNetworkId);
+//		swprintf(listName, L"TVChannels.Services.%i", this->originalNetworkId);
+		swprintf(listName, L"TVChannels.Services.%i", this->transportStreamId);
 		strCopy(m_dataListName, listName);
 		delete[] listName;
 	}
@@ -1214,7 +1215,8 @@ BOOL DVBTChannels::UpdateNetwork(DVBTChannels_Network *pNewNetwork)
 	return FALSE;
 }
 
-HRESULT DVBTChannels::MoveNetworkUp(long originalNetworkId)
+//HRESULT DVBTChannels::MoveNetworkUp(long originalNetworkId)
+HRESULT DVBTChannels::MoveNetworkUp(long transportStreamId)
 {
 	CAutoLock lock(&m_networksLock);
 
@@ -1222,7 +1224,8 @@ HRESULT DVBTChannels::MoveNetworkUp(long originalNetworkId)
 	for (; it < m_networks.end(); it++)
 	{
 		DVBTChannels_Network *pNetwork = *it;
-		if (pNetwork->originalNetworkId == originalNetworkId)
+//		if (pNetwork->originalNetworkId == originalNetworkId)
+		if (pNetwork->transportStreamId == transportStreamId)
 		{
 			if (it > m_networks.begin())
 			{
@@ -1237,7 +1240,8 @@ HRESULT DVBTChannels::MoveNetworkUp(long originalNetworkId)
 	return S_FALSE;
 }
 
-HRESULT DVBTChannels::MoveNetworkDown(long originalNetworkId)
+//HRESULT DVBTChannels::MoveNetworkDown(long originalNetworkId)
+HRESULT DVBTChannels::MoveNetworkDown(long transportStreamId)
 {
 	CAutoLock lock(&m_networksLock);
 
@@ -1245,7 +1249,8 @@ HRESULT DVBTChannels::MoveNetworkDown(long originalNetworkId)
 	for (; it < m_networks.end(); it++)
 	{
 		DVBTChannels_Network *pNetwork = *it;
-		if (pNetwork->originalNetworkId == originalNetworkId)
+//		if (pNetwork->originalNetworkId == originalNetworkId)
+		if (pNetwork->transportStreamId == transportStreamId)
 		{
 			if (it < m_networks.end()-1)
 			{

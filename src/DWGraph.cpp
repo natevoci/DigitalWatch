@@ -210,6 +210,10 @@ BOOL DWGraph::Destroy()
 		m_rotEntry = 0;
 	}
 
+	m_resumeList.Destroy();
+	m_decoders.Destroy();
+	m_mediaTypes.Destroy();
+
 	if (m_piGraphBuilder)
 		m_piGraphBuilder.Release();
 

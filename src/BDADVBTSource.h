@@ -69,7 +69,8 @@ public:
 	virtual void ThreadProc();
 
 protected:
-	virtual HRESULT SetChannel(long originalNetworkId, long serviceId);
+//	virtual HRESULT SetChannel(long originalNetworkId, long serviceId);
+	virtual HRESULT SetChannel(long transportStreamId, long serviceId);
 	virtual HRESULT SetChannel(long originalNetworkId, long transportStreamId, long networkId, long serviceId);
 	virtual HRESULT SetFrequency(long frequency, long bandwidth = 0);
 	virtual HRESULT NetworkUp();

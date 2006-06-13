@@ -2921,13 +2921,13 @@ $(() - $(
 		<itemList>
 			<source>TVChannels.Networks</source>
 			<text>$(TVChannels.Networks.name)</text>
-			<onSelect>SetChannel($(TVChannels.Networks.originalNetworkId)) ExitMenu()</onSelect>
+			<onSelect>SetChannel($(TVChannels.Networks.transportStreamId)) ExitMenu()</onSelect>
 			<onLeft>
-				MoveNetworkUp($(TVChannels.Networks.originalNetworkId))
+				MoveNetworkUp($(TVChannels.Networks.transportStreamId))
 				Up()
 			</onLeft>
 			<onRight>
-				MoveNetworkDown($(TVChannels.Networks.originalNetworkId))
+				MoveNetworkDown($(TVChannels.Networks.transportStreamId))
 				Down()
 			</onRight>
 		</itemList>
@@ -3111,8 +3111,8 @@ $(() - $(
 		<itemList>
 			<source>TVChannels.Networks</source>
 			<text>  $(TVChannels.Networks.name)</text>
-			<onSelect>SetChannel($(TVChannels.Networks.originalNetworkId)) ExitMenu()</onSelect>
-			<onRight>ShowMenu("ServiceList($(TVChannels.Networks.originalNetworkId))")</onRight>
+			<onSelect>SetChannel($(TVChannels.Networks.transportStreamId)) ExitMenu()</onSelect>
+			<onRight>ShowMenu("ServiceList($(TVChannels.Networks.transportStreamId))")</onRight>
 		</itemList>
 	</list>
 </window>
