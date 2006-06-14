@@ -1295,6 +1295,8 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			continue;
 		}
 
+//		Sleep(100);
+
 		if FAILED(hr = m_pCurrentTuner->StopTIF())
 		{
 			(log << "Failed to stop the BDA TIF Filter.\n").Write();
@@ -1421,7 +1423,8 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 				(log << "Failed To Set the Sink Sync Source: " << hr << "\n").Write();
 		}
 
-/*
+//		Sleep(100);
+
 		if FAILED(hr = m_pDWGraph->Start())
 		{
 			HRESULT hr2;
@@ -1430,7 +1433,7 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 
 			return(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write(hr);
 		}
-*/
+
 		//Stop the tif filter
 		if FAILED(hr = m_pCurrentTuner->StopTIF())
 		{

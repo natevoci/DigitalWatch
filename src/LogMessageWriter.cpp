@@ -37,12 +37,12 @@ LogMessageWriter::LogMessageWriter()
 
 LogMessageWriter::~LogMessageWriter()
 {
-	CAutoLock logFileLock(&m_logFileLock);
-	CAutoLock BufferLock(&m_BufferLock);
+//	CAutoLock logFileLock(&m_logFileLock);
+//	CAutoLock BufferLock(&m_BufferLock);
 	if (m_WriteThreadActive)
-	StopThread(0);
+		StopThread();
 
-	FlushLogBuffer();
+//	FlushLogBuffer();
 
 	if (m_logFilename)
 	{
@@ -73,7 +73,7 @@ void LogMessageWriter::ThreadProc(void)
 	int threadPriority = GetThreadPriority(GetCurrentThread());
 	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
 	
-	while (!ThreadIsStopping(100))
+	while (!ThreadIsStopping())
 	{
 		FlushLogBuffer(m_LogBufferLimit);
 		Sleep(100);
