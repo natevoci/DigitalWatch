@@ -357,6 +357,19 @@
    	</>
 </Decoder>
 
+<Decoder name="Elecard MPEG-2 Video Decoder 4">
+            <MediaType name="MPEG2 Video" />
+
+    <LoadFilter clsid="{BC4EB321-771F-4E9F-AF67-37C631ECA106}" name="Elecard MPEG-2 Video Decoder" />
+    <InputFilter name="Elecard MPEG-2 Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <Connect>
+    	<From name="Elecard MPEG-2 Video Decoder" />
+    	<To name="Overlay Mixer" />
+    	</>
+</Decoder>
+
 <Decoder name="NVIDIA Video Decoder">
 	<MediaType name="MPEG2 Video" />
 	
@@ -407,6 +420,46 @@
     	<From name="ffdshow Video Decoder" />
     	<To name="VMR9" />
    	</>
+</Decoder>
+
+<Decoder name="LeadTek DTV Video Decoder">
+            <MediaType name="MPEG2 Video" />
+
+    <LoadFilter clsid="{64AFB6CB-A4F9-44D8-864A-4598A1BE5CE0}" name="LeadTek DTV Video Decoder" />
+    <InputFilter name="LeadTek DTV Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <Connect>
+            <From name="LeadTek DTV Video Decoder" />
+            <To name="Overlay Mixer" />
+            </>
+</Decoder>
+
+<Decoder name="Ulead MPEG Video Decoder">
+            <MediaType name="MPEG2 Video" />
+
+    <LoadFilter clsid="{CF957F40-77FE-4192-A59F-95CA43BD04BA}" name="Ulead MPEG Video Decoder" />
+    <InputFilter name="Ulead MPEG Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <Connect>
+            <From name="Ulead MPEG Video Decoder" />
+            <To name="Overlay Mixer" />
+            </>
+</Decoder>
+
+
+<Decoder name="Ulead DVD Video decoder 2">
+            <MediaType name="MPEG2 Video" />
+
+<LoadFilter clsid="{7AB72E17-9774-4FEB-AC0F-0025E7209C47}" name="Ulead DVD Video decoder 2" />
+            <InputFilter name="Ulead DVD Video decoder 2" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <Connect>
+            <From name="Ulead DVD Video decoder 2" />
+            <To name="Overlay Mixer" />
+            </>
 </Decoder>
 
 <Decoder name="Main Concept H264-AVC Video Decoder">

@@ -72,6 +72,7 @@ public:
 			LPWSTR lastServiceCmd;
 			LPWSTR currentServiceCmd;
 			BOOL longNetworkName;
+			BOOL orderChannels;
 			BOOL decoderTest;
 			BOOL autoDecoderTest;
 			int logBufferLimit;

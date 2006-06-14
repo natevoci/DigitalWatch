@@ -1182,20 +1182,28 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 	HRESULT hr;
 
+	m_pDWGraph->Mute(1);
+
 	//Change channel using zapping code
 	if FAILED(hr = ChangeChannel(frequency, bandwidth))
 	{
 		(log << "Unable to change channel so lets rebuild the graph.\n").Write();
 	}
 	else if (hr == S_OK)
+	{	
+		m_pDWGraph->Mute(g_pData->values.audio.bMute);
 		return S_OK;
+	}
 
 	(log << "Building Graph (" << frequency << ", " << bandwidth << ")\n").Write();
 	LogMessageIndent indent(&log);
 
 	// Stop background thread
 	if FAILED(hr = StopThread())
+	{
+		m_pDWGraph->Mute(g_pData->values.audio.bMute);
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+	}
 	if (hr == S_FALSE)
 		(log << "Killed thread\n").Write();
 
@@ -1334,11 +1342,15 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 
+		m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
 		indent.Release();
 		(log << "Finished Setting Channel\n").Write();
 
 		return S_OK;
 	}
+
+	m_pDWGraph->Mute(g_pData->values.audio.bMute);
 
 	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
@@ -1740,9 +1752,9 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels
 	{
 		ULONG Pid = pService->GetStreamPID(streamType, currentStream);
 
-		wchar_t text[16];
+		wchar_t text[32];
 		swprintf((wchar_t*)&text, pPinName);
-		if (bMultipleStreams)
+		if (bMultipleStreams && currentStream > 0)
 			swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
 
 		(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();

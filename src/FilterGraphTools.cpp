@@ -1277,7 +1277,7 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, DVBTChann
 	{
 		long count = pService->GetStreamCount();
 
-		wchar_t text[16];
+		wchar_t text[32];
 		swprintf((wchar_t*)&text, pPinName);
 
 		CComPtr <IPin> piPin;
@@ -1342,9 +1342,9 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, DVBTChann
 		{
 			ULONG Pid = pService->GetStreamPID(streamType, currentStream);
 
-			wchar_t text[16];
+			wchar_t text[32];
 			swprintf((wchar_t*)&text, pPinName);
-			if (bMultipleStreams)
+			if (bMultipleStreams && currentStream > 0)
 				swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
 
 			CComPtr <IPin> piPin;

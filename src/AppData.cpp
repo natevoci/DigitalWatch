@@ -77,6 +77,7 @@ AppData::AppData()
 	settings.application.currentServiceCmd = new wchar_t[MAX_PATH];
 	wcscpy(settings.application.currentServiceCmd, L"");
 	settings.application.longNetworkName = FALSE;
+	settings.application.orderChannels = TRUE;
 	settings.application.decoderTest = TRUE;
 	settings.application.autoDecoderTest = TRUE;
 	settings.application.logBufferLimit = 100;
@@ -376,6 +377,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"longNetworkName") == 0)
 				return GetBool(settings.application.longNetworkName);
+
+			if (_wcsicmp(selection, L"orderChannels") == 0)
+				return GetBool(settings.application.orderChannels);
 
 			if (_wcsicmp(selection, L"decoderTest") == 0)
 				return GetBool(settings.application.decoderTest);
@@ -900,6 +904,11 @@ HRESULT AppData::LoadSettings()
 					settings.application.longNetworkName = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"OrderChannels") == 0)
+				{
+					settings.application.orderChannels = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"DecoderTest") == 0)
 				{
 					settings.application.decoderTest = (_wcsicmp(pSubElement->value, L"true") == 0);
@@ -1421,6 +1430,7 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"ResumeSize", pValue));
 		pApplication->Elements.Add(new XMLElement(L"LastServiceCmd", settings.application.lastServiceCmd));
 		pApplication->Elements.Add(new XMLElement(L"LongNetworkName", (settings.application.longNetworkName ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"OrderChannels", (settings.application.orderChannels ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"DecoderTest", (settings.application.decoderTest ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"AutoDecoderTest", (settings.application.autoDecoderTest ? L"True" : L"False")));
 		strCopy(pValue, settings.application.logBufferLimit);

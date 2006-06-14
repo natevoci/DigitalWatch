@@ -598,6 +598,49 @@ HRESULT DVBTChannels_Network::LoadFromXML(XMLElement *pElement)
 		}
 	}
 
+	//Re-Order services by channel numbers
+	if (g_pData->settings.application.orderChannels)
+	{
+		std::vector<DVBTChannels_Service *> services;
+		while (m_services.size())
+		{
+			long chNumb = MAXLONG;
+			std::vector<DVBTChannels_Service *>::iterator itsave = NULL;
+			std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
+			for (; it < m_services.end(); it++)
+			{
+				DVBTChannels_Service *pService = *it;
+				if (pService->logicalChannelNumber < chNumb)
+					chNumb = pService->logicalChannelNumber;
+			}
+
+			it = m_services.begin();
+			for (; it < m_services.end(); it++)
+			{
+				DVBTChannels_Service *pService = *it;
+				if (pService->logicalChannelNumber == chNumb)
+				{
+					itsave = it;
+					services.push_back(pService);
+					it = m_services.end();
+				}
+			}
+			if(itsave != NULL)
+				m_services.erase(itsave);
+		}
+
+		if(services.size())
+		{
+			std::vector<DVBTChannels_Service *>::iterator it = services.begin();
+			for (; it < services.end(); it++)
+			{
+				DVBTChannels_Service *pService = *it;
+				m_services.push_back(pService);
+			}
+			services.clear();
+		}
+	}
+
 	return S_OK;
 }
 

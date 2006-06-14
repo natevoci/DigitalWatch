@@ -1413,6 +1413,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 	{
 		if SUCCEEDED(SetStreamName(m_pCurrentService->serviceName, FALSE))
 		{
+			m_pDWGraph->Mute(g_pData->values.audio.bMute);
 			(log << "Requested Service is already available within the current Full Mux Network.\n").Write();
 			return S_OK;
 		}
@@ -1429,7 +1430,10 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 
 	// Stop our Player background thread
 	if FAILED(hr = StopThread())
+	{
+		m_pDWGraph->Mute(g_pData->values.audio.bMute);
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
+	}
 	if (hr == S_FALSE)
 		(log << "Killed thread\n").Write();
 
@@ -1474,6 +1478,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 					//Check if already playing
 					if (m_pDWGraph->IsPlaying())
 					{
+						m_pDWGraph->Mute(1);
 						if FAILED(hr = ReLoadTimeShiftFile())
 						{
 							(log << "Failed to Reload Timeshift File\n").Write();
@@ -1518,6 +1523,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 					if FAILED(hr = StartThread())
 						(log << "Failed to start background thread: " << hr << "\n").Write();
 
+					m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
 					indent.Release();
 					(log << "Finished Setting Channel\n").Write();
 					return S_OK;
@@ -1551,6 +1558,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			if ((*it)->pTuner && !(*it)->pTuner->IsActive())	// if graph is not running then its free to use
 			{
 				SetCurrentTunerGraph(*it);
+				m_pDWGraph->Mute(1);
 
 				if FAILED(hr = LoadSinkGraph(frequency, bandwidth))
 				{
@@ -1586,6 +1594,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				// Start the background thread for updating statistics
 				if FAILED(hr = StartThread())
 					(log << "Failed to start background thread: " << hr << "\n").Write();
+
+				m_pDWGraph->Mute(g_pData->values.audio.bMute);
 
 				indent.Release();
 				(log << "Finished Setting Channel\n").Write();
@@ -1646,6 +1656,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				}
 			}
 
+			m_pDWGraph->Mute(1);
+
 			// Reload the tuner sink graph and player
 			if FAILED(hr = LoadSinkGraph(frequency, bandwidth))
 			{
@@ -1701,6 +1713,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				// Now that were playing a new tuner sink graph lets unload the old one so its free to use
 				if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
 				{
+					m_pDWGraph->Mute(1);
 					if FAILED(hr = UnLoadSinkGraph())
 					{
 						(log << "Failed to UnLoad the old Sink Graph\n").Write();
@@ -1726,6 +1739,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				SetCurrentTunerGraph(tunerNext);
 			}
 
+			m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
 			indent.Release();
 			(log << "Finished Setting Channel\n").Write();
 
@@ -1737,6 +1752,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 	//Check if service already running
 	if (m_pDWGraph->IsPlaying())
 	{
+		m_pDWGraph->Mute(1);
+
 		if FAILED(hr = UnloadFileSource())
 			(log << "Failed to Unload the File Source Filters\n").Write();
 	}
@@ -1763,8 +1780,10 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			//Check if service already running
 			if (m_pDWGraph->IsPlaying())
 			{
+				m_pDWGraph->Mute(1);
 				if FAILED(hr = ReLoadTimeShiftFile())
 				{
+					m_pDWGraph->Mute(g_pData->values.audio.bMute);
 					return (log << "Failed to Reload Timeshift File: " << hr << "\n").Write(hr);
 				}
 			}
@@ -1772,6 +1791,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			{
 				if FAILED(hr = LoadFileSource())
 				{
+					m_pDWGraph->Mute(g_pData->values.audio.bMute);
 					return (log << "Failed to load File Source Filters: " << hr << "\n").Write(hr);
 				}
 			}
@@ -1788,6 +1808,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			if FAILED(hr = StartThread())
 				(log << "Failed to start background thread: " << hr << "\n").Write();
 
+			m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
 			return (log << "Unable to SetChannel, Recording Still in Progress\n").Write(hr);
 		}
 
@@ -1797,6 +1819,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 		}
 	}
 
+	m_pDWGraph->Mute(1);
+
 	if FAILED(hr = LoadSinkGraph(frequency, bandwidth))
 	{
 		if FAILED(hr = UnLoadSinkGraph())
@@ -1804,6 +1828,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 
 		(log << "Failed to Load Sink Graph\n").Write();
 		delete tuner;
+		m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
 		return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 	}
 
@@ -1841,6 +1867,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				if FAILED(hr = StartThread())
 					(log << "Failed to start background thread: " << hr << "\n").Write();
 
+			m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
 			indent.Release();
 			(log << "Finished Setting Channel\n").Write();
 			return S_OK;
@@ -1848,6 +1876,8 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 	};
 
 	delete tuner;
+	m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
 	return (log << "Failed to start the graph: " << hr << "\n").Write(hr);
 }
 
@@ -2781,9 +2811,9 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, DVBTChanne
 	{
 		ULONG Pid = pService->GetStreamPID(streamType, currentStream);
 
-		wchar_t text[16];
+		wchar_t text[32];
 		swprintf((wchar_t*)&text, pPinName);
-		if (bMultipleStreams)
+		if (bMultipleStreams && currentStream > 0)
 			swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
 
 		(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();

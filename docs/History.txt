@@ -29,6 +29,10 @@ nate:
 
 bear:
 Changes:
+- Added in some audio muting when changing channels.
+- Changed the demux audio pin name of the first audio stream that is created/rendered to have no added number, i.e. audio/audio2. This may fix the problem in timeshifting when 2 audio channels are present. 
+- Fixed a bug that was causing crashes when accessing the message log writer. I think.
+- Added in a setting to the OSD menu global settings to enable ordering of the services by channel numbers. See Re - Order Channels.
 - Changed the SetChannel(ONID) method to SetChannel(TSID) for the changes earlier.
 - Changed the OSD network/channel display to now parse the transport Stream ID rather than the Original Network ID, this is so uk users can navigate the services since they have the same ONID values for the same frequency.
 - Added a buffer log message limit vale to the settings.xml, you can now specify how many messages are buffered before a file write is made, default value is 100. Setiing the value to 0 will cause the log to write to file imediate.

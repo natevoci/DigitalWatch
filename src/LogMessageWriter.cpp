@@ -38,8 +38,9 @@ LogMessageWriter::LogMessageWriter()
 LogMessageWriter::~LogMessageWriter()
 {
 	CAutoLock logFileLock(&m_logFileLock);
+	CAutoLock BufferLock(&m_BufferLock);
 	if (m_WriteThreadActive)
-		StopThread(0);
+	StopThread(0);
 
 	FlushLogBuffer();
 
@@ -95,6 +96,7 @@ void LogMessageWriter::FlushLogBuffer(int logSize)
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
+		CAutoLock logFileLock(&m_logFileLock);
 		LogFileWriter file;
 		if SUCCEEDED(file.Open(m_logFilename, TRUE))
 		{
@@ -148,17 +150,22 @@ void LogMessageWriter::FlushLogBuffer(int logSize)
 
 void LogMessageWriter::SetLogBufferLimit(int logBufferLimit)
 {
+	CAutoLock logFileLock(&m_logFileLock);
+	CAutoLock BufferLock(&m_BufferLock);
 	m_LogBufferLimit = logBufferLimit;
 }
 
 int LogMessageWriter::GetLogBufferLimit(void)
 {
+	CAutoLock logFileLock(&m_logFileLock);
+	CAutoLock BufferLock(&m_BufferLock);
 	return m_LogBufferLimit;
 }
 
 void LogMessageWriter::SetFilename(LPWSTR filename)
 {
 	CAutoLock logFileLock(&m_logFileLock);
+	CAutoLock BufferLock(&m_BufferLock);
 
 	if ((wcslen(filename) > 2) &&
 		((filename[1] == ':') ||
@@ -181,6 +188,7 @@ void LogMessageWriter::SetFilename(LPWSTR filename)
 void LogMessageWriter::Write(LPWSTR pStr)
 {
 	CAutoLock logFileLock(&m_logFileLock);
+	CAutoLock BufferLock(&m_BufferLock);
 
 	USES_CONVERSION;
 	if (m_logFilename)
@@ -194,7 +202,6 @@ void LogMessageWriter::Write(LPWSTR pStr)
 		item->pStr = NULL;
 		strCopy(item->pStr, pStr);
 		item->indent = m_indent;
-		CAutoLock BufferLock(&m_BufferLock);
 		m_Array.push_back(item);
 	}
 	return;

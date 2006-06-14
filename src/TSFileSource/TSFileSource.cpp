@@ -959,9 +959,9 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 	{
 		ULONG Pid = pService->GetStreamPID(streamType, currentStream);
 
-		wchar_t text[16];
+		wchar_t text[32];
 		swprintf((wchar_t*)&text, pPinName);
-		if (bMultipleStreams)
+		if (bMultipleStreams && currentStream > 0)
 			swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
 
 		CComPtr <IPin> piPin;
@@ -1381,32 +1381,51 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 				(*pService)->AddStream(pStream);
 
 		piTSFilepSource->GetAACPid(&pid);
-		piTSFilepSource->GetAAC2Pid(&pid2);
-		if (pid || pid2)
+		if (pid)
 		{
 			strCopy(mediaType, L"AAC Audio");
 			if SUCCEEDED(hr = LoadMediaStreamType(pid, mediaType, &pStream))
 				(*pService)->AddStream(pStream);
 		}
 		
+		piTSFilepSource->GetAAC2Pid(&pid2);
+		if (pid2)
+		{
+			strCopy(mediaType, L"AAC Audio");
+			if SUCCEEDED(hr = LoadMediaStreamType(pid2, mediaType, &pStream))
+				(*pService)->AddStream(pStream);
+		}
+
 		strCopy(mediaType, L"MPEG Audio");
 		piTSFilepSource->GetMP2Mode(&pid);
 		if (pid)
 			strCopy(mediaType, L"MPEG2 Audio");
 
 		piTSFilepSource->GetAudioPid(&pid);
-		piTSFilepSource->GetAudio2Pid(&pid2);
-		if (pid || pid2)
+		if (pid)
 		{
 			if SUCCEEDED(hr = LoadMediaStreamType(pid, mediaType, &pStream))
 				(*pService)->AddStream(pStream);
 		}
-			
+
+		piTSFilepSource->GetAudio2Pid(&pid2);
+		if (pid2)
+		{
+			if SUCCEEDED(hr = LoadMediaStreamType(pid2, mediaType, &pStream))
+				(*pService)->AddStream(pStream);
+		}
+
 		piTSFilepSource->GetAC3Pid(&pid);
-		piTSFilepSource->GetAC3_2Pid(&pid2);
 		if (pid || pid2)
 		{
 			if SUCCEEDED(hr = LoadMediaStreamType(pid, L"AC3 Audio", &pStream))
+				(*pService)->AddStream(pStream);
+		}
+
+		piTSFilepSource->GetAC3_2Pid(&pid2);
+		if (pid2)
+		{
+			if SUCCEEDED(hr = LoadMediaStreamType(pid2, L"AC3 Audio", &pStream))
 				(*pService)->AddStream(pStream);
 		}
 
