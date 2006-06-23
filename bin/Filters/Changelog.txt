@@ -1,6 +1,8 @@
 Version 2.2.0.5
 =================
 bear:
+- Added a seperate buffer thread to the TSBuffer class, seems to now seek faster.
+- Fixed a bug where it would not seek properly if the file had a pcr cross over. 
 - Updated the log fileWriter class with a buffer thread.
 - Fixed a problem with the Demux code so the filter will now work better when changing streams.
 

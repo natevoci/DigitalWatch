@@ -34,7 +34,7 @@
 #include "dsnetifc.h"
 #include "TSFileSinkGuids.h"
 #include "Winsock.h"
-#include "TSFileSource/MediaFormats.h"
+#include "MediaFormats.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -1397,7 +1397,7 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, DVBTChann
 
 			if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
 			{
-				if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PAYLOAD))
+				if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
 				{
 					(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
@@ -1592,10 +1592,9 @@ HRESULT FilterGraphTools::GetVideoMedia(AM_MEDIA_TYPE *pintype)
 	pintype->cbFormat = sizeof(g_Mpeg2ProgramVideo);
 	pintype->pbFormat = g_Mpeg2ProgramVideo;
 
+
 	return S_OK;
 }
-//{8D2D71CB-243F-45E3-B2D8-5FD7967EC09B}
-static GUID H264_SubType = {0x8D2D71CB, 0x243F, 0x45E3, {0xB2, 0xD8, 0x5F, 0xD7, 0x96, 0x7E, 0xC0, 0x9B}};
 
 HRESULT FilterGraphTools::GetH264Media(AM_MEDIA_TYPE *pintype)
 
@@ -1630,15 +1629,14 @@ HRESULT FilterGraphTools::GetMpeg4Media(AM_MEDIA_TYPE *pintype)
 
 	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
 	pintype->majortype = MEDIATYPE_Video;
-	pintype->subtype = FOURCCMap(MAKEFOURCC('h','2','6','4'));
+	pintype->subtype = FOURCCMap(MAKEFOURCC('A','V','C','1'));
 	pintype->bFixedSizeSamples = FALSE;
 	pintype->bTemporalCompression = TRUE;
 	pintype->lSampleSize = 1;
-
-	pintype->formattype = FORMAT_VideoInfo;
+	pintype->formattype = FORMAT_MPEG2Video;
 	pintype->pUnk = NULL;
-	pintype->cbFormat = sizeof(H264VideoFormat);
-	pintype->pbFormat = H264VideoFormat;
+	pintype->cbFormat = sizeof(g_Mpeg2ProgramVideo);
+	pintype->pbFormat = g_Mpeg2ProgramVideo;
 
 	return S_OK;
 }
@@ -1822,5 +1820,37 @@ HRESULT FilterGraphTools::DeleteOutputPins(IBaseFilter *pFilter)
         pIPin = NULL;
     }
 	
+	return hr;
+}
+
+HRESULT FilterGraphTools::GetGraphBuilder(IPin *pIPin, CComPtr<IGraphBuilder>& piGraphBuilder)
+{
+	if (!pIPin)
+		return E_INVALIDARG;
+
+	HRESULT hr = E_FAIL;
+
+	PIN_INFO PinInfo;
+	if (SUCCEEDED(pIPin->QueryPinInfo(&PinInfo)))
+	{
+		FILTER_INFO FilterInfo;
+		if (SUCCEEDED(PinInfo.pFilter->QueryFilterInfo(&FilterInfo)))
+		{
+			if (SUCCEEDED(FilterInfo.pGraph->QueryInterface(&piGraphBuilder)))
+			{
+				if (FilterInfo.pGraph)
+					FilterInfo.pGraph->Release();
+
+				if (PinInfo.pFilter)
+					PinInfo.pFilter->Release();
+
+				return S_OK;
+			}
+			if (FilterInfo.pGraph)
+				FilterInfo.pGraph->Release();
+		}
+		if (PinInfo.pFilter)
+			PinInfo.pFilter->Release();
+	}
 	return hr;
 }

@@ -255,10 +255,6 @@ SOURCE=.\src\TSFileSource\ITSFileSource.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\TSFileSource\MediaFormats.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\src\TSFileSinkGuids.h
 # End Source File
 # Begin Source File
@@ -402,6 +398,10 @@ SOURCE=.\src\FilterPropList.cpp
 # Begin Source File
 
 SOURCE=.\src\FilterPropList.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\MediaFormats.h
 # End Source File
 # End Group
 # Begin Group "Filters"

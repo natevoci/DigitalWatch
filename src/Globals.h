@@ -37,4 +37,64 @@ extern TVControl* g_pTv;
 extern DWOnScreenDisplay* g_pOSD;
 extern LogMessageWriter g_DWLogWriter;
 
+struct BoostThread
+{
+   BoostThread()
+   {
+		#ifndef DEBUG
+			m_nPriority = GetThreadPriority(GetCurrentThread());
+			SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+		#endif
+   }
+
+   ~BoostThread()
+   {
+		#ifndef DEBUG
+			SetThreadPriority(GetCurrentThread(), m_nPriority);
+		#endif
+   }
+     
+   int m_nPriority;
+};
+
+struct BrakeThread
+{
+   BrakeThread()
+   {
+		#ifndef DEBUG
+			m_nPriority = GetThreadPriority(GetCurrentThread());
+			SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+		#endif
+   }
+
+   ~BrakeThread()
+   {
+		#ifndef DEBUG
+			SetThreadPriority(GetCurrentThread(), m_nPriority);
+		#endif
+   }
+     
+   int m_nPriority;
+};
+
+struct NormalThread
+{
+   NormalThread()
+   {
+		#ifndef DEBUG
+			m_nPriority = GetThreadPriority(GetCurrentThread());
+			SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+		#endif
+   }
+
+   ~NormalThread()
+   {
+		#ifndef DEBUG
+			SetThreadPriority(GetCurrentThread(), m_nPriority);
+		#endif
+   }
+      
+   int m_nPriority;
+};
+
 #endif

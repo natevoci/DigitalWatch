@@ -699,6 +699,7 @@ DVBTChannels_Service* DVBTChannels_Network::FindDefaultService()
 	{
 		// TODO: add an attribute to services to set them as default.
 		return m_services.at(0);
+		return m_services.at(0);
 	}
 	return NULL;
 }

@@ -44,8 +44,6 @@ public:
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	STDMETHODIMP AOnConnect(IBaseFilter *pTSSourceFilter,
-							DVBTChannels *channels,
-							DVBTChannels_Network *pNetwork,
 							DVBTChannels_Service* pService,
 							IBaseFilter *pClockFilter = NULL);
 	HRESULT SetTIFState(IFilterGraph *pGraph, REFERENCE_TIME tStart);
@@ -118,7 +116,7 @@ protected:
 	HRESULT VetDemuxPin(IPin* pIPin, ULONG pid);
 	HRESULT	ClearDemuxPin(IPin* pIPin);
 	HRESULT	ChangeDemuxPin(IBaseFilter* pDemux, LPWSTR* pPinName, BOOL* pConnect);
-	HRESULT UpdateNetworkProvider(IBaseFilter* pNetworkProvider);
+//	HRESULT UpdateNetworkProvider(IBaseFilter* pNetworkProvider);
 	HRESULT CheckTIFPin(IBaseFilter* pDemux);
 //	HRESULT GetTIFMedia(AM_MEDIA_TYPE *pintype);
 	HRESULT RemoveFilterChain(IBaseFilter *pStartFilter, IBaseFilter *pEndFilter);
@@ -140,8 +138,6 @@ protected:
 	FilterGraphTools graphTools;
 
 	IBaseFilter *m_pTSSourceFilter;
-	DVBTChannels_Network *m_pNetwork;
-	DVBTChannels *m_pChannels;
 	DVBTChannels_Service* m_pService;
 
 	CCritSec m_DemuxLock;

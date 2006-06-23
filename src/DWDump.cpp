@@ -10,6 +10,7 @@
 #include "KS.H"
 #include "KSMEDIA.H"
 #include "BDAMedia.h"
+#include "Globals.h"
 
 //////////////////////////////////////////////////////////////////////
 // DWDumpFilter
@@ -365,8 +366,9 @@ void DWDumpInputPin::ThreadProc()
 {
 	m_WriteThreadActive = TRUE;
 
-	int threadPriority = GetThreadPriority(GetCurrentThread());
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+	BoostThread();
+//	int threadPriority = GetThreadPriority(GetCurrentThread());
+//	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 	
 	while (!ThreadIsStopping(0))
 	{
@@ -419,10 +421,11 @@ HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
 	//
 	if (!m_WriteThreadActive)
 	{
-		int threadPriority = GetThreadPriority(GetCurrentThread());
-		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+		BoostThread();
+//		int threadPriority = GetThreadPriority(GetCurrentThread());
+//		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 		hr = m_pDump->Write(pbData, sampleLen);
-		SetThreadPriority(GetCurrentThread(), threadPriority);
+//		SetThreadPriority(GetCurrentThread(), threadPriority);
 		return hr;
 	}
 

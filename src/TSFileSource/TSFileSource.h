@@ -31,6 +31,7 @@
 #include "TSFileStreamList.h"
 #include "..\FilterPropList.h"
 #include <vector>
+#include "DWDemux.h"
 
 class TSFileSource : public DWSource, public DWThread
 {
@@ -67,6 +68,7 @@ public:
 	virtual	HRESULT GetFilterList(void);
 	virtual	HRESULT ShowFilter(LPWSTR filterName);
 	virtual	HRESULT SetRate(double dRate);
+	virtual	HRESULT QueryTransportStreamPin(IPin** piPin);
 
 	virtual void ThreadProc();
 
@@ -89,6 +91,7 @@ protected:
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
+	HRESULT SetSourceControl(IBaseFilter *pFilter, BOOL autoMode);
 	HRESULT SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Service** pService);
 	HRESULT TestDecoderSelection(LPWSTR pwszMediaType);
 	HRESULT LoadMediaStreamType(USHORT pid, LPWSTR pwszMediaType, DVBTChannels_Stream** pStream );
@@ -117,6 +120,7 @@ private:
 	FilterPropList filterList;
 
 	FilterGraphTools graphTools;
+	DWDemux m_DWDemux;
 };
 
 #endif

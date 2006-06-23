@@ -26,7 +26,7 @@
 #include "ks.h"
 #include "ksmedia.h"
 #include "bdamedia.h"
-#include "tsfilesource//MediaFormats.h"
+#include "MediaFormats.h"
 #include "DWDemux.h"
 #include "Bdatif.h"
 #include "tuner.h"
@@ -197,17 +197,13 @@ HRESULT DWDemux::GetNextFilter(
 }
 
 HRESULT DWDemux::AOnConnect(IBaseFilter *pTSSourceFilter,
-							DVBTChannels *pChannels,
-							DVBTChannels_Network* pNetwork,
 							DVBTChannels_Service* pService,
 							IBaseFilter *pClockFilter)
 {
-	if (!pTSSourceFilter || !pChannels || !pNetwork || !pService)
+	if (!pTSSourceFilter || !pService)
 		return S_FALSE;
 
 	m_pTSSourceFilter = pTSSourceFilter;
-	m_pChannels = pChannels;
-	m_pNetwork	= pNetwork;
 	m_pService = pService;
 
 //	if (m_bConnectBusyFlag || m_pNetwork->m_ParsingLock)
@@ -239,7 +235,7 @@ HRESULT DWDemux::AOnConnect(IBaseFilter *pTSSourceFilter,
 		m_TimeOut[0] = 10000;
 		m_WasPlaying = TRUE;
 	}
-
+/*
 	// Parse only the existing Network Provider Filter
 	// in the filter graph, we do this by looking for filters
 	// that implement the ITuner interface while
@@ -266,7 +262,7 @@ HRESULT DWDemux::AOnConnect(IBaseFilter *pTSSourceFilter,
 		}
 		Info.pGraph->Release();
 	}
-
+*/
 	// Parse only the existing Mpeg2 Demultiplexer Filter
 	// in the filter graph, we do this by looking for filters
 	// that implement the IMpeg2Demultiplexer interface while
@@ -608,7 +604,7 @@ HRESULT DWDemux::CheckDemuxPin(IBaseFilter* pDemux, AM_MEDIA_TYPE pintype, IPin*
    }
 	return E_FAIL;
 }
-
+/*
 HRESULT DWDemux::UpdateNetworkProvider(IBaseFilter* pNetworkProvider)
 {
 	HRESULT hr = E_INVALIDARG;
@@ -725,7 +721,7 @@ HRESULT DWDemux::UpdateNetworkProvider(IBaseFilter* pNetworkProvider)
 	}
 	return hr;
 }
-
+*/
 //Stop TIF Additions
 HRESULT DWDemux::SetTIFState(IFilterGraph *pGraph, REFERENCE_TIME tStart)
 {

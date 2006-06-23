@@ -20,6 +20,7 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "Globals.h"
 #include "LogMessageWriter.h"
 #include "GlobalFunctions.h"
 #include "LogFileWriter.h"
@@ -37,12 +38,8 @@ LogMessageWriter::LogMessageWriter()
 
 LogMessageWriter::~LogMessageWriter()
 {
-//	CAutoLock logFileLock(&m_logFileLock);
-//	CAutoLock BufferLock(&m_BufferLock);
 	if (m_WriteThreadActive)
 		StopThread();
-
-//	FlushLogBuffer();
 
 	if (m_logFilename)
 	{
@@ -70,16 +67,13 @@ void LogMessageWriter::ThreadProc(void)
 {
 	m_WriteThreadActive = TRUE;
 
-	int threadPriority = GetThreadPriority(GetCurrentThread());
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+	BrakeThread();
 	
-	while (!ThreadIsStopping())
+	while (!ThreadIsStopping(100))
 	{
 		FlushLogBuffer(m_LogBufferLimit);
 		Sleep(100);
 	}
-
-	m_WriteThreadActive = FALSE;
 
 	return;
 }
@@ -92,7 +86,7 @@ void LogMessageWriter::FlushLogBuffer(int logSize)
 			return;
 	}
 
-	::OutputDebugString(TEXT("LogMessageWriter::ThreadProc:Write."));
+//	::OutputDebugString(TEXT("LogMessageWriter::ThreadProc:Write."));
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
@@ -146,6 +140,7 @@ void LogMessageWriter::FlushLogBuffer(int logSize)
 			file.Close();
 		}
 	}
+//	::OutputDebugString(TEXT("LogMessageWriter::ThreadProc:Write Completed.\n"));
 }
 
 void LogMessageWriter::SetLogBufferLimit(int logBufferLimit)
@@ -188,20 +183,18 @@ void LogMessageWriter::SetFilename(LPWSTR filename)
 void LogMessageWriter::Write(LPWSTR pStr)
 {
 	CAutoLock logFileLock(&m_logFileLock);
-	CAutoLock BufferLock(&m_BufferLock);
 
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
 		if(!m_WriteThreadActive)
-		{
 			StartThread();
-		}
 
 		LOGINFO *item = new LOGINFO;
 		item->pStr = NULL;
 		strCopy(item->pStr, pStr);
 		item->indent = m_indent;
+		CAutoLock BufferLock(&m_BufferLock);
 		m_Array.push_back(item);
 	}
 	return;

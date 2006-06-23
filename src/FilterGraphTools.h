@@ -103,6 +103,7 @@ public:
 	HRESULT DisconnectOutputPins(IBaseFilter *pFilter);
 	HRESULT DisconnectInputPins(IBaseFilter *pFilter);
 	HRESULT DeleteOutputPins(IBaseFilter *pFilter);
+	HRESULT GetGraphBuilder(IPin *pIPin, CComPtr<IGraphBuilder>& piGraphBuilder);
 
 private:
 		CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;

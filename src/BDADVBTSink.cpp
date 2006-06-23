@@ -35,7 +35,7 @@
 #include "dsnetifc.h"
 #include "TSFileSinkGuids.h"
 #include "Winsock.h"
-#include "TSFileSource/MediaFormats.h"
+#include "MediaFormats.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>

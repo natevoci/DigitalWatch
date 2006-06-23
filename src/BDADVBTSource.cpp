@@ -26,7 +26,7 @@
 #include "LogMessage.h"
 
 #include "StreamFormats.h"
-#include "tsfilesource//MediaFormats.h"
+//#include "MediaFormats.h"
 #include <ks.h> // Must be included before ksmedia.h
 #include <ksmedia.h> // Must be included before bdamedia.h
 #include "bdamedia.h"
@@ -786,7 +786,7 @@ DVBTChannels *BDADVBTSource::GetChannels()
 
 void BDADVBTSource::ThreadProc()
 {
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+	NormalThread();
 
 	while (!ThreadIsStopping())
 	{
@@ -795,7 +795,6 @@ void BDADVBTSource::ThreadProc()
 	}
 }
 
-//HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long serviceId)
 HRESULT BDADVBTSource::SetChannel(long transportStreamId, long serviceId)
 {
 //	(log << "Setting Channel (" << originalNetworkId << ", " << serviceId << ")\n").Write();
@@ -819,11 +818,9 @@ HRESULT BDADVBTSource::SetChannel(long transportStreamId, long serviceId)
 	g_pOSD->Data()->SetItem(L"recordingicon", L"");
 	g_pTv->HideOSDItem(L"RecordingIcon");
 
-//	DVBTChannels_Network* pNetwork = channels.FindNetworkByONID(originalNetworkId);
 	DVBTChannels_Network* pNetwork = channels.FindNetworkByTSID(transportStreamId);
 
 	if (!pNetwork)
-//		return (log << "Network with original network id " << originalNetworkId << " not found\n").Write(E_POINTER);
 		return (log << "Network with transport Stream id " << transportStreamId << " not found\n").Write(E_POINTER);
 
 	//TODO: nProgram < 0 then move to next program
@@ -832,7 +829,6 @@ HRESULT BDADVBTSource::SetChannel(long transportStreamId, long serviceId)
 	{
 		pService = pNetwork->FindDefaultService();
 		if (!pService)
-//			return (log << "There are no services for the original network " << originalNetworkId << "\n").Write(E_POINTER);
 			return (log << "There are no services for the transport Stream Id " << transportStreamId << "\n").Write(E_POINTER);
 	}
 	else
@@ -965,7 +961,6 @@ HRESULT BDADVBTSource::NetworkUp()
 
 	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 	if (!pService)
-//		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
 		return (log << "There are no services for the network " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
 	return RenderChannel(pNetwork, pService);
@@ -986,7 +981,6 @@ HRESULT BDADVBTSource::NetworkDown()
 
 	DVBTChannels_Service* pService = pNetwork->FindDefaultService();
 	if (!pService)
-//		return (log << "There are no services for the network " << pNetwork->originalNetworkId << "\n").Write(E_POINTER);
 		return (log << "There are no services for the network " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
 	return RenderChannel(pNetwork, pService);
@@ -1184,15 +1178,19 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 	m_pDWGraph->Mute(1);
 
-	//Change channel using zapping code
-	if FAILED(hr = ChangeChannel(frequency, bandwidth))
+	if (g_pData->values.application.zapping)
 	{
-		(log << "Unable to change channel so lets rebuild the graph.\n").Write();
-	}
-	else if (hr == S_OK)
-	{	
-		m_pDWGraph->Mute(g_pData->values.audio.bMute);
-		return S_OK;
+		(log << "zapping Graph (" << frequency << ", " << bandwidth << ")\n").Write();
+		//Change channel using zapping code
+		if FAILED(hr = ChangeChannel(frequency, bandwidth))
+		{
+			(log << "Unable to change channel so lets rebuild the graph.\n").Write();
+		}
+		else if (hr == S_OK)
+		{	
+			m_pDWGraph->Mute(g_pData->values.audio.bMute);
+			return S_OK;
+		}
 	}
 
 	(log << "Building Graph (" << frequency << ", " << bandwidth << ")\n").Write();
@@ -1362,7 +1360,7 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 	HRESULT hr;
 
 	//Check the requested Service is already in the Network if FULL Mux
-	if(g_pData->values.application.zapping && m_pCurrentService && m_pCurrentTuner)
+	if(m_pCurrentService && m_pCurrentTuner)
 	{
 		(log << "Change Channel using Zapping mode\n").Write();
 		LogMessageIndent indent(&log);
@@ -1385,10 +1383,9 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
 		// End data stuff
-/*
-		if FAILED(hr = m_pDWGraph->Stop())
-			return (log << "Failed to stop DWGraph\n").Write(hr);
-*/
+
+//		if FAILED(hr = m_pDWGraph->Stop())
+//			return (log << "Failed to stop DWGraph\n").Write(hr);
 
 		//Change frequency
 		if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
@@ -1409,7 +1406,7 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 				return (log << "Could not get the Sink Demux Reference clock: " << hr << "\n").Write(hr);
 		}
 */
-		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, &channels, m_pCurrentNetwork, m_pCurrentService))
+		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 		{
 			pinInfo.pFilter->Release();
 			return(log << "Failed to change the Requested Service using channel zapping.\n").Write();
@@ -1425,14 +1422,14 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 
 //		Sleep(100);
 
-		if FAILED(hr = m_pDWGraph->Start())
-		{
-			HRESULT hr2;
-			if FAILED(hr2 = m_pDWGraph->Stop())
-				return(log << "Failed to stop DWGraph\n").Write(hr2);
+//		if FAILED(hr = m_pDWGraph->Start())
+//		{
+//			HRESULT hr2;
+//			if FAILED(hr2 = m_pDWGraph->Stop())
+//				return(log << "Failed to stop DWGraph\n").Write(hr2);
 
-			return(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write(hr);
-		}
+//			return(log << "Failed to Start Graph. Possibly tuner already in use.\n").Write(hr);
+//		}
 
 		//Stop the tif filter
 		if FAILED(hr = m_pCurrentTuner->StopTIF())
@@ -1626,16 +1623,18 @@ HRESULT BDADVBTSource::OpenDisplay()
 
 	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
 	{
-		//turn on the display by setting the demux pins 
-		//swt Change channel using zapping code
-		if FAILED(hr = ChangeChannel(m_pCurrentNetwork->frequency, m_pCurrentNetwork->bandwidth))
+		if (g_pData->values.application.zapping)
 		{
-			(log << "Unable to Set channel so lets rebuild the graph.\n").Write();
+			(log << "OpenDisplay by zapping Graph\n").Write();
+			//swt Change channel using zapping code
+			if FAILED(hr = ChangeChannel(m_pCurrentNetwork->frequency, m_pCurrentNetwork->bandwidth))
+			{
+				(log << "Unable to Set channel so lets rebuild the graph.\n").Write();
+			}
+			else if (hr == S_OK)
+				return S_OK;
 		}
-		else if (hr == S_OK)
-			return S_OK;
-
-//		if(m_piBDAMpeg2Demux && m_pCurrentService && m_pCurrentSink)
+		//turn on the display by setting the demux pins 
 		if(m_piBDAMpeg2Demux && m_pCurrentService)
 			graphTools.AddDemuxPins(m_pCurrentService, m_piBDAMpeg2Demux);
 	}
@@ -1787,7 +1786,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels
 
 		if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
 		{
-			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PAYLOAD))
+			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
 			{
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
@@ -1805,10 +1804,14 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels
 		CComPtr<IPin>pOPin;
 		if (piPin && piPin->ConnectedTo(&pOPin) && !pOPin)
 		{
-			if FAILED(hr = m_pDWGraph->RenderPin(m_piGraphBuilder, piPin))
+			CComPtr<IGraphBuilder> piGraphBuilder;
+			if (SUCCEEDED(graphTools.GetGraphBuilder(piPin, piGraphBuilder)))
 			{
-				(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
-				continue;
+				if FAILED(hr = m_pDWGraph->RenderPin(piGraphBuilder, piPin))
+				{
+					(log << "Failed to render " << pPinName << " stream : " << hr << "\n").Write();
+					continue;
+				}
 			}
 		}
 

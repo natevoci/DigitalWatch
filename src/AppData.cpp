@@ -582,7 +582,17 @@ void AppData::SetBuffer(LPWSTR lpwstr)
 
 	if (_wcsicmp(lpwstr, L"Auto") == 0)
 		return;
-
+/*
+	if (wcsstr(lpwstr, L"Small") != NULL)
+		settings.timeshift.numbfilesrecycled = 2;	
+	else if (wcsstr(lpwstr, L"Medium") != NULL)
+		settings.timeshift.numbfilesrecycled = 6;	
+	else if (wcsstr(lpwstr, L"Large") != NULL)
+		settings.timeshift.numbfilesrecycled = 20;
+	
+	if (_wcsicmp(lpwstr, L"Auto") == 0)
+		return;
+*/
 	if (_wcsicmp(lpwstr, L"Small") == 0)
 		settings.timeshift.numbfilesrecycled = 2;	
 	else if (_wcsicmp(lpwstr, L"Medium") == 0)

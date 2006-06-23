@@ -1569,7 +1569,8 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetMediaTypeDecoder") == 0)
 	{
-		if (m_pActiveSource && _wcsicmp(m_pActiveSource->GetSourceType(), L"BDA") == NULL)
+//		if (m_pActiveSource && _wcsicmp(m_pActiveSource->GetSourceType(), L"BDA") == NULL)
+		if (m_pActiveSource)
 		{
 			return S_FALSE;
 		}

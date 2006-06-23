@@ -36,6 +36,7 @@
 #include <vector>
 #include "TSFileSource/TSFileSource.h"
 #include "FilterPropList.h"
+#include "DWDemux.h"
 
 class TunerSinkGraphItem
 {
@@ -114,6 +115,7 @@ protected:
 
 	void RotateFilterList(void);
 	void UpdateStatusDisplay();
+	HRESULT ChangeChannel(int frequency, int bandwidth);
 	HRESULT CloseBuffers();
 	HRESULT CloseDisplay();
 	HRESULT OpenDisplay();
@@ -188,6 +190,8 @@ private:
 
 	FilterGraphTools graphTools;
 	DWORD m_rotEntry;
+
+	DWDemux m_DWDemux;
 
 };
 

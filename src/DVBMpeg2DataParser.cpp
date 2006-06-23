@@ -571,7 +571,8 @@ void DVBMpeg2DataParser::StartScanThread()
 {
 	HRESULT hr;
 
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+	BrakeThread();
+//	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
 
 	m_logWriter.SetLogBufferLimit(g_pData->settings.application.logBufferLimit);
 
