@@ -148,6 +148,8 @@ HRESULT TSFileSource::Destroy()
 	(log << "Destroying TSFileSource Source\n").Write();
 	LogMessageIndent indent(&log);
 
+	g_pTv->HideOSDItem(L"Position");
+
 	HRESULT hr;
 
 	if (m_pDWGraph)
@@ -405,10 +407,7 @@ HRESULT TSFileSource::ReLoad(LPWSTR pCmdLine)
 
 void TSFileSource::ThreadProc()
 {
-//	 return; //*************************************************
-	NormalThread();
-
-//	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+	NormalThread Normal;
 
 	while (!ThreadIsStopping())
 	{
@@ -468,6 +467,8 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if (TRUE && m_pDWGraph->IsPlaying())
 	{
+		SeekTo(100);
+
 		// Set Filename
 		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
 		if (!piFileSourceFilter)
@@ -1763,11 +1764,17 @@ HRESULT TSFileSource::SetStreamName(LPWSTR pService, BOOL bEnable)
 	HRESULT hr;
 
 	int index = -1;
+	//check if the service name is in the stream list, fail if not
 	if FAILED(hr = streamList.FindServiceName(pService, &index))
 		return hr;
 
-	if(hr == S_OK && bEnable) 
+	//check if we need to force a service selection, and if we have a go ahead
+	if(hr == S_OK && bEnable)
+	{
+		m_pDWGraph->Mute(1);
 		SetStream(index);
+		m_pDWGraph->Mute(g_pData->values.audio.bMute);
+	}
 
 	return hr;
 }

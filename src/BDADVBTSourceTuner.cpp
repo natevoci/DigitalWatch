@@ -33,8 +33,6 @@
 #include "TSFileSinkGuids.h"
 #include "Winsock.h"
 
-#define toIPAddress(a, b, c, d) (a + (b << 8) + (c << 16) + (d << 24))
-
 //////////////////////////////////////////////////////////////////////
 // BDADVBTSourceTuner
 //////////////////////////////////////////////////////////////////////
@@ -47,6 +45,7 @@ BDADVBTSourceTuner::BDADVBTSourceTuner(BDADVBTSource *pBDADVBTSource, BDACard *p
 
 	m_bInitialised = 0;
 	m_bActive = FALSE;
+	m_bTunerRunning = FALSE;
 
 	m_lFrequency = -1;
 	m_lBandwidth = -1;
@@ -95,6 +94,7 @@ HRESULT BDADVBTSourceTuner::Initialise(IGraphBuilder *piGraphBuilder)
 	if FAILED(hr = graphTools.InitDVBTTuningSpace(m_piTuningSpace))
 		return (log << "Failed to initialise the Tune Request: " << hr << "\n").Write(hr);
 
+	m_bTunerRunning = FALSE;
 	m_bInitialised = TRUE;
 	return S_OK;
 }
@@ -244,6 +244,7 @@ HRESULT BDADVBTSourceTuner::AddSourceFilters()
 		return (log << "Failed to Delete the Output Pins on the Demux filter: " << hr << "\n").Write(hr);
 
 	m_bActive = TRUE;
+	m_bTunerRunning = FALSE;
 	return S_OK;
 }
 
@@ -261,6 +262,7 @@ void BDADVBTSourceTuner::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 HRESULT BDADVBTSourceTuner::RemoveSourceFilters()
 {
 	m_bActive = FALSE;
+	m_bTunerRunning = FALSE;
 
 	if (m_pMpeg2DataParser)
 		m_pMpeg2DataParser->ReleaseFilter();
@@ -337,11 +339,14 @@ HRESULT BDADVBTSourceTuner::LockChannel(long frequency, long bandwidth)
 		{
 			if FAILED(hr = pTuner->put_TuneRequest(pTuneRequest))
 			{
-				return (log << "Failed to submit the Tune Tequest to the Network Provider: " << hr << "\n").Write(hr);
+				return (log << "Failed to submit the Tune Request to the Network Provider: " << hr << "\n").Write(hr);
 			}
 
 			pTuner.Release();
 			pTuneRequest.Release();
+			if (frequency < 1)
+				return (log << "Failed to recover the Tune Request frequency from the Network Provider: " << hr << "\n").Write(E_FAIL);
+
 			m_lFrequency = frequency;
 			return S_OK;
 		}
@@ -394,13 +399,60 @@ HRESULT BDADVBTSourceTuner::StopTIF()
 
 HRESULT BDADVBTSourceTuner::GetSignalStats(BOOL &locked, long &strength, long &quality)
 {
-	HRESULT hr;
+	HRESULT hr = E_FAIL;
 	BOOL present;
+	locked = FALSE;
+	present = FALSE;
+	strength = 0;
+	quality = 0;
 
-	if FAILED(hr = m_pBDACard->GetSignalStatistics(locked, present, strength, quality))
-		return hr;
+	//make sure that we have data flowing to the tif before we stop it or get card stats.
+	if (IsTunerRunning())
+	{
+		if FAILED(hr = m_pBDACard->GetSignalStatistics(locked, present, strength, quality))
+			return hr;
+	}
 
 	return S_OK;
+}
+
+BOOL BDADVBTSourceTuner::IsTunerRunning()
+{
+	//return if already tested and was running
+	if (m_bTunerRunning)
+		return TRUE;
+
+	//Setup to get the tune request
+	CComQIPtr <ITuner> pTuner(m_piBDANetworkProvider);
+	if (!pTuner)
+	{
+		(log << "Failed while interfacing Tuner with Network Provider\n").Write();
+		return m_bTunerRunning;
+	}
+
+	CComPtr <ITuneRequest> pNewTuneRequest;			
+	CComQIPtr <IDVBTuneRequest> pDVBTTuneRequest (pNewTuneRequest);
+	pTuner->get_TuneRequest(&pNewTuneRequest);
+	pDVBTTuneRequest = pNewTuneRequest;
+
+	long Sid = -1;
+	if (pDVBTTuneRequest != NULL)
+	{
+		long Onid = 0;
+		pDVBTTuneRequest->get_ONID(&Onid);
+		long Tsid = 0;
+		pDVBTTuneRequest->get_TSID(&Tsid);
+
+		pDVBTTuneRequest->get_SID(&Sid); 
+				
+	}
+
+	if (Sid != -1)
+		m_bTunerRunning = TRUE;
+	else
+		(log << "Tuner Not Running.\n").Write();
+
+	return m_bTunerRunning;
 }
 
 BOOL BDADVBTSourceTuner::IsActive()

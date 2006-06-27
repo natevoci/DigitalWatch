@@ -151,24 +151,75 @@ $(() - $(
 		<label>
 			<pos x=750 y=10 />
 			<text>$(CurrentDVBTCard)</text>
-			<font height=20 color="#FFFFFF" />
+			<font height=20 weight=700 color="#FFFFFF" />
 			<align horizontal="right" />
 			<background>
 				<image>BrownButton</image>
-				<padding left=10 top=0 right=10 bottom=3 />
+				<padding left=10 top=3 right=10 bottom=3 />
 			</background>
 		</label>
-		<!--
 		<label>
-			<pos x=20 y=526 />
-			<text>$(SignalLocked) - $(SignalStrength) - $(SignalQuality)</text>
+			<pos x=750 y=40 />
+			<text>Status = $(SignalLocked)</text>
+			<align horizontal="right" />
 			<font height=20 weight=700 color="#FFFFFF" />
 			<background>
 				<image>BrownButton</image>
-				<padding left=10 top=0 right=10 bottom=0 />
+				<padding left=10 top=3 right=10 bottom=3 />
 			</background>
 		</label>
-		-->
+		<label>
+			<pos x=750 y=70 />
+			<text>Strength = $(SignalStrength)%</text>
+			<align horizontal="right" />
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=3 right=10 bottom=3 />
+			</background>
+		</label>
+		<label>
+			<pos x=750 y=100 />
+			<text>Quality = $(SignalQuality)%</text>
+			<align horizontal="right" />
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=3 right=10 bottom=3 />
+			</background>
+		</label>
+	</group>
+	<group name="SignalStatus">
+		<label>
+			<pos x=750 y=40 />
+			<text>Status = $(SignalLocked)</text>
+			<align horizontal="right" />
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=3 right=10 bottom=3 />
+			</background>
+		</label>
+		<label>
+			<pos x=750 y=70 />
+			<text>Strength = $(SignalStrength)%</text>
+			<align horizontal="right" />
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=3 right=10 bottom=3 />
+			</background>
+		</label>
+		<label>
+			<pos x=750 y=100 />
+			<text>Quality = $(SignalQuality)%</text>
+			<align horizontal="right" />
+			<font height=20 weight=700 color="#FFFFFF" />
+			<background>
+				<image>BrownButton</image>
+				<padding left=10 top=3 right=10 bottom=3 />
+			</background>
+		</label>
 	</group>
 	<group name="Scanning">
 		<label>
@@ -230,7 +281,7 @@ $(() - $(
 		<label>
 			<pos x=20 y=426 />
 			<text>$(Recordingicon)</text>
-			<font height=20 weight=70 color="#FFFFFF" />
+			<font height=20 weight=700 color="#FFFFFF" />
 			<background>
 				<image>BrownButton</image>
 				<padding left=10 top=0 right=10 bottom=0 />

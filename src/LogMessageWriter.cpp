@@ -67,7 +67,7 @@ void LogMessageWriter::ThreadProc(void)
 {
 	m_WriteThreadActive = TRUE;
 
-	BrakeThread();
+	BrakeThread Brake;
 	
 	while (!ThreadIsStopping(100))
 	{

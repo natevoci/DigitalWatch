@@ -58,6 +58,7 @@ public:
 	HRESULT StopTIF();
 
 	HRESULT GetSignalStats(BOOL &locked, long &strength, long &quality);
+	BOOL IsTunerRunning();
 
 	BOOL IsActive();
 
@@ -87,6 +88,7 @@ private:
 
 	BOOL m_bInitialised;
 	BOOL m_bActive;
+	BOOL m_bTunerRunning;
 
 	long m_lFrequency;
 	long m_lBandwidth;

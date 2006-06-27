@@ -43,7 +43,7 @@ struct BoostThread
    {
 		#ifndef DEBUG
 			m_nPriority = GetThreadPriority(GetCurrentThread());
-			SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+			SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 		#endif
    }
 

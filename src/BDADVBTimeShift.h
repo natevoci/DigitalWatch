@@ -161,6 +161,7 @@ private:
 	long m_rtTimeShiftStart;
 	long m_rtTimeShiftDuration;
 	long m_rtSizeMonitor;
+	REFERENCE_TIME m_rtTunerSignalCount;
 
 	std::vector<TunerSinkGraphItem*> m_tuners;
 	BDADVBTimeShiftTuner *m_pCurrentTuner;

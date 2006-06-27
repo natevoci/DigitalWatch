@@ -43,6 +43,7 @@ BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 	m_pCurrentNetwork = NULL;
 	m_pCurrentService = NULL;
 	m_pDWGraph = NULL;
+	m_rtTunerSignalCount = 0;
 
 	g_pOSD->Data()->AddList(&channels);
 	g_pOSD->Data()->AddList(&frequencyList);
@@ -60,6 +61,11 @@ BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 
 BDADVBTSource::~BDADVBTSource()
 {
+	g_pOSD->Data()->ClearAllListNames(L"FrequencyList");
+	g_pOSD->Data()->ClearAllListNames(L"FilterInfo");
+	g_pOSD->Data()->ClearAllListNames(L"DVBTDeviceInfo");
+	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Services");
+	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Networks");
 	Destroy();
 }
 
@@ -296,12 +302,6 @@ HRESULT BDADVBTSource::Destroy()
 
 	m_piGraphBuilder.Release();
 
-	g_pOSD->Data()->ClearAllListNames(L"FrequencyList");
-	g_pOSD->Data()->ClearAllListNames(L"FilterInfo");
-	g_pOSD->Data()->ClearAllListNames(L"DVBTDeviceInfo");
-	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Services");
-	g_pOSD->Data()->ClearAllListNames(L"TVChannels.Networks");
-	
 	cardList.Destroy();
 	frequencyList.Destroy();
 	channels.Destroy();
@@ -786,7 +786,8 @@ DVBTChannels *BDADVBTSource::GetChannels()
 
 void BDADVBTSource::ThreadProc()
 {
-	NormalThread();
+	NormalThread Normal;
+	m_rtTunerSignalCount = 0;
 
 	while (!ThreadIsStopping())
 	{
@@ -797,7 +798,6 @@ void BDADVBTSource::ThreadProc()
 
 HRESULT BDADVBTSource::SetChannel(long transportStreamId, long serviceId)
 {
-//	(log << "Setting Channel (" << originalNetworkId << ", " << serviceId << ")\n").Write();
 	(log << "Setting Channel (" << transportStreamId << ", " << serviceId << ")\n").Write();
 	LogMessageIndent indent(&log);
 
@@ -1176,8 +1176,6 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 	HRESULT hr;
 
-	m_pDWGraph->Mute(1);
-
 	if (g_pData->values.application.zapping)
 	{
 		(log << "zapping Graph (" << frequency << ", " << bandwidth << ")\n").Write();
@@ -1188,7 +1186,6 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		}
 		else if (hr == S_OK)
 		{	
-			m_pDWGraph->Mute(g_pData->values.audio.bMute);
 			return S_OK;
 		}
 	}
@@ -1199,22 +1196,22 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 	// Stop background thread
 	if FAILED(hr = StopThread())
 	{
-		m_pDWGraph->Mute(g_pData->values.audio.bMute);
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
 	}
 	if (hr == S_FALSE)
 		(log << "Killed thread\n").Write();
 
-	// Do data stuff
+/*	// Do data stuff
 	UpdateData(frequency, bandwidth);
 	if (m_pCurrentNetwork)
 		g_pTv->ShowOSDItem(L"Channel", 10);
 	else
 		g_pTv->ShowOSDItem(L"Channel", 300);
 	// End data stuff
+*/
+	m_pDWGraph->Mute(1);
 
 	CAutoLock tunersLock(&m_tunersLock);
-
 	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
 	for ( ; TRUE /*check for end of list done after graph is cleaned up*/ ; it++ )
 	{
@@ -1293,13 +1290,13 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			continue;
 		}
 
-//		Sleep(100);
+//		if FAILED(hr = m_pCurrentTuner->StopTIF())
+//		{
+//			(log << "Failed to stop the BDA TIF Filter.\n").Write();
+//			continue;
+//		}
 
-		if FAILED(hr = m_pCurrentTuner->StopTIF())
-		{
-			(log << "Failed to stop the BDA TIF Filter.\n").Write();
-			continue;
-		}
+		UpdateData(frequency, bandwidth);
 
 		if FAILED(hr = m_pCurrentTuner->StartScanning())
 		{
@@ -1340,6 +1337,13 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 		else
 			g_pTv->HideOSDItem(L"RecordingIcon");
 
+		// Do data stuff
+		if (m_pCurrentNetwork)
+			g_pTv->ShowOSDItem(L"Channel", 10);
+		else
+			g_pTv->ShowOSDItem(L"Channel", 300);
+		// End data stuff
+	
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 
 		m_pDWGraph->Mute(g_pData->values.audio.bMute);
@@ -1375,7 +1379,7 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 			return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
 		if (hr == S_FALSE)
 			(log << "Killed thread\n").Write();
-
+/*
 		// Do data stuff
 		UpdateData(frequency, bandwidth);
 		if (m_pCurrentNetwork)
@@ -1383,7 +1387,7 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
 		// End data stuff
-
+*/
 //		if FAILED(hr = m_pDWGraph->Stop())
 //			return (log << "Failed to stop DWGraph\n").Write(hr);
 
@@ -1406,15 +1410,19 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 				return (log << "Could not get the Sink Demux Reference clock: " << hr << "\n").Write(hr);
 		}
 */
+		m_pDWGraph->Mute(1);
 		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 		{
 			pinInfo.pFilter->Release();
+			m_pDWGraph->Mute(g_pData->values.audio.bMute);
 			return(log << "Failed to change the Requested Service using channel zapping.\n").Write();
 		}
 		if(pinInfo.pFilter)
 			pinInfo.pFilter->Release();
 
-		if (m_pCurrentSink&& !m_pCurrentSink->IsRecording())
+		m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
+		if (m_pCurrentSink && !m_pCurrentSink->IsRecording())
 		{
 			if FAILED(hr = m_pCurrentSink->ClearSinkDemuxPins())
 				(log << "Failed To Set the Sink Sync Source: " << hr << "\n").Write();
@@ -1432,10 +1440,12 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 //		}
 
 		//Stop the tif filter
-		if FAILED(hr = m_pCurrentTuner->StopTIF())
-		{
-			(log << "Failed to stop the BDA TIF Filter.\n").Write();
-		}
+//		if FAILED(hr = m_pCurrentTuner->StopTIF())
+//		{
+//			(log << "Failed to stop the BDA TIF Filter.\n").Write();
+//		}
+
+		UpdateData(frequency, bandwidth);
 
 		// Start the background thread for updating channels
 		if FAILED(hr = m_pCurrentTuner->StartScanning())
@@ -1462,6 +1472,13 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 		if (m_pCurrentNetwork)
 			g_pTv->ShowOSDItem(L"Channel", 10);
 
+		// Do data stuff
+		if (m_pCurrentNetwork)
+			g_pTv->ShowOSDItem(L"Channel", 10);
+		else
+			g_pTv->ShowOSDItem(L"Channel", 300);
+		// End data stuff
+	
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 
 		indent.Release();
@@ -1991,42 +2008,61 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 	{
 		g_pOSD->Data()->SetItem(L"CurrentService", L"");
 	}
-/*
+
 	// Set Signal Statistics
 	BOOL locked;
 	long strength, quality;
 
 	REFERENCE_TIME rtStart = timeGetTime();
+	HRESULT hr = S_OK;
 
-	std::vector<BDADVBTSourceTuner *>::iterator it = m_tuners.begin();
-	for ( ; it != m_tuners.end() ; it++ )
+	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
 	{
-		BDADVBTSourceTuner *tuner = *it;
-		tuner->GetSignalStats(locked, strength, quality);
-	}
+		if SUCCEEDED(hr = m_pCurrentTuner->GetSignalStats(locked, strength, quality))
+		{
+			if (locked)
+			{
+				g_pOSD->Data()->SetItem(L"SignalLocked", L"Locked");
+				strCopy(str, strength);
+				g_pOSD->Data()->SetItem(L"SignalStrength", str);
 
-//	if (m_pCurrentTuner)
-//	{
-//		if SUCCEEDED(hr = m_pCurrentTuner->GetSignalStats(locked, strength, quality))
-//		{
-//			if (locked)
-//				g_pOSD->Data()->SetItem(L"SignalLocked", L"Locked");
-//			else
-//				g_pOSD->Data()->SetItem(L"SignalLocked", L"Not Locked");
-//
-//			strCopy(str, strength);
-//			g_pOSD->Data()->SetItem(L"SignalStrength", str);
-//
-//			strCopy(str, quality);
-//			g_pOSD->Data()->SetItem(L"SignalQuality", str);
-//		}
-//	}
+				strCopy(str, quality);
+				g_pOSD->Data()->SetItem(L"SignalQuality", str);
+
+				m_rtTunerSignalCount = timeGetTime();
+				m_rtTunerSignalCount += 3000;
+
+				if FAILED(hr = m_pCurrentTuner->StopTIF())
+					(log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write();
+			}
+			else if (m_rtTunerSignalCount < rtStart)
+			{
+				// this is so we can retune the card for signal status updates
+				if(!frequency && m_pCurrentNetwork && m_pCurrentNetwork->frequency > 0)
+					frequency = m_pCurrentNetwork->frequency; 
+
+				if(!bandwidth && m_pCurrentNetwork && m_pCurrentNetwork->bandwidth > 0)
+					bandwidth = m_pCurrentNetwork->bandwidth; 
+
+				//if we are not locked then lets retry the tunning until we have a lock
+				if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
+					(log << "Failed to Lock Channel: " << hr << "\n").Write();
+
+				m_rtTunerSignalCount = timeGetTime();
+				m_rtTunerSignalCount += 3000;
+
+				g_pOSD->Data()->SetItem(L"SignalLocked", L"UnLock");
+				g_pOSD->Data()->SetItem(L"SignalStrength", L" 0");
+				g_pOSD->Data()->SetItem(L"SignalQuality", L" 0");
+			}
+		}
+	}
 
 	REFERENCE_TIME rtEnd = timeGetTime();
 	long timespan = rtEnd - rtStart;
 	if (timespan > 1000)
 		(log << "Retrieving signal stats took " << timespan << " for " << m_pCurrentTuner->GetCardName() << "\n").Write();
-*/
+
 	delete[] str;
 }
 
@@ -2079,17 +2115,13 @@ HRESULT BDADVBTSource::ChangeFrequencySelectionOffset(long change)
 	return frequencyList.ChangeOffset(change);
 }
 
-//HRESULT BDADVBTSource::MoveNetworkUp(long originalNetworkId)
 HRESULT BDADVBTSource::MoveNetworkUp(long transportStreamId)
 {
-//	return channels.MoveNetworkUp(originalNetworkId);
 	return channels.MoveNetworkUp(transportStreamId);
 }
 
-//HRESULT BDADVBTSource::MoveNetworkDown(long originalNetworkId)
 HRESULT BDADVBTSource::MoveNetworkDown(long transportStreamId)
 {
-//	return channels.MoveNetworkDown(originalNetworkId);
 	return channels.MoveNetworkDown(transportStreamId);
 }
 

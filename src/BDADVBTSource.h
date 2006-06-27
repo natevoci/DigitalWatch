@@ -120,6 +120,7 @@ private:
 	const LPWSTR m_strSourceType;
 
 	BOOL m_bInitialised;
+	REFERENCE_TIME m_rtTunerSignalCount;
 
 	BDADVBTSourceTuner *m_pCurrentTuner;
 	std::vector<BDADVBTSourceTuner *> m_tuners;

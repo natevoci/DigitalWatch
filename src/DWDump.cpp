@@ -366,9 +366,7 @@ void DWDumpInputPin::ThreadProc()
 {
 	m_WriteThreadActive = TRUE;
 
-	BoostThread();
-//	int threadPriority = GetThreadPriority(GetCurrentThread());
-//	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+	BoostThread Boost;
 	
 	while (!ThreadIsStopping(0))
 	{
@@ -421,11 +419,8 @@ HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
 	//
 	if (!m_WriteThreadActive)
 	{
-		BoostThread();
-//		int threadPriority = GetThreadPriority(GetCurrentThread());
-//		SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+		BoostThread Boost;
 		hr = m_pDump->Write(pbData, sampleLen);
-//		SetThreadPriority(GetCurrentThread(), threadPriority);
 		return hr;
 	}
 

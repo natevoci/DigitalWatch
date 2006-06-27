@@ -3,6 +3,27 @@ DigitalWatch History
 --------------------
  Changes
   ```````
+Version 2.0.7.3
+bear:
+Changes:
+- add signal strength/quality back into the DigitalWatch OSD (used the "S" key).
+
+Version 2.0.7.2
+bear:
+Changes:
+- Added in some audio muting when changing channels.
+- Made some changes to fix the multiple audio stream problem when timeshifting. @anthony, if you could try this, thanks.
+- Fixed a bug that was causing crashes when accessing the message log writer. I think.
+- Added in a option setting to the OSD menu global settings to enable ordering of the services by channel numbers. Default setting is enabled.
+
+
+Version 2.0.7.1
+bear:
+Changes:
+- Changed the SetChannel(ONID) method to SetChannel(TSID) for the changes earlier.
+- Changed the OSD network/channel display to now parse the transport Stream ID rather than the Original Network ID, this is so uk users can navigate the services since they have the same ONID values for the same frequency.
+- Added a buffer log message limit vale to the settings.xml, you can now specify how many messages are buffered before a file write is made, default value is 100. Setiing the value to 0 will cause the log to write to file imediate.
+- Added a low priority buffer thread class to the Log Writer, it will now buffer any log messages and write them with it's own low priority thread. 
 nate:
 - Added Settings.txt to contain information about the options in setting.xml
 - Small change to get DWOSDData to compile in VS2003
