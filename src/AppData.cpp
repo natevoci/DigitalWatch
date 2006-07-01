@@ -81,6 +81,7 @@ AppData::AppData()
 	settings.application.decoderTest = TRUE;
 	settings.application.autoDecoderTest = TRUE;
 	settings.application.logBufferLimit = 100;
+	settings.application.signalCheck = TRUE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
@@ -141,7 +142,7 @@ AppData::AppData()
 	settings.timeshift.change = new wchar_t[MAX_PATH];
 	wcscpy(settings.timeshift.change, L"Fast");
 	settings.timeshift.bufferMinutes = 0;
-	settings.timeshift.format = 1;
+	settings.timeshift.format = 2; //0 = none, 1 = FullMux, 2 = TSMux, 3 = MPGMux
 	settings.timeshift.maxnumbfiles = 40;
 	settings.timeshift.numbfilesrecycled = 6;
 	settings.timeshift.bufferfilesize = 250;
@@ -177,6 +178,7 @@ AppData::AppData()
 	values.application.multiple = FALSE; // This gets set if you have one or more instance running.
 	values.application.multicard = settings.application.multicard;
 	values.application.zapping = settings.application.zapping;
+	values.application.signalCheck = settings.application.signalCheck;
 	values.window.bFullScreen = settings.window.startFullscreen;
 	values.window.bAlwaysOnTop = settings.window.startAlwaysOnTop;
 
@@ -387,6 +389,8 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L"autoDecoderTest") == 0)
 				return GetBool(settings.application.autoDecoderTest);
 
+			if (_wcsicmp(selection, L"signalCheck") == 0)
+				return GetBool(settings.application.signalCheck);
 			return NULL;
 		}
 
@@ -934,6 +938,11 @@ HRESULT AppData::LoadSettings()
 					settings.application.logBufferLimit = _wtoi(pSubElement->value);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"SignalCheck") == 0)
+				{
+					settings.application.signalCheck = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 			}
 			continue;
 		}
@@ -1443,6 +1452,7 @@ HRESULT AppData::SaveSettings()
 		pApplication->Elements.Add(new XMLElement(L"OrderChannels", (settings.application.orderChannels ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"DecoderTest", (settings.application.decoderTest ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"AutoDecoderTest", (settings.application.autoDecoderTest ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"SignalCheck", (settings.application.signalCheck ? L"True" : L"False")));
 		strCopy(pValue, settings.application.logBufferLimit);
 		pApplication->Elements.Add(new XMLElement(L"LogBufferLimit", pValue));
 	}

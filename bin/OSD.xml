@@ -158,36 +158,6 @@ $(() - $(
 				<padding left=10 top=3 right=10 bottom=3 />
 			</background>
 		</label>
-		<label>
-			<pos x=750 y=40 />
-			<text>Status = $(SignalLocked)</text>
-			<align horizontal="right" />
-			<font height=20 weight=700 color="#FFFFFF" />
-			<background>
-				<image>BrownButton</image>
-				<padding left=10 top=3 right=10 bottom=3 />
-			</background>
-		</label>
-		<label>
-			<pos x=750 y=70 />
-			<text>Strength = $(SignalStrength)%</text>
-			<align horizontal="right" />
-			<font height=20 weight=700 color="#FFFFFF" />
-			<background>
-				<image>BrownButton</image>
-				<padding left=10 top=3 right=10 bottom=3 />
-			</background>
-		</label>
-		<label>
-			<pos x=750 y=100 />
-			<text>Quality = $(SignalQuality)%</text>
-			<align horizontal="right" />
-			<font height=20 weight=700 color="#FFFFFF" />
-			<background>
-				<image>BrownButton</image>
-				<padding left=10 top=3 right=10 bottom=3 />
-			</background>
-		</label>
 	</group>
 	<group name="SignalStatus">
 		<label>

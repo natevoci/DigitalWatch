@@ -563,23 +563,29 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount >= 2)
 			n2 = StringToLong(command->LHS.Parameter[1]);
 
-		//Turn off channel zapping
+		//Turn off channel zapping & Signal Checking
 		g_pData->values.application.zapping = FALSE;
+		g_pData->values.application.signalCheck = FALSE;
 
-		return SetFrequency(n1, n2);
+		HRESULT hr =  SetFrequency(n1, n2);
+
+		//do not restore channel zapping or Signal Checking else we cant update 
+		return hr;
 	}
 	else if (_wcsicmp(pCurr, L"UpdateChannels") == 0)
 	{
 		if (command->LHS.ParameterCount != 0)
 			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		//Turn off channel zapping
+		//Turn off channel zapping & Signal Checking
 		g_pData->values.application.zapping = FALSE;
+		g_pData->values.application.signalCheck = FALSE;
 
 		HRESULT hr =  UpdateChannels();
 
-		//restore channel zapping
+		//restore channel zapping & Signal Checking
 		g_pData->values.application.zapping = g_pData->settings.application.zapping;
+		g_pData->values.application.signalCheck = g_pData->settings.application.signalCheck;
 
 		return hr;
 	}
@@ -1113,8 +1119,8 @@ HRESULT BDADVBTimeShift::SetFrequency(long frequency, long bandwidth)
 			m_pCurrentNetwork->bandwidth = bandwidth;
 		}
 
-		if (m_pCurrentNetwork->FindDefaultService() == m_pCurrentService)
-			return S_OK;
+//		if (m_pCurrentNetwork->FindDefaultService() == m_pCurrentService)
+//			return S_OK;
 
 		m_pCurrentService = m_pCurrentNetwork->FindDefaultService();
 		if (m_pCurrentService)
@@ -1876,6 +1882,12 @@ void BDADVBTimeShift::UpdateStatusDisplay()
 	if (m_pCurrentNetwork)
 		g_pTv->ShowOSDItem(L"Channel", 10);
 
+	if (g_pData->values.application.signalCheck)
+		g_pTv->ShowOSDItem(L"SignalStatus", 10);
+	else
+		g_pTv->HideOSDItem(L"SignalStatus");
+
+
 	g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 }
 
@@ -1924,7 +1936,9 @@ HRESULT BDADVBTimeShift::ChangeChannel(int frequency, int bandwidth)
 */
 		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 		{
-			pinInfo.pFilter->Release();
+			if(pinInfo.pFilter)
+				pinInfo.pFilter->Release();
+
 			return(log << "Failed to change the Requested Service using channel zapping.\n").Write();
 		}
 		if(pinInfo.pFilter)
@@ -1943,10 +1957,10 @@ HRESULT BDADVBTimeShift::ChangeChannel(int frequency, int bandwidth)
 //		}
 
 		//Stop the tif filter
-//		if FAILED(hr = m_pCurrentTuner->StopTIF())
-//		{
-//			(log << "Failed to stop the BDA TIF Filter.\n").Write();
-//		}
+		if (!g_pData->values.application.signalCheck && FAILED(hr = m_pCurrentTuner->StopTIF()))
+		{
+			(log << "Failed to stop the BDA TIF Filter.\n").Write();
+		}
 
 		UpdateData(frequency, bandwidth);
 
@@ -2042,6 +2056,12 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 
 			if(pinInfo.pFilter)
 				pinInfo.pFilter->Release();
+
+			//Stop the tif filter
+			if (!g_pData->values.application.signalCheck && FAILED(hr = m_pCurrentTuner->StopTIF()))
+			{
+				(log << "Failed to stop the BDA TIF Filter.\n").Write();
+			}
 
 			m_pDWGraph->Mute(g_pData->values.audio.bMute);
 		}
@@ -2143,6 +2163,12 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 
 			if(pinInfo.pFilter)
 				pinInfo.pFilter->Release();
+
+			//Stop the tif filter
+			if (!g_pData->values.application.signalCheck && FAILED(hr = m_pCurrentTuner->StopTIF()))
+			{
+				(log << "Failed to stop the BDA TIF Filter.\n").Write();
+			}
 
 			m_pDWGraph->Mute(g_pData->values.audio.bMute);
 		}
@@ -2366,8 +2392,8 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 //	if FAILED(hr = m_pCurrentTuner->LockChannel(frequency, bandwidth))
 //		return (log << "Failed to Lock Channel: " << hr << "\n").Write(hr);
 
-//	if FAILED(hr = m_pCurrentTuner->StopTIF())
-//		return (log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write(hr);
+	if (!g_pData->values.application.signalCheck && FAILED(hr = m_pCurrentTuner->StopTIF()))
+		return (log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write(hr);
 
 	if (SUCCEEDED(hr) && m_pCurrentService && bSinkGraphRendered)
 	{
@@ -3103,6 +3129,10 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 			if (m_pCurrentFileSource->SetStreamName(streamName, TRUE) == S_OK)
 			{
 				g_pTv->ShowOSDItem(L"Channel", 5);
+				if (g_pData->values.application.signalCheck)
+					g_pTv->ShowOSDItem(L"SignalStatus", 5);
+				else
+					g_pTv->HideOSDItem(L"SignalStatus");
 			}	
 		}
 		delete[] streamName;
@@ -3195,7 +3225,7 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 
 	REFERENCE_TIME rtStart = timeGetTime();
 	HRESULT hr = S_OK;
-	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+	if (g_pData->values.application.signalCheck && m_pCurrentTuner && m_pCurrentTuner->IsActive())
 	{
 		if SUCCEEDED(hr = m_pCurrentTuner->GetSignalStats(locked, strength, quality))
 		{
@@ -3211,8 +3241,14 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 				m_rtTunerSignalCount = timeGetTime();
 				m_rtTunerSignalCount += 3000;
 
-				if FAILED(hr = m_pCurrentTuner->StopTIF())
-					(log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write();
+				if (m_pCurrentTuner)
+				{
+					if FAILED(hr = m_pCurrentTuner->StopTIF())
+						(log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write();
+
+					if FAILED(hr = m_pCurrentTuner->DeleteBDADemuxPins())
+						(log << "Failed To clear pids on the BDA Demux pins: " << hr << "\n").Write();
+				}
 			}
 			else if (m_rtTunerSignalCount < rtStart)
 			{
@@ -3269,8 +3305,8 @@ HRESULT BDADVBTimeShift::UpdateChannels()
 		if (!pService)
 			return (log << "There are no services for the transport Stream Id " << pNetwork->transportStreamId << "\n").Write(E_POINTER);
 
-		if (pService == m_pCurrentService)
-			return S_OK;
+//		if (pService == m_pCurrentService)
+//			return S_OK;
 
 		return RenderChannel(pNetwork, pService);
 	}
@@ -3288,6 +3324,11 @@ HRESULT BDADVBTimeShift::UpdateChannels()
 			g_pTv->ShowOSDItem(L"Channel", 10);
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
+
+		if (g_pData->values.application.signalCheck)
+			g_pTv->ShowOSDItem(L"SignalStatus", 10);
+		else
+			g_pTv->HideOSDItem(L"SignalStatus");
 	}
 	return S_OK;
 }

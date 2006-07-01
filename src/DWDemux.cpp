@@ -790,17 +790,17 @@ HRESULT DWDemux::CheckTIFPin(IBaseFilter* pDemux)
 			if (SUCCEEDED(pIPin->QueryPinInfo(&pinInfo)))
 			{
 		
-				IBaseFilter* m_pTIF;
-				m_pTIF = pinInfo.pFilter;
+				IBaseFilter* pTIF;
+				pTIF = pinInfo.pFilter;
 
 				// Get the GuideData interface from the TIF filter
 				IGuideData* pGuideData;
-				hr = m_pTIF->QueryInterface(&pGuideData);
+				hr = pTIF->QueryInterface(&pGuideData);
 				if (SUCCEEDED(hr))
 				{
 					// Get the TuneRequestinfo interface from the TIF filter
 					CComPtr <ITuneRequestInfo> pTuneRequestInfo;
-					hr = m_pTIF->QueryInterface(&pTuneRequestInfo);
+					hr = pTIF->QueryInterface(&pTuneRequestInfo);
 					if (SUCCEEDED(hr))
 					{
 
@@ -864,7 +864,7 @@ HRESULT DWDemux::CheckTIFPin(IBaseFilter* pDemux)
 					}
 					pGuideData->Release();
 				}
-				m_pTIF->Release();
+				pTIF->Release();
 			}
 			pIPin->Release();
 		}

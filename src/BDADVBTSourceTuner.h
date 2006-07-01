@@ -55,6 +55,7 @@ public:
 	HRESULT StartScanning();
 	HRESULT StopScanning();
 	HRESULT StopTIF();
+	HRESULT DeleteBDADemuxPins();
 	
 	HRESULT GetSignalStats(BOOL &locked, long &strength, long &quality);
 	BOOL IsTunerRunning();

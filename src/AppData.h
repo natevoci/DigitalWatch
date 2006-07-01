@@ -76,6 +76,7 @@ public:
 			BOOL decoderTest;
 			BOOL autoDecoderTest;
 			int logBufferLimit;
+			BOOL signalCheck;
 			//LPWSTR logFilename;
 		} application;
 
@@ -193,6 +194,7 @@ public:
 			BOOL multiple;
 			long multicard;
 			long zapping;
+			BOOL signalCheck;
 		} application;
 
 		struct VALUES_WINDOW

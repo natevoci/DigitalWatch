@@ -1770,8 +1770,7 @@ HRESULT FilterGraphTools::DeleteOutputPins(IBaseFilter *pFilter)
     HRESULT hr = S_OK;
 	
     PIN_DIRECTION  direction;
-	CComPtr <IPin> pIPin = NULL;
-	CComPtr <IPin> pDownstreamPin = NULL;
+	CComPtr <IPin> pIPin;
 	AM_MEDIA_TYPE *type;
 	
 	// Get an instance of the Demux control interface
@@ -1794,6 +1793,7 @@ HRESULT FilterGraphTools::DeleteOutputPins(IBaseFilter *pFilter)
 		
         if(direction == PINDIR_OUTPUT)
         {
+			CComPtr <IPin> pDownstreamPin;
             pIPin->ConnectedTo(&pDownstreamPin);
 			
             if(pDownstreamPin == NULL)
@@ -1804,7 +1804,13 @@ HRESULT FilterGraphTools::DeleteOutputPins(IBaseFilter *pFilter)
 					(log << "Cannot Get Demux Output Pin Info on Demux filter: " << hr << "\n").Write(hr);
 					return hr;
 				}
-				
+
+				if(pinInfo.pFilter)
+					pinInfo.pFilter->Release();
+
+//				if FAILED(hr = ClearDemuxPins(pIPin))
+//					(log << "Failed to Clear demux Pin" << pinInfo.achName << " pin : " << hr << "\n").Write();
+
 				CComPtr <IEnumMediaTypes> ppEnum;
 				if (SUCCEEDED (pIPin->EnumMediaTypes(&ppEnum)))
 				{
@@ -1813,11 +1819,10 @@ HRESULT FilterGraphTools::DeleteOutputPins(IBaseFilter *pFilter)
 						muxInterface->DeleteOutputPin(pinInfo.achName);
 					}
 				}
-				ppEnum = NULL;
+				ppEnum.Release();
             }
-            pDownstreamPin = NULL;
         }
-        pIPin = NULL;
+        pIPin.Release();
     }
 	
 	return hr;

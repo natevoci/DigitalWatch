@@ -467,7 +467,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if (TRUE && m_pDWGraph->IsPlaying())
 	{
-		SeekTo(100);
+//SeekTo(100);
 
 		// Set Filename
 		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);

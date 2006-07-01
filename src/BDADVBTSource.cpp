@@ -386,23 +386,30 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 		if (command->LHS.ParameterCount >= 2)
 			n2 = StringToLong(command->LHS.Parameter[1]);
 
-		//Turn off channel zapping
+		//Turn off channel zapping & Signal Checking
 		g_pData->values.application.zapping = FALSE;
+		g_pData->values.application.signalCheck = FALSE;
 
-		return SetFrequency(n1, n2);
+		HRESULT hr =  SetFrequency(n1, n2);
+
+		//do not restore channel zapping or Signal Checking else we cant update 
+
+		return hr;
 	}
 	else if (_wcsicmp(pCurr, L"UpdateChannels") == 0)
 	{
 		if (command->LHS.ParameterCount != 0)
 			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
-		//Turn off channel zapping
+		//Turn off channel zapping & Signal Checking
 		g_pData->values.application.zapping = FALSE;
+		g_pData->values.application.signalCheck = FALSE;
 
 		HRESULT hr =  UpdateChannels();
 
-		//restore channel zapping
+		//restore channel zapping & Signal Checking
 		g_pData->values.application.zapping = g_pData->settings.application.zapping;
+		g_pData->values.application.signalCheck = g_pData->settings.application.signalCheck;
 
 		return hr;
 	}
@@ -1290,11 +1297,11 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			continue;
 		}
 
-//		if FAILED(hr = m_pCurrentTuner->StopTIF())
-//		{
-//			(log << "Failed to stop the BDA TIF Filter.\n").Write();
-//			continue;
-//		}
+		if (!g_pData->values.application.signalCheck && FAILED(hr = m_pCurrentTuner->StopTIF()))
+		{
+			(log << "Failed to stop the BDA TIF Filter.\n").Write();
+			continue;
+		}
 
 		UpdateData(frequency, bandwidth);
 
@@ -1344,6 +1351,12 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			g_pTv->ShowOSDItem(L"Channel", 300);
 		// End data stuff
 	
+		if (g_pData->values.application.signalCheck)
+			g_pTv->ShowOSDItem(L"SignalStatus", 10);
+		else
+			g_pTv->HideOSDItem(L"SignalStatus");
+
+
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 
 		m_pDWGraph->Mute(g_pData->values.audio.bMute);
@@ -1413,14 +1426,14 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 		m_pDWGraph->Mute(1);
 		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 		{
-			pinInfo.pFilter->Release();
+			if(pinInfo.pFilter)
+				pinInfo.pFilter->Release();
+
 			m_pDWGraph->Mute(g_pData->values.audio.bMute);
 			return(log << "Failed to change the Requested Service using channel zapping.\n").Write();
 		}
 		if(pinInfo.pFilter)
 			pinInfo.pFilter->Release();
-
-		m_pDWGraph->Mute(g_pData->values.audio.bMute);
 
 		if (m_pCurrentSink && !m_pCurrentSink->IsRecording())
 		{
@@ -1428,6 +1441,7 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 				(log << "Failed To Set the Sink Sync Source: " << hr << "\n").Write();
 		}
 
+		m_pDWGraph->Mute(g_pData->values.audio.bMute);
 //		Sleep(100);
 
 //		if FAILED(hr = m_pDWGraph->Start())
@@ -1440,10 +1454,10 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 //		}
 
 		//Stop the tif filter
-//		if FAILED(hr = m_pCurrentTuner->StopTIF())
-//		{
-//			(log << "Failed to stop the BDA TIF Filter.\n").Write();
-//		}
+		if (!g_pData->values.application.signalCheck && FAILED(hr = m_pCurrentTuner->StopTIF()))
+		{
+			(log << "Failed to stop the BDA TIF Filter.\n").Write();
+		}
 
 		UpdateData(frequency, bandwidth);
 
@@ -1469,9 +1483,6 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 		else
 			g_pTv->HideOSDItem(L"RecordingIcon");
 
-		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
-
 		// Do data stuff
 		if (m_pCurrentNetwork)
 			g_pTv->ShowOSDItem(L"Channel", 10);
@@ -1479,6 +1490,12 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 			g_pTv->ShowOSDItem(L"Channel", 300);
 		// End data stuff
 	
+		if (g_pData->values.application.signalCheck)
+			g_pTv->ShowOSDItem(L"SignalStatus", 10);
+		else
+			g_pTv->HideOSDItem(L"SignalStatus");
+
+
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 
 		indent.Release();
@@ -2016,7 +2033,7 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 	REFERENCE_TIME rtStart = timeGetTime();
 	HRESULT hr = S_OK;
 
-	if (m_pCurrentTuner && m_pCurrentTuner->IsActive())
+	if (g_pData->values.application.signalCheck && m_pCurrentTuner && m_pCurrentTuner->IsActive())
 	{
 		if SUCCEEDED(hr = m_pCurrentTuner->GetSignalStats(locked, strength, quality))
 		{
@@ -2032,8 +2049,14 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 				m_rtTunerSignalCount = timeGetTime();
 				m_rtTunerSignalCount += 3000;
 
-				if FAILED(hr = m_pCurrentTuner->StopTIF())
-					(log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write();
+				if (m_pCurrentTuner)
+				{
+					if FAILED(hr = m_pCurrentTuner->StopTIF())
+						(log << "Failed to stop the BDA TIF Filter: " << hr << "\n").Write();
+
+					if FAILED(hr = m_pCurrentTuner->DeleteBDADemuxPins())
+						(log << "Failed To clear pids on the BDA Demux pins: " << hr << "\n").Write();
+				}
 			}
 			else if (m_rtTunerSignalCount < rtStart)
 			{
@@ -2106,6 +2129,12 @@ HRESULT BDADVBTSource::UpdateChannels()
 			g_pTv->ShowOSDItem(L"Channel", 10);
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
+
+		if (g_pData->values.application.signalCheck)
+			g_pTv->ShowOSDItem(L"SignalStatus", 10);
+		else
+			g_pTv->HideOSDItem(L"SignalStatus");
+
 	}
 	return S_OK;
 }

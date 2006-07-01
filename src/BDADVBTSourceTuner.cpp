@@ -391,8 +391,23 @@ HRESULT BDADVBTSourceTuner::StopScanning()
 
 HRESULT BDADVBTSourceTuner::StopTIF()
 {
+	HRESULT hr;
+
 	if (m_piBDATIF)
-		return m_piBDATIF->Stop();
+		if FAILED(hr = m_piBDATIF->Stop())
+			return hr;
+
+	return S_FALSE;
+}
+
+HRESULT BDADVBTSourceTuner::DeleteBDADemuxPins()
+{
+	HRESULT hr;
+
+	if (m_piBDAMpeg2Demux)
+//		if FAILED(hr = graphTools.ClearDemuxPids(m_piBDAMpeg2Demux))
+		if FAILED(hr = graphTools.DeleteOutputPins(m_piBDAMpeg2Demux))
+			return hr;
 
 	return S_FALSE;
 }

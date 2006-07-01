@@ -39,8 +39,9 @@ LogMessageWriter::LogMessageWriter()
 LogMessageWriter::~LogMessageWriter()
 {
 	if (m_WriteThreadActive)
-		StopThread();
+		StopThread(200);
 
+	CAutoLock logFileLock(&m_logFileLock);
 	if (m_logFilename)
 	{
 		delete[] m_logFilename;
@@ -69,11 +70,12 @@ void LogMessageWriter::ThreadProc(void)
 
 	BrakeThread Brake;
 	
-	while (!ThreadIsStopping(100))
+	while (!ThreadIsStopping(0))
 	{
 		FlushLogBuffer(m_LogBufferLimit);
 		Sleep(100);
 	}
+	m_WriteThreadActive = FALSE;
 
 	return;
 }
