@@ -467,43 +467,46 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if (TRUE && m_pDWGraph->IsPlaying())
 	{
-//SeekTo(100);
-
-		// Set Filename
-		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
-		if (!piFileSourceFilter)
-			return (log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write(hr);
-
-		if FAILED(hr = piFileSourceFilter->Load(pFilename, pmt))
+SeekTo(100);
+		if (!pmt || pmt->subtype == MEDIASUBTYPE_MPEG2_TRANSPORT)
 		{
-			m_pDWGraph->Mute(g_pData->values.audio.bMute);
-			return (log << "Failed to load filename: " << hr << "\n").Write(hr);
-		}
 
-		if (bOwnFilename)
-			delete[] pFilename;
+			// Set Filename
+			CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
+			if (!piFileSourceFilter)
+				return (log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write(hr);
 
-		// Set Demux pids if loaded from a TimeShift Source
-		if (pService)
-		{
-			if FAILED(hr = m_DWDemux.AOnConnect(m_pTSFileSource, pService))
+			if FAILED(hr = piFileSourceFilter->Load(pFilename, pmt))
 			{
-				(log << "Failed to change the Requested Service using channel zapping.\n").Write();
+				m_pDWGraph->Mute(g_pData->values.audio.bMute);
+				return (log << "Failed to load filename: " << hr << "\n").Write(hr);
 			}
+
+			if (bOwnFilename)
+				delete[] pFilename;
+
+			// Set Demux pids if loaded from a TimeShift Source
+			if (pService)
+			{
+				if FAILED(hr = m_DWDemux.AOnConnect(m_pTSFileSource, pService))
+				{
+					(log << "Failed to change the Requested Service using channel zapping.\n").Write();
+				}
+			}
+
+			if FAILED(hr = m_pDWGraph->Start())
+				return (log << "Failed to Start Graph.\n").Write(hr);
+
+			m_pDWGraph->Mute(g_pData->values.audio.bMute);
+
+			indent.Release();
+			(log << "Finished Loading File\n").Write();
+
+			UpdateData();
+			g_pTv->ShowOSDItem(L"Position", 10);
+
+			return S_OK;
 		}
-
-		if FAILED(hr = m_pDWGraph->Start())
-			return (log << "Failed to Start Graph.\n").Write(hr);
-
-		m_pDWGraph->Mute(g_pData->values.audio.bMute);
-
-		indent.Release();
-		(log << "Finished Loading File\n").Write();
-
-		UpdateData();
-		g_pTv->ShowOSDItem(L"Position", 10);
-
-		return S_OK;
 	}
 
 	if FAILED(hr = UnloadFilters())
@@ -1427,7 +1430,7 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 	piTSFilepSource->SetRateControlMode(0);
 	piTSFilepSource->SetDelayMode(0);
 	piTSFilepSource->SetMP2Mode(1);
-	piTSFilepSource->SetAC3Mode(1);
+	piTSFilepSource->SetAC3Mode(0);
 	piTSFilepSource->SetAudio2Mode(0);
 	piTSFilepSource->SetROTMode(0);
 	piTSFilepSource->SetClockMode(1);

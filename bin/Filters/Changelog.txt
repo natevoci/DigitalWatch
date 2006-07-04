@@ -1,6 +1,7 @@
-Version 2.2.0.5
+Version 2.2.0.5 beta4
 =================
 bear:
+- Added some code to parse the media subtype from the file if its less than 2mb. This is to help with cold starting of timeshift files.
 - Added some code to help reduce HDD clogging.
 - Added some code to allow playing the TSFileSink timeshift files from other locations i.e. over networks.
 - Added a seperate buffer thread to the TSBuffer class, seems to now seek faster.

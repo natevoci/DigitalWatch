@@ -6,7 +6,9 @@ DigitalWatch History
 Version 2.0.7.3
 bear:
 Changes:
-- add signal strength/quality back into the DigitalWatch OSD (used the "S" key).
+- changed the TSFileSource AC3 Preference setting to disabled.
+- Changed the Timeshift file format to default to TS Mux. 
+- Add signal strength/quality back into the DigitalWatch OSD (used the "S" key).
 
 Version 2.0.7.2
 bear:
