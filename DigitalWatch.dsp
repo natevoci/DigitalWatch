@@ -393,6 +393,14 @@ SOURCE=.\src\DWMediaTypes.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\DWMulticastingList.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DWMulticastingList.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\FilterPropList.cpp
 # End Source File
 # Begin Source File

@@ -95,6 +95,7 @@ void DWGraph::SetLogCallback(LogMessageCallback *callback)
 	m_decoders.SetLogCallback(callback);
 	graphTools.SetLogCallback(callback);
 	m_resumeList.SetLogCallback(callback);
+	m_multicastList.SetLogCallback(callback);
 }
 
 BOOL DWGraph::SaveSettings()
@@ -105,9 +106,13 @@ BOOL DWGraph::SaveSettings()
 	HRESULT hr;
 
 	wchar_t file[MAX_PATH];
-	swprintf((LPWSTR)&file, L"%sResumeFile.xml", g_pData->application.appPath);
+	swprintf((LPWSTR)&file, L"%sResume.xml", g_pData->application.appPath);
 	if FAILED(hr = m_resumeList.Save((LPWSTR)&file))
 		(log << "Failed to load Resume List: " << hr << "\n").Write();
+
+	swprintf((LPWSTR)&file, L"%sMulticast.xml", g_pData->application.appPath);
+	if FAILED(hr = m_multicastList.Save((LPWSTR)&file))
+		(log << "Failed to load Multicast List: " << hr << "\n").Write();
 
 	indent.Release();
 	(log << "Finished Saving Settings DWGraph\n").Write();
@@ -166,11 +171,18 @@ BOOL DWGraph::Initialise()
 	g_pOSD->Data()->AddList(&m_mediaTypes);
 
 	m_resumeList.Initialise(g_pData->settings.application.resumesize);
-	swprintf((LPWSTR)&file, L"%sResumeFile.xml", g_pData->application.appPath);
+	swprintf((LPWSTR)&file, L"%sResume.xml", g_pData->application.appPath);
 	if FAILED(hr = m_resumeList.Load((LPWSTR)&file))
 		return (log << "Failed to load Resume List: " << hr << "\n").Write(hr);
 
 	g_pOSD->Data()->AddList(&m_resumeList);
+
+	m_multicastList.Initialise(g_pData->settings.application.resumesize);
+	swprintf((LPWSTR)&file, L"%sMulticast.xml", g_pData->application.appPath);
+	if FAILED(hr = m_multicastList.Load((LPWSTR)&file))
+		return (log << "Failed to load Multicast List: " << hr << "\n").Write(hr);
+
+	g_pOSD->Data()->AddList(&m_multicastList);
 
 	//--- COM should already be initialized ---
 
@@ -210,6 +222,7 @@ BOOL DWGraph::Destroy()
 		m_rotEntry = 0;
 	}
 
+	m_multicastList.Destroy();
 	m_resumeList.Destroy();
 	m_decoders.Destroy();
 	m_mediaTypes.Destroy();

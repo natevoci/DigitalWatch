@@ -351,12 +351,31 @@ $(() - $(
 				SetSource(BDATimeShift)
 			</onSelect>
 			<onUp>#TV</onUp>
+			<onDown>#Multicast</onDown>
+		</highlight>
+	</button>
+
+	<button name="Multicast">
+		<pos x=100 y=240 />
+		<size width=568 height=60 />
+		<text>Multicasting</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<background>
+			<image>BrownButton</image>
+			<highlightImage>GreenButton</highlightImage>
+		</background>
+		<highlight>
+			<onSelect>
+				ExitMenu(-1)
+				ShowMenu(MulticastMenu)
+			</onSelect>
+			<onUp>#TSTV</onUp>
 			<onDown>#File</onDown>
 		</highlight>
 	</button>
 
 	<button name="File">
-		<pos x=100 y=240 />
+		<pos x=100 y=310 />
 		<size width=568 height=60 />
 		<text>Play File</text>
 		<font height=40 weight=700 color="#FFFFFF" />
@@ -369,13 +388,13 @@ $(() - $(
 				ExitMenu(-1)
 				SetSource(TSFileSource)
 			</onSelect>
-			<onUp>#TSTV</onUp>
+			<onUp>#Multicast</onUp>
 			<onDown>#AppSettings</onDown>
 		</highlight>
 	</button>
 
 	<button name="AppSettings">
-		<pos x=100 y=310 />
+		<pos x=100 y=380 />
 		<size width=568 height=60 />
 		<text>Settings</text>
 		<font height=40 weight=700 color="#FFFFFF" />
@@ -394,7 +413,7 @@ $(() - $(
 	</button>
 
 	<button name="Exit">
-		<pos x=100 y=380 />
+		<pos x=100 y=450 />
 		<size width=568 height=60 />
 		<text>Exit</text>
 		<font height=40 weight=700 color="#FFFFFF" />
@@ -526,6 +545,45 @@ $(() - $(
 				ShowMenu("MainMenu")
 			</onSelect>
 		</item>
+	</list>
+</window>
+
+<window name="MulticastMenu">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("MainMenu")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<label>
+		<pos x=384 y=40 />
+		<text>Multicasting Sources</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="centre"/>
+	</label>
+
+	<list name="MulticastMenuOptions">
+		<pos x=10 y=100 />
+		<size width=200 height=400 />
+	
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+		</itemTemplate>
+
+		<itemList>
+			<source>MulticastInfo</source>
+			<text> $(MulticastInfo.Name)</text>
+			<onSelect>SetSource(TSFileSource, $(MulticastInfo.Address))ShowMenu("MulticastMenu")</onSelect>
+		</itemList>
 	</list>
 </window>
 
@@ -755,6 +813,15 @@ $(() - $(
 			<text> Enable Decoder Test</text>
 			<onSelect>ShowMenu("DecoderTest")</onSelect>
 			<onRight>ShowMenu("DecoderTest")</onRight>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> Enable Signal Test</text>
+			<onSelect>ShowMenu("SignalTest")</onSelect>
+			<onRight>ShowMenu("SignalTest")</onRight>
 		</item>
 
 		<item>
@@ -1426,6 +1493,51 @@ $(() - $(
 			<font height=30 weight=700 color="#FFFFFF" />
 			<text> False</text>
 			<onSelect>SetDecoderTest("False") ShowMenu("DecoderTest")</onSelect>
+		</item>
+	</list>
+
+</window>
+
+<window name="SignalTest">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("AppSetup") ShowMenu("GlobalSetup") </>
+		<Key code= 38>Up()</>
+		<Key code= 39>right()</>
+		<Key code= 40>Down()</>
+	</keys>
+
+	<list name="SignalTestOptions">
+		<pos x=560 y=100 />
+		<size width=200 height=400 />
+		<selection>settings.application.signalCheck</selection>
+		
+		<itemTemplate>
+			<height>40</height>
+			<gap>5</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> True</text>
+			<onSelect>SetSignalCheck("True") ShowMenu("SignalTest")</onSelect>
+		</item>
+
+		<item>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<text> False</text>
+			<onSelect>SetSignalCheck("False") ShowMenu("SignalTest")</onSelect>
 		</item>
 	</list>
 

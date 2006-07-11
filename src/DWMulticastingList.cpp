@@ -1,5 +1,5 @@
 /**
- *	DWFileResumeList.cpp
+ *	DWMulticastingList.cpp
  *	Copyright (C) 2005 Nate
  *	Copyright (C) 2006 Bear
  *
@@ -20,46 +20,46 @@
  *	along with DigitalWatch; if not, write to the Free Software
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
-#include "DWFileResumeList.h"
+#include "Globals.h"
+#include "DWMulticastingList.h"
 
 //////////////////////////////////////////////////////////////////////
-// DWFileResumeListItem
+// DWMulticastingListItem
 //////////////////////////////////////////////////////////////////////
 
-DWFileResumeListItem::DWFileResumeListItem()
+DWMulticastingListItem::DWMulticastingListItem()
 {
-	resume = NULL;
+	address = NULL;
 	name = NULL;
 }
 
-DWFileResumeListItem::~DWFileResumeListItem()
+DWMulticastingListItem::~DWMulticastingListItem()
 {
-	if (resume)
-		delete[] resume;
+	if (address)
+		delete[] address;
 	if (name)
 		delete[] name;
 }
 
-HRESULT DWFileResumeListItem::SaveToXML(XMLElement *pElement)
+HRESULT DWMulticastingListItem::SaveToXML(XMLElement *pElement)
 {
 	pElement->Attributes.Add(new XMLAttribute(L"name", name));
-	pElement->Attributes.Add(new XMLAttribute(L"resume", resume));
+	pElement->Attributes.Add(new XMLAttribute(L"address", address));
 	return S_OK;
 }
 
 //////////////////////////////////////////////////////////////////////
-// DWFileResumeList
+// DWMulticastingList
 //////////////////////////////////////////////////////////////////////
 
-DWFileResumeList::DWFileResumeList()
+DWMulticastingList::DWMulticastingList()
 {
 	m_filename = NULL;
 	m_dataListName = NULL;
-	m_ResumeSize = 50;
+	m_MulticastSize = 50;
 }
 
-DWFileResumeList::~DWFileResumeList()
+DWMulticastingList::~DWMulticastingList()
 {
 	Destroy();
 	if (m_filename)
@@ -69,11 +69,11 @@ DWFileResumeList::~DWFileResumeList()
 		delete[] m_dataListName;
 }
 
-HRESULT DWFileResumeList::Destroy()
+HRESULT DWMulticastingList::Destroy()
 {
 	CAutoLock listLock(&m_listLock);
 
-	std::vector<DWFileResumeListItem *>::iterator it = m_list.begin();
+	std::vector<DWMulticastingListItem *>::iterator it = m_list.begin();
 	for ( ; it < m_list.end() ; it++ )
 	{
 		delete (*it);
@@ -82,31 +82,31 @@ HRESULT DWFileResumeList::Destroy()
 	return S_OK;
 }
 
-void DWFileResumeList::SetLogCallback(LogMessageCallback *callback)
+void DWMulticastingList::SetLogCallback(LogMessageCallback *callback)
 {
 	LogMessageCaller::SetLogCallback(callback);
 }
 
-HRESULT DWFileResumeList::Initialise(int resumeSize)
+HRESULT DWMulticastingList::Initialise(int multicastSize)
 {
-	(log << "Initialising the Resume List \n").Write();
+	(log << "Initialising the Multicast List \n").Write();
 
-	m_ResumeSize = resumeSize;
+	m_MulticastSize = multicastSize;
 
-	(log << "Finished Initialising the Resume List \n").Write();
+	(log << "Finished Initialising the Multicast List \n").Write();
 	
 	return S_OK;
 
 }
 
-LPWSTR DWFileResumeList::GetListName()
+LPWSTR DWMulticastingList::GetListName()
 {
 	if (!m_dataListName)
-		strCopy(m_dataListName, L"ResumeInfo");
+		strCopy(m_dataListName, L"MulticastInfo");
 	return m_dataListName;
 }
 
-LPWSTR DWFileResumeList::GetListItem(LPWSTR name, long nIndex)
+LPWSTR DWMulticastingList::GetListItem(LPWSTR name, long nIndex)
 {
 	CAutoLock listLock(&m_listLock);
 
@@ -118,51 +118,51 @@ LPWSTR DWFileResumeList::GetListItem(LPWSTR name, long nIndex)
 	{
 		name += startsWithLength;
 
-		DWFileResumeListItem *resumeItem = m_list.at(nIndex);
-		if (_wcsicmp(name, L".resume") == 0)
-			return resumeItem->resume;
+		DWMulticastingListItem *multicastItem = m_list.at(nIndex);
+		if (_wcsicmp(name, L".address") == 0)
+			return multicastItem->address;
 		else if (_wcsicmp(name, L".name") == 0)
-			return resumeItem->name;
+			return multicastItem->name;
 	}
 	return NULL;
 }
 
-long DWFileResumeList::GetListSize()
+long DWMulticastingList::GetListSize()
 {
 	CAutoLock listLock(&m_listLock);
 	return m_list.size();
 }
 
-void DWFileResumeList::SetListItem(LPWSTR name, LPWSTR value)
+void DWMulticastingList::SetListItem(LPWSTR name, LPWSTR value)
 {
 	if (!name || !value)
 		return;
 
-	//do search for name and load resume time
+	//do search for name and load multicast address
 	CAutoLock listLock(&m_listLock);
-	std::vector<DWFileResumeListItem *>::iterator it = m_list.begin();
+	std::vector<DWMulticastingListItem *>::iterator it = m_list.begin();
 	for ( ; it < m_list.end() ; it++ )
 	{
 		if (_wcsicmp((*it)->name, name) == 0)
 		{
-			strCopy((*it)->resume, value);
+			strCopy((*it)->address, value);
 			return;
 		}
 	}
 
 	// If not found then push it onto the list
-	DWFileResumeListItem *resumeItem = new DWFileResumeListItem();
-	strCopy(resumeItem->name, name);
-	strCopy(resumeItem->resume, value);
-	m_list.push_back(resumeItem);
+	DWMulticastingListItem *multicastItem = new DWMulticastingListItem();
+	strCopy(multicastItem->name, name);
+	strCopy(multicastItem->address, value);
+	m_list.push_back(multicastItem);
 
 	return;
 }
 
-HRESULT DWFileResumeList::Load(LPWSTR filename)
+HRESULT DWMulticastingList::Load(LPWSTR filename)
 {
 
-	(log << "Loading Resume Time file: " << filename << "\n").Write();
+	(log << "Loading Multicast List file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
@@ -173,49 +173,51 @@ HRESULT DWFileResumeList::Load(LPWSTR filename)
 	file.SetLogCallback(m_pLogCallback);
 	if FAILED(hr = file.Load(m_filename))
 	{
-		(log << "Could not load Resume Time file: " << m_filename << "\n").Show();
+		(log << "Could not load Multicast list file: " << m_filename << "\n").Show();
 		if FAILED(MakeFile(filename))
-			return (log << "Could not load or make the Resume Time File: " << m_filename << "\n").Show(hr);
+			return (log << "Could not load or make the Multicast list File: " << m_filename << "\n").Show(hr);
+
+		Destroy();
 
 		if FAILED(hr = file.Load(m_filename))
-			return (log << "Could not load or make the Resume Time File: " << m_filename << "\n").Show(hr);
+			return (log << "Could not load or make the Multicast list File: " << m_filename << "\n").Show(hr);
 	}
 
 	XMLElement *element = NULL;
 	XMLElement *subelement = NULL;
 	XMLAttribute *attr;
 
-	DWFileResumeListItem *resumeItem;
+	DWMulticastingListItem *multicastItem;
 	int elementCount = file.Elements.Count();
 	for ( int item=0 ; item<elementCount ; item++ )
 	{
 		element = file.Elements.Item(item);
-		if (_wcsicmp(element->name, L"MediaFile") == 0)
+		if (_wcsicmp(element->name, L"Multicast") == 0)
 		{
 			attr = element->Attributes.Item(L"name");
 			if (!attr)
 				continue;
 
-			resumeItem = new DWFileResumeListItem();
-			strCopy(resumeItem->name, attr->value);
+			multicastItem = new DWMulticastingListItem();
+			strCopy(multicastItem->name, attr->value);
 
-			attr = element->Attributes.Item(L"resume");
+			attr = element->Attributes.Item(L"address");
 			if (attr)
-				strCopy(resumeItem->resume, attr->value);
+				strCopy(multicastItem->address, attr->value);
 
 			CAutoLock listLock(&m_listLock);
-			m_list.push_back(resumeItem);
+			m_list.push_back(multicastItem);
 		}
 	}
 
-	(log << "Loaded " << (long)m_list.size() << " Resume Times\n").Write();
+	(log << "Loaded " << (long)m_list.size() << " Multicast List Items\n").Write();
 
 	indent.Release();
-	(log << "Finished loading Resume Time file : " << hr << "\n").Write();
+	(log << "Finished loading Multicast List file : " << hr << "\n").Write();
 	return S_OK;
 }
 
-BOOL DWFileResumeList::Save(LPWSTR filename)
+BOOL DWMulticastingList::Save(LPWSTR filename)
 {
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);
@@ -225,7 +227,7 @@ BOOL DWFileResumeList::Save(LPWSTR filename)
 	if (!m_list.size())
 		return TRUE;
 
-	std::vector<DWFileResumeListItem *>::iterator it = m_list.end();
+	std::vector<DWMulticastingListItem *>::iterator it = m_list.end();
 	it--;
 	for ( ; it > m_list.begin() ; it-- )
 	{
@@ -236,7 +238,7 @@ BOOL DWFileResumeList::Save(LPWSTR filename)
 
 		count++;
 		// limit list
-		if (count > m_ResumeSize)
+		if (count > m_MulticastSize)
 			break;
 	};
 
@@ -247,9 +249,9 @@ BOOL DWFileResumeList::Save(LPWSTR filename)
 		if ((length >= 9) && (_wcsicmp((*it)->name+length-9, L".tsbuffer") == 0))
 			continue;
 
-		XMLElement *pElement = new XMLElement(L"MediaFile");
-		DWFileResumeListItem *resumeItem = *it;
-		resumeItem->SaveToXML(pElement);
+		XMLElement *pElement = new XMLElement(L"Multicast");
+		DWMulticastingListItem *multicastItem = *it;
+		multicastItem->SaveToXML(pElement);
 		file.Elements.Add(pElement);
 	}
 	
@@ -261,25 +263,28 @@ BOOL DWFileResumeList::Save(LPWSTR filename)
 	return TRUE;
 }
 
-HRESULT DWFileResumeList::MakeFile(LPWSTR filename)
+HRESULT DWMulticastingList::MakeFile(LPWSTR filename)
 {
-	(log << "Making the Resume Time file: " << filename << "\n").Write();
+	(log << "Making the Multicast List file: " << filename << "\n").Write();
 	LogMessageIndent indent(&log);
 
-	XMLDocument file;
-	file.SetLogCallback(m_pLogCallback);
+	SetListItem(L"Multicast Channel 1", L"udp://224.0.0.1:1234@127.0.0.1");
+	SetListItem(L"Multicast Channel 2", L"udp://224.0.0.2:1234@127.0.0.1");
+	SetListItem(L"Multicast Channel 3", L"udp://224.0.0.3:1234@127.0.0.1");
+	SetListItem(L"Multicast Channel 4", L"udp://224.0.0.4:1234@127.0.0.1");
+	SetListItem(L"Multicast Channel 5", L"udp://224.0.0.5:1234@127.0.0.1");
 
 	if (filename)
-		file.Save(filename);
+		Save(filename);
 	else
-		file.Save(m_filename);
+		Save(m_filename);
 
 	indent.Release();
-	(log << "Finished Making the Resume Time File.\n").Write();
+	(log << "Finished Making the Multicast List File.\n").Write();
 	return S_OK;
 }
 
-HRESULT DWFileResumeList::FindResumeName(LPWSTR pResumeName, int *pIndex)
+HRESULT DWMulticastingList::FindMulticastName(LPWSTR pMulticastName, int *pIndex)
 {
 	if (!pIndex)
         return E_INVALIDARG;
@@ -287,10 +292,10 @@ HRESULT DWFileResumeList::FindResumeName(LPWSTR pResumeName, int *pIndex)
 	*pIndex = 0;
 
 	CAutoLock listLock(&m_listLock);
-	std::vector<DWFileResumeListItem *>::iterator it = m_list.begin();
+	std::vector<DWMulticastingListItem *>::iterator it = m_list.begin();
 	for ( ; it < m_list.end() ; it++ )
 	{
-		if (_wcsicmp((*it)->name, pResumeName) == 0)
+		if (_wcsicmp((*it)->name, pMulticastName) == 0)
 			return S_OK;
 
 		(*pIndex)++;

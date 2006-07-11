@@ -457,6 +457,16 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		USES_CONVERSION;
 		strCopy(pFilename, T2W(ptFilename));
 	}
+	//multicasting
+	else if (g_pData->settings.timeshift.folder && wcsicmp(pFilename, L"udp://") != 0)
+	{
+		if (wcsicmp(pFilename+1, L"udp://") == 0)
+		{
+			LPWSTR temp = new WCHAR[wcslen(g_pData->settings.timeshift.folder) + wcslen(L"\\") + wcslen(pFilename) + 1];
+			wsprintfW(temp, L"%S\\%S", g_pData->settings.timeshift.folder, pFilename);
+			pFilename = temp;
+		}
+	}
 
 	(log << "Building Graph (" << pFilename << ")\n").Write();
 	LogMessageIndent indent(&log);
@@ -467,7 +477,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if (TRUE && m_pDWGraph->IsPlaying())
 	{
-SeekTo(100);
+//SeekTo(100);
 		if (!pmt || pmt->subtype == MEDIASUBTYPE_MPEG2_TRANSPORT)
 		{
 
@@ -746,7 +756,7 @@ HRESULT TSFileSource::ReLoadFile(LPWSTR pFilename)
 	if (m_pTSFileSource)
 	{
 		SaveResumePosition();
-
+//Seek(100);
 		// Set Filename
 		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
 		if (!piFileSourceFilter)

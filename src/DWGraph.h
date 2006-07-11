@@ -28,6 +28,7 @@
 #include "DWMediaTypes.h"
 #include "DWDecoders.h"
 #include "DWFileResumeList.h"
+#include "DWMulticastingList.h"
 #include "FilterGraphTools.h"
 #include "DWOnScreenDisplay.h"
 
@@ -104,6 +105,7 @@ private:
 	DWMediaTypes m_mediaTypes;
 	DWDecoders m_decoders;
 	DWFileResumeList m_resumeList;
+	DWMulticastingList m_multicastList;
 
 	FilterGraphTools graphTools;
 };

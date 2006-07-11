@@ -79,11 +79,11 @@ HRESULT DWSurfaceRendererVMR9Bitmap::CreateMainSurface()
 	m_Height = pOSDRenderer->GetBackBufferHeight();
 
 	hr = pOSDRendererVMR9Bitmap->GetD3DDevice(&m_pD3DDevice);
-	if FAILED(hr)
+	if (FAILED(hr) || !m_pD3DDevice)
 		return (log << "Failed to get D3D Device: " << hr << "\n").Write(hr);
 
 	hr = pOSDRendererVMR9Bitmap->GetD3DSurface(&m_pD3DSurface);
-	if FAILED(hr)
+	if (FAILED(hr) || !m_pD3DSurface)
 		return (log << "Failed to get D3D Surface: " << hr << "\n").Write(hr);
 
 	return hr;
@@ -108,11 +108,11 @@ HRESULT DWSurfaceRendererVMR9Bitmap::Create(long width, long height)
 	m_Height = height;
 
 	hr = pOSDRendererVMR9Bitmap->GetD3DDevice(&m_pD3DDevice);
-	if FAILED(hr)
+	if (FAILED(hr) || !m_pD3DDevice)
 		return (log << "Failed to get D3D Device: " << hr << "\n").Write(hr);
 
 	hr = m_pD3DDevice->CreateRenderTarget(m_Width, m_Height, D3DFMT_A8R8G8B8, D3DMULTISAMPLE_NONE, 0, TRUE, &m_pD3DSurface, NULL);
-	if FAILED(hr)
+	if (FAILED(hr) || !m_pD3DSurface)
 		return (log << "Failed to create render target for surface: " << hr << "\n").Write(hr);
 
 	return hr;
@@ -149,6 +149,9 @@ HRESULT DWSurfaceRendererVMR9Bitmap::Destroy()
 
 HRESULT DWSurfaceRendererVMR9Bitmap::Clear()
 {
+	if (!m_pD3DSurface)
+		return E_POINTER;
+
 	HRESULT hr = m_pD3DDevice->ColorFill(m_pD3DSurface, NULL, 0x00000000);
 	if FAILED(hr)
 		return (log << "Failed to clear main surface: " << hr << "\n").Write(hr);
@@ -168,6 +171,9 @@ HRESULT DWSurfaceRendererVMR9Bitmap::SetColorKey(COLORREF dwColorKey)
 
 HRESULT DWSurfaceRendererVMR9Bitmap::Blt(DWSurfaceRenderer *targetSurface, RECT* lprcDest /*= NULL*/, RECT* lprcSrc /*= NULL*/)
 {
+	if (!m_pD3DSurface)
+		return E_POINTER;
+
 	HRESULT hr = S_OK;
 
 	RECT rcDest;
@@ -212,6 +218,9 @@ HRESULT DWSurfaceRendererVMR9Bitmap::Blt(DWSurfaceRenderer *targetSurface, RECT*
 
 HRESULT DWSurfaceRendererVMR9Bitmap::DrawText(DWSurfaceText *text, int x, int y)
 {
+	if (!m_pD3DSurface)
+		return E_POINTER;
+
 	HRESULT hr = S_OK;
 #ifndef USE_CD3DFONT
 	int length;
@@ -264,7 +273,10 @@ HRESULT DWSurfaceRendererVMR9Bitmap::DrawText(DWSurfaceText *text, int x, int y)
 		DeleteObject( hFont );
 #else
 		pFont = new CD3DFont( text->font.lfFaceName, (DWORD)(text->font.lfHeight/1.5f));
-		pFont->InitDeviceObjects(m_pD3DDevice);
+		hr = pFont->InitDeviceObjects(m_pD3DDevice);
+		if FAILED(hr)
+			return (log << "Failed to Init Device Objects: " << hr << "\n").Write(hr);
+
 		pFont->RestoreDeviceObjects();
 #endif
 
@@ -312,6 +324,9 @@ HRESULT DWSurfaceRendererVMR9Bitmap::DrawText(DWSurfaceText *text, int x, int y)
 
 HRESULT DWSurfaceRendererVMR9Bitmap::LoadBitmap()
 {
+	if (!m_pD3DSurface)
+		return E_POINTER;
+
 	USES_CONVERSION;
 
 	HRESULT hr;

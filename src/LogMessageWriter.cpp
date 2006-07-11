@@ -41,6 +41,7 @@ LogMessageWriter::~LogMessageWriter()
 	if (m_WriteThreadActive)
 		StopThread(200);
 
+	CAutoLock BufferLock(&m_BufferLock);
 	CAutoLock logFileLock(&m_logFileLock);
 	if (m_logFilename)
 	{
@@ -48,7 +49,15 @@ LogMessageWriter::~LogMessageWriter()
 		m_logFilename = NULL;
 	}
 
-	ClearBuffer();
+	std::vector<LOGINFO*>::iterator it = m_Array.begin();
+	for ( ; it != m_Array.end() ; it++ )
+	{
+		LOGINFO *logInfo = *it;
+		delete[] logInfo->pStr;
+		delete logInfo;
+	}
+	m_Array.clear();
+//	ClearBuffer();
 }
 
 void LogMessageWriter::ClearBuffer(void)

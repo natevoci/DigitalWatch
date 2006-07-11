@@ -3,10 +3,17 @@ DigitalWatch History
 --------------------
  Changes
   ```````
+Version 2.0.7.4
+bear:
+Changes:
+- Added DSNetwork input support for the OSD.
+- Added OSD Global settings support for the Signal quality tests, also the default value is now disabled.
+
+
 Version 2.0.7.3
 bear:
 Changes:
-- changed the TSFileSource AC3 Preference setting to disabled.
+- Changed the ITSFileSource AC3 Preference setting to disabled.
 - Changed the Timeshift file format to default to TS Mux. 
 - Add signal strength/quality back into the DigitalWatch OSD (used the "S" key).
 

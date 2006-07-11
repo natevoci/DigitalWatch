@@ -81,7 +81,7 @@ AppData::AppData()
 	settings.application.decoderTest = TRUE;
 	settings.application.autoDecoderTest = TRUE;
 	settings.application.logBufferLimit = 100;
-	settings.application.signalCheck = TRUE;
+	settings.application.signalCheck = FALSE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	

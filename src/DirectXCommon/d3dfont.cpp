@@ -174,6 +174,9 @@ HRESULT CD3DFont::PaintAlphabet( HDC hDC, BOOL bMeasureOnly )
 //-----------------------------------------------------------------------------
 HRESULT CD3DFont::InitDeviceObjects( LPDIRECT3DDEVICE9 pd3dDevice )
 {
+	if (!pd3dDevice)
+		return E_INVALIDARG;
+
     HRESULT hr = S_OK;
     HFONT hFont = NULL;
     HFONT hFontOld = NULL;

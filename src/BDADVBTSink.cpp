@@ -594,7 +594,8 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 							 FILE_SHARE_WRITE,       // Share access
 							 NULL,                  // Security
 							 OPEN_EXISTING,         // Open flags
-							 (DWORD) 0,             // More flags
+//							 (DWORD) 0,             // More flags
+							 FILE_ATTRIBUTE_NORMAL, // More flags
 							 NULL);                 // Template
 		if (hFile != INVALID_HANDLE_VALUE)
 		{
@@ -633,6 +634,7 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 										FILE_SHARE_WRITE,   // Share access
 										NULL,      // Security
 										OPEN_EXISTING,    // Open flags
+//										(DWORD) 0,             // More flags
 										FILE_ATTRIBUTE_NORMAL, // More flags
 										NULL);
 
@@ -660,6 +662,7 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 							FILE_SHARE_WRITE,			// Share access
 							NULL,						// Security
 							OPEN_EXISTING,				// Open flags
+//							(DWORD) 0,             // More flags
 							FILE_ATTRIBUTE_NORMAL,		// More flags
 							NULL);						// Template
 
