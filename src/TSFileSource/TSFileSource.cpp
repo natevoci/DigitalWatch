@@ -457,15 +457,24 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		USES_CONVERSION;
 		strCopy(pFilename, T2W(ptFilename));
 	}
-	//multicasting
-	else if (g_pData->settings.timeshift.folder && wcsicmp(pFilename, L"udp://") != 0)
+	// if multicasting add path if specified
+	else if (g_pData->settings.timeshift.folder &&
+				wcsstr(g_pData->settings.timeshift.folder, L":") != NULL &&
+				wcsstr(_wcslwr(pFilename), L"udp://") == pFilename)
 	{
-		if (wcsicmp(pFilename+1, L"udp://") == 0)
+		LPWSTR temp = NULL;
+		//check for "\" at end of folder name
+		if (wcsstr(g_pData->settings.timeshift.folder, L"\\") != g_pData->settings.timeshift.folder + wcslen(g_pData->settings.timeshift.folder))
 		{
-			LPWSTR temp = new WCHAR[wcslen(g_pData->settings.timeshift.folder) + wcslen(L"\\") + wcslen(pFilename) + 1];
+			temp = new WCHAR[wcslen(g_pData->settings.timeshift.folder) + wcslen(L"\\") + wcslen(pFilename) + 1];
 			wsprintfW(temp, L"%S\\%S", g_pData->settings.timeshift.folder, pFilename);
-			pFilename = temp;
 		}
+		else
+		{
+			temp = new WCHAR[wcslen(g_pData->settings.timeshift.folder) + wcslen(pFilename) + 1];
+			wsprintfW(temp, L"%S%S", g_pData->settings.timeshift.folder, pFilename);
+		}
+		pFilename = temp;
 	}
 
 	(log << "Building Graph (" << pFilename << ")\n").Write();
@@ -555,8 +564,14 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if FAILED(hr = piFileSourceFilter->Load(pFilename, pmt))
 	{
+		(log << "Failed to load filename: " << hr << "\n").Write();
+		if FAILED(hr = UnloadFilters())
+		{
+			m_pDWGraph->Mute(g_pData->values.audio.bMute);
+			return (log << "Failed to unload previous filters\n").Write(hr);
+		}
 		m_pDWGraph->Mute(g_pData->values.audio.bMute);
-		return (log << "Failed to load filename: " << hr << "\n").Write(hr);
+		return hr;
 	}
 
 	//creates a dummy service and gets the media types from the file source

@@ -72,6 +72,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	g_pDWWindow->SetLogCallback(&g_DWLogWriter);
 	g_pOSD->SetLogCallback(&g_DWLogWriter);
 
+	SetProcessAffinityMask(GetCurrentProcess(), 0x1);
 	BOOL bSucceeded = SetPriorityClass(GetCurrentProcess(), g_pData->settings.application.priority);
 	
 	if (g_pDWWindow->Create(hInstance, hPrevInstance, lpCmdLine, nCmdShow))

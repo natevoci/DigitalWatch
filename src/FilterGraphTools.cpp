@@ -1273,7 +1273,8 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, DVBTChann
 
 	long renderedStreams = 0;
 
-	if (!wcsicmp(pPinName, L"TS"))
+//	if (!wcsicmp(pPinName, L"TS"))
+	if (!_wcsicmp(pPinName, L"TS"))
 	{
 		long count = pService->GetStreamCount();
 

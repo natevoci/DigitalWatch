@@ -1,6 +1,7 @@
-Version 2.2.0.6 Beta 2
+Version 2.2.0.6 Beta 3
 =================
 bear:
+- Some minor changes to remove some threading stuff.
 - Found a problem with frame dropping when running in non HT mode. Removed the regular parser update call as well as disabled the TSBuffer extra threading.
 - Added some fixes to make the Netrender class work with the URL input format.
 - Added a High ProcessClass priority to the Net Render::CreateNetworkGraph() function if the dsnetwork graph was successful in building.
