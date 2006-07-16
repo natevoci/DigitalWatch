@@ -486,6 +486,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 
 	if (TRUE && m_pDWGraph->IsPlaying())
 	{
+		SaveResumePosition();
 //SeekTo(100);
 		if (!pmt || pmt->subtype == MEDIASUBTYPE_MPEG2_TRANSPORT)
 		{
@@ -512,6 +513,8 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 					(log << "Failed to change the Requested Service using channel zapping.\n").Write();
 				}
 			}
+
+			LoadResumePosition();
 
 			if FAILED(hr = m_pDWGraph->Start())
 				return (log << "Failed to Start Graph.\n").Write(hr);
@@ -1458,7 +1461,7 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 	piTSFilepSource->SetAC3Mode(0);
 	piTSFilepSource->SetAudio2Mode(0);
 	piTSFilepSource->SetROTMode(0);
-	piTSFilepSource->SetClockMode(1);
+	piTSFilepSource->SetClockMode(3);//1
 	piTSFilepSource->SetCreateTSPinOnDemux(0);
 	piTSFilepSource->SetCreateTxtPinOnDemux(0);
 	piTSFilepSource->SetFixedAspectRatio(0);

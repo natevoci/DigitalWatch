@@ -34,7 +34,7 @@ public:
 	~AppData();
 
 	HRESULT LoadSettings();
-	HRESULT SaveSettings();
+	HRESULT SaveSettings(BOOL bUpdate = FALSE);
 
 	HWND hWnd;
 

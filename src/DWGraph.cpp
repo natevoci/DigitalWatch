@@ -640,7 +640,6 @@ HRESULT DWGraph::RefreshVideoPosition(IGraphBuilder *piGraphBuilder)
 			long lWidth, lHeight, lARWidth, lARHeight;
 			piWindowlessControl->GetNativeVideoSize(&lWidth, &lHeight, &lARWidth, &lARHeight);
 			aspectRatio = lARWidth / (double)lARHeight;
-
 			CalculateVideoRect(aspectRatio);
 
 			CComQIPtr<IVMRMixerControl9> piMixerControl(piVMR9Filter);

@@ -566,7 +566,7 @@ $(() - $(
 
 	<list name="MulticastMenuOptions">
 		<pos x=10 y=100 />
-		<size width=200 height=400 />
+		<size width=300 height=400 />
 	
 		<itemTemplate>
 			<height>40</height>

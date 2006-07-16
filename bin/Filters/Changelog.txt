@@ -1,6 +1,8 @@
-Version 2.2.0.6 Beta 3
+Version 2.2.0.6 Beta 4
 =================
 bear:
+- Minor code changes to the reference clock mode setting when reloading the file name. The Clock mode setting is now kept after a file reload..
+- Removed the reference clock -1% change when cold starting, may have been causing some lipsync problems TBA.
 - Some minor changes to remove some threading stuff.
 - Found a problem with frame dropping when running in non HT mode. Removed the regular parser update call as well as disabled the TSBuffer extra threading.
 - Added some fixes to make the Netrender class work with the URL input format.

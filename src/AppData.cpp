@@ -1402,7 +1402,7 @@ HRESULT AppData::LoadSettings()
 	return S_OK;
 }
 
-HRESULT AppData::SaveSettings()
+HRESULT AppData::SaveSettings(BOOL bUpdate)
 {
 	wchar_t filename[MAX_PATH];
 	swprintf((LPWSTR)&filename, L"%s%s", application.appPath, L"Settings.xml");
@@ -1460,9 +1460,9 @@ HRESULT AppData::SaveSettings()
 	XMLElement *pWindow = new XMLElement(L"Window");
 	file.Elements.Add(pWindow);
 	{
-		if (settings.window.rememberFullscreenState)
+		if (!bUpdate && settings.window.rememberFullscreenState)
 			settings.window.startFullscreen = values.window.bFullScreen;
-		if (settings.window.rememberAlwaysOnTopState)
+		if (!bUpdate && settings.window.rememberAlwaysOnTopState)
 			settings.window.startAlwaysOnTop = values.window.bAlwaysOnTop;
 		if (settings.window.rememberWindowPosition)
 		{
