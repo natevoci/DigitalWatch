@@ -200,10 +200,14 @@ HRESULT DWDemux::AOnConnect(IBaseFilter *pTSSourceFilter,
 							DVBTChannels_Service* pService,
 							IBaseFilter *pClockFilter)
 {
-	if (!pTSSourceFilter || !pService)
+	if (!pTSSourceFilter)
 		return S_FALSE;
 
 	m_pTSSourceFilter = pTSSourceFilter;
+
+	if (!pService)
+		return S_FALSE;
+
 	m_pService = pService;
 
 //	if (m_bConnectBusyFlag || m_pNetwork->m_ParsingLock)
@@ -301,13 +305,12 @@ HRESULT DWDemux::AOnConnect(IBaseFilter *pTSSourceFilter,
 		pos = FList.GetHeadPosition();
 	}
 
-	//Set the reference clock type
-/////////////////////////////////////////////////	SetRefClock();
-
 	if (IsPlaying() == S_FALSE)
 	{
 		if (pClockFilter != NULL)
 			SetReferenceClock(pClockFilter);
+		else if (m_ClockMode)
+			SetRefClock();
 
 		//Re Start the Graph if was running and was stopped.
 		if (m_WasPlaying || m_WasPaused)
@@ -2771,6 +2774,9 @@ HRESULT DWDemux::SetReferenceClock(IBaseFilter *pFilter)
 
 void DWDemux::SetRefClock()
 {
+	if (!m_pTSSourceFilter)
+		return;
+
 	if (m_ClockMode == 0)
 	{
 		//Let the filter graph choose the best clock

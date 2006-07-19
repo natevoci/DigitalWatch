@@ -513,6 +513,18 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 			(log << (*ppDemodDevice)->strDevicePath << "\n").Write();
 			LogMessageIndent indentC(&log);
 
+			if SUCCEEDED(hr = graphTools.AddFilterByDevicePath(piGraphBuilder, &piBDADemod, (*ppDemodDevice)->strDevicePath, (*ppDemodDevice)->strFriendlyName))
+			{
+				if SUCCEEDED(hr = graphTools.ConnectFilters(piGraphBuilder, piBDATuner, piBDADemod))
+				{
+					(log << "SUCCESS\n").Write();
+					bFoundDemod = TRUE;
+					break;
+				}
+				else
+					(log << "Connection failed, trying next card\n").Write();
+			}
+/*
 			if FAILED(hr = graphTools.AddFilterByDevicePath(piGraphBuilder, &piBDADemod, (*ppDemodDevice)->strDevicePath, (*ppDemodDevice)->strFriendlyName))
 			{
 				delete *ppDemodDevice;
@@ -526,8 +538,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 				bFoundDemod = TRUE;
 				break;
 			}
-
-			(log << "Connection failed, trying next card\n").Write();
+*/
 			piBDADemod.Release();
 			delete *ppDemodDevice;
 			*ppDemodDevice = NULL;
@@ -557,6 +568,16 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 				(log << (*ppCaptureDevice)->strDevicePath << "\n").Write();
 				LogMessageIndent indentD(&log);
 
+				if SUCCEEDED(hr = graphTools.AddFilterByDevicePath(piGraphBuilder, &piBDACapture, (*ppCaptureDevice)->strDevicePath, (*ppCaptureDevice)->strFriendlyName))
+				{
+					if SUCCEEDED(hr = graphTools.ConnectFilters(piGraphBuilder, piBDADemod, piBDACapture))
+					{
+						(log << "SUCCESS\n").Write();
+						bFoundCapture = TRUE;
+						break;
+					}
+				}
+/*
 				if FAILED(hr = graphTools.AddFilterByDevicePath(piGraphBuilder, &piBDACapture, (*ppCaptureDevice)->strDevicePath, (*ppCaptureDevice)->strFriendlyName))
 				{
 					delete *ppCaptureDevice;
@@ -570,7 +591,7 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 					bFoundCapture = TRUE;
 					break;
 				}
-
+*/
 				//(log << "Connection failed, trying next card\n").Write();
 				piBDACapture.Release();
 				delete *ppCaptureDevice;

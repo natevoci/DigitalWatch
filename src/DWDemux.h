@@ -44,7 +44,7 @@ public:
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	STDMETHODIMP AOnConnect(IBaseFilter *pTSSourceFilter,
-							DVBTChannels_Service* pService,
+							DVBTChannels_Service* pService = NULL,
 							IBaseFilter *pClockFilter = NULL);
 	HRESULT SetTIFState(IFilterGraph *pGraph, REFERENCE_TIME tStart);
 

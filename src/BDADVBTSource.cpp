@@ -1271,6 +1271,9 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			}
 		}
 
+m_DWDemux.set_ClockMode(3);
+m_DWDemux.SetRefClock();
+
 		if FAILED(hr = m_pDWGraph->Pause(m_piGraphBuilder, (BOOL)(m_pCurrentService == NULL)))
 		{
 			HRESULT hr2;
@@ -1424,6 +1427,14 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 		}
 */
 		m_pDWGraph->Mute(1);
+
+		m_DWDemux.set_Auto(TRUE);
+		m_DWDemux.set_AC3Mode(FALSE);
+		m_DWDemux.set_MPEG2Audio2Mode(FALSE);
+		m_DWDemux.set_FixedAspectRatio(FALSE);
+		m_DWDemux.set_MPEG2AudioMediaType(TRUE);
+		m_DWDemux.set_ClockMode(3);
+
 		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 		{
 			if(pinInfo.pFilter)
@@ -1534,6 +1545,7 @@ HRESULT BDADVBTSource::LoadTuner()
 	if FAILED(hr = m_piGraphBuilder->ConnectDirect(piTSPin, piDemuxPin, NULL))
 		return (log << "Failed to connect TS Pin to DW Demux: " << hr << "\n").Write(hr);
 
+/*
 	//Set reference clock
 	CComQIPtr<IReferenceClock> piRefClock(m_piBDAMpeg2Demux);
 	if (!piRefClock)
@@ -1545,6 +1557,17 @@ HRESULT BDADVBTSource::LoadTuner()
 
 	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
+*/
+
+	PIN_INFO pinInfo;
+	if FAILED(hr = piTSPin->QueryPinInfo(&pinInfo))
+		return (log << "Could not get TSPin Pin Info: " << hr << "\n").Write(hr);
+
+	m_DWDemux.AOnConnect(pinInfo.pFilter); //only sets the source filter reference
+	m_DWDemux.set_ClockMode(3);
+	m_DWDemux.SetRefClock();
+	if (pinInfo.pFilter)
+		pinInfo.pFilter->Release();
 
 	piDemuxPin.Release();
 	piTSPin.Release();

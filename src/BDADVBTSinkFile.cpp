@@ -557,14 +557,6 @@ HRESULT BDADVBTSinkFile::StartRecording(DVBTChannels_Service* pService, LPWSTR p
 			if FAILED(hr = m_pMPGDWDump->Record())
 				(log << "Failed to Start Recording on the MPG Sink Filter: " << hr << "\n").Write(hr);
 		}
-/*
-		IReferenceClock *piReferenceClock;
-		m_piMPGMpeg2Demux->SetSyncSource(NULL);
-		Sleep(100);
-		m_piMPGMpeg2Demux->GetSyncSource(&piReferenceClock);
-		m_piMPGMpeg2Demux->SetSyncSource(piReferenceClock);
-		m_piMPGMpeg2Mux->SetSyncSource(piReferenceClock);
-*/
 	}
 	else if (m_intSinkType== 4 && (m_pVideoSink || m_pAudioSink || m_pTelexSink))
 	{

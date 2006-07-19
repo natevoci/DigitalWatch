@@ -1242,19 +1242,7 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<I
 				return hr;
 		}
 	}
-/*
-	//Set reference clock
-	CComQIPtr<IReferenceClock> piRefClock(pFilter);
-	if (!piRefClock)
-		return (log << "Failed to get reference clock interface on Sink demux filter: " << hr << "\n").Write(hr);
 
-	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
-	if (!piMediaFilter)
-		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
-
-	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
-		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-*/
 	if (m_piMpeg2Demux)
 		m_piMpeg2Demux.Release();
 

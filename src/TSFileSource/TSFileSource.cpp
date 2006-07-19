@@ -508,6 +508,12 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 			// Set Demux pids if loaded from a TimeShift Source
 			if (pService)
 			{
+				m_DWDemux.set_Auto(TRUE);
+				m_DWDemux.set_AC3Mode(FALSE);
+				m_DWDemux.set_MPEG2Audio2Mode(FALSE);
+				m_DWDemux.set_FixedAspectRatio(FALSE);
+				m_DWDemux.set_MPEG2AudioMediaType(TRUE);
+				m_DWDemux.set_ClockMode(3);
 				if FAILED(hr = m_DWDemux.AOnConnect(m_pTSFileSource, pService))
 				{
 					(log << "Failed to change the Requested Service using channel zapping.\n").Write();
@@ -670,7 +676,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		if (pService)
 			delete pService;
 	}
-
+/*
 	//Set reference clock
 	CComQIPtr<IReferenceClock> piRefClock(m_pTSFileSource);
 	if (!piRefClock)
@@ -691,6 +697,12 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		m_pDWGraph->Mute(g_pData->values.audio.bMute);
 		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
 	}
+*/
+
+	m_DWDemux.AOnConnect(m_pTSFileSource); //only sets the source filter reference
+	m_DWDemux.set_ClockMode(3);
+	m_DWDemux.SetRefClock();
+
 
 	// If it's a .tsbuffer file then seek to the end
 	long length = wcslen(pFilename);

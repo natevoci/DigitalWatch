@@ -1934,6 +1934,12 @@ HRESULT BDADVBTimeShift::ChangeChannel(int frequency, int bandwidth)
 				return (log << "Could not get the Sink Demux Reference clock: " << hr << "\n").Write(hr);
 		}
 */
+		m_DWDemux.set_Auto(TRUE);
+		m_DWDemux.set_AC3Mode(FALSE);
+		m_DWDemux.set_MPEG2Audio2Mode(FALSE);
+		m_DWDemux.set_FixedAspectRatio(FALSE);
+		m_DWDemux.set_MPEG2AudioMediaType(TRUE);
+		m_DWDemux.set_ClockMode(3);
 		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 		{
 			if(pinInfo.pFilter)
@@ -2049,6 +2055,12 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 				return (log << "Could not get TSPin Pin Info: " << hr << "\n").Write(hr);
 			}
 
+			m_DWDemux.set_Auto(TRUE);
+			m_DWDemux.set_AC3Mode(FALSE);
+			m_DWDemux.set_MPEG2Audio2Mode(FALSE);
+			m_DWDemux.set_FixedAspectRatio(FALSE);
+			m_DWDemux.set_MPEG2AudioMediaType(TRUE);
+			m_DWDemux.set_ClockMode(3);
 			if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 			{
 				(log << "Failed to change the Requested Service using channel zapping.\n").Write();
@@ -2156,6 +2168,12 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 				return (log << "Could not get TSPin Pin Info: " << hr << "\n").Write(hr);
 			}
 
+			m_DWDemux.set_Auto(TRUE);
+			m_DWDemux.set_AC3Mode(FALSE);
+			m_DWDemux.set_MPEG2Audio2Mode(FALSE);
+			m_DWDemux.set_FixedAspectRatio(FALSE);
+			m_DWDemux.set_MPEG2AudioMediaType(TRUE);
+			m_DWDemux.set_ClockMode(3);
 			if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 			{
 				(log << "Failed to change the Requested Service using channel zapping.\n").Write();
@@ -2801,23 +2819,6 @@ HRESULT BDADVBTimeShift::UnloadFileSource()
 	{
 		if FAILED(hr = m_pCurrentFileSource->UnloadFilters())
 			return (log << "Failed to remove File Source filters: " << hr << "\n").Write(hr);
-/*
-		IGraphBuilder *piGraphBuilder;
-		if FAILED(hr = m_pCurrentDWGraph->QueryGraphBuilder(&piGraphBuilder))
-			return (log << "Failed to get the filtergraph's IGraphBuilder Interface : " << hr << "\n").Write(hr);
-
-		CComQIPtr<IMediaFilter> piMediaFilter(piGraphBuilder);
-		if (!piMediaFilter)
-		{
-			piGraphBuilder->Release();
-			return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
-		}
-
-		piGraphBuilder->Release();
-
-		if FAILED(hr = piMediaFilter->SetSyncSource(NULL))
-			return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-*/
 	}
 
 	indent.Release();
