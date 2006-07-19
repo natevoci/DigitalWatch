@@ -142,7 +142,9 @@ void LogMessage::WriteLogMessage()
 
 		if (m_callbacks.size() == 0)
 		{
-			int i=0;	//break here to find messages that aren't getting written to a file
+			//break here to find messages that aren't getting written to a file
+			::OutputDebugString("This message is not being logged correctly.\n");
+			::OutputDebugString(m_pStr);
 		}
 
 		vector<LogMessageCallback *>::iterator it = m_callbacks.begin();

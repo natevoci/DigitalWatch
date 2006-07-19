@@ -503,6 +503,8 @@ BOOL BDACardCollection::FindCaptureDevice(DirectShowSystemDevice* pTunerDevice, 
 		LogMessageIndent indent(&log);
 
 		DirectShowSystemDeviceEnumerator enumerator(KSCATEGORY_BDA_RECEIVER_COMPONENT);
+		enumerator.SetLogCallback(m_pLogCallback);
+
 		*ppDemodDevice = NULL;
 		while (enumerator.Next(ppDemodDevice) == S_OK)
 		{
