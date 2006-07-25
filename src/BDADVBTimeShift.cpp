@@ -57,7 +57,7 @@ TunerSinkGraphItem::~TunerSinkGraphItem()
 // BDADVBTimeShift
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTimeShift::BDADVBTimeShift() : m_strSourceType(L"BDATimeShift")
+BDADVBTimeShift::BDADVBTimeShift(LogMessageCallback *callback) : m_strSourceType(L"BDATimeShift")
 {
 	m_bInitialised = FALSE;
 	m_pCurrentTuner = NULL;
@@ -82,11 +82,15 @@ BDADVBTimeShift::BDADVBTimeShift() : m_strSourceType(L"BDATimeShift")
 	//Get list of BDA capture cards
 	wchar_t file[MAX_PATH];
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+	cardList.SetLogCallback(callback);
 	cardList.LoadCards((LPWSTR)&file);
 	if (cardList.cards.size() == 0)
 		(log << "Could not find any BDA cards\n").Show();
 	else
 		g_pOSD->Data()->AddList(&cardList);
+		
+	g_pOSD->Data()->AddList(&cardList);
+
 }
 
 BDADVBTimeShift::~BDADVBTimeShift()
@@ -109,7 +113,7 @@ void BDADVBTimeShift::SetLogCallback(LogMessageCallback *callback)
 	graphTools.SetLogCallback(callback);
 	channels.SetLogCallback(callback);
 	frequencyList.SetLogCallback(callback);
-	cardList.SetLogCallback(callback);
+//	cardList.SetLogCallback(callback);
 
 	std::vector<TunerSinkGraphItem*>::iterator it = m_tuners.begin();
 	for ( ; it != m_tuners.end() ; it++ )
@@ -274,7 +278,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 	g_pData->values.dsnetwork.format = g_pData->settings.dsnetwork.format;
 	g_pData->values.application.multicard = g_pData->settings.application.multicard;
 
-	m_pCurrentFileSource = new TSFileSource();
+	m_pCurrentFileSource = new TSFileSource(m_pLogCallback);
 	m_pCurrentFileSource->SetLogCallback(m_pLogCallback);
 	if FAILED(hr = m_pCurrentFileSource->Initialise(m_pDWGraph))
 		return (log << "Failed to Initialise the TSFileSource Filters" << hr << "\n").Write(hr);
@@ -366,20 +370,31 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 				m_tuners.push_back(tuner);
 				continue;
 			}
+
 			if (tuner->rotEntry)
 				graphTools.RemoveFromRot(tuner->rotEntry);
+
 			if (tuner->pFilterList)
 				delete tuner->pFilterList;
+
 			if (tuner->pBDAMpeg2Demux)
 				tuner->pBDAMpeg2Demux.Release();
+
 			if (tuner->piMpeg2Demux)
 				tuner->piMpeg2Demux.Release();
+
 			if (tuner->pSink)
 				delete tuner->pSink;
+
 			if (tuner->pTuner)
 				delete tuner->pTuner;
+
 			if (tuner->piGraphBuilder)
+			{
 				tuner->piGraphBuilder.Release();
+				delete tuner->piGraphBuilder;
+			}
+
 			delete tuner;
 		}
 	};
@@ -402,7 +417,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 
 HRESULT BDADVBTimeShift::Destroy()
 {
-	(log << "Destroying BDA Time ShiftSource\n").Write();
+	(log << "Destroying BDA TimeShift Source\n").Write();
 	LogMessageIndent indent(&log);
 
 	HRESULT hr;
@@ -465,9 +480,12 @@ HRESULT BDADVBTimeShift::Destroy()
 					delete m_pCurrentTuner;
 
 				if (m_piSinkGraphBuilder)
+				{
 					m_piSinkGraphBuilder.Release();
+					delete m_piSinkGraphBuilder;
+				}
 
-				delete *it;
+				if (*it) delete *it;
 			}
 
 		}
@@ -1489,7 +1507,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 					SaveCurrentTunerItem(&tuner);
 
 					//Move current tuner to back of list so that other cards will be used next
-					delete *it;
+					if (*it) delete *it;
 					if (g_pData->settings.application.cyclecards)
 					{
 						m_tuners.erase(it);
@@ -1562,7 +1580,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 				SaveCurrentTunerItem(&tuner);
 
 				//Move current tuner to back of list so that other cards will be used next
-				delete *it;
+				if (*it) delete *it;
 				if (g_pData->settings.application.cyclecards)
 				{
 					m_tuners.erase(it);
@@ -1662,7 +1680,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			SaveCurrentTunerItem(&tunerNext);
 
 			//Move current tuner to back of list so that other cards will be used next
-			delete *it;
+			if (*it) delete *it;
 			if (g_pData->settings.application.cyclecards)
 			{
 				m_tuners.erase(it);
@@ -1828,7 +1846,7 @@ HRESULT BDADVBTimeShift::RenderChannel(int frequency, int bandwidth)
 			SaveCurrentTunerItem(&tuner);
 
 			//Move current tuner to back of list so that other cards will be used next
-			delete *it;
+			if (*it) delete *it;
 			if (g_pData->settings.application.cyclecards)
 			{
 				m_tuners.erase(it);
@@ -2802,7 +2820,7 @@ HRESULT BDADVBTimeShift::UnloadFileSource()
 	LogMessageIndent indent(&log);
 
 	if (!m_pCurrentFileSource)
-		return (log << "No Main Sink Class loaded.\n").Write();
+		return (log << "No File Source Class loaded.\n").Write();
 
 	m_bFileSourceActive = TRUE;
 
@@ -3443,7 +3461,9 @@ HRESULT BDADVBTimeShift::TestDecoderSelection(LPWSTR pwszMediaType)
 	}
 	
 	DVBTChannels_Service* pService = new DVBTChannels_Service();
+	pService->SetLogCallback(m_pLogCallback);
 	DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+	pStream->SetLogCallback(m_pLogCallback);
 
 	CComPtr <IBaseFilter> piBDAMpeg2Demux;
 	DWORD rotEntry = 0;

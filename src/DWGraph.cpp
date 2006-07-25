@@ -362,9 +362,16 @@ HRESULT DWGraph::Stop()
 	if FAILED(hr = Stop(m_piGraphBuilder))
 		return hr;
 
+(log << "Reset renderer method\n").Write();
+LogMessageIndent indent(&log);
+
 		//Reset renderer method
 	if (g_pOSD)
 		g_pOSD->SetRenderMethod(RENDER_METHOD_DEFAULT);
+
+indent.Release();
+(log << "Finished Reset renderer method : " << hr << "\n").Write();
+
 
 	return hr;
 }

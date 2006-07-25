@@ -122,6 +122,7 @@ HRESULT TSFileStreamList::LoadStreamList(BOOL bLogOutput)
 	hr = pFilter->QueryInterface(IID_IAMStreamSelect, (void**)&pIAMStreamSelect);
 	if (SUCCEEDED(hr))
 	{
+		pFilter->Release();
 
 		ULONG count = 0;
 		pIAMStreamSelect->Count(&count);
@@ -179,6 +180,8 @@ HRESULT TSFileStreamList::LoadStreamList(BOOL bLogOutput)
 			}
 		}
 	}
+	else
+		pFilter->Release();
 
 	indent.Release();
 	if (bLogOutput)

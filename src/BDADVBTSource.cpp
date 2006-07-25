@@ -35,7 +35,7 @@
 // BDADVBTSource
 //////////////////////////////////////////////////////////////////////
 
-BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
+BDADVBTSource::BDADVBTSource(LogMessageCallback *callback) : m_strSourceType(L"BDA")
 {
 	m_bInitialised = FALSE;
 	m_pCurrentTuner = NULL;
@@ -52,6 +52,7 @@ BDADVBTSource::BDADVBTSource() : m_strSourceType(L"BDA")
 	wchar_t file[MAX_PATH];
 	//Get list of BDA capture cards
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+	cardList.SetLogCallback(callback);
 	cardList.LoadCards((LPWSTR)&file);
 	if (cardList.cards.size() == 0)
 		(log << "Could not find any BDA cards\n").Show();
@@ -75,12 +76,12 @@ void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 
 	DWSource::SetLogCallback(callback);
 
+//	cardList.SetLogCallback(callback);
 	graphTools.SetLogCallback(callback);
 	channels.SetLogCallback(callback);
 	frequencyList.SetLogCallback(callback);
 	filterList.SetLogCallback(callback);
-	cardList.SetLogCallback(callback);
-
+/*
 	if (m_pCurrentSink)
 		m_pCurrentSink->SetLogCallback(callback);
 
@@ -89,7 +90,7 @@ void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 	{
 		BDADVBTSourceTuner *tuner = *it;
 		tuner->SetLogCallback(callback);
-	}
+	}*/
 }
 
 LPWSTR BDADVBTSource::GetSourceType()
@@ -293,7 +294,8 @@ HRESULT BDADVBTSource::Destroy()
 		std::vector<BDADVBTSourceTuner*>::iterator it = m_tuners.begin();
 		for ( ; it != m_tuners.end() ; it++ )
 		{
-			if(*it)	delete *it;
+			if(*it)
+				delete *it;
 		}
 		m_tuners.clear();
 	}
@@ -1750,6 +1752,21 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 			return hr;
 	}
 
+	// render SD video if no other video was rendered for audio only streams
+	if (videoStreamsRendered == 0)
+	{
+		DVBTChannels_Service* pService = new DVBTChannels_Service();
+		pService->SetLogCallback(m_pLogCallback);
+		DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+		pStream->SetLogCallback(m_pLogCallback);
+		pStream->Type = video;
+		pService->AddStream(pStream);
+		hr = AddDemuxPinsVideo(pService, &videoStreamsRendered);
+		delete pService;
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
 	{
@@ -1783,6 +1800,21 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render mp2 audio if no other audio was rendered for Video only streams
+	if (audioStreamsRendered == 0)
+	{
+		DVBTChannels_Service* pService = new DVBTChannels_Service();
+		pService->SetLogCallback(m_pLogCallback);
+		DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+		pStream->SetLogCallback(m_pLogCallback);
+		pStream->Type = mp2;
+		pService->AddStream(pStream);
+		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
+		delete pService;
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -2269,7 +2301,9 @@ HRESULT BDADVBTSource::TestDecoderSelection(LPWSTR pwszMediaType)
 		(log << "Failed to cleanup DWGraph\n").Write();
 
 	DVBTChannels_Service* pService = new DVBTChannels_Service();
+	pService->SetLogCallback(m_pLogCallback);
 	DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+	pStream->SetLogCallback(m_pLogCallback);
 
 	CComPtr <IBaseFilter> piBDAMpeg2Demux;
 	DWORD rotEntry = 0;

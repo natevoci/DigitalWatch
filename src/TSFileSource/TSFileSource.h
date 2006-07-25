@@ -36,7 +36,7 @@
 class TSFileSource : public DWSource, public DWThread
 {
 public:
-	TSFileSource();
+	TSFileSource(LogMessageCallback *callback);
 	virtual ~TSFileSource();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);

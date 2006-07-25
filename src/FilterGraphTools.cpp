@@ -334,6 +334,38 @@ HRESULT FilterGraphTools::FindAnyPin(IBaseFilter* piSource, LPCWSTR Id, IPin **p
 	return hr;
 }
 
+BOOL FilterGraphTools::IsPinActive(IBaseFilter* piSource, LPCWSTR Id, REQUESTED_PIN_DIRECTION eRequestedPinDir)
+{
+	if (piSource == NULL)
+		return FALSE;
+
+	HRESULT hr;
+	CComPtr <IEnumPins> piEnumPins;
+	
+	if SUCCEEDED(hr = piSource->EnumPins( &piEnumPins ))
+	{
+		CComPtr <IPin> piPins;
+		while (piPins.Release(), piEnumPins->Next(1, &piPins, 0) == NOERROR )
+		{
+			PIN_INFO pinInfo;
+			hr = piPins->QueryPinInfo(&pinInfo);
+			if (pinInfo.pFilter)
+				pinInfo.pFilter->Release();	//QueryPinInfo adds a reference to the filter.
+
+			if (!Id || (Id && wcsstr(Id, pinInfo.achName) != NULL))
+			{
+				if ((eRequestedPinDir == REQUESTED_PINDIR_ANY) || (eRequestedPinDir == pinInfo.dir))
+				{
+					return TRUE;
+				}
+			}
+		}
+	}
+	if (hr == S_OK)
+		return FALSE;
+	return FALSE;
+}
+
 HRESULT FilterGraphTools::FindPinByMediaType(IBaseFilter* piSource, GUID majortype, GUID subtype, IPin **ppiPin, REQUESTED_PIN_DIRECTION eRequestedPinDir)
 {
 	*ppiPin = NULL;

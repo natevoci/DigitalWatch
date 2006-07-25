@@ -43,7 +43,7 @@ STDMETHODIMP DWDumpFilter::Stop()
 {
     CAutoLock cObjectLock(m_pLock);
 
-	m_pDump->m_pPin->StopThread();
+	m_pDump->m_pPin->StopThread(100);
 
     if (m_pDump)
         m_pDump->CloseFile();
@@ -100,19 +100,19 @@ DWDumpInputPin::DWDumpInputPin(DWDump *pDump, LPUNKNOWN pUnk, CBaseFilter *pFilt
 
 DWDumpInputPin::~DWDumpInputPin()
 {
-	delete[] m_writeBuffer;
 	Clear();
+	delete[] m_writeBuffer;
 }
 
 void DWDumpInputPin::Clear()
 {
-	StopThread(500);
+	StopThread(0);
 	CAutoLock BufferLock(&m_BufferLock);
-	std::vector<BUFFERINFO*>::iterator it = m_Array.begin();
+	std::vector<CBufferInfo*>::iterator it = m_Array.begin();
 	for ( ; it != m_Array.end() ; it++ )
 	{
-		BUFFERINFO *item = *it;
-		delete[] item->sample;
+		CBufferInfo *item = *it;
+		delete item;
 	}
 	m_Array.clear();
 
@@ -376,8 +376,8 @@ void DWDumpInputPin::ThreadProc()
 			CAutoLock BufferLock(&m_BufferLock);
 			if (m_Array.size())
 			{
-				std::vector<BUFFERINFO*>::iterator it = m_Array.begin();
-				BUFFERINFO *bufferInfo = (*it);
+				std::vector<CBufferInfo*>::iterator it = m_Array.begin();
+				CBufferInfo *bufferInfo = *it;
 				item = bufferInfo->sample;
 				sampleLen = bufferInfo->size;
 				m_Array.erase(it);
@@ -394,11 +394,11 @@ void DWDumpInputPin::ThreadProc()
 			{
 				CAutoLock BufferLock(&m_BufferLock);
 				::OutputDebugString(TEXT("DWDumpInputPin::ThreadProc:Write Fail."));
-				std::vector<BUFFERINFO*>::iterator it = m_Array.begin();
+				std::vector<CBufferInfo*>::iterator it = m_Array.begin();
 				for ( ; it != m_Array.end() ; it++ )
 				{
-					BUFFERINFO *item = *it;
-					delete[] item->sample;
+					CBufferInfo *item = *it;
+					delete item;
 				}
 				m_Array.clear();
 				m_WriteBufferSize = 0;
@@ -432,7 +432,7 @@ HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
 		//use the sample packet size for the buffer
 		if(sampleLen <= bufferLen)
 		{
-			BUFFERINFO *newItem = new BUFFERINFO;
+			CBufferInfo *newItem = new CBufferInfo();
 			newItem->sample = new BYTE[sampleLen];
 			//Return if we are out of memory
 			if (!newItem->sample)
@@ -454,7 +454,7 @@ HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
 			for (long i = sampleLen; i > 0; i -= bufferLen)
 			{
 				long size = ((i/bufferLen) != 0)*bufferLen + ((i/bufferLen) == 0)*i;
-				BUFFERINFO *newItem = new BUFFERINFO;
+				CBufferInfo *newItem = new CBufferInfo();
 				newItem->sample = new BYTE[size];
 				//Return if we are out of memory
 				if (!newItem->sample)
@@ -477,11 +477,11 @@ HRESULT DWDumpInputPin::WriteBufferSample(byte* pbData,long sampleLen)
 	::OutputDebugString(TEXT("DWDumpInputPin::WriteBufferSample:Buffer Full error."));
 	CAutoLock BufferLock(&m_BufferLock);
 	::OutputDebugString(TEXT("DWDumpInputPin::ThreadProc:Write Fail."));
-	std::vector<BUFFERINFO*>::iterator it = m_Array.begin();
+	std::vector<CBufferInfo*>::iterator it = m_Array.begin();
 	for ( ; it != m_Array.end() ; it++ )
 	{
-		BUFFERINFO *item = *it;
-		delete[] item->sample;
+		CBufferInfo *item = *it;
+		delete item;
 	}
 	m_Array.clear();
 	m_WriteBufferSize = 0;
@@ -607,7 +607,7 @@ DWDump::~DWDump()
 	if (m_pPin) delete m_pPin;
 	if (m_pFilter) delete m_pFilter;
 	if (m_pPosition) delete m_pPosition;
-	if (m_pFileName) delete m_pFileName;
+	if (m_pFileName) delete[] m_pFileName;
 }
 
 STDMETHODIMP DWDump::SetFileName(LPCOLESTR pszFileName, const AM_MEDIA_TYPE *pmt)

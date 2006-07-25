@@ -62,7 +62,7 @@ class BDADVBTimeShift : public DWSource, public DWThread
 {
 
 public:
-	BDADVBTimeShift();
+	BDADVBTimeShift(LogMessageCallback *callback);
 	virtual ~BDADVBTimeShift();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);

@@ -40,7 +40,7 @@ class BDADVBTSource : public DWSource, public DWThread
 {
 
 public:
-	BDADVBTSource();
+	BDADVBTSource(LogMessageCallback *callback);
 	virtual ~BDADVBTSource();
 
 	virtual void SetLogCallback(LogMessageCallback *callback);

@@ -39,7 +39,7 @@
 // TSFileSource
 //////////////////////////////////////////////////////////////////////
 
-TSFileSource::TSFileSource() : m_strSourceType(L"TSFileSource")
+TSFileSource::TSFileSource(LogMessageCallback *callback) : m_strSourceType(L"TSFileSource")
 {
 	m_bInitialised = FALSE;
 	m_pDWGraph = NULL;
@@ -936,13 +936,17 @@ HRESULT TSFileSource::UnloadFilters()
 			return (log << "Failed to stop DWGraph\n").Write(hr);
 	}
 
+(log << "Killing m_piMpeg2Demux\n").Write();
 	if (m_piMpeg2Demux)
 		m_piMpeg2Demux.Release();
 
+(log << "Disconnect All Pins\n").Write();
 	if FAILED(hr = graphTools.DisconnectAllPins(m_piGraphBuilder))
 		(log << "Failed to DisconnectAllPins : " << hr << "\n").Write();
 
+(log << "DestroyFilter m_pTSFileSource\n").Write();
 	DestroyFilter(m_pTSFileSource);
+(log << "DestroyFilter m_piBDAMpeg2Demux\n").Write();
 	DestroyFilter(m_piBDAMpeg2Demux);
 
 	if FAILED(hr = m_pDWGraph->Cleanup())
@@ -1004,6 +1008,21 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 			return hr;
 	}
 
+	// render SD video if no other video was rendered for audio only streams
+	if (videoStreamsRendered == 0)
+	{
+		DVBTChannels_Service* pService = new DVBTChannels_Service();
+		pService->SetLogCallback(m_pLogCallback);
+		DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+		pStream->SetLogCallback(m_pLogCallback);
+		pStream->Type = video;
+		pService->AddStream(pStream);
+		hr = AddDemuxPinsVideo(pService, pmt, &videoStreamsRendered, bRender);
+		delete pService;
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
 	{
@@ -1037,6 +1056,21 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAAC(pService, pmt, &audioStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render mp2 audio if no other audio was rendered for Video only streams
+	if (audioStreamsRendered == 0)
+	{
+		DVBTChannels_Service* pService = new DVBTChannels_Service();
+		pService->SetLogCallback(m_pLogCallback);
+		DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+		pStream->SetLogCallback(m_pLogCallback);
+		pStream->Type = mp2;
+		pService->AddStream(pStream);
+		hr = AddDemuxPinsMp2(pService, pmt, &audioStreamsRendered, bRender);
+		delete pService;
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -1594,7 +1628,9 @@ HRESULT TSFileSource::TestDecoderSelection(LPWSTR pwszMediaType)
 	g_pData->application.forceConnect = TRUE;
 
 	DVBTChannels_Service* pService = new DVBTChannels_Service();
+	pService->SetLogCallback(m_pLogCallback);
 	DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
+	pStream->SetLogCallback(m_pLogCallback);
 
 	CComPtr <IBaseFilter> piBDAMpeg2Demux;
 	DWORD rotEntry = 0;
@@ -1685,6 +1721,7 @@ HRESULT TSFileSource::LoadMediaStreamType(USHORT pid, LPWSTR pwszMediaType, DVBT
 		if (_wcsicmp(pwszMediaType, DVBTChannels_Service_PID_Types_String[i]) == 0)
 		{
 			*pStream = new DVBTChannels_Stream();
+			(*pStream)->SetLogCallback(m_pLogCallback);
 			(*pStream)->Type = (DVBTChannels_Service_PID_Types)i;
 			(*pStream)->PID = pid;
 			return S_OK;

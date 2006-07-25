@@ -481,11 +481,13 @@ DVBMpeg2DataParser::DVBMpeg2DataParser() :
 
 DVBMpeg2DataParser::~DVBMpeg2DataParser()
 {
+	(log << "Buffer Logging now completed\n").Write();
+	m_logWriter.SetLogBufferLimit();
 	CloseHandle(m_hScanningDoneEvent);
 	CloseHandle(m_hScanningStopEvent[0]);
 	CloseHandle(m_hScanningStopEvent[1]);
-
-	delete[] m_pDataBuffer;
+	if (m_pDataBuffer)
+		delete[] m_pDataBuffer;
 }
 
 void DVBMpeg2DataParser::SetDVBTChannels(DVBTChannels *pChannels)
@@ -572,7 +574,6 @@ void DVBMpeg2DataParser::StartScanThread()
 	HRESULT hr;
 
 	BrakeThread Brake;
-//	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
 
 	m_logWriter.SetLogBufferLimit(g_pData->settings.application.logBufferLimit);
 
@@ -592,6 +593,7 @@ void DVBMpeg2DataParser::StartScanThread()
 				DWORD dwWait = WaitForSingleObject(m_hScanningStopEvent[0], 100);
 				if (dwWait != WAIT_TIMEOUT)
 					break;
+				Sleep(100);
 //				Sleep(100);
 				continue;
 			}
@@ -1014,6 +1016,7 @@ void DVBMpeg2DataParser::ParsePMT(unsigned char *buf, int sectionLength, int ser
 	while (sectionLength >= 5)
 	{
 		DVBStream *pStream = new DVBStream();
+		pStream->SetLogCallback(&m_logWriter);
 
 		pStream->Type = unknown;
 		pStream->MpegStreamType = buf[0];
@@ -1102,6 +1105,7 @@ void DVBMpeg2DataParser::ParsePMT(unsigned char *buf, int sectionLength, int ser
 	if(pService->pmtPid)
 	{
 		DVBStream *pStream = new DVBStream();
+		pStream->SetLogCallback(&m_logWriter);
 		pStream->Type = pmt;
 		pStream->MpegStreamType = 0;
 		pStream->PID = pService->pmtPid;
@@ -1111,6 +1115,7 @@ void DVBMpeg2DataParser::ParsePMT(unsigned char *buf, int sectionLength, int ser
 	if(pService->pcrPid)
 	{
 		DVBStream *pStream = new DVBStream();
+		pStream->SetLogCallback(&m_logWriter);
 		pStream->Type = pcr;
 		pStream->MpegStreamType = 0;
 		pStream->PID = pService->pcrPid;

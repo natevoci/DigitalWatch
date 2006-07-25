@@ -50,12 +50,13 @@ HRESULT BDACardCollection::Destroy()
 	std::vector<BDACard *>::iterator it = cards.begin();
 	for ( ; it != cards.end() ; it++ )
 	{
-		delete *it;
+		if (*it) delete *it;
 	}
 	cards.clear();
 
 	if (m_filename)
-		delete m_filename;
+		delete[] m_filename;
+
 	m_filename = NULL;
 
 	return S_OK;
@@ -124,7 +125,7 @@ long BDACardCollection::GetListSize()
 BOOL BDACardCollection::LoadCards()
 {
 	if (m_filename)
-		delete m_filename;
+		delete[] m_filename;
 	m_filename = NULL;
 
 	return LoadCardsFromHardware();

@@ -100,17 +100,17 @@ HRESULT TVControl::Initialise()
 	CAutoLock sourcesLock(&m_sourcesLock);
 	DWSource *source;
 
-	source = new BDADVBTSource();
+	source = new BDADVBTSource(m_pLogCallback);
 	source->SetLogCallback(m_pLogCallback);
 	m_sources.push_back(source);
 	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
 
-	source = new TSFileSource();
+	source = new TSFileSource(m_pLogCallback);
 	source->SetLogCallback(m_pLogCallback);
 	m_sources.push_back(source);
 	(log << "Added Source - " << source->GetSourceType() << "\n").Write();
 
-	source = new BDADVBTimeShift();
+	source = new BDADVBTimeShift(m_pLogCallback);
 	source->SetLogCallback(m_pLogCallback);
 	m_sources.push_back(source);
 	(log << "Added Source - " << source->GetSourceType() << "\n").Write();

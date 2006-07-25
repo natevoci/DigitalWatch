@@ -38,14 +38,14 @@ DWOSDData::~DWOSDData()
 	std::vector<DWOSDDataItem *>::iterator itItems = m_items.begin();
 	for ( ; itItems < m_items.end() ; itItems++ )
 	{
-		delete *itItems;
+		if (*itItems) delete *itItems;
 	}
 	m_items.clear();
 
 	std::vector<DWOSDDataList *>::iterator itLists = m_lists.begin();
 	for ( ; itLists < m_lists.end() ; itLists++ )
 	{
-		delete *itLists;
+		if (*itLists) delete *itLists;
 	}
 	m_lists.clear();
 }

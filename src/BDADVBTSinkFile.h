@@ -83,7 +83,6 @@ private:
 	void DestroyTSFilters();
 	void DestroyMPGFilters();
 	void DestroyAVFilters();
-	void DeleteFilter(DWDump **pfDWDump);
 	void DestroyFilter(CComPtr <IBaseFilter> &pFilter);
 
 	BDADVBTSink *m_pBDADVBTSink;

@@ -215,7 +215,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 							DestroyMPGFilters();
 						}
 						else	//Connect Mux (MPG Sink's)
-							if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
+							if (graphTools.IsPinActive(m_pMPGMpeg2Demux, L"Audio") && FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux)))
 							{
 								(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Audio to MPG Sink MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
 								DestroyMPGFilters();
@@ -223,7 +223,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 							else //Connect Mux (MPG Sink's)
 								if ((CComBSTR)GUID_NULL == (CComBSTR)g_pData->settings.filterguids.quantizerclsid)
 								{
-									if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
+									if (graphTools.IsPinActive(m_pMPGMpeg2Demux, L"Video") && FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux)))
 									{
 										(log << "Failed to connect MPG Sink MPEG-2 Demultiplexer Video to MPG Sink MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
 										DestroyMPGFilters();
@@ -239,7 +239,7 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 								}
 								else
 								{
-									if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.quantizerclsid, &m_pMPGQuantizer, L"MPG Sink Quantizer"))
+									if (graphTools.IsPinActive(m_pMPGMpeg2Demux, L"Video") && FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.quantizerclsid, &m_pMPGQuantizer, L"MPG Sink Quantizer")))
 									{
 										(log << "Failed to add MPG Sink Quantizer to the graph: " << hr << "\n").Write(hr);
 									}
@@ -395,20 +395,20 @@ HRESULT BDADVBTSinkFile::AddSinkFilters(DVBTChannels_Service* pService)
 void BDADVBTSinkFile::DestroyFTSFilters()
 {
 	DestroyFilter(m_pFTSSink);
-	DeleteFilter(&m_pFTSDWDump);
+	m_pFTSDWDump = NULL;
 }
 
 void BDADVBTSinkFile::DestroyTSFilters()
 {
-	DeleteFilter(&m_pTSDWDump);
 	DestroyFilter(m_pTSSink);
+	m_pTSDWDump = NULL;
 	DestroyFilter(m_pTSMpeg2Demux);
 }
 
 void BDADVBTSinkFile::DestroyMPGFilters()
 {
-	DeleteFilter(&m_pMPGDWDump);
 	DestroyFilter(m_pMPGSink);
+	m_pMPGDWDump = NULL;
 	DestroyFilter(m_pMPGMpeg2Mux);
 	DestroyFilter(m_pMPGQuantizer);
 	DestroyFilter(m_pMPGMpeg2Demux);
@@ -416,12 +416,12 @@ void BDADVBTSinkFile::DestroyMPGFilters()
 
 void BDADVBTSinkFile::DestroyAVFilters()
 {
-	DeleteFilter(&m_pVideoDWDump);
 	DestroyFilter(m_pVideoSink);
-	DeleteFilter(&m_pTelexDWDump);
+	m_pVideoDWDump = NULL;
 	DestroyFilter(m_pTelexSink);
-	DeleteFilter(&m_pAudioDWDump);
+	m_pTelexDWDump = NULL;
 	DestroyFilter(m_pAudioSink);
+	m_pAudioDWDump = NULL;
 	DestroyFilter(m_pVideoQuantizer);
 	DestroyFilter(m_pAVMpeg2Demux);
 }
@@ -446,18 +446,6 @@ HRESULT BDADVBTSinkFile::RemoveSinkFilters()
 	DestroyAVFilters();
 
 	return S_OK;
-}
-
-void BDADVBTSinkFile::DeleteFilter(DWDump **pfDWDump)
-{
-	if (pfDWDump)
-		return;
-
-	if (*pfDWDump)
-		delete *pfDWDump;
-
-	*pfDWDump = NULL;
-
 }
 
 HRESULT BDADVBTSinkFile::SetTransportStreamPin(IPin* piPin)

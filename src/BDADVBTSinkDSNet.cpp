@@ -231,13 +231,13 @@ HRESULT BDADVBTSinkDSNet::AddSinkFilters(DVBTChannels_Service* pService)
 							DestroyMPGFilters();
 						}
 						else	//Connect Mux (MPG DSNetworking)
-							if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
+							if (graphTools.IsPinActive(m_pMPGMpeg2Demux, L"Audio") && FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux)))
 							{
 								(log << "Failed to connect MPG DSNetwork MPEG-2 Demultiplexer Audio to MPG DSNetwork MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
 								DestroyMPGFilters();
 							}
 							else	//Connect Mux (MPG DSNetworking)
-								if FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux))
+								if (graphTools.IsPinActive(m_pMPGMpeg2Demux, L"Video") && FAILED(hr = graphTools.ConnectFilters(m_piGraphBuilder, m_pMPGMpeg2Demux, m_pMPGMpeg2Mux)))
 								{
 									(log << "Failed to connect MPG DSNetwork MPEG-2 Demultiplexer Video to MPG DSNetwork MPEG-2 Multiplexer: " << hr << "\n").Write(hr);
 									DestroyMPGFilters();
@@ -330,20 +330,20 @@ void BDADVBTSinkDSNet::DestroyFilter(CComPtr <IBaseFilter> &pFilter)
 void BDADVBTSinkDSNet::DestroyFTSFilters()
 {
 	DestroyFilter(m_pFTSSink);
-	DeleteFilter(&m_pFTSDWDump);
+	m_pFTSDWDump = NULL;
 }
 
 void BDADVBTSinkDSNet::DestroyTSFilters()
 {
-	DeleteFilter(&m_pTSDWDump);
 	DestroyFilter(m_pTSSink);
+	m_pTSDWDump = NULL;
 	DestroyFilter(m_pTSMpeg2Demux);
 }
 
 void BDADVBTSinkDSNet::DestroyMPGFilters()
 {
-	DeleteFilter(&m_pMPGDWDump);
 	DestroyFilter(m_pMPGSink);
+	m_pMPGDWDump = NULL;
 	DestroyFilter(m_pMPGMpeg2Mux);
 	DestroyFilter(m_pMPGQuantizer);
 	DestroyFilter(m_pMPGMpeg2Demux);
@@ -351,26 +351,14 @@ void BDADVBTSinkDSNet::DestroyMPGFilters()
 
 void BDADVBTSinkDSNet::DestroyAVFilters()
 {
-	DeleteFilter(&m_pVideoDWDump);
 	DestroyFilter(m_pVideoSink);
-	DeleteFilter(&m_pTelexDWDump);
+	m_pVideoDWDump = NULL;
 	DestroyFilter(m_pTelexSink);
-	DeleteFilter(&m_pAudioDWDump);
+	m_pTelexDWDump = NULL;
 	DestroyFilter(m_pAudioSink);
+	m_pAudioDWDump = NULL;
 	DestroyFilter(m_pVideoQuantizer);
 	DestroyFilter(m_pAVMpeg2Demux);
-}
-
-void BDADVBTSinkDSNet::DeleteFilter(DWDump **pfDWDump)
-{
-	if (pfDWDump)
-		return;
-
-	if (*pfDWDump)
-		delete *pfDWDump;
-
-	*pfDWDump = NULL;
-
 }
 
 HRESULT BDADVBTSinkDSNet::RemoveSinkFilters()

@@ -126,9 +126,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		}
 
 		//KillTimer(appData->hWnd, 998);
-		g_DWLogWriter.SetLogBufferLimit();
-		(log << "Buffer Logging now completed\n").Write();
-
 	}
 
 	g_pTv->Destroy();
@@ -143,6 +140,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	CoUninitialize();
 
+	(log << "Buffer Logging now completed\n").Write();
+	g_DWLogWriter.SetLogBufferLimit();
 	return (int) msg.wParam;
 }
 

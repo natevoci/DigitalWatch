@@ -40,6 +40,13 @@ DVBTChannels_Stream::DVBTChannels_Stream()
 
 DVBTChannels_Stream::~DVBTChannels_Stream()
 {
+	if (Language)
+		delete[] Language;
+}
+
+void DVBTChannels_Stream::SetLogCallback(LogMessageCallback *callback)
+{
+	LogMessageCaller::SetLogCallback(callback);
 }
 
 void DVBTChannels_Stream::UpdateStream(DVBTChannels_Stream *pNewStream)
@@ -110,7 +117,9 @@ DVBTChannels_Service::~DVBTChannels_Service()
 	std::vector<DVBTChannels_Stream *>::iterator it = m_streams.begin();
 	for ( ; it != m_streams.end() ; it++ )
 	{
-		delete *it;
+		DVBTChannels_Stream *pStream = *it;
+		if (pStream)
+			delete pStream;
 	}
 	m_streams.clear();
 
@@ -183,13 +192,19 @@ HRESULT DVBTChannels_Service::LoadFromXML(XMLElement *pElement)
 
 			attr = element->Attributes.Item(L"PID");
 			if (attr == NULL)
+			{
+//				delete pNewStream;
 				continue;
+			}
 
 			pNewStream->PID = StringToLong(attr->value);
 
 			attr = element->Attributes.Item(L"Type");
 			if (attr == NULL)
+			{
+//				delete pNewStream;
 				continue;
+			}
 
 			pNewStream->Type = unknown;
 			if ((attr->value[0]-'0' >= 0) && (attr->value[0]-'0' < DVBTChannels_Service_PID_Types_Count))
@@ -203,6 +218,7 @@ HRESULT DVBTChannels_Service::LoadFromXML(XMLElement *pElement)
 					if (_wcsicmp(attr->value, DVBTChannels_Service_PID_Types_String[i]) == 0)
 					{
 						pNewStream->Type = (DVBTChannels_Service_PID_Types)i;
+//						delete pNewStream;
 						break;
 					}
 				}
@@ -435,7 +451,7 @@ BOOL DVBTChannels_Service::UpdateStreams(DVBTChannels_Service *pNewService)
 			LogMessageIndent indent2(&log);
 			(*it)->PrintStreamDetails();
 
-			delete *it;
+			if (*it) delete *it;
 
 			m_streams.erase(it);
 			it=m_streams.begin();
@@ -513,7 +529,9 @@ DVBTChannels_Network::~DVBTChannels_Network()
 	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
 	for ( ; it != m_services.end() ; it++ )
 	{
-		delete *it;
+		DVBTChannels_Service *pService = *it;
+		if (pService)
+			delete pService;
 	}
 	m_services.clear();
 
@@ -939,7 +957,9 @@ HRESULT DVBTChannels_NetworkList::Clear()
 	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
 	for ( ; it != m_networks.end() ; it++ )
 	{
-		if (*it) delete *it;
+		DVBTChannels_Network *pNetwork = *it;
+		if (pNetwork)
+			delete pNetwork;
 	}
 	m_networks.clear();
 
@@ -1124,7 +1144,8 @@ void DVBTChannels::SetLogCallback(LogMessageCallback *callback)
 HRESULT DVBTChannels::Destroy()
 {
 	if (m_filename)
-		delete m_filename;
+		delete[] m_filename;
+
 	m_filename = NULL;
 
 	return DVBTChannels_NetworkList::Clear();

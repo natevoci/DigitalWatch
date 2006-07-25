@@ -24,15 +24,8 @@
 #define DWDUMP_H
 #include <vector>
 #include "DWThread.h"
+#include "Globals.h"
 	
-typedef struct BufferInfo
-{
-	BYTE *sample;
-	long size;
-
-} BUFFERINFO;
-
-
 class DWDump;
 
 class DWDumpFilter : public CBaseFilter
@@ -79,7 +72,7 @@ public:
 
 private:
 
-	std::vector<BUFFERINFO*> m_Array;
+	std::vector<CBufferInfo*> m_Array;
 	__int64 m_writeBufferSize;
 	CCritSec m_BufferLock;
 

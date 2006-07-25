@@ -55,7 +55,8 @@ DWSurfaceRendererVMR9Bitmap::~DWSurfaceRendererVMR9Bitmap()
 	{
 		if ((*it)->pFont)
 			delete (*it)->pFont;
-		delete *it;
+
+		if (*it) delete *it;
 	}
 	m_fonts.clear();
 }

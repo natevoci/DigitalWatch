@@ -40,7 +40,7 @@ DWOSDGroup::~DWOSDGroup()
 	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
 	for ( ; it < m_controls.end() ; it++ )
 	{
-		delete *it;
+		if (*it) delete *it;
 	}
 	m_controls.clear();
 }

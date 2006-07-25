@@ -72,7 +72,11 @@ HRESULT DVBTFrequencyList::Destroy()
 	std::vector<DVBTFrequencyListItem *>::iterator it = m_list.begin();
 	for ( ; it < m_list.end() ; it++ )
 	{
-		delete *it;
+		DVBTFrequencyListItem *item = *it;
+		if (item)
+			delete item;
+
+		item = NULL;
 	}
 	m_list.clear();
 	return S_OK;
@@ -105,15 +109,21 @@ HRESULT DVBTFrequencyList::LoadFrequencyList(LPWSTR filename)
 
 			attr = pElement->Attributes.Item(L"Frequency");
 			if (attr == NULL)
+			{
+				delete item;
 				return (log << "Frequency must be supplied in a network definition\n").Write(E_FAIL);
-			long frequency = _wtoi(attr->value);
+			}
+				long frequency = _wtoi(attr->value);
 			strCopy(item->frequencyLow, frequency-125);
 			strCopy(item->frequencyCentre, frequency);
 			strCopy(item->frequencyHigh, frequency+125);
 
 			attr = pElement->Attributes.Item(L"Bandwidth");
 			if (attr == NULL)
+			{
+				delete item;
 				return (log << "Bandwidth must be supplied in a network definition\n").Write(E_FAIL);
+			}
 			strCopy(item->bandwidth, attr->value);
 
 			m_list.push_back(item);

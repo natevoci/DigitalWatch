@@ -6,6 +6,8 @@ DigitalWatch History
 Version 2.0.7.4
 bear:
 Changes:
+- Fixed a problem in the BDACardCollection::FindCaptureDevice() code that caused a problem with virtual drivers from TwinHan.
+- Fixed a object release issue in the TSFileStreamList class that was holding the TSFileSource active on close. 
 - Added DSNetwork input support for the OSD.
 - Added OSD Global settings support for the Signal quality tests, also the default value is now disabled.
 

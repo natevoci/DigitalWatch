@@ -535,10 +535,11 @@ HRESULT DWDemux::UpdateDemuxPins(IBaseFilter* pDemux)
 				}
 		}
 		// Update Transport Stream Pin
-		if (m_bCreateTSPinOnDemux)
-		{
-			if (FAILED(CheckTsPin(pDemux))){
-				// If no Transport Stream Pin was found
+		if (FAILED(CheckTsPin(pDemux))){
+			// If no Transport Stream Pin was found
+			if (m_bCreateTSPinOnDemux)
+			{
+				//If we have the option set
 				hr = NewTsPin(muxInterface, L"TS");
 			}
 		}

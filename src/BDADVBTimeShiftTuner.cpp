@@ -149,6 +149,11 @@ HRESULT BDADVBTimeShiftTuner::DestroyAll()
 
 HRESULT BDADVBTimeShiftTuner::AddSourceFilters()
 {
+	ASSERT(m_piTuningSpace);
+
+	if (!m_piTuningSpace)
+		return (log << "Failed to Assert TuningSpace in AddSourceFilters: " << E_INVALIDARG << "\n").Write(E_INVALIDARG);
+
 	HRESULT hr;
 
 	//--- Get NetworkType CLSID ---

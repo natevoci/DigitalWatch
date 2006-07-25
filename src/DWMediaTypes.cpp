@@ -112,7 +112,7 @@ DWMediaTypes::~DWMediaTypes()
 	Destroy();
 
 	if (m_filename)
-		delete m_filename;
+		delete[] m_filename;
 
 	if (m_dataListName)
 		delete[] m_dataListName;

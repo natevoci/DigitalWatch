@@ -57,7 +57,7 @@ DWOSDWindow::~DWOSDWindow()
 	std::vector<DWOSDControl *>::iterator it = m_controls.begin();
 	for ( ; it < m_controls.end() ; it++ )
 	{
-		delete *it;
+		if (*it) delete *it;
 	}
 	m_controls.clear();
 }
@@ -409,14 +409,14 @@ DWOSDWindows::~DWOSDWindows()
 	std::vector<DWOSDWindow *>::iterator itWindows = m_windows.begin();
 	for ( ; itWindows != m_windows.end() ; itWindows++ )
 	{
-		delete *itWindows;
+		if (*itWindows) delete *itWindows;
 	}
 	m_windows.clear();
 
 	std::vector<DWOSDImage *>::iterator itImages = m_images.begin();
 	for ( ; itImages != m_images.end() ; itImages++ )
 	{
-		delete *itImages;
+		if (*itImages) delete *itImages;
 	}
 	m_images.clear();
 }

@@ -587,12 +587,12 @@ DWDecoders::~DWDecoders()
 	CAutoLock decodersLock(&m_decodersLock);
 
 	if (m_filename)
-		delete m_filename;
+		delete[] m_filename;
 
 	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
 	for ( ; it != m_decoders.end() ; it++ )
 	{
-		delete *it;
+		if (*it) delete *it;
 	}
 	m_decoders.clear();
 
@@ -607,7 +607,7 @@ HRESULT DWDecoders::Destroy()
 	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
 	for ( ; it < m_decoders.end() ; it++ )
 	{
-		delete *it;
+		if (*it) delete *it;
 	}
 	m_decoders.clear();
 	return S_OK;

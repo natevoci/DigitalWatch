@@ -133,18 +133,22 @@ HRESULT BDADVBTSink::DestroyAll()
 	{
 		m_pCurrentDSNetSink->RemoveSinkFilters();
 		delete m_pCurrentDSNetSink;
+		m_pCurrentDSNetSink = NULL;
+
 	}
 
 	if (m_pCurrentFileSink)
 	{
 		m_pCurrentFileSink->RemoveSinkFilters();
 		delete m_pCurrentFileSink;
+		m_pCurrentFileSink = NULL;
 	}
 
 	if (m_pCurrentTShiftSink)
 	{
 		m_pCurrentTShiftSink->RemoveSinkFilters();
 		delete m_pCurrentTShiftSink;
+		m_pCurrentTShiftSink = NULL;
 	}
 
 	m_piMediaControl.Release();

@@ -71,6 +71,8 @@ public:
 	DVBTChannels_Stream();
 	virtual ~DVBTChannels_Stream();
 
+	virtual void SetLogCallback(LogMessageCallback *callback);
+
 	void UpdateStream(DVBTChannels_Stream *pNewStream);
 	void PrintStreamDetails();
 

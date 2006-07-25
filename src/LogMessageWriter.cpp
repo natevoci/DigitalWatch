@@ -38,36 +38,26 @@ LogMessageWriter::LogMessageWriter()
 
 LogMessageWriter::~LogMessageWriter()
 {
-	if (m_WriteThreadActive)
-		StopThread(200);
-
 	CAutoLock BufferLock(&m_BufferLock);
-	CAutoLock logFileLock(&m_logFileLock);
+	FlushLogBuffer();
+	if (m_WriteThreadActive)
+		StopThread(250);
+
+//	CAutoLock logFileLock(&m_logFileLock);
 	if (m_logFilename)
 	{
 		delete[] m_logFilename;
 		m_logFilename = NULL;
 	}
-
-	std::vector<LOGINFO*>::iterator it = m_Array.begin();
-	for ( ; it != m_Array.end() ; it++ )
-	{
-		LOGINFO *logInfo = *it;
-		delete[] logInfo->pStr;
-		delete logInfo;
-	}
-	m_Array.clear();
-//	ClearBuffer();
 }
 
 void LogMessageWriter::ClearBuffer(void)
 {
 	CAutoLock BufferLock(&m_BufferLock);
-	std::vector<LOGINFO*>::iterator it = m_Array.begin();
+	std::vector<CLogInfo*>::iterator it = m_Array.begin();
 	for ( ; it != m_Array.end() ; it++ )
 	{
-		LOGINFO *logInfo = *it;
-		delete[] logInfo->pStr;
+		CLogInfo *logInfo = *it;
 		delete logInfo;
 	}
 	m_Array.clear();
@@ -79,7 +69,7 @@ void LogMessageWriter::ThreadProc(void)
 
 	BrakeThread Brake;
 	
-	while (!ThreadIsStopping(0))
+	while (!ThreadIsStopping(100))
 	{
 		FlushLogBuffer(m_LogBufferLimit);
 		Sleep(100);
@@ -91,28 +81,25 @@ void LogMessageWriter::ThreadProc(void)
 
 void LogMessageWriter::FlushLogBuffer(int logSize)
 {
-	{
-		CAutoLock BufferLock(&m_BufferLock);
-		if (m_Array.size() < logSize)
-			return;
-	}
+//	CAutoLock logFileLock(&m_logFileLock);
+	CAutoLock BufferLock(&m_BufferLock);
+	if (m_Array.size() < logSize)
+		return;
 
 //	::OutputDebugString(TEXT("LogMessageWriter::ThreadProc:Write."));
 	USES_CONVERSION;
 	if (m_logFilename)
 	{
-		CAutoLock logFileLock(&m_logFileLock);
 		LogFileWriter file;
 		if SUCCEEDED(file.Open(m_logFilename, TRUE))
 		{
 			while(TRUE)
 			{
-				LOGINFO *logInfo = NULL;
+				CLogInfo *logInfo = NULL;
 				{
-					CAutoLock BufferLock(&m_BufferLock);
 					if (m_Array.size() > 0)
 					{
-						std::vector<LOGINFO*>::iterator it = m_Array.begin();
+						std::vector<CLogInfo*>::iterator it = m_Array.begin();
 						logInfo = *it;
 						m_Array.erase(it);
 					}
@@ -144,8 +131,9 @@ void LogMessageWriter::FlushLogBuffer(int logSize)
 							break;
 						}
 					};
-					delete[] logInfo->pStr;
-					delete logInfo;
+
+					if (logInfo)
+						delete logInfo;
 				}
 			};
 			file.Close();
@@ -156,21 +144,22 @@ void LogMessageWriter::FlushLogBuffer(int logSize)
 
 void LogMessageWriter::SetLogBufferLimit(int logBufferLimit)
 {
-	CAutoLock logFileLock(&m_logFileLock);
+//	CAutoLock logFileLock(&m_logFileLock);
 	CAutoLock BufferLock(&m_BufferLock);
 	m_LogBufferLimit = logBufferLimit;
+	FlushLogBuffer(0);
 }
 
 int LogMessageWriter::GetLogBufferLimit(void)
 {
-	CAutoLock logFileLock(&m_logFileLock);
+//	CAutoLock logFileLock(&m_logFileLock);
 	CAutoLock BufferLock(&m_BufferLock);
 	return m_LogBufferLimit;
 }
 
 void LogMessageWriter::SetFilename(LPWSTR filename)
 {
-	CAutoLock logFileLock(&m_logFileLock);
+//	CAutoLock logFileLock(&m_logFileLock);
 	CAutoLock BufferLock(&m_BufferLock);
 
 	if ((wcslen(filename) > 2) &&
@@ -193,7 +182,7 @@ void LogMessageWriter::SetFilename(LPWSTR filename)
 
 void LogMessageWriter::Write(LPWSTR pStr)
 {
-	CAutoLock logFileLock(&m_logFileLock);
+//	CAutoLock logFileLock(&m_logFileLock);
 
 	USES_CONVERSION;
 	if (m_logFilename)
@@ -201,7 +190,7 @@ void LogMessageWriter::Write(LPWSTR pStr)
 		if(!m_WriteThreadActive)
 			StartThread();
 
-		LOGINFO *item = new LOGINFO;
+		CLogInfo *item = new CLogInfo();
 		item->pStr = NULL;
 		strCopy(item->pStr, pStr);
 		item->indent = m_indent;
@@ -213,7 +202,7 @@ void LogMessageWriter::Write(LPWSTR pStr)
 
 void LogMessageWriter::Clear()
 {
-	CAutoLock logFileLock(&m_logFileLock);
+//	CAutoLock logFileLock(&m_logFileLock);
 
 	ClearBuffer();
 	USES_CONVERSION;

@@ -147,6 +147,11 @@ HRESULT BDADVBTSourceTuner::DestroyAll()
 
 HRESULT BDADVBTSourceTuner::AddSourceFilters()
 {
+	ASSERT(m_piTuningSpace);
+
+	if (!m_piTuningSpace)
+		return (log << "Failed to Assert TuningSpace in AddSourceFilters: " << E_INVALIDARG << "\n").Write(E_INVALIDARG);
+
 	HRESULT hr;
 
 	//--- Get NetworkType CLSID ---

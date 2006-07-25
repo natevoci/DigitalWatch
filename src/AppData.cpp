@@ -1698,7 +1698,7 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 
 	if (pValue)
 	{
-		delete pValue;
+		delete[] pValue;
 		pValue = NULL;
 	}
 

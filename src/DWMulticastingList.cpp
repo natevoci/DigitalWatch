@@ -63,7 +63,7 @@ DWMulticastingList::~DWMulticastingList()
 {
 	Destroy();
 	if (m_filename)
-		delete m_filename;
+		delete[] m_filename;
 
 	if (m_dataListName)
 		delete[] m_dataListName;
@@ -76,7 +76,7 @@ HRESULT DWMulticastingList::Destroy()
 	std::vector<DWMulticastingListItem *>::iterator it = m_list.begin();
 	for ( ; it < m_list.end() ; it++ )
 	{
-		delete (*it);
+		if (*it) delete *it;
 	}
 	m_list.clear();
 	return S_OK;
