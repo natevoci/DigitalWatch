@@ -106,6 +106,7 @@ private:
 	const LPWSTR m_strSourceType;
 
 	BOOL m_bInitialised;
+	BOOL m_bTimeShiftService;
 	CCritSec m_listLock;
 
 	DWGraph *m_pDWGraph;

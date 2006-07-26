@@ -1273,8 +1273,8 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 			}
 		}
 
-m_DWDemux.set_ClockMode(3);
-m_DWDemux.SetRefClock();
+		m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
+		m_DWDemux.SetRefClock();
 
 		if FAILED(hr = m_pDWGraph->Pause(m_piGraphBuilder, (BOOL)(m_pCurrentService == NULL)))
 		{
@@ -1431,11 +1431,11 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 		m_pDWGraph->Mute(1);
 
 		m_DWDemux.set_Auto(TRUE);
-		m_DWDemux.set_AC3Mode(FALSE);
-		m_DWDemux.set_MPEG2Audio2Mode(FALSE);
-		m_DWDemux.set_FixedAspectRatio(FALSE);
-		m_DWDemux.set_MPEG2AudioMediaType(TRUE);
-		m_DWDemux.set_ClockMode(3);
+		m_DWDemux.set_AC3Mode(g_pData->settings.application.ac3Audio);
+		m_DWDemux.set_MPEG2Audio2Mode(g_pData->settings.application.audioSwap);
+		m_DWDemux.set_FixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
+		m_DWDemux.set_MPEG2AudioMediaType(g_pData->settings.application.mpg2Audio);
+		m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
 
 		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 		{
@@ -1566,7 +1566,7 @@ HRESULT BDADVBTSource::LoadTuner()
 		return (log << "Could not get TSPin Pin Info: " << hr << "\n").Write(hr);
 
 	m_DWDemux.AOnConnect(pinInfo.pFilter); //only sets the source filter reference
-	m_DWDemux.set_ClockMode(3);
+	m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
 	m_DWDemux.SetRefClock();
 	if (pinInfo.pFilter)
 		pinInfo.pFilter->Release();
@@ -1771,6 +1771,21 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 	if (videoStreamsRendered > 0)
 	{
 		hr = AddDemuxPinsTeletext(pService);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render ac3 audio if prefered
+	if (g_pData->settings.application.ac3Audio)
+	{
+		hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+	// render mp2 audio if prefered
+	else if (g_pData->settings.application.mpg2Audio)
+	{
+		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}

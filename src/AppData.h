@@ -62,6 +62,7 @@ public:
 			BOOL multiple;
 			BOOL disableScreenSaver;
 			int priority;
+			int refClock;
 			BOOL addToROT;
 			BOOL multicard;
 			BOOL cyclecards;
@@ -77,6 +78,11 @@ public:
 			BOOL autoDecoderTest;
 			int logBufferLimit;
 			BOOL signalCheck;
+			BOOL mpg2Audio;
+			BOOL ac3Audio;
+			BOOL audioSwap;
+			BOOL fixedAspectRatio;
+
 			//LPWSTR logFilename;
 		} application;
 
@@ -160,6 +166,7 @@ public:
 			int numbfilesrecycled;
 			int bufferfilesize;
 			int format;
+			BOOL localTime;
 		} timeshift;
 
 		struct SETTINGS_DSNETWORK
@@ -282,10 +289,12 @@ public:
 	LPWSTR GetStatus(long value);
 	LPWSTR GetStatusString(LPWSTR lpwstr);
 	LPWSTR GetPriority(long value);
+	LPWSTR GetRefClock(long value);
 	long GetFormat(LPWSTR lpwstr);
 	BOOL GetBool(LPWSTR lpwstr);
 	BOOL GetStatus(LPWSTR lpwstr);
 	long GetPriority(LPWSTR lpwstr);
+	long GetRefClock(LPWSTR lpwstr);
 
 
 private:

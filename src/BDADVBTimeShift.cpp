@@ -1953,11 +1953,11 @@ HRESULT BDADVBTimeShift::ChangeChannel(int frequency, int bandwidth)
 		}
 */
 		m_DWDemux.set_Auto(TRUE);
-		m_DWDemux.set_AC3Mode(FALSE);
-		m_DWDemux.set_MPEG2Audio2Mode(FALSE);
-		m_DWDemux.set_FixedAspectRatio(FALSE);
-		m_DWDemux.set_MPEG2AudioMediaType(TRUE);
-		m_DWDemux.set_ClockMode(3);
+		m_DWDemux.set_AC3Mode(g_pData->settings.application.ac3Audio);
+		m_DWDemux.set_MPEG2Audio2Mode(g_pData->settings.application.audioSwap);
+		m_DWDemux.set_FixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
+		m_DWDemux.set_MPEG2AudioMediaType(g_pData->settings.application.mpg2Audio);
+		m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
 		if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 		{
 			if(pinInfo.pFilter)
@@ -2074,11 +2074,11 @@ HRESULT BDADVBTimeShift::ReLoadTimeShiftFile()
 			}
 
 			m_DWDemux.set_Auto(TRUE);
-			m_DWDemux.set_AC3Mode(FALSE);
-			m_DWDemux.set_MPEG2Audio2Mode(FALSE);
-			m_DWDemux.set_FixedAspectRatio(FALSE);
-			m_DWDemux.set_MPEG2AudioMediaType(TRUE);
-			m_DWDemux.set_ClockMode(3);
+			m_DWDemux.set_AC3Mode(g_pData->settings.application.ac3Audio);
+			m_DWDemux.set_MPEG2Audio2Mode(g_pData->settings.application.audioSwap);
+			m_DWDemux.set_FixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
+			m_DWDemux.set_MPEG2AudioMediaType(g_pData->settings.application.mpg2Audio);
+			m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
 			if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 			{
 				(log << "Failed to change the Requested Service using channel zapping.\n").Write();
@@ -2187,11 +2187,11 @@ HRESULT BDADVBTimeShift::LoadRecordFile()
 			}
 
 			m_DWDemux.set_Auto(TRUE);
-			m_DWDemux.set_AC3Mode(FALSE);
-			m_DWDemux.set_MPEG2Audio2Mode(FALSE);
-			m_DWDemux.set_FixedAspectRatio(FALSE);
-			m_DWDemux.set_MPEG2AudioMediaType(TRUE);
-			m_DWDemux.set_ClockMode(3);
+			m_DWDemux.set_AC3Mode(g_pData->settings.application.ac3Audio);
+			m_DWDemux.set_MPEG2Audio2Mode(g_pData->settings.application.audioSwap);
+			m_DWDemux.set_FixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
+			m_DWDemux.set_MPEG2AudioMediaType(g_pData->settings.application.mpg2Audio);
+			m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
 			if FAILED(hr = m_DWDemux.AOnConnect(pinInfo.pFilter, m_pCurrentService))
 			{
 				(log << "Failed to change the Requested Service using channel zapping.\n").Write();
@@ -2901,6 +2901,21 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 	if (videoStreamsRendered > 0)
 	{
 		hr = AddDemuxPinsTeletext(pService);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render ac3 audio if prefered
+	if (g_pData->settings.application.ac3Audio)
+	{
+		hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+	// render mp2 audio if prefered
+	else if (g_pData->settings.application.mpg2Audio)
+	{
+		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}

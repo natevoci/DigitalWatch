@@ -34,6 +34,9 @@
 #include "ITSFileSource.h"
 
 #include <process.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/timeb.h>
 
 //////////////////////////////////////////////////////////////////////
 // TSFileSource
@@ -46,6 +49,7 @@ TSFileSource::TSFileSource(LogMessageCallback *callback) : m_strSourceType(L"TSF
 	m_pFileName = NULL;
 	g_pOSD->Data()->AddList(&streamList);
 	g_pOSD->Data()->AddList(&filterList);
+	m_bTimeShiftService = FALSE;
 }
 
 TSFileSource::~TSFileSource()
@@ -509,11 +513,11 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 			if (pService)
 			{
 				m_DWDemux.set_Auto(TRUE);
-				m_DWDemux.set_AC3Mode(FALSE);
-				m_DWDemux.set_MPEG2Audio2Mode(FALSE);
-				m_DWDemux.set_FixedAspectRatio(FALSE);
-				m_DWDemux.set_MPEG2AudioMediaType(TRUE);
-				m_DWDemux.set_ClockMode(3);
+				m_DWDemux.set_AC3Mode(g_pData->settings.application.ac3Audio);
+				m_DWDemux.set_MPEG2Audio2Mode(g_pData->settings.application.audioSwap);
+				m_DWDemux.set_FixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
+				m_DWDemux.set_MPEG2AudioMediaType(g_pData->settings.application.mpg2Audio);
+				m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
 				if FAILED(hr = m_DWDemux.AOnConnect(m_pTSFileSource, pService))
 				{
 					(log << "Failed to change the Requested Service using channel zapping.\n").Write();
@@ -544,10 +548,10 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	}
 
 	//Set flag for timeshift
-	BOOL timeshiftService = FALSE;
+	m_bTimeShiftService = FALSE;
 
 	if (pService)
-		timeshiftService = TRUE;
+		m_bTimeShiftService = TRUE;
 
 	// TSFileSource
 	if FAILED(hr = graphTools.AddFilter(m_piGraphBuilder, g_pData->settings.filterguids.filesourceclsid, &m_pTSFileSource, L"TSFileSource"))
@@ -563,7 +567,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		m_pDWGraph->Mute(g_pData->values.audio.bMute);
 		return (log << "Cannot QI TSFileSource filter for IFileSourceFilter: " << hr << "\n").Write(hr);
 	}
-	if (timeshiftService)
+	if (m_bTimeShiftService)
 	{
 		if FAILED(hr = SetSourceControl(m_pTSFileSource, TRUE))
 		{
@@ -590,7 +594,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	}
 
 	//Get the file source media type if pmt is NULL
-	if (!timeshiftService && pmt == NULL)
+	if (!m_bTimeShiftService && pmt == NULL)
 	{
 		CComPtr<IPin>piPin;
 		if (SUCCEEDED(graphTools.FindAnyPin(m_pTSFileSource, NULL, &piPin, REQUESTED_PINDIR_OUTPUT) && piPin))
@@ -671,7 +675,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	}
 
 	//clear all objects if they exist outside of timeshifting
-	if (!timeshiftService)
+	if (!m_bTimeShiftService)
 	{
 		if (pService)
 			delete pService;
@@ -699,14 +703,19 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	}
 */
 
+	m_DWDemux.set_Auto(TRUE);
+	m_DWDemux.set_AC3Mode(g_pData->settings.application.ac3Audio);
+	m_DWDemux.set_MPEG2Audio2Mode(g_pData->settings.application.audioSwap);
+	m_DWDemux.set_FixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
+	m_DWDemux.set_MPEG2AudioMediaType(g_pData->settings.application.mpg2Audio);
 	m_DWDemux.AOnConnect(m_pTSFileSource); //only sets the source filter reference
-	m_DWDemux.set_ClockMode(3);
+	m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
 	m_DWDemux.SetRefClock();
 
 
 	// If it's a .tsbuffer file then seek to the end
 	long length = wcslen(pFilename);
-	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0) && timeshiftService)
+	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0) && m_bTimeShiftService)
 	{
 		long lPosition = m_pDWGraph->GetResumePosition(pFilename);
 		Seek(lPosition);
@@ -1027,6 +1036,21 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	if (videoStreamsRendered > 0)
 	{
 		hr = AddDemuxPinsTeletext(pService, pmt, &teletextStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render ac3 audio if prefered
+	if (g_pData->settings.application.ac3Audio)
+	{
+		hr = AddDemuxPinsAC3(pService, pmt, &audioStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+	// render mp2 audio if prefered
+	else if (g_pData->settings.application.mpg2Audio)
+	{
+		hr = AddDemuxPinsMp2(pService, pmt, &audioStreamsRendered, bRender);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -1501,18 +1525,18 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 
 	piTSFilepSource->SetNPControl(0);
 	piTSFilepSource->SetNPSlave(0);
-	piTSFilepSource->SetRateControlMode(0);
 	piTSFilepSource->SetDelayMode(0);
-	piTSFilepSource->SetMP2Mode(1);
-	piTSFilepSource->SetAC3Mode(0);
-	piTSFilepSource->SetAudio2Mode(0);
+	piTSFilepSource->SetMP2Mode(g_pData->settings.application.mpg2Audio);
+	piTSFilepSource->SetAC3Mode(g_pData->settings.application.ac3Audio);
+	piTSFilepSource->SetAudio2Mode(g_pData->settings.application.audioSwap);
+	piTSFilepSource->SetFixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
 	piTSFilepSource->SetROTMode(0);
-	piTSFilepSource->SetClockMode(3);//1
+	piTSFilepSource->SetClockMode(g_pData->settings.application.refClock);
 	piTSFilepSource->SetCreateTSPinOnDemux(0);
 	piTSFilepSource->SetCreateTxtPinOnDemux(0);
-	piTSFilepSource->SetFixedAspectRatio(0);
 	piTSFilepSource->SetAutoMode(1);
 	piTSFilepSource->SetRateControlMode(0);
+
 
 	//if no service already defined then try and get the media type from the file
 	if (pService && !(*pService))
@@ -1749,38 +1773,66 @@ HRESULT TSFileSource::UpdateData()
 		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
 
 	WCHAR sz[MAX_PATH];
-	long milli, secs, mins, hours;
 
-	milli = (long)(rtEarliest / 10000);
-	secs = milli / 1000;
-	mins = secs / 60;
-	hours = mins / 60;
-	milli %= 1000;
-	secs %= 60;
-	mins %= 60;
-	swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
-	g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
+	if (m_bTimeShiftService && g_pData->settings.timeshift.localTime)
+	{
+		_tzset();
+		struct tm *tmTime;
+		time_t lTime = timeGetTime() - (rtLatest - rtEarliest)/10000;
+		time(&lTime);
+		lTime -= (rtLatest - rtEarliest)/10000000;
+		tmTime = localtime(&lTime);
+		wcsftime(sz, 32, L"%H:%M:%S", tmTime);
+		g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
 
-	milli = (long)(rtCurrent / 10000);
-	secs = milli / 1000;
-	mins = secs / 60;
-	hours = mins / 60;
-	milli %= 1000;
-	secs %= 60;
-	mins %= 60;
-	swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
-	g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
+		lTime = timeGetTime() - (rtLatest - rtCurrent)/10000;
+		time(&lTime);
+		lTime -= (rtLatest - rtCurrent)/10000000;
+		tmTime = localtime(&lTime);
+		wcsftime(sz, 32, L"%H:%M:%S", tmTime);
+		g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
 
-	milli = (long)(rtLatest / 10000);
-	secs = milli / 1000;
-	mins = secs / 60;
-	hours = mins / 60;
-	milli %= 1000;
-	secs %= 60;
-	mins %= 60;
-	swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
-	g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
+		lTime = timeGetTime();
+		time(&lTime);
+		tmTime = localtime(&lTime);
+		wcsftime(sz, 32, L"%H:%M:%S", tmTime);
+		g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
+	}
+	else
+	{
+		long milli, secs, mins, hours;
 
+		milli = (long)(rtEarliest / 10000);
+		secs = milli / 1000;
+		mins = secs / 60;
+		hours = mins / 60;
+		milli %= 1000;
+		secs %= 60;
+		mins %= 60;
+		swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+		g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
+
+		milli = (long)(rtCurrent / 10000);
+		secs = milli / 1000;
+		mins = secs / 60;
+		hours = mins / 60;
+		milli %= 1000;
+		secs %= 60;
+		mins %= 60;
+		swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+		g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
+
+		milli = (long)(rtLatest / 10000);
+		secs = milli / 1000;
+		mins = secs / 60;
+		hours = mins / 60;
+		milli %= 1000;
+		secs %= 60;
+		mins %= 60;
+		swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+		g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
+	}
+	
 	if (!streamList.GetListSize())
 		if FAILED(hr = streamList.LoadStreamList(FALSE))
 			return (log << "Failed to get a Stream List: " << hr << "\n").Write(hr);

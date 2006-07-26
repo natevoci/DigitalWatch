@@ -39,6 +39,7 @@ static 	LPWSTR MUX_FORMAT[6] = {L"None", L"FullMux", L"TSMux", L"MpgMux", L"SepM
 static 	LPWSTR PRIORITY[6] = {L"Realtime", L"High", L"AboveNormal", L"Normal.", L"BelowNormal", L"Low"};
 static 	LPWSTR BOOLVALUE[2] = {L"False", L"True"};
 static 	LPWSTR STATUSVALUE[2] = {L"Disabled", L"Enabled"};
+static 	LPWSTR REFCLOCK[4] = {L"Default", L"Source", L"Demux", L"Render"};
 
 AppData::AppData()
 {
@@ -65,6 +66,7 @@ AppData::AppData()
 	settings.application.multiple = FALSE;
 	settings.application.disableScreenSaver = TRUE;
 	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
+	settings.application.refClock = 3;
 	settings.application.addToROT = FALSE;
 	settings.application.multicard = TRUE;
 	settings.application.cyclecards = TRUE;
@@ -82,6 +84,10 @@ AppData::AppData()
 	settings.application.autoDecoderTest = TRUE;
 	settings.application.logBufferLimit = 100;
 	settings.application.signalCheck = FALSE;
+	settings.application.mpg2Audio = TRUE;
+	settings.application.ac3Audio = FALSE;
+	settings.application.audioSwap = FALSE;
+	settings.application.fixedAspectRatio = FALSE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
 //	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
@@ -134,6 +140,7 @@ AppData::AppData()
 
 	//	wcscpy(settings.timeshift.folder, L"");
 	settings.timeshift.resume = TRUE;
+	settings.timeshift.localTime = TRUE;
 	settings.timeshift.dlimit = 0;
 	settings.timeshift.flimit = 0;
 	settings.timeshift.fdelay = 0;
@@ -333,6 +340,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L"resume") == 0)
 				return GetBool(settings.timeshift.resume);
 
+			if (_wcsicmp(selection, L"localtime") == 0)
+				return GetBool(settings.timeshift.resume);
+
 			return NULL;
 		}
 
@@ -358,6 +368,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"priority") == 0)
 				return GetPriority(settings.application.priority);
+
+			if (_wcsicmp(selection, L"refclock") == 0)
+				return GetPriority(settings.application.refClock);
 
 			if (_wcsicmp(selection, L"addToROT") == 0)
 				return GetBool(settings.application.addToROT);
@@ -391,6 +404,19 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"signalCheck") == 0)
 				return GetBool(settings.application.signalCheck);
+
+			if (_wcsicmp(selection, L"mpg2Audio") == 0)
+				return GetBool(settings.application.mpg2Audio);
+
+			if (_wcsicmp(selection, L"ac3Audio") == 0)
+				return GetBool(settings.application.ac3Audio);
+
+			if (_wcsicmp(selection, L"audioSwap") == 0)
+				return GetBool(settings.application.audioSwap);
+
+			if (_wcsicmp(selection, L"fixedAspectRatio") == 0)
+				return GetBool(settings.application.fixedAspectRatio);
+
 			return NULL;
 		}
 
@@ -750,6 +776,47 @@ long AppData::GetPriority(LPWSTR lpwstr)
 	return NORMAL_PRIORITY_CLASS;
 }
 
+long AppData::GetRefClock(LPWSTR lpwstr)
+{
+	if (!lpwstr)
+		return 3;
+
+	if ((_wcsicmp(lpwstr, L"default") == 0))
+		return 0;
+	if ((_wcsicmp(lpwstr, L"source") == 0))
+		return 1;
+	if ((_wcsicmp(lpwstr, L"demux") == 0))
+		return 2;
+	if ((_wcsicmp(lpwstr, L"render") == 0))
+		return 3;
+
+	return 3;
+}
+
+LPWSTR AppData::GetRefClock(long value)
+{
+	switch (value)
+	{
+		case 0:
+			return REFCLOCK[0];
+			break;
+		case 1:
+			return REFCLOCK[1];
+			break;
+		case 2:
+			return REFCLOCK[2];
+			break;
+		case 3:
+			return REFCLOCK[3];
+			break;
+		default:
+			return REFCLOCK[3];
+	}
+
+	return REFCLOCK[3];
+	
+}
+
 void AppData::RestoreMarkedChanges()
 {
 	long* val    = (long *)&values;
@@ -871,6 +938,30 @@ HRESULT AppData::LoadSettings()
 					}
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"refClock") == 0 && pSubElement->value)
+				{
+					if (_wcsicmp(pSubElement->value, L"Default") == 0)
+					{
+						settings.application.refClock = 0;
+					}
+					else if (_wcsicmp(pSubElement->value, L"Source") == 0)
+					{
+						settings.application.refClock = 1;
+					}
+					else if (_wcsicmp(pSubElement->value, L"Demux") == 0)
+					{
+						settings.application.refClock = 2;
+					}
+					else if (_wcsicmp(pSubElement->value, L"Render") == 0)
+					{
+						settings.application.refClock = 3;
+					}
+					else
+					{
+						settings.application.refClock = 0;
+					}
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"addToROT") == 0)
 				{
 					settings.application.addToROT = (_wcsicmp(pSubElement->value, L"true") == 0);
@@ -941,6 +1032,26 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"SignalCheck") == 0)
 				{
 					settings.application.signalCheck = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"MPG2Audio") == 0)
+				{
+					settings.application.mpg2Audio = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"AC3Audio") == 0)
+				{
+					settings.application.ac3Audio = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"AudioSwap") == 0)
+				{
+					settings.application.audioSwap = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"FixedAspectRatio") == 0)
+				{
+					settings.application.fixedAspectRatio = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
 			}
@@ -1227,6 +1338,11 @@ HRESULT AppData::LoadSettings()
 					settings.timeshift.resume = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"LocalTime") == 0)
+				{
+					settings.timeshift.localTime = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"LoadDelayLimit") == 0)
 				{
 					settings.timeshift.dlimit = _wtoi(pSubElement->value);
@@ -1439,6 +1555,25 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 				break;
 		};
 		pApplication->Elements.Add(new XMLElement(L"Priority", pValue));
+		switch (settings.application.refClock)
+		{
+			case 0:
+				strCopy(pValue, L"Default");
+				break;
+			case 1:
+				strCopy(pValue, L"Source");
+				break;
+			case 2:
+				strCopy(pValue, L"Demux");
+				break;
+			case 3:
+				strCopy(pValue, L"Render");
+				break;
+			default:
+				strCopy(pValue, L"Default");
+				break;
+		};
+		pApplication->Elements.Add(new XMLElement(L"RefClock", pValue));
 		pApplication->Elements.Add(new XMLElement(L"AddToROT", (settings.application.addToROT ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"MultiCard", (settings.application.multicard ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"CycleCards", (settings.application.cyclecards ? L"True" : L"False")));
@@ -1453,6 +1588,10 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 		pApplication->Elements.Add(new XMLElement(L"DecoderTest", (settings.application.decoderTest ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"AutoDecoderTest", (settings.application.autoDecoderTest ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"SignalCheck", (settings.application.signalCheck ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"MPG2Audio", (settings.application.mpg2Audio ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"AC3Audio", (settings.application.ac3Audio ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"AudioSwap", (settings.application.audioSwap ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"FixedAspectRatio", (settings.application.fixedAspectRatio ? L"True" : L"False")));
 		strCopy(pValue, settings.application.logBufferLimit);
 		pApplication->Elements.Add(new XMLElement(L"LogBufferLimit", pValue));
 	}
@@ -1615,6 +1754,7 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 	{
 		pTimeshift->Elements.Add(new XMLElement(L"Folder", settings.timeshift.folder));
 		pTimeshift->Elements.Add(new XMLElement(L"Resume", (settings.timeshift.resume ? L"True" : L"False")));
+		pTimeshift->Elements.Add(new XMLElement(L"LocalTime", (settings.timeshift.localTime ? L"True" : L"False")));
 		strCopy(pValue, settings.timeshift.dlimit);
 		pTimeshift->Elements.Add(new XMLElement(L"LoadDelayLimit", pValue));
 		strCopy(pValue, settings.timeshift.flimit);
