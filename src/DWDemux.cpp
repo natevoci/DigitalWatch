@@ -32,10 +32,10 @@
 #include "tuner.h"
 #include <commctrl.h>
 #include <atlbase.h>
-//#include "TunerEvent.h"
 
 DWDemux::DWDemux() :
 
+	m_FilterRefList(NAME("MyFilterList")),
 	m_bAuto(TRUE),
 	m_bMPEG2AudioMediaType(TRUE),
 	m_bMPEG2Audio2Mode(FALSE),
@@ -52,18 +52,31 @@ DWDemux::DWDemux() :
 	m_StreamMP2(FALSE),
 	m_StreamAud2(FALSE),
 	m_StreamAAC(FALSE),
+	m_StreamDTS(FALSE),
 	m_ClockMode(1),
 	m_SelTelexPid(0),
+	m_SelSubtitlePid(0),
 	m_SelAudioPid(0), 
 	m_SelVideoPid(0),
 	m_bFixedAR(FALSE),
 	m_bCreateTSPinOnDemux(FALSE),
-	m_bCreateTxtPinOnDemux(FALSE)
+	m_bCreateTxtPinOnDemux(FALSE),
+	m_bCreateSubPinOnDemux(FALSE)
 {
 }
 
 DWDemux::~DWDemux()
 {
+	//Clear the filter list;
+	POSITION pos = m_FilterRefList.GetHeadPosition();
+	while (pos){
+
+		if (m_FilterRefList.Get(pos) != NULL)
+			m_FilterRefList.Get(pos)->Release();
+
+		m_FilterRefList.Remove(pos);
+		pos = m_FilterRefList.GetHeadPosition();
+	}
 }
 
 void DWDemux::SetLogCallback(LogMessageCallback *callback)
@@ -290,19 +303,11 @@ HRESULT DWDemux::AOnConnect(IBaseFilter *pTSSourceFilter,
 			pFilter = FList.GetNext(pos);
 			if(pFilter != NULL)
 			{
+                AddFilterUnique(m_FilterRefList, pFilter);
 				UpdateDemuxPins(pFilter);
-				pFilter->Release();
 				pFilter = NULL;
 			}
 		}
-	}
-
-	//Clear the filter list;
-	POSITION pos = FList.GetHeadPosition();
-	while (pos){
-
-		FList.Remove(pos);
-		pos = FList.GetHeadPosition();
 	}
 
 	if (IsPlaying() == S_FALSE)
@@ -319,6 +324,30 @@ HRESULT DWDemux::AOnConnect(IBaseFilter *pTSSourceFilter,
 		//Pause the Graph if was Paused and was stopped.
 		if (m_WasPaused && !m_WasPlaying)
 			if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+	}
+
+	//Reload the filter list of to catch any changes to the filtergraph
+	if (SUCCEEDED(GetPeerFilters(m_pTSSourceFilter, PINDIR_OUTPUT, FList))
+		&& FList.GetHeadPosition())
+	{
+		IBaseFilter* pFilter = NULL;
+		POSITION pos = FList.GetHeadPosition();
+		pFilter = FList.Get(pos);
+		while (SUCCEEDED(GetPeerFilters(pFilter, PINDIR_OUTPUT, FList)) && pos)
+		{
+			pFilter = FList.GetNext(pos);
+		}
+	}
+
+	//Clear the filter list;
+	POSITION pos = FList.GetHeadPosition();
+	while (pos){
+
+		if (FList.Get(pos) != NULL)
+			FList.Get(pos)->Release();
+
+		FList.Remove(pos);
+		pos = FList.GetHeadPosition();
 	}
 
 	m_bConnectBusyFlag = FALSE;
@@ -390,11 +419,21 @@ HRESULT DWDemux::UpdateDemuxPins(IBaseFilter* pDemux)
 //				// If no Audio Pin was found
 //				hr = NewAudioPin(muxInterface, L"Audio");
 //			}
+
+			pPid = get_DTS_AudioPid();
+			// If we do have an DTS audio pid
+			if (m_StreamDTS || pPid) {
+				// Update DTS Pin
+				if (FAILED(CheckDTSPin(pDemux))){
+					// If no DTS Pin was found
+					hr = NewDTSPin(muxInterface, L"Audio");
+				}
+			}
 		}
 
 		// If we have AC3 preference and we are not forcing MP2 Stream
 		// or we are forcing an AC3 Stream
-		if ((m_StreamAC3 && !m_StreamAAC) || (m_bAC3Mode && !m_StreamMP2 && !m_StreamAAC)){
+		if ((m_StreamAC3 && !m_StreamAAC && !m_StreamDTS) || (m_bAC3Mode && !m_StreamMP2 && !m_StreamAAC && !m_StreamDTS)){
 			// Update AC3 Pin
 			if (FAILED(CheckAC3Pin(pDemux))){
 				// If no AC3 Pin found
@@ -470,7 +509,7 @@ HRESULT DWDemux::UpdateDemuxPins(IBaseFilter* pDemux)
 			// If no mp1/2 audio Pin found
 			if (FAILED(CheckAC3Pin(pDemux))){
 				// If no AC3 audio Pin found
-				if (FAILED(NewAudioPin(muxInterface, L"Audio"))){
+				if (!get_MP2AudioPid() || FAILED(NewAudioPin(muxInterface, L"Audio"))){
 					// If unable to create mp1/2 pin
 					hr = NewAC3Pin(muxInterface, L"Audio");
 				}
@@ -550,6 +589,15 @@ HRESULT DWDemux::UpdateDemuxPins(IBaseFilter* pDemux)
 			if (m_bCreateTxtPinOnDemux){
 				//If we have the option set
 				hr = NewTelexPin(muxInterface, L"VTeletext");
+			}
+		}
+
+		// Update Teletext Pin
+		if (FAILED(CheckSubtitlePin(pDemux))){
+			// If no Teletext Pin was found
+			if (m_bCreateSubPinOnDemux){
+				//If we have the option set
+				hr = NewSubtitlePin(muxInterface, L"VSubtitle");
 			}
 		}
 
@@ -999,6 +1047,29 @@ HRESULT DWDemux::CheckAACPin(IBaseFilter* pDemux)
 	return hr;
 }
 
+HRESULT DWDemux::CheckDTSPin(IBaseFilter* pDemux)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pDemux == NULL)
+		return hr;
+
+	AM_MEDIA_TYPE pintype;
+	graphTools.GetDTSMedia(&pintype);
+
+	IPin* pIPin = NULL;
+	if (SUCCEEDED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+		USHORT pPid;
+		pPid = get_DTS_AudioPid();
+		if (SUCCEEDED(LoadAudioPin(pIPin, pPid))){
+			pIPin->Release();
+			return S_OK;
+		};
+	}
+	return hr;
+}
+
 HRESULT DWDemux::CheckAC3Pin(IBaseFilter* pDemux)
 {
 	HRESULT hr = E_INVALIDARG;
@@ -1045,6 +1116,29 @@ HRESULT DWDemux::CheckTelexPin(IBaseFilter* pDemux)
 	return hr;
 }
 
+HRESULT DWDemux::CheckSubtitlePin(IBaseFilter* pDemux)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pDemux == NULL)
+		return hr;
+
+	AM_MEDIA_TYPE pintype;
+	graphTools.GetSubtitleMedia(&pintype);
+
+	IPin* pIPin = NULL;
+	if (SUCCEEDED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+		USHORT pPid;
+		pPid = get_SubtitlePid();
+		if (SUCCEEDED(LoadSubtitlePin(pIPin, pPid))){
+			pIPin->Release();
+			return S_OK;
+		}
+	}
+	return hr;
+}
+
 HRESULT DWDemux::CheckTsPin(IBaseFilter* pDemux)
 {
 	HRESULT hr = E_INVALIDARG;
@@ -1066,7 +1160,7 @@ HRESULT DWDemux::CheckTsPin(IBaseFilter* pDemux)
 	}
 	return hr;
 }
-
+/*
 HRESULT DWDemux::NewTsPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
 {
 	HRESULT hr = E_INVALIDARG;
@@ -1095,11 +1189,789 @@ HRESULT DWDemux::NewTsPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
 			if(pIPin == NULL)
 				return hr;
 			
-			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
-			if FAILED(hr)
-			{
-				pIPin->Release();
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+				pinInfo.pFilter->Release();
+				pInpPin->Release();
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+						pInpPin->Release();
+					}
+							
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (connect)
+						RenderFilterPin(pIPin);
+
+				}
+			}
+//			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+//			if FAILED(hr)
+//			{
+//				pIPin->Release();
+//				return hr;
+//			}
+		}
+
+		hr = LoadTsPin(pIPin);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewVideoPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	AM_MEDIA_TYPE type;
+	ZeroMemory(&type, sizeof(AM_MEDIA_TYPE));
+
+	if (get_Mpeg4Pid())
+	{
+		graphTools.GetMpeg4Media(&type);
+		pPid = get_Mpeg4Pid();
+	}
+	else if (get_H264Pid())
+	{
+		graphTools.GetH264Media(&type);
+		pPid = get_H264Pid();
+	}
+	else
+	{
+		graphTools.GetVideoMedia(&type);
+		pPid = get_VideoPid();
+	}
+
+	HRESULT hr = E_INVALIDARG;
+	//Test if no interface 
+	if(muxInterface == NULL) //|| !pPid)
+		return hr;
+
+	// Create out new pin 
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
 				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+				pinInfo.pFilter->Release();
+				pInpPin->Release();
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+						pInpPin->Release();
+					}
+							
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (connect)
+						RenderFilterPin(pIPin);
+
+				}
+			}
+//			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+//			if FAILED(hr)
+//			{
+//				pIPin->Release();
+//				return hr;
+//			}
+		}
+
+		hr = LoadVideoPin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewAudioPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	pPid = get_MP2AudioPid();
+
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL)
+		return hr;
+
+	if(pPid == 0 && get_PcrPid())
+		return hr;
+
+	// Create out new pin 
+	AM_MEDIA_TYPE type;
+	ZeroMemory(&type, sizeof(AM_MEDIA_TYPE));
+	if (m_bMPEG2AudioMediaType)
+		graphTools.GetMP2Media(&type);
+	else
+		graphTools.GetMP1Media(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
+				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+				pinInfo.pFilter->Release();
+				pInpPin->Release();
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+						pInpPin->Release();
+					}
+							
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (connect)
+						RenderFilterPin(pIPin);
+
+				}
+			}
+//			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+//			if FAILED(hr)
+//			{
+//				pIPin->Release();
+//				return hr;
+//			}
+		}
+
+		hr = LoadAudioPin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewAC3Pin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	pPid = get_AC3_AudioPid();
+
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL || pPid == 0)
+		return hr;
+
+	// Create out new pin 
+	AM_MEDIA_TYPE type;
+	graphTools.GetAC3Media(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
+				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+				pinInfo.pFilter->Release();
+				pInpPin->Release();
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+						pInpPin->Release();
+					}
+							
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (connect)
+						RenderFilterPin(pIPin);
+
+				}
+			}
+//			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+//			if FAILED(hr)
+//			{
+//				pIPin->Release();
+//				return hr;
+//			}
+		}
+
+		hr = LoadAudioPin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewAACPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	pPid = get_AAC_AudioPid();
+
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL || pPid == 0)
+		return hr;
+
+	// Create out new pin 
+	AM_MEDIA_TYPE type;
+	graphTools.GetAACMedia(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
+				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+				pinInfo.pFilter->Release();
+				pInpPin->Release();
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+						pInpPin->Release();
+					}
+							
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (connect)
+						RenderFilterPin(pIPin);
+
+				}
+			}
+//			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+//			if FAILED(hr)
+//			{
+//				pIPin->Release();
+//				return hr;
+//			}
+		}
+
+		hr = LoadAudioPin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewDTSPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	pPid = get_DTS_AudioPid();
+
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL || pPid == 0)
+		return hr;
+
+	// Create out new pin 
+	AM_MEDIA_TYPE type;
+	graphTools.GetDTSMedia(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
+				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+				pinInfo.pFilter->Release();
+				pInpPin->Release();
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+						pInpPin->Release();
+					}
+							
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (connect)
+						RenderFilterPin(pIPin);
+
+				}
+			}
+		}
+
+		hr = LoadAudioPin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewTelexPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	pPid = get_TeletextPid();
+
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL || pPid == 0)
+		return hr;
+
+	// Create out new pin 
+	AM_MEDIA_TYPE type;
+	graphTools.GetTelexMedia(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
+				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+				pinInfo.pFilter->Release();
+				pInpPin->Release();
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+						pInpPin->Release();
+					}
+							
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (connect)
+						RenderFilterPin(pIPin);
+
+				}
+			}
+		}
+
+		hr = LoadTelexPin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewSubtitlePin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	pPid = get_SubtitlePid();
+
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL || pPid == 0)
+		return hr;
+
+	// Create out new pin 
+	AM_MEDIA_TYPE type;
+	graphTools.GetSubtitleMedia(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
+				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+				pinInfo.pFilter->Release();
+				pInpPin->Release();
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+						pInpPin->Release();
+					}
+							
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (connect)
+						RenderFilterPin(pIPin);
+
+				}
+			}
+		}
+
+		hr = LoadSubtitlePin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+*/
+HRESULT DWDemux::NewTsPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL)
+		return hr;
+
+	// Create out new pin  
+	AM_MEDIA_TYPE type;
+	graphTools.GetTSMedia(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
+				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+					}
+							
+					if (pInpPin2) pInpPin2->Release();
+
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						if (pInpPin)
+							pInpPin->Release();
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (pInpPin)
+						pInpPin->Release();
+
+					if (connect)
+						RenderFilterPin(pIPin);
+					else
+						pinInfo.pFilter->Release();
+				}
+				else
+				{
+					pinInfo.pFilter->Release();
+					pIPin->Release();
+					return hr;
+				}
+			}
+			else
+			{
+				hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+				if FAILED(hr)
+				{
+					pIPin->Release();
+					return hr;
+				}
 			}
 		}
 
@@ -1155,11 +2027,71 @@ HRESULT DWDemux::NewVideoPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
 			if(pIPin == NULL)
 				return hr;
 			
-			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
-			if FAILED(hr)
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+					}
+							
+					if (pInpPin2)
+						pInpPin2->Release();
+
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						if (pInpPin)
+							pInpPin->Release();
+
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (pInpPin)
+						pInpPin->Release();
+
+					if (connect)
+						RenderFilterPin(pIPin);
+					else
+						pinInfo.pFilter->Release();
+				}
+				else
+				{
+					pinInfo.pFilter->Release();
+					pIPin->Release();
+					return hr;
+				}
+			}
+			else
 			{
-				pIPin->Release();
-				return hr;
+				hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+				if FAILED(hr)
+				{
+					pIPin->Release();
+					return hr;
+				}
 			}
 		}
 
@@ -1207,12 +2139,72 @@ HRESULT DWDemux::NewAudioPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
 			pIBaseFilter->Release();
 			if(pIPin == NULL)
 				return hr;
-			
-			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
-			if FAILED(hr)
+
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+					}
+							
+					if (pInpPin2)
+						pInpPin2->Release();
+
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						if (pInpPin)
+							pInpPin->Release();
+
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (pInpPin)
+						pInpPin->Release();
+
+					if (connect)
+						RenderFilterPin(pIPin);
+					else
+						pinInfo.pFilter->Release();
+				}
+				else
+				{
+					pinInfo.pFilter->Release();
+					pIPin->Release();
+					return hr;
+				}
+			}
+			else
 			{
-				pIPin->Release();
-				return hr;
+				hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+				if FAILED(hr)
+				{
+					pIPin->Release();
+					return hr;
+				}
 			}
 		}
 
@@ -1254,13 +2246,74 @@ HRESULT DWDemux::NewAC3Pin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
 			if(pIPin == NULL)
 				return hr;
 			
-			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
-			if FAILED(hr)
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+					}
+							
+					if (pInpPin2)
+						pInpPin2->Release();
+
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						if (pInpPin)
+							pInpPin->Release();
+
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (pInpPin)
+						pInpPin->Release();
+
+					if (connect)
+						RenderFilterPin(pIPin);
+					else
+						pinInfo.pFilter->Release();
+				}
+				else
+				{
+					pinInfo.pFilter->Release();
+					pIPin->Release();
+					return hr;
+				}
+			}
+			else
 			{
-				pIPin->Release();
-				return hr;
+				hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+				if FAILED(hr)
+				{
+					pIPin->Release();
+					return hr;
+				}
 			}
 		}
+
 
 		hr = LoadAudioPin(pIPin, (ULONG)pPid);
 		pIPin->Release();
@@ -1300,11 +2353,177 @@ HRESULT DWDemux::NewAACPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
 			if(pIPin == NULL)
 				return hr;
 			
-			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
-			if FAILED(hr)
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+					}
+							
+					if (pInpPin2)
+						pInpPin2->Release();
+
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						if (pInpPin)
+							pInpPin->Release();
+
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (pInpPin)
+						pInpPin->Release();
+
+					if (connect)
+						RenderFilterPin(pIPin);
+					else
+						pinInfo.pFilter->Release();
+				}
+				else
+				{
+					pinInfo.pFilter->Release();
+					pIPin->Release();
+					return hr;
+				}
+			}
+			else
 			{
-				pIPin->Release();
+				hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+				if FAILED(hr)
+				{
+					pIPin->Release();
+					return hr;
+				}
+			}
+		}
+
+		hr = LoadAudioPin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewDTSPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	pPid = get_DTS_AudioPid();
+
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL || pPid == 0)
+		return hr;
+
+	// Create out new pin 
+	AM_MEDIA_TYPE type;
+	graphTools.GetDTSMedia(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
 				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+					}
+							
+					if (pInpPin2)
+						pInpPin2->Release();
+
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						if (pInpPin)
+							pInpPin->Release();
+
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (pInpPin)
+						pInpPin->Release();
+
+					if (connect)
+						RenderFilterPin(pIPin);
+					else
+						pinInfo.pFilter->Release();
+				}
+				else
+				{
+					pinInfo.pFilter->Release();
+					pIPin->Release();
+					return hr;
+				}
+			}
+			else
+			{
+				hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+				if FAILED(hr)
+				{
+					pIPin->Release();
+					return hr;
+				}
 			}
 		}
 
@@ -1346,15 +2565,181 @@ HRESULT DWDemux::NewTelexPin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
 			if(pIPin == NULL)
 				return hr;
 			
-			hr = muxInterface->SetOutputPinMediaType(pinName, &type);
-			if FAILED(hr)
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+					}
+							
+					if (pInpPin2)
+						pInpPin2->Release();
+
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						if (pInpPin)
+							pInpPin->Release();
+
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (pInpPin)
+						pInpPin->Release();
+
+					if (connect)
+						RenderFilterPin(pIPin);
+					else
+						pinInfo.pFilter->Release();
+				}
+				else
+				{
+					pinInfo.pFilter->Release();
+					pIPin->Release();
+					return hr;
+				}
+			}
+			else
 			{
-				pIPin->Release();
-				return hr;
+				hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+				if FAILED(hr)
+				{
+					pIPin->Release();
+					return hr;
+				}
 			}
 		}
 
 		hr = LoadTelexPin(pIPin, (ULONG)pPid);
+		pIPin->Release();
+		hr = S_OK;
+	}
+	return hr;
+}
+
+HRESULT DWDemux::NewSubtitlePin(IMpeg2Demultiplexer* muxInterface, LPWSTR pinName)
+{
+	USHORT pPid;
+	pPid = get_SubtitlePid();
+
+	HRESULT hr = E_INVALIDARG;
+
+	if(muxInterface == NULL || pPid == 0)
+		return hr;
+
+	// Create out new pin 
+	AM_MEDIA_TYPE type;
+	graphTools.GetSubtitleMedia(&type);
+
+	IPin* pIPin = NULL;
+	hr = muxInterface->CreateOutputPin(&type, pinName ,&pIPin);
+	if(SUCCEEDED(hr) || hr == VFW_E_DUPLICATE_NAME)
+	{
+		//the following should not happen if it is a MS Demux
+		if(pIPin == NULL)
+		{
+			IBaseFilter *pIBaseFilter = NULL;
+			hr = muxInterface->QueryInterface(IID_IBaseFilter, (void **)&pIBaseFilter);
+			if (FAILED(hr) || pIBaseFilter == NULL)
+				return hr;
+
+			pIBaseFilter->FindPin(pinName ,&pIPin);
+			pIBaseFilter->Release();
+			if(pIPin == NULL)
+				return hr;
+			
+			IPin* pInpPin = NULL;
+			if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+				IPin* pInpPin2 = NULL;
+				PIN_INFO pinInfo;
+				pInpPin->QueryPinInfo(&pinInfo);
+
+				if (m_WasPlaying) {
+					
+					if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+				}
+
+				if (SUCCEEDED(pIPin->Disconnect())){
+
+					BOOL connect = FALSE;
+
+					muxInterface->SetOutputPinMediaType(pinName, &type);
+					if (FAILED(pInpPin->QueryAccept(&type)))
+						connect = TRUE;
+					else if (FAILED(ReconnectFilterPin(pInpPin)))
+						connect = TRUE;
+					else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+						connect = TRUE;
+					else {
+
+						pInpPin->BeginFlush();
+						pInpPin->EndFlush();
+					}
+							
+					if (pInpPin2)
+						pInpPin2->Release();
+
+					if (connect == TRUE){
+
+						pInpPin->Disconnect();
+						if (pInpPin)
+							pInpPin->Release();
+
+						RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+					}
+
+					if (pInpPin)
+						pInpPin->Release();
+
+					if (connect)
+						RenderFilterPin(pIPin);
+					else
+						pinInfo.pFilter->Release();
+				}
+				else
+				{
+					pinInfo.pFilter->Release();
+					pIPin->Release();
+					return hr;
+				}
+			}
+			else
+			{
+				hr = muxInterface->SetOutputPinMediaType(pinName, &type);
+				if FAILED(hr)
+				{
+					pIPin->Release();
+					return hr;
+				}
+			}
+		}
+
+		hr = LoadSubtitlePin(pIPin, (ULONG)pPid);
 		pIPin->Release();
 		hr = S_OK;
 	}
@@ -1481,6 +2866,9 @@ HRESULT DWDemux::LoadAudioPin(IPin* pIPin, ULONG pid)
 				if (pid == get_AAC_AudioPid())
 					muxMapPid->MapStreamId(pid, MPEG2_PROGRAM_ELEMENTARY_STREAM, 0x00, 0x00);
 
+				if (pid == get_DTS_AudioPid())
+					muxMapPid->MapStreamId(pid, MPEG2_PROGRAM_ELEMENTARY_STREAM, 0x00, 0x00);
+
 				m_SelAudioPid = pid;
 			}
 
@@ -1521,6 +2909,44 @@ HRESULT DWDemux::LoadTelexPin(IPin* pIPin, ULONG pid)
 			{
 				muxMapPid->MapStreamId(pid, MPEG2_PROGRAM_ELEMENTARY_STREAM, 0, 0);
 				m_SelTelexPid = pid;
+			}
+			muxMapPid->Release();
+			hr = S_OK;
+		}
+	}
+	return hr;
+}
+
+HRESULT DWDemux::LoadSubtitlePin(IPin* pIPin, ULONG pid)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pIPin == NULL)
+		return hr;
+
+	VetDemuxPin(pIPin, pid);
+
+	// Get the Pid Map interface of the pin
+	// and map the pids we want.
+	IMPEG2PIDMap* muxMapPid;
+	if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid)))
+	{
+		if (pid){
+			muxMapPid->MapPID(1, &pid , MEDIA_ELEMENTARY_STREAM); 
+			m_SelTelexPid = pid;
+		}
+		muxMapPid->Release();
+		hr = S_OK;
+	}
+	else {
+
+		IMPEG2StreamIdMap* muxMapPid;
+		if(SUCCEEDED(pIPin->QueryInterface (&muxMapPid)))
+		{
+			if (pid)
+			{
+				muxMapPid->MapStreamId(pid, MPEG2_PROGRAM_ELEMENTARY_STREAM, 0, 0);
+				m_SelSubtitlePid = pid;
 			}
 			muxMapPid->Release();
 			hr = S_OK;
@@ -1625,13 +3051,18 @@ HRESULT DWDemux::CheckDemuxPids(void)
 	if ((m_SelTelexPid != get_TeletextPid()) && m_bCreateTxtPinOnDemux)
 		return S_FALSE;
 
-	if (get_AudioPid() | get_AC3Pid() | get_AACPid())
+	if ((m_SelSubtitlePid != get_SubtitlePid()) && m_bCreateSubPinOnDemux)
+		return S_FALSE;
+
+	if (get_AudioPid() | get_AC3Pid() | get_AACPid() | get_DTSPid())
 		if (((m_SelAudioPid != get_AudioPid())
 				&& (m_SelAudioPid != get_Audio2Pid())
 				&& (m_SelAudioPid != get_AC3Pid())
 				&& (m_SelAudioPid != get_AC3_2Pid())
 				&& (m_SelAudioPid != get_AACPid())
-				&& (m_SelAudioPid != get_AAC2Pid()))
+				&& (m_SelAudioPid != get_AAC2Pid())
+				&& (m_SelAudioPid != get_DTSPid())
+				&& (m_SelAudioPid != get_DTS2Pid()))
 				|| !m_SelAudioPid)
 			return S_FALSE;
 
@@ -1645,7 +3076,7 @@ HRESULT DWDemux::CheckDemuxPids(void)
 	return hr;
 
 }
-
+/*
 HRESULT DWDemux::ChangeDemuxPin(IBaseFilter* pDemux, LPWSTR* pPinName, BOOL* pConnect)
 {
 	HRESULT hr = E_INVALIDARG;
@@ -2060,6 +3491,704 @@ HRESULT DWDemux::ChangeDemuxPin(IBaseFilter* pDemux, LPWSTR* pPinName, BOOL* pCo
 	}
 		return hr;
 }
+*/
+HRESULT DWDemux::ChangeDemuxPin(IBaseFilter* pDemux, LPWSTR* pPinName, BOOL* pConnect)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pDemux == NULL || pConnect == NULL || pPinName == NULL)
+		return hr;
+
+	// Get an instance of the Demux control interface
+	IMpeg2Demultiplexer* muxInterface = NULL;
+	if(SUCCEEDED(pDemux->QueryInterface (&muxInterface)))
+	{
+		char audiocheck[128] ="";
+		char videocheck[128] ="";
+		char telexcheck[128] ="";
+		char subtitlecheck[128] ="";
+		char tscheck[128] ="";
+		char pinname[128] ="";
+		wcscpy((wchar_t*)pinname, *pPinName);
+		wcscpy((wchar_t*)audiocheck, L"Audio");
+		wcscpy((wchar_t*)videocheck, L"Video");
+		wcscpy((wchar_t*)telexcheck, L"Teletext");
+		wcscpy((wchar_t*)subtitlecheck, L"Subtitle");
+		wcscpy((wchar_t*)tscheck, L"TS");
+
+		if (strcmp(audiocheck, pinname) == 0){
+
+			AM_MEDIA_TYPE pintype;
+			IPin* pIPin = NULL;
+
+			graphTools.GetAC3Media(&pintype);
+			if (SUCCEEDED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+				ClearDemuxPin(pIPin);
+				pIPin->QueryId(pPinName);
+				*pConnect = FALSE;
+				IPin* pInpPin;
+				if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+					IPin* pInpPin2 = NULL;
+					PIN_INFO pinInfo;
+					pInpPin->QueryPinInfo(&pinInfo);
+
+					if (m_WasPlaying) {
+
+						if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+						if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					}
+
+					if (SUCCEEDED(pIPin->Disconnect())){
+
+						if (m_bMPEG2AudioMediaType && get_MP2AudioPid())
+							graphTools.GetMP2Media(&pintype);
+						else if (get_MP2AudioPid())
+							graphTools.GetMP1Media(&pintype);
+						else if (get_AAC_AudioPid())
+							graphTools.GetAACMedia(&pintype);
+						else if (get_DTS_AudioPid())
+							graphTools.GetDTSMedia(&pintype);
+						else if (m_bMPEG2AudioMediaType)
+							graphTools.GetMP2Media(&pintype);
+						else
+							graphTools.GetMP1Media(&pintype);
+
+						muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+						if (FAILED(pInpPin->QueryAccept(&pintype)))
+							*pConnect = TRUE;
+						else if (FAILED(ReconnectFilterPin(pInpPin)))
+							*pConnect = TRUE;
+						else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+							*pConnect = TRUE;
+						else {
+
+							pInpPin->BeginFlush();
+							pInpPin->EndFlush();
+						}
+								
+						if (pInpPin2)
+							pInpPin2->Release();
+
+						if (*pConnect == TRUE){
+
+							pInpPin->Disconnect();
+							if (pInpPin)
+								pInpPin->Release();
+
+							RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+						}
+
+						if (pInpPin)
+							pInpPin->Release();
+					}
+
+					if (!*pConnect)
+						pinInfo.pFilter->Release();
+
+					muxInterface->Release();
+					if (pIPin) pIPin->Release();
+					return S_FALSE;
+				}
+				else {
+
+					if (m_bMPEG2AudioMediaType && get_MP2AudioPid())
+						graphTools.GetMP2Media(&pintype);
+					else if (get_MP2AudioPid())
+						graphTools.GetMP1Media(&pintype);
+					else if (get_AAC_AudioPid())
+						graphTools.GetAACMedia(&pintype);
+					else if (get_DTS_AudioPid())
+						graphTools.GetDTSMedia(&pintype);
+					else if (m_bMPEG2AudioMediaType)
+						graphTools.GetMP2Media(&pintype);
+					else
+						graphTools.GetMP1Media(&pintype);
+
+						muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+				}
+
+				USHORT pPid;
+				if (get_MP2AudioPid())
+					pPid = get_MP2AudioPid();
+				else if (get_AAC_AudioPid())
+					pPid = get_AAC_AudioPid();
+				else if (get_DTS_AudioPid())
+					pPid = get_DTS_AudioPid();
+				else
+					pPid = get_MP2AudioPid();
+
+				LoadAudioPin(pIPin, pPid);
+				pIPin->Release();
+				muxInterface->Release();
+				return S_OK;
+			}
+			else {
+
+				graphTools.GetMP2Media(&pintype);
+				if (SUCCEEDED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+					ClearDemuxPin(pIPin);
+					pIPin->QueryId(pPinName);
+					*pConnect = FALSE;
+					IPin* pInpPin;
+
+					if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+						IPin* pInpPin2 = NULL;
+						PIN_INFO pinInfo;
+						pInpPin->QueryPinInfo(&pinInfo);
+
+						if (m_WasPlaying) {
+					
+							if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+							if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+						}
+
+						if (SUCCEEDED(pIPin->Disconnect())){
+
+							if (get_AC3_AudioPid())
+								graphTools.GetAC3Media(&pintype);
+							else if (get_AAC_AudioPid())
+								graphTools.GetAACMedia(&pintype);
+							else if (get_DTS_AudioPid())
+								graphTools.GetDTSMedia(&pintype);
+							else
+								graphTools.GetAC3Media(&pintype);
+
+							muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+							if (FAILED(pInpPin->QueryAccept(&pintype)))
+								*pConnect = TRUE;
+							else if (FAILED(ReconnectFilterPin(pInpPin)))
+								*pConnect = TRUE;
+							else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+								*pConnect = TRUE;
+							else {
+
+								pInpPin->BeginFlush();
+								pInpPin->EndFlush();
+							}
+							
+							if (pInpPin2)
+								pInpPin2->Release();
+
+							if (*pConnect == TRUE){
+
+								pInpPin->Disconnect();
+								if (pInpPin)
+									pInpPin->Release();
+
+								RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+							}
+
+							if (pInpPin)
+								pInpPin->Release();
+						}
+						if (!*pConnect)
+							pinInfo.pFilter->Release();
+
+						muxInterface->Release();
+						if (pIPin) pIPin->Release();
+						return S_FALSE;
+					}
+					else {
+
+						if (get_AC3_AudioPid())
+							graphTools.GetAC3Media(&pintype);
+						else if (get_AAC_AudioPid())
+							graphTools.GetAACMedia(&pintype);
+						else if (get_DTS_AudioPid())
+							graphTools.GetDTSMedia(&pintype);
+						else
+							graphTools.GetAC3Media(&pintype);
+
+						muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+					}
+
+					USHORT pPid;
+					if (get_AC3_AudioPid())
+						pPid = get_AC3_AudioPid();
+					else if (get_AAC_AudioPid())
+						pPid = get_AAC_AudioPid();
+					else if (get_DTS_AudioPid())
+						pPid = get_DTS_AudioPid();
+					else
+						pPid = get_AC3_AudioPid();
+
+					LoadAudioPin(pIPin, pPid);
+					pIPin->Release();
+					muxInterface->Release();
+					return S_OK;
+				}  
+				else {
+
+					graphTools.GetMP1Media(&pintype);
+					if (SUCCEEDED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+						ClearDemuxPin(pIPin);
+						pIPin->QueryId(pPinName);
+						*pConnect = FALSE;
+						IPin* pInpPin;
+						if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+							IPin* pInpPin2 = NULL;
+							PIN_INFO pinInfo;
+							pInpPin->QueryPinInfo(&pinInfo);
+
+							if (m_WasPlaying) {
+
+								if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+								if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+							}
+
+							if (SUCCEEDED(pIPin->Disconnect())){
+
+								*pConnect = FALSE;
+
+								if (get_AC3_AudioPid())
+									graphTools.GetAC3Media(&pintype);
+								else if (get_AAC_AudioPid())
+									graphTools.GetAACMedia(&pintype);
+								else if (get_DTS_AudioPid())
+									graphTools.GetDTSMedia(&pintype);
+								else
+									graphTools.GetAC3Media(&pintype);
+
+								muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+								if (FAILED(pInpPin->QueryAccept(&pintype)))
+									*pConnect = TRUE;
+								else if (FAILED(ReconnectFilterPin(pInpPin)))
+									*pConnect = TRUE;
+								else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+									*pConnect = TRUE;
+								else {
+
+									pInpPin->BeginFlush();
+									pInpPin->EndFlush();
+								}
+								
+								if (pInpPin2)
+									pInpPin2->Release();
+
+								if (*pConnect == TRUE){
+
+									pInpPin->Disconnect();
+									if (pInpPin)
+										pInpPin->Release();
+
+									RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+								}
+
+								if (pInpPin)
+									pInpPin->Release();
+							}
+
+							if (!*pConnect)
+								pinInfo.pFilter->Release();
+
+							muxInterface->Release();
+							if (pIPin) pIPin->Release();
+							return S_FALSE;
+						}
+						else {
+
+							if (get_AC3_AudioPid())
+								graphTools.GetAC3Media(&pintype);
+							else if (get_AAC_AudioPid())
+								graphTools.GetAACMedia(&pintype);
+							else if (get_DTS_AudioPid())
+								graphTools.GetDTSMedia(&pintype);
+							else
+								graphTools.GetAC3Media(&pintype);
+
+							muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+						}
+
+						USHORT pPid;
+						if (get_AC3_AudioPid())
+							pPid = get_AC3_AudioPid();
+						else if (get_AAC_AudioPid())
+							pPid = get_AAC_AudioPid();
+						else if (get_DTS_AudioPid())
+							pPid = get_DTS_AudioPid();
+						else
+							pPid = get_AC3_AudioPid();
+
+						LoadAudioPin(pIPin, pPid);
+						if (pIPin) pIPin->Release();
+						muxInterface->Release();
+						return S_OK;
+					} 
+				} 
+			} 
+			if (pIPin) pIPin->Release();
+			muxInterface->Release();
+			return hr;
+		}
+		else if (strcmp(videocheck, pinname) == 0) {
+
+			IPin* pIPin = NULL;
+			AM_MEDIA_TYPE pintype;
+
+			//Check if we have a video pin type
+			graphTools.GetVideoMedia(&pintype);
+			if (FAILED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+				graphTools.GetH264Media(&pintype);
+				if (FAILED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+					graphTools.GetMpeg4Media(&pintype);
+					if (FAILED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+						muxInterface->DeleteOutputPin(*pPinName);
+						muxInterface->Release();
+						return S_FALSE;
+					}
+				}
+			}
+
+			//parse video type to set media type & pid value
+			USHORT pPid;
+			pPid = get_VideoPid();
+			if (pPid)
+				graphTools.GetVideoMedia(&pintype);
+			else {
+
+				pPid = get_H264Pid();
+				if (pPid)
+					graphTools.GetH264Media(&pintype);
+				else {
+
+					pPid = get_Mpeg4Pid();
+					if (pPid)
+						graphTools.GetMpeg4Media(&pintype);
+					else
+						graphTools.GetVideoMedia(&pintype);
+				}
+			}
+
+			//Change the media type only if we have a video pin
+			if (pIPin) {
+
+				ClearDemuxPin(pIPin);
+				pIPin->QueryId(pPinName);
+				*pConnect = FALSE;
+				IPin* pInpPin;
+				if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+					IPin* pInpPin2 = NULL;
+					PIN_INFO pinInfo;
+					pInpPin->QueryPinInfo(&pinInfo);
+
+					if (m_WasPlaying) {
+
+						if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+						if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					}
+
+					if (SUCCEEDED(pIPin->Disconnect())){
+
+						muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+						if (FAILED(pInpPin->QueryAccept(&pintype)))
+							*pConnect = TRUE;
+						else if (FAILED(ReconnectFilterPin(pInpPin)))
+							*pConnect = TRUE;
+						else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+							*pConnect = TRUE;
+						else {
+
+							pInpPin->BeginFlush();
+							pInpPin->EndFlush();
+						}
+								
+						if (pInpPin2)
+							pInpPin2->Release();
+
+						if (*pConnect == TRUE){
+							pInpPin->Disconnect();
+							if (pInpPin)
+								pInpPin->Release();
+
+							RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+						}
+
+						if (pInpPin)
+							pInpPin->Release();
+					}
+
+					if (!*pConnect)
+						pinInfo.pFilter->Release();
+
+					if (pIPin) pIPin->Release();
+					muxInterface->Release();
+					return S_FALSE;
+				}
+				else
+				{
+					muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+				}
+
+				LoadVideoPin(pIPin, pPid);
+				if (pIPin) pIPin->Release();
+				muxInterface->Release();
+				return S_OK;
+			}
+		}
+		else if (strcmp(telexcheck, pinname) == 0){
+
+			IPin* pIPin = NULL;
+			AM_MEDIA_TYPE pintype;
+
+			//Check if we have a teletext pin type
+			graphTools.GetTelexMedia(&pintype);
+			if (FAILED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+				muxInterface->DeleteOutputPin(*pPinName);
+				muxInterface->Release();
+				return S_FALSE;
+			}
+
+			//parse teletext type to set media type & pid value
+			USHORT pPid;
+			pPid = get_TeletextPid();
+
+			if (pIPin) {
+
+				ClearDemuxPin(pIPin);
+				pIPin->QueryId(pPinName);
+				*pConnect = FALSE;
+				IPin* pInpPin;
+				if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+					IPin* pInpPin2 = NULL;
+					PIN_INFO pinInfo;
+					pInpPin->QueryPinInfo(&pinInfo);
+
+					if (m_WasPlaying) {
+
+						if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+						if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					}
+
+					if (SUCCEEDED(pIPin->Disconnect())){
+
+						muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+						if (FAILED(pInpPin->QueryAccept(&pintype)))
+							*pConnect = TRUE;
+						else if (FAILED(ReconnectFilterPin(pInpPin)))
+							*pConnect = TRUE;
+						else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+							*pConnect = TRUE;
+						else {
+
+							pInpPin->BeginFlush();
+							pInpPin->EndFlush();
+						}
+								
+						if (pInpPin2)
+							pInpPin2->Release();
+
+						if (*pConnect == TRUE){
+							pInpPin->Disconnect();
+							if (pInpPin)
+								pInpPin->Release();
+
+							RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+						}
+
+						if (pInpPin)
+							pInpPin->Release();
+					}
+
+					if (!*pConnect)
+						pinInfo.pFilter->Release();
+
+					if (pIPin) pIPin->Release();
+					muxInterface->Release();
+					return S_FALSE;
+				}
+				else
+				{
+					muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+				}
+
+				LoadTelexPin(pIPin, pPid);
+				if (pIPin) pIPin->Release();
+				muxInterface->Release();
+				return S_OK;
+			}
+		}
+		else if (strcmp(subtitlecheck, pinname) == 0){
+
+			IPin* pIPin = NULL;
+			AM_MEDIA_TYPE pintype;
+
+			//Check if we have a subtitle pin type
+			graphTools.GetSubtitleMedia(&pintype);
+			if (FAILED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+				muxInterface->DeleteOutputPin(*pPinName);
+				muxInterface->Release();
+				return S_FALSE;
+			}
+
+			//parse teletext type to set media type & pid value
+			USHORT pPid;
+			pPid = get_SubtitlePid();
+
+			if (pIPin) {
+
+				ClearDemuxPin(pIPin);
+				pIPin->QueryId(pPinName);
+				*pConnect = FALSE;
+				IPin* pInpPin;
+				if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+					IPin* pInpPin2 = NULL;
+					PIN_INFO pinInfo;
+					pInpPin->QueryPinInfo(&pinInfo);
+
+					if (m_WasPlaying) {
+
+						if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+						if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					}
+
+					if (SUCCEEDED(pIPin->Disconnect())){
+
+						muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+						if (FAILED(pInpPin->QueryAccept(&pintype)))
+							*pConnect = TRUE;
+						else if (FAILED(ReconnectFilterPin(pInpPin)))
+							*pConnect = TRUE;
+						else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+							*pConnect = TRUE;
+						else {
+
+							pInpPin->BeginFlush();
+							pInpPin->EndFlush();
+						}
+								
+						if (pInpPin2)
+							pInpPin2->Release();
+
+						if (*pConnect == TRUE){
+							pInpPin->Disconnect();
+							if (pInpPin)
+								pInpPin->Release();
+
+							RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+						}
+
+						if (pInpPin)
+							pInpPin->Release();
+					}
+
+					if (!*pConnect)
+						pinInfo.pFilter->Release();
+
+					if (pIPin) pIPin->Release();
+					muxInterface->Release();
+					return S_FALSE;
+				}
+				else
+				{
+					muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+				}
+
+				LoadSubtitlePin(pIPin, pPid);
+				if (pIPin) pIPin->Release();
+				muxInterface->Release();
+				return S_OK;
+			}
+		}
+		else if (strcmp(tscheck, pinname) == 0){
+
+			IPin* pIPin = NULL;
+			AM_MEDIA_TYPE pintype;
+
+			//Check if we have a TS pin type
+			graphTools.GetTSMedia(&pintype);
+			if (FAILED(CheckDemuxPin(pDemux, pintype, &pIPin))){
+
+				muxInterface->DeleteOutputPin(*pPinName);
+				muxInterface->Release();
+				return S_FALSE;
+			}
+
+			if (pIPin) {
+
+				ClearDemuxPin(pIPin);
+				pIPin->QueryId(pPinName);
+				*pConnect = FALSE;
+				IPin* pInpPin;
+				if (SUCCEEDED(pIPin->ConnectedTo(&pInpPin))){
+
+					IPin* pInpPin2 = NULL;
+					PIN_INFO pinInfo;
+					pInpPin->QueryPinInfo(&pinInfo);
+
+					if (m_WasPlaying) {
+
+						if (DoPause() == S_OK){while(IsPaused() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+						if (DoStop() == S_OK){while(IsStopped() == S_FALSE){if (Sleeps(100,m_TimeOut) != S_OK) break;}}
+					}
+
+					if (SUCCEEDED(pIPin->Disconnect())){
+
+						muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+						if (FAILED(pInpPin->QueryAccept(&pintype)))
+							*pConnect = TRUE;
+						else if (FAILED(ReconnectFilterPin(pInpPin)))
+							*pConnect = TRUE;
+						else if (FAILED(pIPin->ConnectedTo(&pInpPin2)))
+							*pConnect = TRUE;
+						else {
+
+							pInpPin->BeginFlush();
+							pInpPin->EndFlush();
+						}
+								
+						if (pInpPin2)
+							pInpPin2->Release();
+
+						if (*pConnect == TRUE){
+							pInpPin->Disconnect();
+
+							if (pInpPin)
+								pInpPin->Release();
+
+							RemoveFilterChain(pinInfo.pFilter, pinInfo.pFilter);
+						}
+						if (pInpPin)
+							pInpPin->Release();
+					}
+
+					if (!*pConnect)
+						pinInfo.pFilter->Release();
+
+					if (pIPin) pIPin->Release();
+					muxInterface->Release();
+					return S_FALSE;
+				}
+				else
+				{
+					muxInterface->SetOutputPinMediaType(*pPinName, &pintype);
+				}
+
+				LoadTsPin(pIPin);
+				if (pIPin) pIPin->Release();
+				muxInterface->Release();
+				return S_OK;
+			}
+		}
+		muxInterface->Release();
+	}
+		return hr;
+}
+
+
 /*
 HRESULT DWDemux::GetAC3Media(AM_MEDIA_TYPE *pintype)
 {
@@ -2607,6 +4736,16 @@ void DWDemux::set_CreateTxtPinOnDemux(BOOL bCreateTxtPinOnDemux)
 	m_bCreateTxtPinOnDemux = bCreateTxtPinOnDemux;
 }
 
+BOOL DWDemux::get_CreateSubPinOnDemux()
+{
+	return m_bCreateSubPinOnDemux;
+}
+
+void DWDemux::set_CreateSubPinOnDemux(BOOL bCreateSubPinOnDemux)
+{
+	m_bCreateSubPinOnDemux = bCreateSubPinOnDemux;
+}
+
 BOOL DWDemux::get_MPEG2AudioMediaType()
 {
 	return m_bMPEG2AudioMediaType;
@@ -2642,6 +4781,14 @@ int DWDemux::get_AAC_AudioPid()
 		return get_AAC2Pid();
 	else
 		return get_AACPid();
+}
+
+int DWDemux::get_DTS_AudioPid()
+{
+	if ((m_bMPEG2Audio2Mode && get_DTS2Pid()) || (m_StreamAud2 && get_DTS2Pid()))
+		return get_DTS2Pid();
+	else
+		return get_DTSPid();
 }
 
 int DWDemux::get_AC3_AudioPid()
@@ -2814,6 +4961,7 @@ void DWDemux::SetRefClock()
 			pFilter = FList.GetNext(pos);
 			if(pFilter != NULL)
 			{
+                AddFilterUnique(m_FilterRefList, pFilter);
 				if (!haveClock)
 				{
 					CComPtr<IReferenceClock> pClock;
@@ -2842,10 +4990,19 @@ void DWDemux::SetRefClock()
 
 					}
 				}
-				pFilter->Release();
 				pFilter = NULL;
 			}
 		}
+	}
+	//Clear the filter list;
+	POSITION pos = FList.GetHeadPosition();
+	while (pos){
+
+		if (FList.Get(pos) != NULL)
+				FList.Get(pos)->Release();
+
+		FList.Remove(pos);
+		pos = FList.GetHeadPosition();
 	}
 }
 
@@ -2963,6 +5120,18 @@ long DWDemux::get_TeletextPid()
 	return 0;
 }
 
+long DWDemux::get_SubtitlePid()
+{
+	long count = m_pService->GetStreamCount();
+	for ( long currentStream=0 ; currentStream<count ; currentStream++ )
+	{
+		long pid = m_pService->GetStreamPID(subtitle, currentStream);
+		if (pid)
+			return pid;
+	}
+	return 0;
+}
+
 long DWDemux::get_AACPid()
 {
 	long count = m_pService->GetStreamCount();
@@ -2990,6 +5159,32 @@ long DWDemux::get_AAC2Pid()
 	return pid1;
 }
 
+long DWDemux::get_DTSPid()
+{
+	long count = m_pService->GetStreamCount();
+	for ( long currentStream=0 ; currentStream<count ; currentStream++ )
+	{
+		long pid = m_pService->GetStreamPID(dts, currentStream);
+		if (pid)
+			return pid;
+	}
+	return 0;
+}
+
+long DWDemux::get_DTS2Pid()
+{
+	long pid1 = 0;
+	long count = m_pService->GetStreamCount();
+	for ( long currentStream=0 ; currentStream<count ; currentStream++ )
+	{
+		long pid = m_pService->GetStreamPID(dts, currentStream);
+		if (!pid1 && pid)
+			pid = pid1;
+		else if (pid)
+			return pid;
+	}
+	return pid1;
+}
 
 //TCHAR sz[128];
 //sprintf(sz, "%u", pClock);

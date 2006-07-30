@@ -43,7 +43,9 @@ enum DVBTChannels_Service_PID_Types
 	mp2,
 	ac3,
 	aac,
+	dts,
 	teletext,
+	subtitle,
 	pmt,
 	pcr,
 	DVBTChannels_Service_PID_Types_Count
@@ -59,7 +61,9 @@ static const LPWSTR DVBTChannels_Service_PID_Types_String[] =
 	L"MPEG2 Audio",
 	L"AC3 Audio",
 	L"AAC Audio",
+	L"DTS Audio",
 	L"Teletext",
+	L"Subtitle",
 	L"PMT",
 	L"PCR"
 };

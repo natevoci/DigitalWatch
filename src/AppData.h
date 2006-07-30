@@ -62,6 +62,7 @@ public:
 			BOOL multiple;
 			BOOL disableScreenSaver;
 			int priority;
+			BOOL affinity;
 			int refClock;
 			BOOL addToROT;
 			BOOL multicard;
@@ -77,6 +78,11 @@ public:
 			BOOL decoderTest;
 			BOOL autoDecoderTest;
 			int logBufferLimit;
+			int warningOSDTime;
+			int recordOSDTime;
+			int signalOSDTime;
+			int positionOSDTime;
+			int channelOSDTime;
 			BOOL signalCheck;
 			BOOL mpg2Audio;
 			BOOL ac3Audio;

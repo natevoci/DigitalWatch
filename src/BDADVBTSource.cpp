@@ -248,7 +248,7 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	if (m_tuners.size() == 0)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"There are no active BDA cards");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 		return (log << "There are no active BDA cards\n").Show(E_FAIL);
 	}
 
@@ -813,9 +813,9 @@ HRESULT BDADVBTSource::SetChannel(long transportStreamId, long serviceId)
 	//TODO: Check if recording
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
 	{
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
@@ -858,9 +858,9 @@ HRESULT BDADVBTSource::SetChannel(long originalNetworkId, long transportStreamId
 	//TODO: Check if recording
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
 	{
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
@@ -903,9 +903,9 @@ HRESULT BDADVBTSource::SetFrequency(long frequency, long bandwidth)
 	//TODO: Check if recording
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
 	{
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
@@ -1173,9 +1173,9 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 	//TODO: Check if recording
 	if (m_pCurrentSink && m_pCurrentSink->IsRecording())
 	{
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
@@ -1213,7 +1213,7 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 /*	// Do data stuff
 	UpdateData(frequency, bandwidth);
 	if (m_pCurrentNetwork)
-		g_pTv->ShowOSDItem(L"Channel", 10);
+		g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 	else
 		g_pTv->ShowOSDItem(L"Channel", 300);
 	// End data stuff
@@ -1351,13 +1351,13 @@ HRESULT BDADVBTSource::RenderChannel(int frequency, int bandwidth)
 
 		// Do data stuff
 		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
+			g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
 		// End data stuff
 	
 		if (g_pData->values.application.signalCheck)
-			g_pTv->ShowOSDItem(L"SignalStatus", 10);
+			g_pTv->ShowOSDItem(L"SignalStatus", g_pData->settings.application.signalOSDTime);
 		else
 			g_pTv->HideOSDItem(L"SignalStatus");
 
@@ -1401,7 +1401,7 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 		// Do data stuff
 		UpdateData(frequency, bandwidth);
 		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
+			g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
 		// End data stuff
@@ -1498,13 +1498,13 @@ HRESULT BDADVBTSource::ChangeChannel(int frequency, int bandwidth)
 
 		// Do data stuff
 		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
+			g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
 		// End data stuff
 	
 		if (g_pData->values.application.signalCheck)
-			g_pTv->ShowOSDItem(L"SignalStatus", 10);
+			g_pTv->ShowOSDItem(L"SignalStatus", g_pData->settings.application.signalOSDTime);
 		else
 			g_pTv->HideOSDItem(L"SignalStatus");
 
@@ -1728,8 +1728,11 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 		return E_FAIL;
 	}
 
-	long videoStreamsRendered;
-	long audioStreamsRendered;
+	long videoStreamsRendered = 0;
+	long audioStreamsRendered = 0;
+	long teletextStreamsRendered = 0;
+	long subtitleStreamsRendered = 0;
+	long tsStreamsRendered = 0;
 
 	// render video
 	hr = AddDemuxPinsVideo(pService, &videoStreamsRendered);
@@ -1770,7 +1773,15 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
 	{
-		hr = AddDemuxPinsTeletext(pService);
+		hr = AddDemuxPinsTeletext(pService, &teletextStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render Subtitles if video was rendered
+	if (videoStreamsRendered > 0)
+	{
+		hr = AddDemuxPinsSubtitle(pService, &subtitleStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -1815,6 +1826,14 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render aac audio if no ac3 or mp1/2 or ac3 was rendered
+	if (audioStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsDTS(pService, &audioStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -1888,20 +1907,22 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels
 			continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 		}
 
-		if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+		if(Pid)
 		{
-			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+			if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+			{
+				if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+				{
+					(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+				}
+			}
+			else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 			{
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
 		}
-		else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
-		{
-			(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
-			continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
-		}
-
 		if (renderedStreams != 0)
 			continue;
 
@@ -2035,6 +2056,13 @@ HRESULT BDADVBTSource::AddDemuxPinsAAC(DVBTChannels_Service* pService, long *str
 	return AddDemuxPins(pService, aac, L"Audio", &mediaType, streamsRendered);
 }
 
+HRESULT BDADVBTSource::AddDemuxPinsDTS(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetDTSMedia(&mediaType);
+	return AddDemuxPins(pService, dts, L"Audio", &mediaType, streamsRendered);
+}
+
 HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
@@ -2046,6 +2074,14 @@ HRESULT BDADVBTSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long
 	mediaType.formattype = KSDATAFORMAT_SPECIFIER_NONE;
 */
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTSource::AddDemuxPinsSubtitle(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+	graphTools.GetSubtitleMedia(&mediaType);
+	return AddDemuxPins(pService, subtitle, L"Subtitle", &mediaType, streamsRendered);
 }
 
 void BDADVBTSource::UpdateData(long frequency, long bandwidth)
@@ -2196,12 +2232,12 @@ HRESULT BDADVBTSource::UpdateChannels()
 		//(log << "Finished updating data\n").Write();
 
 		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
+			g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
 
 		if (g_pData->values.application.signalCheck)
-			g_pTv->ShowOSDItem(L"SignalStatus", 10);
+			g_pTv->ShowOSDItem(L"SignalStatus", g_pData->settings.application.signalOSDTime);
 		else
 			g_pTv->HideOSDItem(L"SignalStatus");
 
@@ -2281,7 +2317,7 @@ HRESULT BDADVBTSource::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPath
 	if (sz != L"")
 	{
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 	}
 	return hr;
 }
@@ -2400,9 +2436,9 @@ HRESULT BDADVBTSource::TogglePauseRecording(long mode)
 	if (!m_pCurrentSink)
 	{
 //		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-//		g_pTv->ShowOSDItem(L"Recording", 5);
+//		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 
 		return E_FAIL;
 	}
@@ -2418,7 +2454,7 @@ HRESULT BDADVBTSource::TogglePauseRecording(long mode)
 
 		wcscpy(sz, L"Recording");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 	}

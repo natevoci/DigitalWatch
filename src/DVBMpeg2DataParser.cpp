@@ -1058,7 +1058,7 @@ void DVBMpeg2DataParser::ParsePMT(unsigned char *buf, int sectionLength, int ser
 					 * will also be present; so we can be quite confident
 					 * that we catch DVB subtitling streams only here, w/o
 					 * parsing the descriptor. */
-					pStream->Type = teletext;
+					pStream->Type = subtitle;
 					log.showf("SUBTITLING  : PID 0x%04x\n", pStream->PID);
 					break;
 				}
@@ -1066,6 +1066,14 @@ void DVBMpeg2DataParser::ParsePMT(unsigned char *buf, int sectionLength, int ser
 				{
 					pStream->Type = ac3;
 					log.showf("AC3 AUDIO   : PID 0x%04x\n", pStream->PID);
+					//LogMessageIndent indent2(&log);
+					//ParseLangDescriptor(buf, streamInfoLen, audio);
+					break;
+				}
+				else if (FindDescriptor(0x73, buf, streamInfoLen, NULL, NULL))
+				{
+					pStream->Type = dts;
+					log.showf("DTS AUDIO   : PID 0x%04x\n", pStream->PID);
 					//LogMessageIndent indent2(&log);
 					//ParseLangDescriptor(buf, streamInfoLen, audio);
 					break;

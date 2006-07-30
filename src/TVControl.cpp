@@ -317,9 +317,9 @@ HRESULT TVControl::SetSource(LPWSTR wszSourceName, LPWSTR wszCommand)
 			{
 				if (m_pActiveSource && m_pActiveSource->IsRecording())
 				{
-					g_pTv->ShowOSDItem(L"Recording", 5);
+					g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 					g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
-					g_pTv->ShowOSDItem(L"Warnings", 5);
+					g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 					g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 					g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 					return S_FALSE;
@@ -683,9 +683,9 @@ HRESULT TVControl::Exit()
 
 	if (m_pActiveSource && m_pActiveSource->IsRecording())
 	{
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 		return S_FALSE;
@@ -1266,6 +1266,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		g_pData->settings.timeshift.localTime = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetAffinity") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.affinity = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetMultiCard") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -1328,7 +1336,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		
 		return g_pData->SaveSettings();
 	}
-	else if (_wcsicmp(pCurr, L"LogBufferLimit") == 0)
+	else if (_wcsicmp(pCurr, L"SetLogBufferLimit") == 0)
 	{
 		LPWSTR pValue = NULL;
 		strCopy(pValue, g_pData->settings.application.logBufferLimit);
@@ -1344,6 +1352,111 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (pValue)
 		{
 			g_pData->settings.application.logBufferLimit = _wtoi(pValue);
+			delete[] pValue;
+		}
+		
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetWarningOSDTime") == 0)
+	{
+		LPWSTR pValue = NULL;
+		strCopy(pValue, g_pData->settings.application.warningOSDTime);
+
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For Warning Messages", &pValue) == FALSE )
+		{
+			if (pValue)
+				delete[] pValue;
+
+			return S_OK;
+		}
+
+		if (pValue)
+		{
+			g_pData->settings.application.warningOSDTime = _wtoi(pValue);
+			delete[] pValue;
+		}
+		
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetRecordOSDTime") == 0)
+	{
+		LPWSTR pValue = NULL;
+		strCopy(pValue, g_pData->settings.application.recordOSDTime);
+
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For the Recording Message", &pValue) == FALSE )
+		{
+			if (pValue)
+				delete[] pValue;
+
+			return S_OK;
+		}
+
+		if (pValue)
+		{
+			g_pData->settings.application.recordOSDTime = _wtoi(pValue);
+			delete[] pValue;
+		}
+		
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetSignalOSDTime") == 0)
+	{
+		LPWSTR pValue = NULL;
+		strCopy(pValue, g_pData->settings.application.signalOSDTime);
+
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For the Signal Status Message", &pValue) == FALSE )
+		{
+			if (pValue)
+				delete[] pValue;
+
+			return S_OK;
+		}
+
+		if (pValue)
+		{
+			g_pData->settings.application.signalOSDTime = _wtoi(pValue);
+			delete[] pValue;
+		}
+		
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetPositionOSDTime") == 0)
+	{
+		LPWSTR pValue = NULL;
+		strCopy(pValue, g_pData->settings.application.positionOSDTime);
+
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For the File Position Message", &pValue) == FALSE )
+		{
+			if (pValue)
+				delete[] pValue;
+
+			return S_OK;
+		}
+
+		if (pValue)
+		{
+			g_pData->settings.application.positionOSDTime = _wtoi(pValue);
+			delete[] pValue;
+		}
+		
+		return g_pData->SaveSettings();
+	}
+	else if (_wcsicmp(pCurr, L"SetChannelOSDTime") == 0)
+	{
+		LPWSTR pValue = NULL;
+		strCopy(pValue, g_pData->settings.application.channelOSDTime);
+
+		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For the Channel Message", &pValue) == FALSE )
+		{
+			if (pValue)
+				delete[] pValue;
+
+			return S_OK;
+		}
+
+		if (pValue)
+		{
+			g_pData->settings.application.channelOSDTime = _wtoi(pValue);
 			delete[] pValue;
 		}
 		
@@ -1636,9 +1749,9 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 				{
 					if (m_pActiveSource && m_pActiveSource->IsRecording())
 					{
-						g_pTv->ShowOSDItem(L"Recording", 5);
+						g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 						g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
-						g_pTv->ShowOSDItem(L"Warnings", 5);
+						g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 						g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 						g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 						return S_FALSE;

@@ -456,7 +456,7 @@ HRESULT BDADVBTSink::StartRecording(DVBTChannels_Service* pService, LPWSTR pFile
 	if (!m_pCurrentFileSink)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 
 		return E_FAIL;
 	}
@@ -474,7 +474,7 @@ HRESULT BDADVBTSink::StopRecording(void)
 	if (!m_pCurrentFileSink)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 
 		return E_FAIL;
 	}
@@ -492,7 +492,7 @@ HRESULT BDADVBTSink::PauseRecording(void)
 	if (!m_pCurrentFileSink)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 
 		return E_FAIL;
 	}
@@ -510,9 +510,9 @@ HRESULT BDADVBTSink::UnPauseRecording(DVBTChannels_Service* pService)
 	if (!m_pCurrentFileSink)
 	{
 //		g_pOSD->Data()->SetItem(L"RecordingStatus", L"No Capture Format Set");
-//		g_pTv->ShowOSDItem(L"Recording", 5);
+//		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 
 		return E_FAIL;
 	}

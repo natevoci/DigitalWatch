@@ -1205,9 +1205,11 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<I
 		return E_FAIL;
 	}
 
-	long videoStreamsRendered;
-	long audioStreamsRendered;
-	long tsStreamsRendered;
+	long videoStreamsRendered = 0;
+	long audioStreamsRendered = 0;
+	long teletextStreamsRendered = 0;
+	long subtitleStreamsRendered = 0;
+	long tsStreamsRendered = 0;
 
 	if (intPinType)
 	{
@@ -1240,7 +1242,15 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<I
 		// render teletext if video was rendered
 		if (videoStreamsRendered > 0)
 		{
-			hr = AddDemuxPinsTeletext(pService);
+			hr = AddDemuxPinsTeletext(pService, &teletextStreamsRendered);
+			if(FAILED(hr) && bForceConnect)
+				return hr;
+		}
+
+		// render Subtitles if video was rendered
+		if (videoStreamsRendered > 0)
+		{
+			hr = AddDemuxPinsSubtitle(pService, &subtitleStreamsRendered);
 			if(FAILED(hr) && bForceConnect)
 				return hr;
 		}
@@ -1270,6 +1280,14 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<I
 		if (audioStreamsRendered == 0)
 		{
 			hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
+			if(FAILED(hr) && bForceConnect)
+				return hr;
+		}
+
+		// render aac audio if no ac3 or mp1/2 or ac3 was rendered
+		if (audioStreamsRendered == 0)
+		{
+			hr = AddDemuxPinsDTS(pService, &audioStreamsRendered);
 			if(FAILED(hr) && bForceConnect)
 				return hr;
 		}
@@ -1416,18 +1434,21 @@ HRESULT FilterGraphTools::AddDemuxPins(DVBTChannels_Service* pService, DVBTChann
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
 
-			if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+			if(Pid)
 			{
-				if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+				if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+				{
+					if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+					{
+						(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+						continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+					}
+				}
+				else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 				{
 					(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 				}
-			}
-			else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
-			{
-				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
-				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
 
 			if (renderedStreams != 0)
@@ -1493,12 +1514,27 @@ HRESULT FilterGraphTools::AddDemuxPinsAAC(DVBTChannels_Service* pService, long *
 	return AddDemuxPins(pService, aac, L"Audio", &mediaType, streamsRendered);
 }
 
+HRESULT FilterGraphTools::AddDemuxPinsDTS(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	GetDTSMedia(&mediaType);
+	return AddDemuxPins(pService, dts, L"Audio", &mediaType, streamsRendered);
+}
+
 HRESULT FilterGraphTools::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
 	GetTelexMedia(&mediaType);
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
+}
+
+HRESULT FilterGraphTools::AddDemuxPinsSubtitle(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+	GetSubtitleMedia(&mediaType);
+	return AddDemuxPins(pService, subtitle, L"Subtitle", &mediaType, streamsRendered);
 }
 
 HRESULT FilterGraphTools::AddDemuxPinsTS(DVBTChannels_Service* pService, long *streamsRendered)
@@ -1585,6 +1621,27 @@ HRESULT FilterGraphTools::GetAACMedia(AM_MEDIA_TYPE *pintype)
 	pintype->formattype = FORMAT_WaveFormatEx; 
 	pintype->cbFormat = sizeof(AACAudioFormat);
 	pintype->pbFormat = AACAudioFormat;
+	pintype->bFixedSizeSamples = TRUE;
+	pintype->bTemporalCompression = 0;
+	pintype->lSampleSize = 1;
+	pintype->pUnk = NULL;
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetDTSMedia(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = MEDIATYPE_Audio;
+	pintype->subtype = MEDIASUBTYPE_DTS;
+	pintype->formattype = FORMAT_WaveFormatEx; 
+	pintype->cbFormat = sizeof(DTSAudioFormat);
+	pintype->pbFormat = DTSAudioFormat;
 	pintype->bFixedSizeSamples = TRUE;
 	pintype->bTemporalCompression = 0;
 	pintype->lSampleSize = 1;
@@ -1690,6 +1747,21 @@ HRESULT FilterGraphTools::GetTelexMedia(AM_MEDIA_TYPE *pintype)
 	pintype->majortype = KSDATAFORMAT_TYPE_MPEG2_SECTIONS;
 	pintype->subtype = KSDATAFORMAT_SUBTYPE_NONE; 
 	pintype->formattype = KSDATAFORMAT_SPECIFIER_NONE; 
+
+	return S_OK;
+}
+
+HRESULT FilterGraphTools::GetSubtitleMedia(AM_MEDIA_TYPE *pintype)
+{
+	HRESULT hr = E_INVALIDARG;
+
+	if(pintype == NULL)
+		return hr;
+
+	ZeroMemory(pintype, sizeof(AM_MEDIA_TYPE));
+	pintype->majortype = KSDATAFORMAT_TYPE_VIDEO;
+	pintype->subtype = MEDIASUBTYPE_DVD_SUBPICTURE;
+	pintype->formattype = FORMAT_None;
 
 	return S_OK;
 }

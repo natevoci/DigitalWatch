@@ -54,8 +54,8 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 		return FALSE;
 	}
 
-	if (g_pData->hWnd != NULL && g_pData->settings.application.multiple)
-		g_pData->values.application.multiple = g_pData->settings.application.multiple;
+//	if (g_pData->hWnd != NULL && g_pData->settings.application.multiple)
+//		g_pData->values.application.multiple = g_pData->settings.application.multiple;
 
 	HBRUSH br = CreateSolidBrush(0x00000000);
 

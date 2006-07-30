@@ -71,14 +71,14 @@ public:
 	virtual	HRESULT QueryTransportStreamPin(IPin** piPin);
 
 	virtual void ThreadProc();
+	HRESULT LoadResumePosition();
+	HRESULT SaveResumePosition();
 
 
 protected:
 	// graph building methods
 	HRESULT LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService = NULL, AM_MEDIA_TYPE *pmt = NULL);
 	HRESULT ReLoadFile(LPWSTR pFilename);
-	HRESULT LoadResumePosition();
-	HRESULT SaveResumePosition();
 	HRESULT CloseDisplay();
 	HRESULT OpenDisplay(BOOL bTest = FALSE);
 	HRESULT AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBaseFilter>& pFilter, AM_MEDIA_TYPE *pmt, BOOL bRender = TRUE, BOOL bForceConnect = FALSE);
@@ -90,7 +90,9 @@ protected:
 	HRESULT AddDemuxPinsMp2(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT AddDemuxPinsAC3(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT AddDemuxPinsAAC(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
+	HRESULT AddDemuxPinsDTS(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
+	HRESULT AddDemuxPinsSubtitle(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered = NULL, BOOL bRender = TRUE);
 	HRESULT SetSourceControl(IBaseFilter *pFilter, BOOL autoMode);
 	HRESULT SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Service** pService);
 	HRESULT TestDecoderSelection(LPWSTR pwszMediaType);
@@ -107,6 +109,8 @@ private:
 
 	BOOL m_bInitialised;
 	BOOL m_bTimeShiftService;
+	time_t m_lLocalStartTime;
+
 	CCritSec m_listLock;
 
 	DWGraph *m_pDWGraph;

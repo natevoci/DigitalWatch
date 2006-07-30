@@ -1,3 +1,10 @@
+Version 2.2.0.7 Beta 1
+=================
+bear:
+- Some minor fixes, Added some support for DTS Audio & Subtitle outputs.
+- Major rework of the Demux pin change code.
+- Major changes of the Demux change code.
+
 Version 2.2.0.6 Beta 6
 =================
 bear:

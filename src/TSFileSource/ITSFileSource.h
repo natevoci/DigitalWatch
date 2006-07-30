@@ -127,9 +127,17 @@ DECLARE_INTERFACE_(ITSFileSource, IUnknown) //compatable to 2.0.1.7 official rel
 	STDMETHOD(Load) (THIS_ LPCOLESTR pszFileName,const AM_MEDIA_TYPE *pmt) PURE;
 	STDMETHOD(GetPCRPosition) (THIS_ REFERENCE_TIME * pos) PURE;
 	STDMETHOD(ShowStreamMenu)(THIS_ HWND hwnd) PURE;
+
+//New method added after 2.2.0.3
 	STDMETHOD(GetFixedAspectRatio) (THIS_ WORD * pbFixedAR) PURE;
 	STDMETHOD(SetFixedAspectRatio) (THIS_ WORD pbFixedAR) PURE;
 
-	
+//New method added after 2.2.0.6
+	STDMETHOD(GetCurFile)(THIS_ LPOLESTR * ppszFileName,AM_MEDIA_TYPE *pmt) PURE;
+	STDMETHOD(GetDTSPid) (THIS_ WORD * pDtsPid) PURE;
+	STDMETHOD(GetDTS2Pid) (THIS_ WORD * pDts2Pid) PURE;
+	STDMETHOD(GetCreateSubPinOnDemux) (THIS_ WORD * pbCreatePin) PURE;
+	STDMETHOD(SetCreateSubPinOnDemux) (THIS_ WORD bCreatePin) PURE;
+	STDMETHOD(GetSubtitlePid) (THIS_ WORD * subpid) PURE;
 };
 

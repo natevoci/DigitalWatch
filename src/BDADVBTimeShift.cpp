@@ -402,7 +402,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 	if (m_tuners.size() == 0)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"There are no active BDA cards");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 		return (log << "There are no active BDA cards\n").Show(E_FAIL);
 	}
 
@@ -1898,10 +1898,10 @@ void BDADVBTimeShift::UpdateStatusDisplay()
 		g_pTv->HideOSDItem(L"RecordingIcon");
 
 	if (m_pCurrentNetwork)
-		g_pTv->ShowOSDItem(L"Channel", 10);
+		g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 
 	if (g_pData->values.application.signalCheck)
-		g_pTv->ShowOSDItem(L"SignalStatus", 10);
+		g_pTv->ShowOSDItem(L"SignalStatus", g_pData->settings.application.signalOSDTime);
 	else
 		g_pTv->HideOSDItem(L"SignalStatus");
 
@@ -1928,7 +1928,7 @@ HRESULT BDADVBTimeShift::ChangeChannel(int frequency, int bandwidth)
 		// Do data stuff
 		UpdateData(frequency, bandwidth);
 		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
+			g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
 		// End data stuff
@@ -2007,7 +2007,7 @@ HRESULT BDADVBTimeShift::ChangeChannel(int frequency, int bandwidth)
 			g_pTv->HideOSDItem(L"RecordingIcon");
 
 		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
+			g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 
 		g_pOSD->Data()->SetItem(L"CurrentDVBTCard", m_pCurrentTuner->GetCardName());
 */
@@ -2285,9 +2285,9 @@ HRESULT BDADVBTimeShift::CloseBuffers()
 		if ((*it)->pSink && g_pData->values.capture.format && (*it)->pSink->IsRecording())
 		{
 			g_pData->values.application.multicard = TRUE;
-			g_pTv->ShowOSDItem(L"Recording", 5);
+			g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 			g_pOSD->Data()->SetItem(L"warnings", L"Recording In Progress");
-			g_pTv->ShowOSDItem(L"Warnings", 5);
+			g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 			g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 			g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 
@@ -2335,6 +2335,9 @@ HRESULT BDADVBTimeShift::CloseDisplay()
 	//Check if service already running
 	if (m_pDWGraph->IsPlaying())
 	{
+		if (m_pCurrentFileSource)
+			m_pCurrentFileSource->SaveResumePosition();
+
 		if FAILED(hr = UnloadFileSource())
 			return (log << "Failed to Unload the File Source Filters: " << hr << "\n").Write(hr);
 	}
@@ -2387,7 +2390,7 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 			if (!g_pData->values.timeshift.format)
 			{
 				g_pOSD->Data()->SetItem(L"warnings", L"No TimeShift format set");
-				g_pTv->ShowOSDItem(L"Warnings", 5);
+				g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 				(log << "No TimeShift format set\n").Write();
 				if FAILED(hr = LoadDemux())
 					return (log << "Failed to Add DeMultiplexer: " << hr << "\n").Write(hr);
@@ -2453,7 +2456,7 @@ HRESULT BDADVBTimeShift::LoadSinkGraph(int frequency, int bandwidth)
 //		UpdateData(frequency, bandwidth);
 
 //		if (m_pCurrentNetwork)
-//			g_pTv->ShowOSDItem(L"Channel", 10);
+//			g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 
 		//Check if service already running
 		if (m_pDWGraph->IsPlaying())
@@ -2701,7 +2704,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 //LPWSTR sz = new WCHAR[128];
 //wsprintfW(sz, L"Waiting for TimeShifting File to Build: %lu kBytes", fileSize/1024); 
 //g_pOSD->Data()->SetItem(L"warnings", sz);
-//g_pTv->ShowOSDItem(L"Warnings", 5);
+//g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 //delete[] sz;
 		}
 
@@ -2711,7 +2714,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 		if (FAILED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) || fileSize <= fileSizeSave)
 		{
 			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Building The TimeShift File");
-			g_pTv->ShowOSDItem(L"Warnings", 5);
+			g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 			return (log << "Data Flow Stopped on the Sink File: " << fileSize << "\n").Write(E_FAIL);
 		}
 
@@ -2719,12 +2722,12 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 //g_pTv->ShowOSDItem(L"Warnings", 2);
 
 		//
-		//Load the TSFileSource with the file, render & run
+		//Load the TSFileSource with the file, render & run Load(pFileName))//
 		//
-		if FAILED(hr = m_pCurrentFileSource->Load(pFileName))//FastLoad(pFileName, m_pCurrentService, NULL))
+		if FAILED(hr = m_pCurrentFileSource->FastLoad(pFileName, m_pCurrentService, NULL))
 		{
 			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
-			g_pTv->ShowOSDItem(L"Warnings", 5);
+			g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 			return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 		}
 
@@ -2780,7 +2783,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 		if (FAILED(hr = m_pCurrentSink->GetCurFileSize(&fileSize)) || fileSize <= fileSizeSave)
 		{
 			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Building The TimeShift File");
-			g_pTv->ShowOSDItem(L"Warnings", 5);
+			g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 			return (log << "Data Flow Stopped on the Sink File: " << fileSize << "\n").Write(E_FAIL);
 		}
 
@@ -2801,7 +2804,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 		if FAILED(hr = m_pCurrentFileSource->FastLoad(pFileName, m_pCurrentService, &cmt))
 		{
 			g_pOSD->Data()->SetItem(L"warnings", L"FAILED Loading TimeShift File");
-			g_pTv->ShowOSDItem(L"Warnings", 5);
+			g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 			return (log << "Failed to Load File Source filters: " << hr << "\n").Write(hr);
 		}
 	}
@@ -2873,8 +2876,11 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 		return E_FAIL;
 	}
 
-	long videoStreamsRendered;
-	long audioStreamsRendered;
+	long videoStreamsRendered = 0;
+	long audioStreamsRendered = 0;
+	long teletextStreamsRendered = 0;
+	long subtitleStreamsRendered = 0;
+	long tsStreamsRendered = 0;
 
 	// render video
 	hr = AddDemuxPinsVideo(pService, &videoStreamsRendered);
@@ -2900,7 +2906,15 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 	// render teletext if video was rendered
 	if (videoStreamsRendered > 0)
 	{
-		hr = AddDemuxPinsTeletext(pService);
+		hr = AddDemuxPinsTeletext(pService, &teletextStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render Subtitles if video was rendered
+	if (videoStreamsRendered > 0)
+	{
+		hr = AddDemuxPinsSubtitle(pService, &subtitleStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -2945,6 +2959,14 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAAC(pService, &audioStreamsRendered);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render aac audio if no ac3 or mp1/2 or ac3 was rendered
+	if (audioStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsDTS(pService, &audioStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -3003,18 +3025,21 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, DVBTChanne
 			continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 		}
 
-		if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+		if(Pid)
 		{
-			if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+			if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+			{
+				if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+				{
+					(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+				}
+			}
+			else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 			{
 				(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 				continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 			}
-		}
-		else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
-		{
-			(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
-			continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 		}
 
 		if (renderedStreams != 0)
@@ -3098,12 +3123,27 @@ HRESULT BDADVBTimeShift::AddDemuxPinsAAC(DVBTChannels_Service* pService, long *s
 	return AddDemuxPins(pService, aac, L"Audio", &mediaType, streamsRendered);
 }
 
+HRESULT BDADVBTimeShift::AddDemuxPinsDTS(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetDTSMedia(&mediaType);
+	return AddDemuxPins(pService, dts, L"Audio", &mediaType, streamsRendered);
+}
+
 HRESULT BDADVBTimeShift::AddDemuxPinsTeletext(DVBTChannels_Service* pService, long *streamsRendered)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
 	graphTools.GetTelexMedia(&mediaType);
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, streamsRendered);
+}
+
+HRESULT BDADVBTimeShift::AddDemuxPinsSubtitle(DVBTChannels_Service* pService, long *streamsRendered)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+	graphTools.GetSubtitleMedia(&mediaType);
+	return AddDemuxPins(pService, subtitle, L"Subtitle", &mediaType, streamsRendered);
 }
 
 void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
@@ -3162,9 +3202,9 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 		{
 			if (m_pCurrentFileSource->SetStreamName(streamName, TRUE) == S_OK)
 			{
-				g_pTv->ShowOSDItem(L"Channel", 5);
+				g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 				if (g_pData->values.application.signalCheck)
-					g_pTv->ShowOSDItem(L"SignalStatus", 5);
+					g_pTv->ShowOSDItem(L"SignalStatus", g_pData->settings.application.signalOSDTime);
 				else
 					g_pTv->HideOSDItem(L"SignalStatus");
 			}	
@@ -3355,12 +3395,12 @@ HRESULT BDADVBTimeShift::UpdateChannels()
 		//(log << "Finished updating data\n").Write();
 
 		if (m_pCurrentNetwork)
-			g_pTv->ShowOSDItem(L"Channel", 10);
+			g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 		else
 			g_pTv->ShowOSDItem(L"Channel", 300);
 
 		if (g_pData->values.application.signalCheck)
-			g_pTv->ShowOSDItem(L"SignalStatus", 10);
+			g_pTv->ShowOSDItem(L"SignalStatus", g_pData->settings.application.signalOSDTime);
 		else
 			g_pTv->HideOSDItem(L"SignalStatus");
 	}
@@ -3561,7 +3601,7 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPa
 	if (!m_pCurrentSink)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 
 		return E_FAIL;
 	}
@@ -3604,7 +3644,7 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPa
 	if (sz != L"")
 	{
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 	}
 
 	return hr;
@@ -3615,7 +3655,7 @@ HRESULT BDADVBTimeShift::TogglePauseRecording(long mode)
 	if (!m_pCurrentSink)
 	{
 		g_pOSD->Data()->SetItem(L"warnings", L"Unable to Record: No Capture Format Set");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 
 		return E_FAIL;
 	}
@@ -3631,7 +3671,7 @@ HRESULT BDADVBTimeShift::TogglePauseRecording(long mode)
 
 		wcscpy(sz, L"Recording");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
-		g_pTv->ShowOSDItem(L"Recording", 5);
+		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 	}

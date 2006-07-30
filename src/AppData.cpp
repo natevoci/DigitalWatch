@@ -66,6 +66,7 @@ AppData::AppData()
 	settings.application.multiple = FALSE;
 	settings.application.disableScreenSaver = TRUE;
 	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
+	settings.application.affinity = FALSE;
 	settings.application.refClock = 3;
 	settings.application.addToROT = FALSE;
 	settings.application.multicard = TRUE;
@@ -83,6 +84,11 @@ AppData::AppData()
 	settings.application.decoderTest = TRUE;
 	settings.application.autoDecoderTest = TRUE;
 	settings.application.logBufferLimit = 100;
+	settings.application.warningOSDTime = 5;
+	settings.application.recordOSDTime = 5;
+	settings.application.signalOSDTime = 10;
+	settings.application.positionOSDTime = 10;
+	settings.application.channelOSDTime = 10;
 	settings.application.signalCheck = FALSE;
 	settings.application.mpg2Audio = TRUE;
 	settings.application.ac3Audio = FALSE;
@@ -368,6 +374,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"priority") == 0)
 				return GetPriority(settings.application.priority);
+
+			if (_wcsicmp(selection, L"affinity") == 0)
+				return GetPriority(settings.application.affinity);
 
 			if (_wcsicmp(selection, L"refclock") == 0)
 				return GetPriority(settings.application.refClock);
@@ -962,7 +971,12 @@ HRESULT AppData::LoadSettings()
 					}
 					continue;
 				}
-				if (_wcsicmp(pSubElement->name, L"addToROT") == 0)
+				if (_wcsicmp(pSubElement->name, L"Affinity") == 0)
+				{
+					settings.application.affinity = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"AddToROT") == 0)
 				{
 					settings.application.addToROT = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
@@ -1027,6 +1041,31 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"LogBufferLimit") == 0)
 				{
 					settings.application.logBufferLimit = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"WarningOSDTime") == 0)
+				{
+					settings.application.warningOSDTime = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"RecordOSDTime") == 0)
+				{
+					settings.application.recordOSDTime = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"SignalOSDTime") == 0)
+				{
+					settings.application.signalOSDTime = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"PositionOSDTime") == 0)
+				{
+					settings.application.positionOSDTime = _wtoi(pSubElement->value);
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"ChannelOSDTime") == 0)
+				{
+					settings.application.channelOSDTime = _wtoi(pSubElement->value);
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"SignalCheck") == 0)
@@ -1555,6 +1594,7 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 				break;
 		};
 		pApplication->Elements.Add(new XMLElement(L"Priority", pValue));
+		pApplication->Elements.Add(new XMLElement(L"Affinity", (settings.application.affinity ? L"True" : L"False")));
 		switch (settings.application.refClock)
 		{
 			case 0:
@@ -1594,6 +1634,16 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 		pApplication->Elements.Add(new XMLElement(L"FixedAspectRatio", (settings.application.fixedAspectRatio ? L"True" : L"False")));
 		strCopy(pValue, settings.application.logBufferLimit);
 		pApplication->Elements.Add(new XMLElement(L"LogBufferLimit", pValue));
+		strCopy(pValue, settings.application.warningOSDTime);
+		pApplication->Elements.Add(new XMLElement(L"WarningOSDTime", pValue));
+		strCopy(pValue, settings.application.recordOSDTime);
+		pApplication->Elements.Add(new XMLElement(L"RecordOSDTime", pValue));
+		strCopy(pValue, settings.application.signalOSDTime);
+		pApplication->Elements.Add(new XMLElement(L"SignalOSDTime", pValue));
+		strCopy(pValue, settings.application.positionOSDTime);
+		pApplication->Elements.Add(new XMLElement(L"PositionOSDTime", pValue));
+		strCopy(pValue, settings.application.channelOSDTime);
+		pApplication->Elements.Add(new XMLElement(L"ChannelOSDTime", pValue));
 	}
 
 	XMLElement *pWindow = new XMLElement(L"Window");

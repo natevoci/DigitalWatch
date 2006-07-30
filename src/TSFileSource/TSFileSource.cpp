@@ -50,6 +50,7 @@ TSFileSource::TSFileSource(LogMessageCallback *callback) : m_strSourceType(L"TSF
 	g_pOSD->Data()->AddList(&streamList);
 	g_pOSD->Data()->AddList(&filterList);
 	m_bTimeShiftService = FALSE;
+	m_lLocalStartTime = 0;
 }
 
 TSFileSource::~TSFileSource()
@@ -535,7 +536,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 			(log << "Finished Loading File\n").Write();
 
 			UpdateData();
-			g_pTv->ShowOSDItem(L"Position", 10);
+			g_pTv->ShowOSDItem(L"Position", g_pData->settings.application.positionOSDTime);
 
 			return S_OK;
 		}
@@ -680,28 +681,6 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		if (pService)
 			delete pService;
 	}
-/*
-	//Set reference clock
-	CComQIPtr<IReferenceClock> piRefClock(m_pTSFileSource);
-	if (!piRefClock)
-	{
-		m_pDWGraph->Mute(g_pData->values.audio.bMute);
-		return (log << "Failed to get reference clock interface on Sink demux filter: " << hr << "\n").Write(hr);
-	}
-
-	CComQIPtr<IMediaFilter> piMediaFilter(m_piGraphBuilder);
-	if (!piMediaFilter)
-	{
-		m_pDWGraph->Mute(g_pData->values.audio.bMute);
-		return (log << "Failed to get IMediaFilter interface from graph: " << hr << "\n").Write(hr);
-	}
-
-	if FAILED(hr = piMediaFilter->SetSyncSource(piRefClock))
-	{
-		m_pDWGraph->Mute(g_pData->values.audio.bMute);
-		return (log << "Failed to set reference clock: " << hr << "\n").Write(hr);
-	}
-*/
 
 	m_DWDemux.set_Auto(TRUE);
 	m_DWDemux.set_AC3Mode(g_pData->settings.application.ac3Audio);
@@ -711,26 +690,6 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	m_DWDemux.AOnConnect(m_pTSFileSource); //only sets the source filter reference
 	m_DWDemux.set_ClockMode(g_pData->settings.application.refClock);
 	m_DWDemux.SetRefClock();
-
-
-	// If it's a .tsbuffer file then seek to the end
-	long length = wcslen(pFilename);
-	if ((length >= 9) && (_wcsicmp(pFilename+length-9, L".tsbuffer") == 0) && m_bTimeShiftService)
-	{
-		long lPosition = m_pDWGraph->GetResumePosition(pFilename);
-		Seek(lPosition);
-//		SeekTo(100);
-	}
-	else
-	{
-		//Do this to set the Filtergraph seek time since changing the reference clock upsets the demux
-//(log << "pFilename = : "  << pFilename << "\n").Write();
-		if (pFilename)
-		{
-			long lPosition = m_pDWGraph->GetResumePosition(pFilename);
-			Seek(lPosition);
-		}
-	}
 
 	//Save the current fileName
 	if (pFilename)
@@ -751,6 +710,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 			delete[] pFilename;
 	}
 
+	LoadResumePosition();
 
 //g_pOSD->Data()->SetItem(L"warnings", L"Starting to play the TimeShift File");
 //g_pTv->ShowOSDItem(L"Warnings", 2);
@@ -765,7 +725,7 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 	(log << "Finished Loading File\n").Write();
 
 	UpdateData();
-	g_pTv->ShowOSDItem(L"Position", 10);
+	g_pTv->ShowOSDItem(L"Position", g_pData->settings.application.positionOSDTime);
 
 	// Start the background thread for updating statistics
 	if FAILED(hr = StartThread())
@@ -853,6 +813,29 @@ HRESULT TSFileSource::LoadResumePosition()
 				if (g_pData->settings.timeshift.resume)
 				{
 					long lPosition = m_pDWGraph->GetResumePosition(pFilename);
+					if (g_pData->settings.timeshift.localTime)
+					{
+						CComQIPtr<IMediaSeeking> piMediaSeeking(m_piGraphBuilder);
+						if (piMediaSeeking)
+						{
+							REFERENCE_TIME rtCurrent, rtEarliest, rtLatest = 0;
+
+							if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
+								return (log << "Failed to get available times: " << hr << "\n").Write(hr);
+(log << "rtLatest : " << rtLatest << "\n").Write();
+
+							if FAILED(hr = piMediaSeeking->GetCurrentPosition(&rtCurrent))
+								return (log << "Failed to get current time: " << hr << "\n").Write(hr);
+
+							_tzset();
+							time_t lCurrentTime;
+							time(&lCurrentTime);
+							lPosition = max(0, lPosition - (lCurrentTime - rtLatest/10000000));
+							lPosition = lPosition*1000;
+(log << "Setting Position to : " << lPosition << "\n").Write();
+						}
+					}
+
 					Seek(lPosition);
 				}
 				else
@@ -871,6 +854,7 @@ HRESULT TSFileSource::LoadResumePosition()
 			}
 		}
 	}
+	m_lLocalStartTime = 0;
 	return S_OK;
 }
 
@@ -885,6 +869,14 @@ HRESULT TSFileSource::SaveResumePosition()
 	//Set the Resume File Time
 	if (SUCCEEDED(GetPosition(&lPosition)))
 	{
+		if (m_lLocalStartTime && m_bTimeShiftService && g_pData->settings.timeshift.localTime)
+		{
+(log << "Saving Current Position to : " << lPosition << "\n").Write();
+			time_t lTime = m_lLocalStartTime + lPosition/1000;
+			lPosition = lTime;
+(log << "Saving Current Time Position to : " << lPosition << "\n").Write();
+		}
+
 		// Get Filename
 		CComQIPtr<IFileSourceFilter> piFileSourceFilter(m_pTSFileSource);
 		if (!piFileSourceFilter)
@@ -907,6 +899,8 @@ HRESULT TSFileSource::CloseDisplay()
 	//Check if service already running
 	if (m_pDWGraph->IsPlaying())
 	{
+		SaveResumePosition();
+
 		if FAILED(hr = UnloadFilters())
 			return (log << "Failed to Unload the File Source Filters: " << hr << "\n").Write(hr);
 	}
@@ -936,8 +930,6 @@ HRESULT TSFileSource::UnloadFilters()
 		return (log << "Failed to stop background thread: " << hr << "\n").Write(hr);
 	if (hr == S_FALSE)
 		(log << "Killed thread\n").Write();
-
-	SaveResumePosition();
 
 	if (m_pDWGraph)
 	{
@@ -992,9 +984,11 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 		return E_FAIL;
 	}
 
-	long videoStreamsRendered;
-	long audioStreamsRendered;
-	long teletextStreamsRendered;
+	long videoStreamsRendered = 0;
+	long audioStreamsRendered = 0;
+	long teletextStreamsRendered = 0;
+	long subtitleStreamsRendered = 0;
+	long tsStreamsRendered = 0;
 
 	// render video
 	hr = AddDemuxPinsVideo(pService, pmt, &videoStreamsRendered, bRender);
@@ -1024,6 +1018,7 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 		pService->SetLogCallback(m_pLogCallback);
 		DVBTChannels_Stream *pStream = new DVBTChannels_Stream();
 		pStream->SetLogCallback(m_pLogCallback);
+		pStream->PID = 0;
 		pStream->Type = video;
 		pService->AddStream(pStream);
 		hr = AddDemuxPinsVideo(pService, pmt, &videoStreamsRendered, bRender);
@@ -1040,7 +1035,15 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 			return hr;
 	}
 
-	// render ac3 audio if prefered
+	// render subtitle if video was rendered
+	if (videoStreamsRendered > 0)
+	{
+		hr = AddDemuxPinsSubtitle(pService, pmt, &subtitleStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render ac3 audio if preferred
 	if (g_pData->settings.application.ac3Audio)
 	{
 		hr = AddDemuxPinsAC3(pService, pmt, &audioStreamsRendered, bRender);
@@ -1080,6 +1083,14 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	if (audioStreamsRendered == 0)
 	{
 		hr = AddDemuxPinsAAC(pService, pmt, &audioStreamsRendered, bRender);
+		if(FAILED(hr) && bForceConnect)
+			return hr;
+	}
+
+	// render aac audio if no ac3 or mp1/2 or acc was rendered
+	if (audioStreamsRendered == 0)
+	{
+		hr = AddDemuxPinsDTS(pService, pmt, &audioStreamsRendered, bRender);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
@@ -1175,18 +1186,21 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 				}
 
-				if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+				if(Pid)
 				{
-					if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+					if(pMediaType->majortype == KSDATAFORMAT_TYPE_MPEG2_SECTIONS)
+					{
+						if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_TRANSPORT_PACKET))
+						{
+							(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
+							continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
+						}
+					}
+					else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
 					{
 						(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
 						continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 					}
-				}
-				else if FAILED(hr = piPidMap->MapPID(1, &Pid, MEDIA_ELEMENTARY_STREAM))
-				{
-					(log << "Failed to map demux " << pPinName << " pin : " << hr << "\n").Write();
-					continue;	//it's safe to not piPidMap.Release() because it'll go out of scope
 				}
 			}
 		}
@@ -1332,12 +1346,27 @@ HRESULT TSFileSource::AddDemuxPinsAAC(DVBTChannels_Service* pService, AM_MEDIA_T
 	return AddDemuxPins(pService, aac, L"Audio", &mediaType, pmt, streamsRendered, bRender);
 }
 
+HRESULT TSFileSource::AddDemuxPinsDTS(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
+{
+	AM_MEDIA_TYPE mediaType;
+	graphTools.GetDTSMedia(&mediaType);
+	return AddDemuxPins(pService, dts, L"Audio", &mediaType, pmt, streamsRendered, bRender);
+}
+
 HRESULT TSFileSource::AddDemuxPinsTeletext(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
 {
 	AM_MEDIA_TYPE mediaType;
 	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
 	graphTools.GetTelexMedia(&mediaType);
 	return AddDemuxPins(pService, teletext, L"Teletext", &mediaType, pmt, streamsRendered, bRender);
+}
+
+HRESULT TSFileSource::AddDemuxPinsSubtitle(DVBTChannels_Service* pService, AM_MEDIA_TYPE *pmt, long *streamsRendered, BOOL bRender)
+{
+	AM_MEDIA_TYPE mediaType;
+	ZeroMemory(&mediaType, sizeof(AM_MEDIA_TYPE));
+	graphTools.GetSubtitleMedia(&mediaType);
+	return AddDemuxPins(pService, subtitle, L"Subtitle", &mediaType, pmt, streamsRendered, bRender);
 }
 
 HRESULT TSFileSource::PlayPause()
@@ -1353,7 +1382,7 @@ HRESULT TSFileSource::PlayPause()
 			return (log << "Failed to Unpause Graph.\n").Write(hr);
 
 		g_pOSD->Data()->SetItem(L"warnings", L"Playing");
-		g_pTv->ShowOSDItem(L"Warnings", 5);
+		g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 	}
 	else
 	{
@@ -1363,7 +1392,7 @@ HRESULT TSFileSource::PlayPause()
 				return (log << "Failed to Unpause Graph.\n").Write(hr);
 
 			g_pOSD->Data()->SetItem(L"warnings", L"Playing");
-			g_pTv->ShowOSDItem(L"Warnings", 5);
+			g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 		}
 		else
 		{
@@ -1371,7 +1400,7 @@ HRESULT TSFileSource::PlayPause()
 				return (log << "Failed to Pause Graph.\n").Write(hr);
 
 			g_pOSD->Data()->SetItem(L"warnings", L"Paused");
-			g_pTv->ShowOSDItem(L"Warnings", 10000);
+			g_pTv->ShowOSDItem(L"Warnings", 100000);
 		}
 	}
 	return S_OK;
@@ -1503,13 +1532,13 @@ HRESULT TSFileSource::SetSourceControl(IBaseFilter *pFilter, BOOL autoMode)
 		return E_INVALIDARG;
 
 	HRESULT hr = E_NOINTERFACE;
-	CComQIPtr <ITSFileSource, &IID_ITSFileSource> piTSFilepSource(pFilter);
-	if(!piTSFilepSource)
+	CComQIPtr <ITSFileSource, &IID_ITSFileSource> pITSFileSource(pFilter);
+	if(!pITSFileSource)
 		return (log << "Failed to get ITSFileSource interface from IBaseFilter filter: " << hr << "\n").Write(hr);
 
-	piTSFilepSource->SetAutoMode((USHORT)autoMode);
+	pITSFileSource->SetAutoMode((USHORT)autoMode);
 
-	piTSFilepSource.Release();
+	pITSFileSource.Release();
 	return S_OK;
 }
 
@@ -1519,28 +1548,29 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 		return E_INVALIDARG;
 
 	HRESULT hr = E_NOINTERFACE;
-	CComQIPtr <ITSFileSource, &IID_ITSFileSource> piTSFilepSource(pFilter);
-	if(!piTSFilepSource)
+	CComQIPtr <ITSFileSource, &IID_ITSFileSource> pITSFileSource(pFilter);
+	if(!pITSFileSource)
 		return (log << "Failed to get ITSFileSource interface from IBaseFilter filter: " << hr << "\n").Write(hr);
 
-	piTSFilepSource->SetNPControl(0);
-	piTSFilepSource->SetNPSlave(0);
-	piTSFilepSource->SetDelayMode(0);
-	piTSFilepSource->SetMP2Mode(g_pData->settings.application.mpg2Audio);
-	piTSFilepSource->SetAC3Mode(g_pData->settings.application.ac3Audio);
-	piTSFilepSource->SetAudio2Mode(g_pData->settings.application.audioSwap);
-	piTSFilepSource->SetFixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
-	piTSFilepSource->SetROTMode(0);
-	piTSFilepSource->SetClockMode(g_pData->settings.application.refClock);
-	piTSFilepSource->SetCreateTSPinOnDemux(0);
-	piTSFilepSource->SetCreateTxtPinOnDemux(0);
-	piTSFilepSource->SetAutoMode(1);
-	piTSFilepSource->SetRateControlMode(0);
+	pITSFileSource->SetNPControl(0);
+	pITSFileSource->SetNPSlave(0);
+	pITSFileSource->SetDelayMode(0);
+	pITSFileSource->SetMP2Mode(g_pData->settings.application.mpg2Audio);
+	pITSFileSource->SetAC3Mode(g_pData->settings.application.ac3Audio);
+	pITSFileSource->SetAudio2Mode(g_pData->settings.application.audioSwap);
+	pITSFileSource->SetFixedAspectRatio(g_pData->settings.application.fixedAspectRatio);
+	pITSFileSource->SetROTMode(0);
+	pITSFileSource->SetClockMode(g_pData->settings.application.refClock);
+	pITSFileSource->SetCreateTSPinOnDemux(0);
+	pITSFileSource->SetCreateTxtPinOnDemux(0);
+	pITSFileSource->SetAutoMode(1);
+	pITSFileSource->SetRateControlMode(0);
 
 
 	//if no service already defined then try and get the media type from the file
-	if (pService && !(*pService))
+	if (pService && *pService == NULL)
 	{
+		(log << "Getting Stream info from the ITSFileSource interface\n").Write();
 		*pService = new DVBTChannels_Service();
 		DVBTChannels_Stream *pStream = NULL;
 
@@ -1548,7 +1578,7 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 		BYTE *ptMedia = new BYTE[128];
 		LPWSTR mediaType = NULL;
 
-		piTSFilepSource->GetVideoPidType(ptMedia);
+		pITSFileSource->GetVideoPidType(ptMedia);
 		if (stricmp((const char *)ptMedia, "H.264") == 0)
 			strCopy(mediaType, L"H264 Video");
 		else if (stricmp((const char *)ptMedia, "MPEG 4") == 0)
@@ -1556,12 +1586,12 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 		else
 			strCopy(mediaType, L"MPEG2 Video");
 
-		piTSFilepSource->GetVideoPid(&pid);
+		pITSFileSource->GetVideoPid(&pid);
 		if (pid)
 			if SUCCEEDED(hr = LoadMediaStreamType(pid, mediaType, &pStream))
 				(*pService)->AddStream(pStream);
 
-		piTSFilepSource->GetAACPid(&pid);
+		pITSFileSource->GetAACPid(&pid);
 		if (pid)
 		{
 			strCopy(mediaType, L"AAC Audio");
@@ -1569,7 +1599,7 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 				(*pService)->AddStream(pStream);
 		}
 		
-		piTSFilepSource->GetAAC2Pid(&pid2);
+		pITSFileSource->GetAAC2Pid(&pid2);
 		if (pid2)
 		{
 			strCopy(mediaType, L"AAC Audio");
@@ -1577,43 +1607,66 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 				(*pService)->AddStream(pStream);
 		}
 
+		pITSFileSource->GetDTSPid(&pid);
+		if (pid)
+		{
+			strCopy(mediaType, L"DTS Audio");
+			if SUCCEEDED(hr = LoadMediaStreamType(pid, mediaType, &pStream))
+				(*pService)->AddStream(pStream);
+		}
+		
+		pITSFileSource->GetDTS2Pid(&pid2);
+		if (pid2)
+		{
+			strCopy(mediaType, L"DTS Audio");
+			if SUCCEEDED(hr = LoadMediaStreamType(pid2, mediaType, &pStream))
+				(*pService)->AddStream(pStream);
+		}
+
 		strCopy(mediaType, L"MPEG Audio");
-		piTSFilepSource->GetMP2Mode(&pid);
+		pITSFileSource->GetMP2Mode(&pid);
 		if (pid)
 			strCopy(mediaType, L"MPEG2 Audio");
 
-		piTSFilepSource->GetAudioPid(&pid);
+		pITSFileSource->GetAudioPid(&pid);
 		if (pid)
 		{
 			if SUCCEEDED(hr = LoadMediaStreamType(pid, mediaType, &pStream))
 				(*pService)->AddStream(pStream);
 		}
 
-		piTSFilepSource->GetAudio2Pid(&pid2);
+		pITSFileSource->GetAudio2Pid(&pid2);
 		if (pid2)
 		{
 			if SUCCEEDED(hr = LoadMediaStreamType(pid2, mediaType, &pStream))
 				(*pService)->AddStream(pStream);
 		}
 
-		piTSFilepSource->GetAC3Pid(&pid);
+		pITSFileSource->GetAC3Pid(&pid);
 		if (pid || pid2)
 		{
 			if SUCCEEDED(hr = LoadMediaStreamType(pid, L"AC3 Audio", &pStream))
 				(*pService)->AddStream(pStream);
 		}
 
-		piTSFilepSource->GetAC3_2Pid(&pid2);
+		pITSFileSource->GetAC3_2Pid(&pid2);
 		if (pid2)
 		{
 			if SUCCEEDED(hr = LoadMediaStreamType(pid2, L"AC3 Audio", &pStream))
 				(*pService)->AddStream(pStream);
 		}
 
-		piTSFilepSource->GetTelexPid(&pid);
+		pITSFileSource->GetTelexPid(&pid);
 		if (pid)
 		{
 			if SUCCEEDED(hr = LoadMediaStreamType(pid, L"Teletext", &pStream))
+				(*pService)->AddStream(pStream);
+		}
+
+		pITSFileSource->GetSubtitlePid(&pid);
+		if (pid)
+		{
+			if SUCCEEDED(hr = LoadMediaStreamType(pid, L"Subtitle", &pStream))
 				(*pService)->AddStream(pStream);
 		}
 
@@ -1631,7 +1684,7 @@ HRESULT TSFileSource::SetSourceInterface(IBaseFilter *pFilter, DVBTChannels_Serv
 			*pService = NULL;
 		}
 	}
-	piTSFilepSource.Release();
+	pITSFileSource.Release();
 	return S_OK;
 }
 
@@ -1763,74 +1816,80 @@ HRESULT TSFileSource::UpdateData()
 		return S_OK;
 
 	CComQIPtr<IMediaSeeking> piMediaSeeking(m_piGraphBuilder);
-
-	REFERENCE_TIME rtCurrent, rtEarliest, rtLatest;
-
-	if FAILED(hr = piMediaSeeking->GetCurrentPosition(&rtCurrent))
-		return (log << "Failed to get current time: " << hr << "\n").Write(hr);
-
-	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
-		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
-
-	WCHAR sz[MAX_PATH];
-
-	if (m_bTimeShiftService && g_pData->settings.timeshift.localTime)
+	if (piMediaSeeking)
 	{
-		_tzset();
-		struct tm *tmTime;
-		time_t lTime = timeGetTime() - (rtLatest - rtEarliest)/10000;
-		time(&lTime);
-		lTime -= (rtLatest - rtEarliest)/10000000;
-		tmTime = localtime(&lTime);
-		wcsftime(sz, 32, L"%H:%M:%S", tmTime);
-		g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
+		REFERENCE_TIME rtCurrent, rtEarliest, rtLatest;
 
-		lTime = timeGetTime() - (rtLatest - rtCurrent)/10000;
-		time(&lTime);
-		lTime -= (rtLatest - rtCurrent)/10000000;
-		tmTime = localtime(&lTime);
-		wcsftime(sz, 32, L"%H:%M:%S", tmTime);
-		g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
+		if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
+			return (log << "Failed to get available times: " << hr << "\n").Write(hr);
 
-		lTime = timeGetTime();
-		time(&lTime);
-		tmTime = localtime(&lTime);
-		wcsftime(sz, 32, L"%H:%M:%S", tmTime);
-		g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
-	}
-	else
-	{
-		long milli, secs, mins, hours;
+		if FAILED(hr = piMediaSeeking->GetCurrentPosition(&rtCurrent))
+			return (log << "Failed to get current time: " << hr << "\n").Write(hr);
 
-		milli = (long)(rtEarliest / 10000);
-		secs = milli / 1000;
-		mins = secs / 60;
-		hours = mins / 60;
-		milli %= 1000;
-		secs %= 60;
-		mins %= 60;
-		swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
-		g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
+		WCHAR sz[MAX_PATH];
 
-		milli = (long)(rtCurrent / 10000);
-		secs = milli / 1000;
-		mins = secs / 60;
-		hours = mins / 60;
-		milli %= 1000;
-		secs %= 60;
-		mins %= 60;
-		swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
-		g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
+		if (m_bTimeShiftService && g_pData->settings.timeshift.localTime)
+		{
+			_tzset();
+			struct tm *tmTime;
+			time_t lCurrentTime;
+			time(&lCurrentTime);
 
-		milli = (long)(rtLatest / 10000);
-		secs = milli / 1000;
-		mins = secs / 60;
-		hours = mins / 60;
-		milli %= 1000;
-		secs %= 60;
-		mins %= 60;
-		swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
-		g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
+			if (!m_lLocalStartTime || m_lLocalStartTime >  (lCurrentTime - rtLatest/10000000))
+			{
+				time(&m_lLocalStartTime);
+				m_lLocalStartTime -= rtLatest/10000000;
+			}
+
+			lCurrentTime = m_lLocalStartTime + rtEarliest/10000000;;
+			tmTime = localtime(&lCurrentTime);
+			wcsftime(sz, 32, L"%H:%M:%S", tmTime);
+			g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
+
+			lCurrentTime = m_lLocalStartTime + rtCurrent/10000000;
+			tmTime = localtime(&lCurrentTime);
+			wcsftime(sz, 32, L"%H:%M:%S", tmTime);
+			g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
+
+			lCurrentTime = m_lLocalStartTime + rtLatest/10000000;
+			tmTime = localtime(&lCurrentTime);
+			wcsftime(sz, 32, L"%H:%M:%S", tmTime);
+			g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
+		}
+		else
+		{
+			long milli, secs, mins, hours;
+
+			milli = (long)(rtEarliest / 10000);
+			secs = milli / 1000;
+			mins = secs / 60;
+			hours = mins / 60;
+			milli %= 1000;
+			secs %= 60;
+			mins %= 60;
+			swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+			g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
+
+			milli = (long)(rtCurrent / 10000);
+			secs = milli / 1000;
+			mins = secs / 60;
+			hours = mins / 60;
+			milli %= 1000;
+			secs %= 60;
+			mins %= 60;
+			swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+			g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
+
+			milli = (long)(rtLatest / 10000);
+			secs = milli / 1000;
+			mins = secs / 60;
+			hours = mins / 60;
+			milli %= 1000;
+			secs %= 60;
+			mins %= 60;
+			swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+			g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
+		}
 	}
 	
 	if (!streamList.GetListSize())
@@ -1841,7 +1900,7 @@ HRESULT TSFileSource::UpdateData()
 			if (streamList.GetServiceName())
 			{
 				g_pOSD->Data()->SetItem(L"CurrentService", streamList.GetServiceName() + 2);
-				g_pTv->ShowOSDItem(L"Channel", 5);
+				g_pTv->ShowOSDItem(L"Channel", g_pData->settings.application.channelOSDTime);
 			}
 		}
 
