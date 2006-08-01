@@ -3063,7 +3063,7 @@ $(() - $(
 		<Key code= 13>Select()</>
 		<Key code= 37>Left()</>
 		<Key code= 38>Up()</>
-		<Key code= 39>Right()</>
+		<Key code= 39>Select()</>
 		<Key code= 40>Down()</>
 	</keys>
 	<label>
@@ -3089,6 +3089,17 @@ $(() - $(
 
 		<item>
 			<height>60</height>
+			<gap>20</gap>
+			<font height=40 weight=700 color="#FFFFFF" />
+			<text>Select Region</text>
+			<onSelect>
+				ExitMenu(-1)
+				ShowMenu(RegionMenu)
+			</onSelect>
+		</item>
+
+		<item>
+			<height>60</height>
 			<gap>40</gap>
 			<font height=40 weight=700 color="#FFFFFF" />
 			<text>Add Network</text>
@@ -3097,6 +3108,7 @@ $(() - $(
 				ShowMenu(TVAddNetwork)
 			</onSelect>
 		</item>
+
 		<!--
 		<item>
 			<text>Reorder</text>
@@ -3181,6 +3193,109 @@ $(() - $(
 			<image>BrownButton</image>
 			<padding left=10 top=0 right=10 bottom=3 />
 		</background>
+	</label>
+</window>
+
+<window name="TVAddNetworkRegion">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu("RegionMenu")</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Right()</>
+		<Key code= 40>Down()</>
+	</keys>
+	<label>
+		<pos x=350 y=40 />
+		<text>Add Network</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="left"/>
+	</label>
+	<list name="AddNetworkRegionOptions">
+		<pos x=250 y=100 />
+		<size width=168 height=376 />
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+			</background>
+			<onRight>ChangeFrequencySelectionOffset(0)</onRight>
+		</itemTemplate>
+
+		<itemList>
+			<source>FrequencyList</source>
+			<text>   $(FrequencyList.frequency)  ($(FrequencyList.bandwidth))</text>
+			<onSelect>
+				SetFrequency($(FrequencyList.frequency), $(FrequencyList.bandwidth))
+			</onSelect>
+		</itemList>
+	</list>
+	<label>
+		<pos x=50 y=500 />
+		<text>use right arrows to cycle the offset</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="left"/>
+	</label>
+	<label>
+		<pos x=750 y=470 />
+		<text>$(Scanning)</text>
+		<font height=40 color="#FFFFFF" />
+		<align horizontal="right" vertical="bottom" />
+		<background>
+			<image>BrownButton</image>
+			<padding left=10 top=0 right=10 bottom=3 />
+		</background>
+	</label>
+</window>
+
+<window name="RegionMenu">
+	<keys>
+		<Key code= 13>Select()</>
+		<Key code= 37>ExitMenu(-1) ShowMenu(TVChannelSetup)</>
+		<Key code= 38>Up()</>
+		<Key code= 39>Select() ShowMenu("TVAddNetworkRegion")</>
+		<Key code= 40>Down()</>
+	</keys>
+	<label>
+		<pos x=50 y=40 />
+		<text>Regional Settings</text>
+		<font height=40 weight=700 color="#FFFFFF" />
+		<align horizontal="left"/>
+	</label>
+	<list name="RegionOptions">
+		<pos x=50 y=100 />
+		<size width=168 height=376 />
+		<selection>string.$(CurrentSelectedRegion)</selection>
+
+		<itemTemplate>
+			<height>40</height>
+			<gap>10</gap>
+			<font height=30 weight=700 color="#FFFFFF" />
+			<align horizontal="left"/>
+			<background>
+				<image>BrownButton</image>
+				<highlightImage>GreenButton</highlightImage>
+				<selectedImage>SelectedButton</SelectedImage>
+			</background>
+		</itemTemplate>
+
+		<itemList>
+			<source>RegionList</source>
+			<text>   $(RegionList.name)</text>
+			<onSelect>
+				SetRegion($(RegionList.name)) SetDataItem("CurrentSelectedRegion", $(RegionList.name))
+			</onSelect>
+		</itemList>
+	</list>
+	<label>
+		<pos x=50 y=520 />
+		<text>Currently Selected Region: $(CurrentSelectedRegion)</text>
+		<font height=20 weight=700 color="#FFFFFF" />
+		<align horizontal="left"/>
 	</label>
 </window>
 

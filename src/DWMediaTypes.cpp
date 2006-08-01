@@ -240,6 +240,26 @@ long DWMediaTypes::GetListSize()
 	return m_mediaTypes.size();
 }
 
+HRESULT DWMediaTypes::FindListItem(LPWSTR name, int *pIndex)
+{
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	CAutoLock mediaTypesLock(&m_mediaTypesLock);
+	std::vector<DWMediaType *>::iterator it = m_mediaTypes.begin();
+	for ( ; it < m_mediaTypes.end() ; it++ )
+	{
+		if (_wcsicmp((*it)->decoder, name) == 0)
+			return S_OK;
+
+		(*pIndex)++;
+	}
+
+	return E_FAIL;
+}
+
 void DWMediaTypes::SetDecoders(DWDecoders *pDecoders)
 {
 	m_pDecoders = pDecoders;

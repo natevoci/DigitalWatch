@@ -78,9 +78,9 @@ DigitalWatch TODO
   - Command-line parameters
 
 - Option to disable logging (an option for each file)
-- Move file writing into a separate thread. Just push lines to a queue that the other thread dumps to file.
+- Move file writing into a separate thread. Just push lines to a queue that the other thread dumps to file......................done by bear.
 
-- Automatically register directx9 filters if they're not registered (like mpg2splt, bdasup, tif, m2s&t, mpeg2decfilter, ffdshow)
+- Automatically register directx9 filters if they're not registered (like mpg2splt, bdasup, tif, m2s&t, mpeg2decfilter, ffdshow).....................done by bear.
 
 - Figure out if BDA graphs can be run from a limited user account
 

@@ -125,7 +125,7 @@ long DWGraph::GetResumePosition(LPWSTR name)
 		return 0;
 
 	int index = 0;
-	if SUCCEEDED(m_resumeList.FindResumeName(name, &index))
+	if SUCCEEDED(m_resumeList.FindListItem(name, &index))
 	{
 		LPWSTR lpwTemp = NULL;
 		strCopy(lpwTemp, L"resumeinfo.resume");

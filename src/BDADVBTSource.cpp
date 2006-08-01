@@ -46,6 +46,7 @@ BDADVBTSource::BDADVBTSource(LogMessageCallback *callback) : m_strSourceType(L"B
 	m_rtTunerSignalCount = 0;
 
 	g_pOSD->Data()->AddList(&channels);
+	g_pOSD->Data()->AddList(&regionList);
 	g_pOSD->Data()->AddList(&frequencyList);
 	g_pOSD->Data()->AddList(&filterList);
 
@@ -79,6 +80,7 @@ void BDADVBTSource::SetLogCallback(LogMessageCallback *callback)
 //	cardList.SetLogCallback(callback);
 	graphTools.SetLogCallback(callback);
 	channels.SetLogCallback(callback);
+	regionList.SetLogCallback(callback);
 	frequencyList.SetLogCallback(callback);
 	filterList.SetLogCallback(callback);
 /*
@@ -131,6 +133,17 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 			g_pOSD->Data()->RotateList(g_pOSD->Data()->GetListFromListName(channels.GetListName()));
 		}
 		(log << "Channels List found to be the same\n").Write();
+		break;
+	};
+
+	for (i = 0; i < g_pOSD->Data()->GetListCount(regionList.GetListName()); i++)
+	{
+		if (g_pOSD->Data()->GetListFromListName(regionList.GetListName()) != &regionList)
+		{
+			(log << "Region List is not the same, Rotating List\n").Write();
+			g_pOSD->Data()->RotateList(g_pOSD->Data()->GetListFromListName(regionList.GetListName()));
+		}
+		(log << "Region List found to be the same\n").Write();
 		break;
 	};
 
@@ -194,7 +207,17 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Channels.xml", g_pData->application.appPath);
 	hr = channels.LoadChannels((LPWSTR)&file);
 
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\FrequencyList.xml", g_pData->application.appPath);
+	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\RegionList.xml", g_pData->application.appPath);
+	hr = regionList.LoadRegionList((LPWSTR)&file);
+
+	LPWSTR temp = NULL;
+	strCopy(temp, L"RegionList.name");
+	int index = 0;
+	if SUCCEEDED(regionList.FindListItem(g_pData->settings.application.currentRegionPath, &index))
+		g_pOSD->Data()->SetItem(L"CurrentSelectedRegion", regionList.GetListItem(temp, index));
+	delete[] temp;
+
+	swprintf((LPWSTR)&file, L"%s\\FrequencyList.xml", g_pData->settings.application.currentRegionPath);
 	hr = frequencyList.LoadFrequencyList((LPWSTR)&file);
 
 	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Keys.xml", g_pData->application.appPath);
@@ -306,6 +329,7 @@ HRESULT BDADVBTSource::Destroy()
 
 	cardList.Destroy();
 	frequencyList.Destroy();
+	regionList.Destroy();
 	channels.Destroy();
 	filterList.Destroy();
 
@@ -373,6 +397,43 @@ HRESULT BDADVBTSource::ExecuteCommand(ParseLine* command)
 			return (log << "Expecting no parameters: " << command->LHS.Function << "\n").Show(E_FAIL);
 
 		return LastChannel();
+	}
+	else if (_wcsicmp(pCurr, L"SetRegion") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		if (command->LHS.Parameter[0])
+		{
+			LPWSTR temp = NULL;
+			strCopy(temp, L"RegionList.regionPath");
+			int index = 0;
+			if SUCCEEDED(regionList.FindListItem(command->LHS.Parameter[0], &index))
+			g_pOSD->Data()->SetItem(L"CurrentSelectedRegion", command->LHS.Parameter[0]);
+			strCopy(g_pData->settings.application.currentRegionPath, regionList.GetListItem(temp, index));
+			delete[] temp;
+		}
+		else
+			return E_FAIL;
+
+		frequencyList.Destroy();
+		wchar_t file[MAX_PATH];
+		swprintf((LPWSTR)&file, L"%s\\FrequencyList.xml", g_pData->settings.application.currentRegionPath);
+		if FAILED(frequencyList.LoadFrequencyList((LPWSTR)&file))
+			return E_FAIL;
+
+		for (int i = 0; i < g_pOSD->Data()->GetListCount(frequencyList.GetListName()); i++)
+		{
+			if (g_pOSD->Data()->GetListFromListName(frequencyList.GetListName()) != &frequencyList)
+			{
+				(log << "Frequency List is not the same, Rotating List\n").Write();
+				g_pOSD->Data()->RotateList(g_pOSD->Data()->GetListFromListName(frequencyList.GetListName()));
+			}
+			(log << "Frequency List found to be the same\n").Write();
+			break;
+		};
+
+		return g_pData->SaveSettings();
 	}
 	else if (_wcsicmp(pCurr, L"SetFrequency") == 0)
 	{

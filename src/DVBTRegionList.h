@@ -1,5 +1,5 @@
 /**
- *	FilterPropList.h
+ *	DVBTRegionList.h
  *	Copyright (C) 2005 Nate
  *	Copyright (C) 2006 Bear
  *
@@ -21,39 +21,35 @@
  *	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef FILTERPROPLIST_H
-#define FILTERPROPLIST_H
+#ifndef DVBTREGIONLIST_H
+#define DVBTREGIONLIST_H
 
-#include "DWGraph.h"
 #include "XMLDocument.h"
 #include "IDWOSDDataList.h"
 #include "LogMessage.h"
 #include <vector>
-#include "XMLDocument.h"
-#include "GlobalFunctions.h"
-#include "FilterGraphTools.h"
 
-class FilterPropListItem
+class DVBTRegionListItem
 {
 public:
-	FilterPropListItem();
-	virtual ~FilterPropListItem();
+	DVBTRegionListItem();
+	virtual ~DVBTRegionListItem();
+	HRESULT SaveToXML(XMLElement *pElement);
 
-	LPWSTR index;
-	LPWSTR flags;
 	LPWSTR name;
+	LPWSTR regionPath;
 };
 
-class FilterPropList : public LogMessageCaller, public IDWOSDDataList
+class DVBTRegionList : public LogMessageCaller, public IDWOSDDataList
 {
 public:
-	FilterPropList();
-	virtual ~FilterPropList();
+	DVBTRegionList();
+	virtual ~DVBTRegionList();
 
 	virtual HRESULT Destroy();
 
-	virtual HRESULT Initialise(IGraphBuilder *piGraphBuilder, LPWSTR ListName = NULL);
-	virtual HRESULT LoadFilterList(BOOL bLogOutput = TRUE);
+	virtual	HRESULT ParseDirectoryList(LPWSTR path);
+	virtual HRESULT LoadRegionList(LPWSTR filename);
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListName();
@@ -61,18 +57,14 @@ public:
 	virtual long GetListSize();
 	virtual HRESULT FindListItem(LPWSTR name, int *pIndex);
 
-	virtual HRESULT ShowFilterProperties(HWND hWnd, LPWSTR filterName, int index);
-
 private:
-	std::vector<FilterPropListItem *> m_list;
+	std::vector<DVBTRegionListItem *> m_list;
 	CCritSec m_listLock;
 
-	CComPtr <IGraphBuilder> m_piGraphBuilder;
-	FilterGraphTools graphTools;
-	HRESULT GetFilterProperties(LPWSTR *pfilterName, int *pCount, UINT * pFlags);
-
+	HRESULT MakeFile(LPWSTR filename);
 	long m_offset;
 
+	LPWSTR m_filename;
 	LPWSTR m_dataListName;
 };
 

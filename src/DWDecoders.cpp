@@ -704,6 +704,26 @@ LPWSTR DWDecoders::GetListItem(LPWSTR name, long nIndex)
 	return NULL;
 }
 
+HRESULT DWDecoders::FindListItem(LPWSTR name, int *pIndex)
+{
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	CAutoLock decodersLock(&m_decodersLock);
+	std::vector<DWDecoder *>::iterator it = m_decoders.begin();
+	for ( ; it < m_decoders.end() ; it++ )
+	{
+		if (_wcsicmp((*it)->name, name) == 0)
+			return S_OK;
+
+		(*pIndex)++;
+	}
+
+	return E_FAIL;
+}
+
 long DWDecoders::GetListSize()
 {
 	CAutoLock decodersLock(&m_decodersLock);

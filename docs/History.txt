@@ -3,6 +3,13 @@ DigitalWatch History
 --------------------
  Changes
   ```````
+Version 2.0.7.5
+bear:
+Changes:
+- Added support for region frequency settings in the OSD, just add the frequency.xml file to a location in the regions dir for it to be accessable. You will need to delete the regionList.xml for DW to rebuild the list. Default freq are now in the default folder location.
+- Changed the timeshift resume to be relative to local time, this is optional from the settings.xml.
+- Added DTS Audio & Subtitle media support.
+
 Version 2.0.7.4
 bear:
 Changes:

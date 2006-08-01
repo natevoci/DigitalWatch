@@ -28,7 +28,6 @@
 #include "IDWOSDDataList.h"
 #include "LogMessage.h"
 #include <vector>
-#include "XMLDocument.h"
 #include "GlobalFunctions.h"
 
 class DWFileResumeListItem
@@ -54,13 +53,13 @@ public:
 	HRESULT Initialise(int resumeSize);
 	HRESULT Load(LPWSTR filename);
 	HRESULT MakeFile(LPWSTR filename);
-	HRESULT FindResumeName(LPWSTR pResumeName, int *pIndex);
 	BOOL Save(LPWSTR filename);
 
 	//IDWOSDDataList Methods
 	virtual LPWSTR GetListName();
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
 	virtual long GetListSize();
+	virtual HRESULT FindListItem(LPWSTR name, int *pIndex);
 	virtual void SetLogCallback(LogMessageCallback *callback);
 
 	void SetListItem(LPWSTR name, LPWSTR value);

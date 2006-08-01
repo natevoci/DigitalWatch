@@ -116,6 +116,26 @@ LPWSTR BDACardCollection::GetListItem(LPWSTR name, long nIndex)
 	return NULL;
 }
 
+HRESULT BDACardCollection::FindListItem(LPWSTR name, int *pIndex)
+{
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	CAutoLock listLock(&m_listLock);
+	std::vector<BDACard *>::iterator it = cards.begin();
+	for ( ; it < cards.end() ; it++ )
+	{
+		if (_wcsicmp((*it)->tunerDevice.strFriendlyName, name) == 0)
+			return S_OK;
+
+		(*pIndex)++;
+	}
+
+	return E_FAIL;
+}
+
 long BDACardCollection::GetListSize()
 {
 	CAutoLock listLock(&m_listLock);

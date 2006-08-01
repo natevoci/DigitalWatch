@@ -920,7 +920,28 @@ LPWSTR DVBTChannels_Network::GetListItem(LPWSTR name, long nIndex)
 
 long DVBTChannels_Network::GetListSize()
 {
+	CAutoLock lock(&m_servicesLock);
 	return m_services.size();
+}
+
+HRESULT DVBTChannels_Network::FindListItem(LPWSTR name, int *pIndex)
+{
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	CAutoLock lock(&m_servicesLock);
+	std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
+	for ( ; it < m_services.end() ; it++ )
+	{
+		if (_wcsicmp((*it)->serviceName, name) == 0)
+			return S_OK;
+
+		(*pIndex)++;
+	}
+
+	return E_FAIL;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1388,6 +1409,26 @@ long DVBTChannels::GetListSize()
 {
 	CAutoLock lock(&m_networksLock);
 	return m_networks.size();
+}
+
+HRESULT DVBTChannels::FindListItem(LPWSTR name, int *pIndex)
+{
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	CAutoLock lock(&m_networksLock);
+	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
+	for ( ; it < m_networks.end() ; it++ )
+	{
+		if (_wcsicmp((*it)->networkName, name) == 0)
+			return S_OK;
+
+		(*pIndex)++;
+	}
+
+	return E_FAIL;
 }
 
 

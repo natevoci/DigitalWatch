@@ -30,6 +30,7 @@ interface IDWOSDDataList
 	virtual LPWSTR GetListName() = 0;
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0) = 0;
 	virtual long GetListSize() = 0;
+	virtual HRESULT FindListItem(LPWSTR name, int *pIndex) = 0;
 };
 
 #endif

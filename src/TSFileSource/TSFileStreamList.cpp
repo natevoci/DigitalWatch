@@ -234,6 +234,26 @@ long TSFileStreamList::GetListSize()
 	return m_list.size();
 }
 
+HRESULT TSFileStreamList::FindListItem(LPWSTR name, int *pIndex)
+{
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	CAutoLock listLock(&m_listLock);
+	std::vector<TSFileStreamListItem *>::iterator it = m_list.begin();
+	for ( ; it < m_list.end() ; it++ )
+	{
+		if (_wcsicmp((*it)->name, name) == 0)
+			return S_OK;
+
+		(*pIndex)++;
+	}
+
+	return E_FAIL;
+}
+
 LPWSTR TSFileStreamList::GetServiceName()
 {
 	CAutoLock listLock(&m_listLock);

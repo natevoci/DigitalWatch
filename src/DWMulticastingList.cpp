@@ -133,6 +133,26 @@ long DWMulticastingList::GetListSize()
 	return m_list.size();
 }
 
+HRESULT DWMulticastingList::FindListItem(LPWSTR name, int *pIndex)
+{
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	CAutoLock listLock(&m_listLock);
+	std::vector<DWMulticastingListItem *>::iterator it = m_list.begin();
+	for ( ; it < m_list.end() ; it++ )
+	{
+		if (_wcsicmp((*it)->name, name) == 0)
+			return S_OK;
+
+		(*pIndex)++;
+	}
+
+	return E_FAIL;
+}
+
 void DWMulticastingList::SetListItem(LPWSTR name, LPWSTR value)
 {
 	if (!name || !value)
@@ -284,22 +304,3 @@ HRESULT DWMulticastingList::MakeFile(LPWSTR filename)
 	return S_OK;
 }
 
-HRESULT DWMulticastingList::FindMulticastName(LPWSTR pMulticastName, int *pIndex)
-{
-	if (!pIndex)
-        return E_INVALIDARG;
-
-	*pIndex = 0;
-
-	CAutoLock listLock(&m_listLock);
-	std::vector<DWMulticastingListItem *>::iterator it = m_list.begin();
-	for ( ; it < m_list.end() ; it++ )
-	{
-		if (_wcsicmp((*it)->name, pMulticastName) == 0)
-			return S_OK;
-
-		(*pIndex)++;
-	}
-
-	return E_FAIL;
-}

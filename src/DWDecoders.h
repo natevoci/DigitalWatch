@@ -69,6 +69,7 @@ public:
 	virtual LPWSTR GetListName();
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
 	virtual long GetListSize();
+	virtual HRESULT FindListItem(LPWSTR name, int *pIndex);
 
 	HRESULT Destroy();
 	HRESULT Initialise(IGraphBuilder *piGraphBuilder, LPWSTR listName);

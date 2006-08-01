@@ -54,6 +54,7 @@ public:
 	virtual LPWSTR GetListName();
 	virtual LPWSTR GetListItem(LPWSTR name, long nIndex = 0);
 	virtual long GetListSize();
+	virtual HRESULT FindListItem(LPWSTR name, int *pIndex);
 private:
 	std::vector<DVBTFrequencyListItem *> m_list;
 	CCritSec m_listLock;

@@ -79,6 +79,8 @@ AppData::AppData()
 	wcscpy(settings.application.lastServiceCmd, L"");
 	settings.application.currentServiceCmd = new wchar_t[MAX_PATH];
 	wcscpy(settings.application.currentServiceCmd, L"");
+	settings.application.currentRegionPath = new wchar_t[MAX_PATH];
+	wsprintfW(settings.application.currentRegionPath, L"%S\\BDA_DVB-T\\Regions\\Default", application.appPath);
 	settings.application.longNetworkName = FALSE;
 	settings.application.orderChannels = TRUE;
 	settings.application.decoderTest = TRUE;
@@ -270,6 +272,9 @@ AppData::~AppData()
 	if (settings.application.currentServiceCmd)
 		delete[] settings.application.currentServiceCmd;
 
+	if (settings.application.currentRegionPath)
+		delete[] settings.application.currentRegionPath;
+
 	if (settings.capture.fileName)
 		delete[] settings.capture.fileName;
 
@@ -396,6 +401,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L"rememberLastService") == 0)
 				return GetBool(settings.application.rememberLastService);
 
+			if (_wcsicmp(selection, L"currentRegionPath") == 0)
+				return settings.application.currentRegionPath;
+
 			if (_wcsicmp(selection, L"resumeLastTime") == 0)
 				return GetBool(settings.application.resumeLastTime);
 
@@ -425,6 +433,12 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"fixedAspectRatio") == 0)
 				return GetBool(settings.application.fixedAspectRatio);
+
+			if (_wcsicmp(selection, L"currentRegionPath") == 0)
+			{
+				if (g_pOSD)
+					return g_pOSD->Data()->GetItem(L"CurrentSelectedRegion");
+			}
 
 			return NULL;
 		}
@@ -1015,6 +1029,13 @@ HRESULT AppData::LoadSettings()
 				{
 					if (pSubElement->value)
 						wcscpy(settings.application.lastServiceCmd, pSubElement->value);
+
+					continue;
+				}
+				if (_wcsicmp(pSubElement->name, L"CurrentRegionPath") == 0)
+				{
+					if (pSubElement->value)
+						wcscpy(settings.application.currentRegionPath, pSubElement->value);
 
 					continue;
 				}
@@ -1623,6 +1644,7 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 		strCopy(pValue, settings.application.resumesize);
 		pApplication->Elements.Add(new XMLElement(L"ResumeSize", pValue));
 		pApplication->Elements.Add(new XMLElement(L"LastServiceCmd", settings.application.lastServiceCmd));
+		pApplication->Elements.Add(new XMLElement(L"CurrentRegionPath", settings.application.currentRegionPath));
 		pApplication->Elements.Add(new XMLElement(L"LongNetworkName", (settings.application.longNetworkName ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"OrderChannels", (settings.application.orderChannels ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"DecoderTest", (settings.application.decoderTest ? L"True" : L"False")));

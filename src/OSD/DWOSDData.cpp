@@ -148,6 +148,7 @@ int DWOSDData::GetListCount(LPWSTR pName)
 
 	int count = 0;
 	//look for existing list of same name
+	CAutoLock lock(&m_listsLock);
 	std::vector<DWOSDDataList *>::iterator it = m_lists.begin();
 	for ( ; it < m_lists.end() ; it++ )
 	{

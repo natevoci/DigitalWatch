@@ -30,6 +30,7 @@
 #include "BDACardCollection.h"
 #include "LogMessage.h"
 #include "FilterGraphTools.h"
+#include "DVBTRegionList.h"
 #include "DVBTFrequencyList.h"
 #include "DWThread.h"
 #include <vector>
@@ -142,6 +143,7 @@ private:
 	CComPtr <IBaseFilter> m_piBDAMpeg2Demux;
 	CComPtr <IMpeg2Demultiplexer> m_piMpeg2Demux;
 
+	DVBTRegionList regionList;
 	DVBTFrequencyList frequencyList;
 	FilterPropList filterList;
 

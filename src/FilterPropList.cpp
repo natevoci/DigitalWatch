@@ -181,7 +181,7 @@ long FilterPropList::GetListSize()
 	return m_list.size();
 }
 
-HRESULT FilterPropList::FindFilterName(LPWSTR pFilterName, int *pIndex)
+HRESULT FilterPropList::FindListItem(LPWSTR name, int *pIndex)
 {
 	if (!pIndex)
         return E_INVALIDARG;
@@ -200,7 +200,7 @@ HRESULT FilterPropList::FindFilterName(LPWSTR pFilterName, int *pIndex)
 
 	for (int index = 1; index < m_list.size(); index++)
 	{
-		if (wcsstr(m_list[index]->name, pFilterName) != NULL)
+		if (wcsstr(m_list[index]->name, name) != NULL)
 		{
 			*pIndex = index;
 			return S_OK;

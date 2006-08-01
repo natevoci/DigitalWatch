@@ -241,6 +241,14 @@ SOURCE=.\src\DVBTFrequencyList.cpp
 
 SOURCE=.\src\DVBTFrequencyList.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\src\DVBTRegionList.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\DVBTRegionList.h
+# End Source File
 # End Group
 # Begin Group "TSFileSource"
 

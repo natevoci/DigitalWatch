@@ -113,7 +113,8 @@ HRESULT DVBTFrequencyList::LoadFrequencyList(LPWSTR filename)
 				delete item;
 				return (log << "Frequency must be supplied in a network definition\n").Write(E_FAIL);
 			}
-				long frequency = _wtoi(attr->value);
+
+			long frequency = _wtoi(attr->value);
 			strCopy(item->frequencyLow, frequency-125);
 			strCopy(item->frequencyCentre, frequency);
 			strCopy(item->frequencyHigh, frequency+125);
@@ -144,13 +145,16 @@ HRESULT DVBTFrequencyList::LoadFrequencyList(LPWSTR filename)
 
 HRESULT DVBTFrequencyList::ChangeOffset(long change)
 {
-	if (change > 0)
+	if (change >= 0)
 		m_offset++;
 	if (change < 0)
 		m_offset--;
-	if (m_offset > 1)
+
+	if (change && m_offset > 1)
 		m_offset = 1;
-	if (m_offset < -1)
+	if (change && m_offset < -1)
+		m_offset = -1;
+	else if (m_offset > 1)
 		m_offset = -1;
 	return S_OK;
 }
@@ -195,7 +199,34 @@ LPWSTR DVBTFrequencyList::GetListItem(LPWSTR name, long nIndex)
 long DVBTFrequencyList::GetListSize()
 {
 	CAutoLock listLock(&m_listLock);
-
 	return m_list.size();
 }
+
+HRESULT DVBTFrequencyList::FindListItem(LPWSTR name, int *pIndex)
+{
+	if (!pIndex)
+        return E_INVALIDARG;
+
+	*pIndex = 0;
+
+	CAutoLock listLock(&m_listLock);
+	std::vector<DVBTFrequencyListItem *>::iterator it = m_list.begin();
+	for ( ; it < m_list.end() ; it++ )
+	{
+		if (_wcsicmp((*it)->bandwidth, name) == 0)
+			return S_OK;
+		if (_wcsicmp((*it)->frequencyLow, name) == 0)
+			return S_OK;
+		if (_wcsicmp((*it)->frequencyCentre, name) == 0)
+			return S_OK;
+		if (_wcsicmp((*it)->frequencyHigh, name) == 0)
+			return S_OK;
+
+		(*pIndex)++;
+	}
+
+	return E_FAIL;
+}
+
+
 

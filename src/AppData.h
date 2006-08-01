@@ -73,6 +73,7 @@ public:
 			int resumesize;
 			LPWSTR lastServiceCmd;
 			LPWSTR currentServiceCmd;
+			LPWSTR currentRegionPath;
 			BOOL longNetworkName;
 			BOOL orderChannels;
 			BOOL decoderTest;

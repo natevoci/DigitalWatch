@@ -159,6 +159,9 @@ HRESULT TSFileSource::Destroy()
 
 	if (m_pDWGraph)
 	{
+		if (m_pDWGraph->IsPlaying())
+			SaveResumePosition();
+
 		if FAILED(hr = UnloadFilters())
 			(log << "Failed to unload filters\n").Write();
 
@@ -831,7 +834,6 @@ HRESULT TSFileSource::LoadResumePosition()
 							time_t lCurrentTime;
 							time(&lCurrentTime);
 							lPosition = max(0, lPosition - (lCurrentTime - rtLatest/10000000));
-							lPosition = lPosition*1000;
 (log << "Setting Position to : " << lPosition << "\n").Write();
 						}
 					}
@@ -872,7 +874,7 @@ HRESULT TSFileSource::SaveResumePosition()
 		if (m_lLocalStartTime && m_bTimeShiftService && g_pData->settings.timeshift.localTime)
 		{
 (log << "Saving Current Position to : " << lPosition << "\n").Write();
-			time_t lTime = m_lLocalStartTime + lPosition/1000;
+			time_t lTime = m_lLocalStartTime + lPosition;
 			lPosition = lTime;
 (log << "Saving Current Time Position to : " << lPosition << "\n").Write();
 		}
@@ -1482,7 +1484,7 @@ HRESULT TSFileSource::Seek(long position)
 
 	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest-(__int64)20000000));
 
-	rtNow = (__int64)max((__int64)rtEarliest, (__int64)position*10000);
+	rtNow = (__int64)max((__int64)rtEarliest, (__int64)position*10000000);
 	rtNow = (__int64)min((__int64)rtLatest, (__int64)rtNow);
 
 	rtStop = 0;
@@ -1509,7 +1511,7 @@ HRESULT TSFileSource::GetPosition(long *position)
 	if FAILED(hr = piMediaSeeking->GetCurrentPosition(&rtNow))
 		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
 
-	*position = rtNow/10000;
+	*position = rtNow/10000000;
 
 	return S_OK;
 }
