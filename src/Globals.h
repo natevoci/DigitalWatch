@@ -37,7 +37,6 @@ extern TVControl* g_pTv;
 extern DWOnScreenDisplay* g_pOSD;
 extern LogMessageWriter g_DWLogWriter;
 
-
 #ifndef ABOVE_NORMAL_PRIORITY_CLASS
 #define ABOVE_NORMAL_PRIORITY_CLASS 0x00008000
 #endif
@@ -55,11 +54,11 @@ extern LogMessageWriter g_DWLogWriter;
 #endif
 
 #ifndef FILE_START_POS_PS
-#define FILE_START_POS_PS 0 //Minimum file position to begin parsing for PS Mode
+#define FILE_START_POS_PS 1 //Minimum file position to begin parsing for PS Mode
 #endif
 
 #ifndef RT_FILE_START_PS
-#define RT_FILE_START_PS 0 //0sec stream position to begin playing in PS Mode
+#define RT_FILE_START_PS 1 //0sec stream position to begin playing in PS Mode
 #endif
 
 #ifndef MIN_FILE_SIZE
@@ -83,17 +82,8 @@ extern LogMessageWriter g_DWLogWriter;
 class CBufferInfo
 {
 public:
-	CBufferInfo()
-	{
-		sample = NULL;
-		long size = 0;
-	};
-
-	virtual ~CBufferInfo()
-	{
-		if(sample)
-			delete[] sample;
-	};
+	CBufferInfo(){};
+	virtual ~CBufferInfo(){};
 
 	BYTE *sample;
 	long size;
@@ -387,5 +377,56 @@ public:
    DWORD m_nPriority;
 };
 
+class FirstAffinity
+{
+public:
+   FirstAffinity()
+   {
+		#ifndef DEBUG
+			m_nAffinity = 0;
+			DWORD SystemAffinityMask = 0;
+			if (GetProcessAffinityMask(GetCurrentProcess(), &m_nAffinity, &SystemAffinityMask)
+				&& SystemAffinityMask > 1)
+				SetThreadAffinityMask(GetCurrentThread(), 0x01&m_nAffinity);
+		#endif
+   }
+
+   ~FirstAffinity()
+   {
+		#ifndef DEBUG
+			if (m_nAffinity)
+				SetThreadAffinityMask(GetCurrentThread(), m_nAffinity);
+		#endif
+   }
+     
+   DWORD m_nAffinity;
+};
+
+class SecondAffinity
+{
+public:
+   SecondAffinity()
+   {
+		#ifndef DEBUG
+			m_nAffinity = 0;
+			DWORD SystemAffinityMask = 0;
+			if (GetProcessAffinityMask(GetCurrentProcess(), &m_nAffinity, &SystemAffinityMask)
+				&& SystemAffinityMask > 1)
+				SetThreadAffinityMask(GetCurrentThread(), 0x10&m_nAffinity);
+		#endif
+   }
+
+   ~SecondAffinity()
+   {
+		#ifndef DEBUG
+			if (m_nAffinity)
+				SetThreadAffinityMask(GetCurrentThread(), m_nAffinity);
+		#endif
+   }
+     
+   DWORD m_nAffinity;
+};
+
 #endif
+
 
