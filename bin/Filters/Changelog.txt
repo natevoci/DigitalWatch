@@ -1,6 +1,17 @@
-Version 2.2.0.7 Beta 1
+Version 2.2.0.8 Beta 1
 =================
 bear:
+- Added two new filters based on the TSFileSource & TSFileSink called TSParserSource & TSParserSink.
+- Implemented a SharedMemory class to mimic the Win32 API File Handler methods in shared memory.
+- Added playing of Shared Memory files to the TSFileSource & TSParserSource Filters
+- Added a input pin with its own MultiMemWriter class so it can timeshift to shared memory of incomming streams.
+- Fixed various bug in the filters for playing transport stream files.
+- Added reference clock speed change support to the Source Filter's property pages for testing. 
+
+Version 2.2.0.7 Final
+=================
+bear:
+- Fixed a problem with the DVB Format code that was not allowing PAT less only file to play.
 - Some minor fixes, Added some support for DTS Audio & Subtitle outputs.
 - Major rework of the Demux pin change code.
 - Major changes of the Demux change code.
