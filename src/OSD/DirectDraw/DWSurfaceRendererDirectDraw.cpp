@@ -266,7 +266,12 @@ HRESULT DWSurfaceRendererDirectDraw::Blt(DWSurfaceRenderer *targetSurface, RECT*
 			if (m_bColorKey)
 			{
 				//hr = screenDest->piDDSurface->BltFast(iDestX, iDestY, m_pSurface, &rcSrc,  DDBLTFAST_SRCCOLORKEY);
-				hr = screenDest->piDDSurface->Blt(&rcDest, screenSrc->piDDSurface, &rcSrc, DDBLT_KEYSRC | DDBLT_WAIT, &ddbfx);
+
+                //DigiWatchSaver
+				if (g_pData->settings.directDraw.basicSurfaceKey)
+					hr = screenDest->piDDSurface->Blt(&rcDest, screenSrc->piDDSurface, &rcSrc, DDBLTFAST_SRCCOLORKEY, &ddbfx);
+				else
+					hr = screenDest->piDDSurface->Blt(&rcDest, screenSrc->piDDSurface, &rcSrc, DDBLT_KEYSRC | DDBLT_WAIT, &ddbfx);
 			}
 			else
 			{

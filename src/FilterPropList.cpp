@@ -258,6 +258,15 @@ HRESULT FilterPropList::GetFilterProperties(LPWSTR *pfilterName, int *pCount, UI
 					if (caGUID.pElems)
 						CoTaskMemFree(caGUID.pElems);
 				}
+/*				else
+				{
+					IAMVfwCompressDialogs* pCompDialog = NULL;
+					if ((pFilter->QueryInterface(IID_IAMVfwCompressDialogs, (void **)&pCompDialog) == S_OK) && (pCompDialog != NULL))
+					{
+						HRESULT hr = pCompDialog->ShowDialog(VfwCompressDialog_Config, NULL);
+						pCompDialog->Release();
+					}
+				}*/
 			}
 			filterInfo.pGraph->Release(); 
 			refCount = pFilter->Release();
@@ -304,7 +313,17 @@ HRESULT FilterPropList::ShowFilterProperties(HWND hWnd, LPWSTR filterName, int i
 						}
 						CoTaskMemFree(caGUID.pElems);
 					}
-				}
+				}/*
+				else
+				{
+					IAMVfwCompressDialogs* pCompDialog = NULL;
+					if ((pFilter->QueryInterface(IID_IAMVfwCompressDialogs, (void **)&pCompDialog) == S_OK) && (pCompDialog != NULL))
+					{
+						HRESULT hr = pCompDialog->ShowDialog(VfwCompressDialog_Config, hWnd);
+						pCompDialog->Release();
+						return hr;
+					}
+				}*/
 				filterInfo.pGraph->Release(); 
 			}
 			refCount = pFilter->Release();

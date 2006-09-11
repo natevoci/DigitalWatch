@@ -65,6 +65,7 @@ AppData::AppData()
 	//SETTINGS
 	settings.application.multiple = FALSE;
 	settings.application.disableScreenSaver = TRUE;
+	settings.application.pauseScreenSaver = TRUE;
 	settings.application.priority = ABOVE_NORMAL_PRIORITY_CLASS;
 	settings.application.affinity = FALSE;
 	settings.application.refClock = 3;
@@ -114,6 +115,8 @@ AppData::AppData()
 	settings.window.rememberWindowPosition = TRUE;
 	settings.window.quietOnMinimise = FALSE;
 	settings.window.closeBuffersOnMinimise = FALSE;
+
+	settings.directDraw.basicSurfaceKey = FALSE;
 
 	settings.audio.volume = 100;
 	settings.audio.bMute = FALSE;
@@ -165,7 +168,7 @@ AppData::AppData()
 	settings.dsnetwork.format = 0;
 	settings.dsnetwork.ipaddr = new wchar_t[MAX_PATH];
 	wcscpy(settings.dsnetwork.ipaddr, L"224.0.0.1");
-	settings.dsnetwork.port = 0;
+	settings.dsnetwork.port = 1234;
 	settings.dsnetwork.nicaddr = new wchar_t[MAX_PATH];
 	wcscpy(settings.dsnetwork.nicaddr, L"127.0.0.1");
 
@@ -377,6 +380,9 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 			if (_wcsicmp(selection, L"disableScreenSaver") == 0)
 				return GetBool(settings.application.disableScreenSaver);
 
+			if (_wcsicmp(selection, L"pauseScreenSaver") == 0)
+				return GetBool(settings.application.pauseScreenSaver);
+
 			if (_wcsicmp(selection, L"priority") == 0)
 				return GetPriority(settings.application.priority);
 
@@ -473,6 +479,16 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 
 			if (_wcsicmp(selection, L"closeBuffersOnMinimise") == 0)
 				return GetBool(settings.window.closeBuffersOnMinimise);
+
+			return NULL;
+		}
+
+		startsWithLength = strStartsWith(selection, L"directDraw.");
+		if (startsWithLength > 0)
+		{
+			selection += startsWithLength;
+			if (_wcsicmp(selection, L"basicSurfaceKey") == 0)
+				return GetBool(settings.directDraw.basicSurfaceKey);
 
 			return NULL;
 		}
@@ -933,6 +949,11 @@ HRESULT AppData::LoadSettings()
 					settings.application.disableScreenSaver = (_wcsicmp(pSubElement->value, L"true") == 0);
 					continue;
 				}
+				if (_wcsicmp(pSubElement->name, L"pauseScreenSaver") == 0)
+				{
+					settings.application.pauseScreenSaver = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 				if (_wcsicmp(pSubElement->name, L"priority") == 0 && pSubElement->value)
 				{
 					if (_wcsicmp(pSubElement->value, L"RealTime") == 0)
@@ -1193,6 +1214,20 @@ HRESULT AppData::LoadSettings()
 					continue;
 				}
 
+			}
+			continue;
+		}
+		if (_wcsicmp(element->name, L"DirectDraw") == 0)
+		{
+			int subCount = element->Elements.Count();
+			for ( int subItem=0 ; subItem<subCount ; subItem++ )
+			{
+				XMLElement *pSubElement = element->Elements.Item(subItem);
+				if (_wcsicmp(pSubElement->name, L"basicSurfaceKey") == 0)
+				{
+					settings.directDraw.basicSurfaceKey = (_wcsicmp(pSubElement->value, L"true") == 0);
+					continue;
+				}
 			}
 			continue;
 		}
@@ -1593,6 +1628,7 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 	{
 		pApplication->Elements.Add(new XMLElement(L"MultipleInstances", (settings.application.multiple ? L"True" : L"False")));
 		pApplication->Elements.Add(new XMLElement(L"DisableScreenSaver", (settings.application.disableScreenSaver ? L"True" : L"False")));
+		pApplication->Elements.Add(new XMLElement(L"PauseScreenSaver", (settings.application.pauseScreenSaver ? L"True" : L"False")));
 		switch (settings.application.priority)
 		{
 			case REALTIME_PRIORITY_CLASS:
@@ -1711,6 +1747,12 @@ HRESULT AppData::SaveSettings(BOOL bUpdate)
 		pWindow->Elements.Add(new XMLElement(L"RememberWindowPosition", (settings.window.rememberWindowPosition ? L"True" : L"False")));
 		pWindow->Elements.Add(new XMLElement(L"QuietOnMinimise", (settings.window.quietOnMinimise ? L"True" : L"False")));
 		pWindow->Elements.Add(new XMLElement(L"CloseBuffersOnMinimise", (settings.window.closeBuffersOnMinimise ? L"True" : L"False")));
+	}
+
+	XMLElement *pDirectDraw = new XMLElement(L"DirectDraw");
+	file.Elements.Add(pDirectDraw);
+	{
+		pDirectDraw->Elements.Add(new XMLElement(L"BasicSurfaceKey", (settings.directDraw.basicSurfaceKey ? L"True" : L"False")));
 	}
 
 	XMLElement *pAudio = new XMLElement(L"Audio");

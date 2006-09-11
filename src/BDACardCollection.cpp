@@ -255,7 +255,7 @@ HRESULT BDACardCollection::SetCardPosition(int index, int dir)
 			}
 			else
 			{
-				if (count < cards.size())
+				if (count < (int)cards.size())
 				{
 					it++;
 					it++;

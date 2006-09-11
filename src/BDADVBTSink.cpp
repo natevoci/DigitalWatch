@@ -26,6 +26,7 @@
 #include "BDADVBTSinkTShift.h"
 #include "BDADVBTSinkDSNet.h"
 #include "BDADVBTSinkFile.h"
+#include "TSFileSource/SharedMemory.h"
 #include "Globals.h"
 #include "LogMessage.h"
 
@@ -583,9 +584,144 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 
 	*pllFileSize = 0;
 
-	HRESULT hr = E_FAIL;
+	HRESULT hr = S_OK;
+
+	SharedMemory *pSharedMemory = new SharedMemory(20000); //only enough for a info file
+	BOOL bSharedMemory = FALSE;
+
+	while (!bSharedMemory)
+	{
+		if (hr != S_OK && !bSharedMemory)
+			bSharedMemory = TRUE;
+
+		pSharedMemory->SetShareMode(bSharedMemory);
+
+		// If it's a .tsbuffer file then get info from file
+		long length = wcslen(pFileName);
+		if ((length >= 9) && (_wcsicmp(pFileName+length-9, L".tsbuffer") == 0))
+		{
+
+		//	(log << "Opening File to get size: " << pFileName << "\n").Write();
+			HANDLE hFile = pSharedMemory->CreateFile(W2T(pFileName),   // The filename
+								 (DWORD)GENERIC_READ,          // File access
+								 (DWORD)(FILE_SHARE_READ |
+								 FILE_SHARE_WRITE),       // Share access
+								 NULL,                  // Security
+								 (DWORD)OPEN_EXISTING,         // Open flags
+	//							 (DWORD) 0,             // More flags
+								 (DWORD)FILE_ATTRIBUTE_NORMAL, // More flags
+								 NULL);                 // Template
+			if (hFile != INVALID_HANDLE_VALUE)
+			{
+				__int64 length = -1;
+				DWORD read = 0;
+				LARGE_INTEGER li;
+				li.QuadPart = 0;
+				pSharedMemory->SetFilePointer(hFile, li.LowPart, &li.HighPart, FILE_BEGIN);
+				pSharedMemory->ReadFile(hFile, (PVOID)&length, (DWORD)sizeof(__int64), &read, NULL);
+				pSharedMemory->CloseHandle(hFile);
+
+				if(length > -1)
+				{
+					*pllFileSize = length;
+				}
+			
+				hr = S_OK; //return no size yet
+				break;
+			}
+			else
+			{
+				wchar_t msg[MAX_PATH];
+				DWORD dwErr = GetLastError();
+				swprintf((LPWSTR)&msg, L"Failed to open file %s : 0x%x\n", pFileName, dwErr);
+				::OutputDebugString(W2T((LPWSTR)&msg));
+				hr = HRESULT_FROM_WIN32(dwErr);
+				continue;
+			}
+		}
+		else //Normal File type & info file type
+		{
+			TCHAR infoName[512];
+			strcpy(infoName, W2T(pFileName));
+			strcat(infoName, ".info");
+
+			HANDLE hInfoFile = pSharedMemory->CreateFile((LPCTSTR) infoName, // The filename
+											(DWORD)GENERIC_READ,    // File access
+											(DWORD)(FILE_SHARE_READ |
+											FILE_SHARE_WRITE),   // Share access
+											NULL,      // Security
+											(DWORD)OPEN_EXISTING,    // Open flags
+	//										(DWORD) 0,             // More flags
+											(DWORD)FILE_ATTRIBUTE_NORMAL, // More flags
+											NULL);
+
+			if (hInfoFile != INVALID_HANDLE_VALUE)
+			{
+				__int64 length = -1;
+				DWORD read = 0;
+				LARGE_INTEGER li;
+				li.QuadPart = 0;
+				pSharedMemory->SetFilePointer(hInfoFile, li.LowPart, &li.HighPart, FILE_BEGIN);
+				pSharedMemory->ReadFile(hInfoFile, (PVOID)&length, (DWORD)sizeof(__int64), &read, NULL);
+				pSharedMemory->CloseHandle(hInfoFile);
+
+				if(length > -1)
+				{
+					*pllFileSize = length;
+				}
+
+				hr = S_OK; //return no size yet
+				break;
+			}
+
+			//Test file is being recorded to
+			HANDLE hFile = CreateFile(W2T(pFileName),		// The filename
+								(DWORD)GENERIC_READ,				// File access
+								(DWORD)(FILE_SHARE_READ |
+								FILE_SHARE_WRITE),			// Share access
+								NULL,						// Security
+								(DWORD)OPEN_EXISTING,				// Open flags
+	//							(DWORD) 0,             // More flags
+								(DWORD)FILE_ATTRIBUTE_NORMAL,		// More flags
+								NULL);						// Template
+
+			if (hFile == INVALID_HANDLE_VALUE)
+			{
+				DWORD dwErr = GetLastError();
+				hr = HRESULT_FROM_WIN32(dwErr);
+				continue;
+			}
+
+			DWORD dwSizeLow;
+			DWORD dwSizeHigh;
+
+			dwSizeLow = GetFileSize(hFile, &dwSizeHigh);
+			if ((dwSizeLow == 0xFFFFFFFF) && (GetLastError() != NO_ERROR ))
+			{
+				CloseHandle(hFile);
+				hr = E_FAIL;
+				continue;
+			}
+
+			CloseHandle(hFile);
+
+			LARGE_INTEGER li;
+			li.LowPart = dwSizeLow;
+			li.HighPart = dwSizeHigh;
+			*pllFileSize = li.QuadPart;
+			hr = S_OK;
+			break;
+		}
+		hr = E_FAIL;
+	};
+
+	delete pSharedMemory;
+	return hr;
+		
+//	return S_OK;
 
 
+/*
 	// If it's a .tsbuffer file then get info from file
 	long length = wcslen(pFileName);
 	if ((length >= 9) && (_wcsicmp(pFileName+length-9, L".tsbuffer") == 0))
@@ -693,7 +829,7 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 		li.HighPart = dwSizeHigh;
 		*pllFileSize = li.QuadPart;
 	}
-	return S_OK;
+	return S_OK;*/
 }
 	
 HRESULT BDADVBTSink::UpdateTSFileSink(BOOL bAutoMode)

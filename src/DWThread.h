@@ -43,6 +43,7 @@ private:
 	HANDLE m_hStopEvent;
 	HANDLE m_threadHandle;
 	static void thread_function(void* p);
+	BOOL m_bThreadStarted;
 };
 
 #endif

@@ -263,6 +263,22 @@ SOURCE=.\src\TSFileSource\ITSFileSource.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\src\TSFileSource\ITSParserSink.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\TSFileSource\ITSParserSource.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\TSFileSource\SharedMemory.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\TSFileSource\SharedMemory.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\src\TSFileSinkGuids.h
 # End Source File
 # Begin Source File
@@ -284,6 +300,14 @@ SOURCE=.\src\TSFileSource\TSFileStreamList.cpp
 # Begin Source File
 
 SOURCE=.\src\TSFileSource\TSFileStreamList.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\TSFileSource\TSParserSinkGuids.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\TSFileSource\TSParserSourceGuids.h
 # End Source File
 # End Group
 # Begin Group "TimeShifting"

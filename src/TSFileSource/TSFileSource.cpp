@@ -1014,7 +1014,7 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	}
 
 	// render SD video if no other video was rendered for audio only streams
-	if (videoStreamsRendered == 0)
+	if (videoStreamsRendered == 0 && !bForceConnect)
 	{
 		DVBTChannels_Service* pService = new DVBTChannels_Service();
 		pService->SetLogCallback(m_pLogCallback);
@@ -1046,14 +1046,14 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	}
 
 	// render ac3 audio if preferred
-	if (g_pData->settings.application.ac3Audio)
+	if (g_pData->settings.application.ac3Audio && !bForceConnect)
 	{
 		hr = AddDemuxPinsAC3(pService, pmt, &audioStreamsRendered, bRender);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
 	// render mp2 audio if prefered
-	else if (g_pData->settings.application.mpg2Audio)
+	else if (g_pData->settings.application.mpg2Audio && !bForceConnect)
 	{
 		hr = AddDemuxPinsMp2(pService, pmt, &audioStreamsRendered, bRender);
 		if(FAILED(hr) && bForceConnect)
@@ -1098,7 +1098,7 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBase
 	}
 
 	// render mp2 audio if no other audio was rendered for Video only streams
-	if (audioStreamsRendered == 0)
+	if (audioStreamsRendered == 0 && !bForceConnect)
 	{
 		DVBTChannels_Service* pService = new DVBTChannels_Service();
 		pService->SetLogCallback(m_pLogCallback);

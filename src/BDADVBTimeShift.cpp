@@ -2981,14 +2981,14 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IB
 	}
 
 	// render ac3 audio if prefered
-	if (g_pData->settings.application.ac3Audio)
+	if (g_pData->settings.application.ac3Audio && !bForceConnect)
 	{
 		hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
 	// render mp2 audio if prefered
-	else if (g_pData->settings.application.mpg2Audio)
+	else if (g_pData->settings.application.mpg2Audio && !bForceConnect)
 	{
 		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
 		if(FAILED(hr) && bForceConnect)

@@ -1,5 +1,5 @@
 /**
-*  ITSFileSink.h
+*  ITSParserSink.h
 *  Copyright (C) 2005      nate
 *  Copyright (C) 2006      bear
 *
@@ -25,11 +25,11 @@
 */
 
 
-// {0d2620cd-a57a-4458-b96f-76442b70e9c7}
-DEFINE_GUID(IID_ITSFileSink,
-0x0d2620cd, 0xa57a, 0x4458, 0xb9, 0x6f, 0x76, 0x44, 0x2b, 0x70, 0xe9, 0xc7);
+// {76635ECE-EFD6-464e-84A3-F86E37364009}
+DEFINE_GUID(IID_ITSParserSink,
+0x76635ece, 0xefd6, 0x464e, 0x84, 0xa3, 0xf8, 0x6e, 0x37, 0x36, 0x40, 0x9);
 
-DECLARE_INTERFACE_(ITSFileSink, IUnknown)
+DECLARE_INTERFACE_(ITSParserSink, IUnknown)
 {
 	STDMETHOD(GetBufferSize) (THIS_ long * size) PURE;
 	STDMETHOD(SetRegSettings) (void) PURE;

@@ -821,7 +821,7 @@ HRESULT TVControl::ExecuteCommandsImmediate(LPCWSTR command)
 			(log << "Function '" << parseLine.LHS.Function << "' called but has no implementation.\n").Write();
 		}
 		pCurr += parseLine.GetLength();
-		skipWhitespaces(pCurr);
+		skipWhitespaces((LPCWSTR &)pCurr);
 	}
 
 	delete[] pCommand;
@@ -1067,6 +1067,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		g_pData->settings.application.disableScreenSaver = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetPauseScreenSaver") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.application.pauseScreenSaver = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetPriority") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -1155,6 +1163,14 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		g_pData->settings.window.closeBuffersOnMinimise = g_pData->GetBool(command->LHS.Parameter[0]);
 		return g_pData->SaveSettings();
 	}
+	else if (_wcsicmp(pCurr, L"SetBasicSurfaceKey") == 0)
+	{
+		if (command->LHS.ParameterCount != 1)
+			return (log << "TVControl::ExecuteGlobalCommand - Expecting 1 parameter: " << command->LHS.Function << "\n").Show(E_FAIL);
+
+		g_pData->settings.directDraw.basicSurfaceKey = g_pData->GetBool(command->LHS.Parameter[0]);
+		return g_pData->SaveSettings();
+	}
 	else if (_wcsicmp(pCurr, L"SetStartWithAudioMuted") == 0)
 	{
 		if (command->LHS.ParameterCount != 1)
@@ -1226,8 +1242,10 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 
 		if (_wcsicmp(command->LHS.Parameter[0], L"Auto") == 0)
 		{
-			LPWSTR pValue = NULL;
-			strCopy(pValue, g_pData->settings.timeshift.bufferMinutes);
+			LPWSTR pValue = new wchar_t[MAX_PATH];
+			wsprintfW(pValue, L"%i", g_pData->settings.timeshift.bufferMinutes);
+//			LPWSTR pValue = NULL;
+//			strCopy(pValue, g_pData->settings.timeshift.bufferMinutes);
 
 			if FAILED(GetInputBox(g_pData->hWnd, L"Sets The Time Shift Buffer Size in Minutes", &pValue) == FALSE )
 			{
@@ -1317,8 +1335,10 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetResumeSize") == 0)
 	{
-		LPWSTR pValue = NULL;
-		strCopy(pValue, g_pData->settings.application.resumesize);
+		LPWSTR pValue = new wchar_t[MAX_PATH];
+		wsprintfW(pValue, L"%i", g_pData->settings.application.resumesize);
+//		LPWSTR pValue = NULL;
+//		strCopy(pValue, g_pData->settings.application.resumesize);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The Max Number of Resume Items to be Saved", &pValue) == FALSE )
 		{
@@ -1338,8 +1358,10 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetLogBufferLimit") == 0)
 	{
-		LPWSTR pValue = NULL;
-		strCopy(pValue, g_pData->settings.application.logBufferLimit);
+		LPWSTR pValue = new wchar_t[MAX_PATH];
+		wsprintfW(pValue, L"%i", g_pData->settings.application.logBufferLimit);
+//		LPWSTR pValue = NULL;
+//		strCopy(pValue, g_pData->settings.application.logBufferLimit);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The Max Number of Log Items held in the Buffer before writing to file", &pValue) == FALSE )
 		{
@@ -1359,8 +1381,10 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetWarningOSDTime") == 0)
 	{
-		LPWSTR pValue = NULL;
-		strCopy(pValue, g_pData->settings.application.warningOSDTime);
+		LPWSTR pValue = new wchar_t[MAX_PATH];
+		wsprintfW(pValue, L"%i", g_pData->settings.application.warningOSDTime);
+//		LPWSTR pValue = NULL;
+//		strCopy(pValue, g_pData->settings.application.warningOSDTime);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For Warning Messages", &pValue) == FALSE )
 		{
@@ -1380,8 +1404,10 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetRecordOSDTime") == 0)
 	{
-		LPWSTR pValue = NULL;
-		strCopy(pValue, g_pData->settings.application.recordOSDTime);
+		LPWSTR pValue = new wchar_t[MAX_PATH];
+		wsprintfW(pValue, L"%i", g_pData->settings.application.recordOSDTime);
+//		LPWSTR pValue = NULL;
+//		strCopy(pValue, g_pData->settings.application.recordOSDTime);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For the Recording Message", &pValue) == FALSE )
 		{
@@ -1401,8 +1427,10 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetSignalOSDTime") == 0)
 	{
-		LPWSTR pValue = NULL;
-		strCopy(pValue, g_pData->settings.application.signalOSDTime);
+		LPWSTR pValue = new wchar_t[MAX_PATH];
+		wsprintfW(pValue, L"%i", g_pData->settings.application.signalOSDTime);
+//		LPWSTR pValue = NULL;
+//		strCopy(pValue, g_pData->settings.application.signalOSDTime);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For the Signal Status Message", &pValue) == FALSE )
 		{
@@ -1422,8 +1450,10 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetPositionOSDTime") == 0)
 	{
-		LPWSTR pValue = NULL;
-		strCopy(pValue, g_pData->settings.application.positionOSDTime);
+		LPWSTR pValue = new wchar_t[MAX_PATH];
+		wsprintfW(pValue, L"%i", g_pData->settings.application.positionOSDTime);
+//		LPWSTR pValue = NULL;
+//		strCopy(pValue, g_pData->settings.application.positionOSDTime);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For the File Position Message", &pValue) == FALSE )
 		{
@@ -1443,8 +1473,10 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetChannelOSDTime") == 0)
 	{
-		LPWSTR pValue = NULL;
-		strCopy(pValue, g_pData->settings.application.channelOSDTime);
+		LPWSTR pValue = new wchar_t[MAX_PATH];
+		wsprintfW(pValue, L"%i", g_pData->settings.application.channelOSDTime);
+//		LPWSTR pValue = NULL;
+//		strCopy(pValue, g_pData->settings.application.channelOSDTime);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The OSD Display Time For the Channel Message", &pValue) == FALSE )
 		{
@@ -1551,8 +1583,9 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	}
 	else if (_wcsicmp(pCurr, L"SetDSNetworkPort") == 0)
 	{
-		LPWSTR pValue;
-		strCopy(pValue, g_pData->settings.dsnetwork.port);
+		LPWSTR pValue = new wchar_t[MAX_PATH];
+		wsprintfW(pValue, L"%i", g_pData->settings.dsnetwork.port);
+//		strCopy(pValue, g_pData->settings.dsnetwork.port);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The DSNetwork Port Number", &pValue) == FALSE )
 			return S_OK;
@@ -2672,6 +2705,12 @@ HRESULT TVControl::OnMove()
 
 HRESULT TVControl::OnTimer(int wParam)
 {
+	LPWSTR str = g_pOSD->Data()->GetItem(L"warnings");
+	WINDOWPLACEMENT wPlace;
+	GetWindowPlacement(g_pData->hWnd, &wPlace);
+
+	BOOL bResult = SetWindowPlacement(g_pData->hWnd, &wPlace);
+
 	switch (wParam)
 	{
 	case TIMER_RECORDING_TIMELEFT:	//Every second while recording
@@ -2686,8 +2725,15 @@ HRESULT TVControl::OnTimer(int wParam)
 		return S_OK;
 */
 	case TIMER_DISABLE_POWER_SAVING:	//Every 30 seconds to keep power saving coming on.
-		SetThreadExecutionState(ES_DISPLAY_REQUIRED);
+		if (str && _wcsicmp(str, L"paused") == 0 && g_pData->settings.application.pauseScreenSaver)
+		{}
+		else if (wPlace.showCmd == SW_SHOWMINIMIZED && g_pData->settings.window.quietOnMinimise)
+		{}
+		else
+			SetThreadExecutionState(ES_DISPLAY_REQUIRED);
+
 		return S_OK;
+
 	case TIMER_AUTO_HIDE_CURSOR:	//3 seconds after mouse movement
 		KillTimer(g_pData->hWnd, TIMER_AUTO_HIDE_CURSOR);
 		if (g_pData->values.window.bFullScreen)

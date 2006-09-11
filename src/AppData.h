@@ -61,6 +61,7 @@ public:
 		{
 			BOOL multiple;
 			BOOL disableScreenSaver;
+			BOOL pauseScreenSaver;
 			int priority;
 			BOOL affinity;
 			int refClock;
@@ -123,6 +124,11 @@ public:
 			BOOL quietOnMinimise;
 			BOOL closeBuffersOnMinimise;
 		} window;
+
+		struct DIRECT_DRAW
+		{
+			BOOL basicSurfaceKey;
+		} directDraw;
 
 		struct VALUES_AUDIO
 		{

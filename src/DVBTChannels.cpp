@@ -623,7 +623,7 @@ HRESULT DVBTChannels_Network::LoadFromXML(XMLElement *pElement)
 		while (m_services.size())
 		{
 			long chNumb = MAXLONG;
-			std::vector<DVBTChannels_Service *>::iterator itsave = NULL;
+			std::vector<DVBTChannels_Service *>::iterator itsave;// = NULL; //ORROR
 			std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
 			for (; it < m_services.end(); it++)
 			{

@@ -88,7 +88,7 @@ BOOL ParseLine::ParseFunction(LPWSTR &strCurr, BOOL bRHS)
 {
 	BOOL bResult = FALSE;
 
-	skipWhitespaces(strCurr);
+	skipWhitespaces((LPCWSTR &)strCurr);
 
 	LPWSTR startOfFunction = strCurr;
 
@@ -102,19 +102,19 @@ BOOL ParseLine::ParseFunction(LPWSTR &strCurr, BOOL bRHS)
 		strCopy(LHS.FunctionName, strCurr, endOfToken - strCurr);
 
 	strCurr = endOfToken;
-	skipWhitespaces(strCurr);
+	skipWhitespaces((LPCWSTR &)strCurr);
 
 	if (strCurr[0] == '(')
 	{
 		strCurr++;
-		skipWhitespaces(strCurr);
+		skipWhitespaces((LPCWSTR &)strCurr);
 		if (strCurr[0] != ')')
 		{
 			strCurr--;
 			do
 			{
 				strCurr++;
-				skipWhitespaces(strCurr);
+				skipWhitespaces((LPCWSTR &)strCurr);
 				
 				if (strCurr[0] == '"')
 				{
@@ -160,7 +160,7 @@ BOOL ParseLine::ParseFunction(LPWSTR &strCurr, BOOL bRHS)
 
 					strCurr = nextChr;
 				}
-				skipWhitespaces(strCurr);
+				skipWhitespaces((LPCWSTR &)strCurr);
 			}
 			while (strCurr[0] == ',');
 		}
@@ -181,7 +181,7 @@ BOOL ParseLine::ParseFunction(LPWSTR &strCurr, BOOL bRHS)
 
 	if (!m_bIgnoreRHS)
 	{
-		skipWhitespaces(strCurr);
+		skipWhitespaces((LPCWSTR &)strCurr);
 
 		if (strCurr[0] == '=')
 		{

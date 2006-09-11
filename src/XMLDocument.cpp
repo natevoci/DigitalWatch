@@ -333,7 +333,7 @@ HRESULT XMLDocument::Parse()
 		switch (token)
 		{
 		case tokenWhitespace:
-			skipWhitespaces(pToken);
+			skipWhitespaces((LPCWSTR &)pToken);
 			break;
 
 		case tokenEndOfLine:
@@ -420,7 +420,7 @@ HRESULT XMLDocument::ParseElement(XMLElement *pElement)
 		switch (token)
 		{
 		case tokenWhitespace:
-			skipWhitespaces(pToken);
+			skipWhitespaces((LPCWSTR &)pToken);
 			break;
 
 		case tokenEndOfLine:
@@ -523,7 +523,7 @@ HRESULT XMLDocument::ParseAttribute(XMLAttribute *pAttribute)
 		switch (token)
 		{
 		case tokenWhitespace:
-			skipWhitespaces(pToken);
+			skipWhitespaces((LPCWSTR &)pToken);
 			break;
 
 		case tokenEndOfLine:
@@ -560,7 +560,7 @@ HRESULT XMLDocument::ParseAttributeValue(XMLAttribute *pAttribute)
 	HRESULT hr;
 	BOOL bInQuote = FALSE;
 
-	skipWhitespaces(m_pCurr);
+	skipWhitespaces((LPCWSTR &)m_pCurr);
 	if (m_pCurr[0] == '"')
 	{
 		m_pCurr += 1;
@@ -660,7 +660,7 @@ HRESULT XMLDocument::ParseElementData(XMLElement *pElement)
 		switch (token)
 		{
 		case tokenWhitespace:
-			skipWhitespaces(pToken);
+			skipWhitespaces((LPCWSTR &)pToken);
 			break;
 
 		case tokenEndOfLine:
@@ -714,7 +714,7 @@ HRESULT XMLDocument::ParseElementEnd()
 		switch (token)
 		{
 		case tokenWhitespace:
-			skipWhitespaces(pToken);
+			skipWhitespaces((LPCWSTR &)pToken);
 			break;
 
 		case tokenEndOfLine:

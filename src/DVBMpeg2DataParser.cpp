@@ -548,11 +548,10 @@ HRESULT DVBMpeg2DataParser::EndScan()
 	if (!m_bThreadStarted)
 		return S_OK;
 
-	m_bThreadStarted = FALSE;
-
 	SetEvent(m_hScanningStopEvent[0]);
 	WaitForThreadToFinish();
 
+	m_bThreadStarted = FALSE;
 	return S_OK;
 }
 
@@ -594,7 +593,6 @@ void DVBMpeg2DataParser::StartScanThread()
 				if (dwWait != WAIT_TIMEOUT)
 					break;
 				Sleep(100);
-//				Sleep(100);
 				continue;
 			}
 

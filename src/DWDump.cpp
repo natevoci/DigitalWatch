@@ -146,7 +146,9 @@ STDMETHODIMP DWDumpInputPin::ReceiveCanBlock()
 
 HRESULT DWDumpInputPin::Run(REFERENCE_TIME tStart)
 {
-	StartThread();
+	if (!m_WriteThreadActive && IsConnected())
+		StartThread();
+
 	return CBaseInputPin::Run(tStart);
 }
 

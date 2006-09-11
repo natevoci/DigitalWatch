@@ -1,8 +1,7 @@
 /**
-*  TSFileSourceGuids.h
-*  Copyright (C) 2003      bisswanger
-*  Copyright (C) 2004-2006 bear
+*  TSParserSinkGuids.h
 *  Copyright (C) 2005      nate
+*  Copyright (C) 2006      bear
 *
 *  This file is part of TSFileSource, a directshow push source filter that
 *  provides an MPEG transport stream output.
@@ -21,29 +20,20 @@
 *  along with TSFileSource; if not, write to the Free Software
 *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 *
-*  bisswanger can be reached at WinSTB@hotmail.com
-*    Homepage: http://www.winstb.de
-*
-*  bear and nate can be reached on the forums at
+*  authors can be reached on the forums at
 *    http://forums.dvbowners.com/
 */
 
-#ifndef TSFILESOURCEGUIDS_H
-#define TSFILESOURCEGUIDS_H
+#ifndef TSPARSERSINKGUIDS_H
+#define TSPARSERSINKGUIDS_H
 
-// {4F8BF30C-3BEB-43a3-8BF2-10096FD28CF2} New
-DEFINE_GUID(CLSID_TSFileSource,
-0x4f8bf30c, 0x3beb, 0x43a3, 0x8b, 0xf2, 0x10, 0x9, 0x6f, 0xd2, 0x8c, 0xf2);
+// {72BBD8CE-5C1B-49a5-B3A6-E046EF964421}
+DEFINE_GUID(CLSID_TSParserSink,
+0x72bbd8ce, 0x5c1b, 0x49a5, 0xb3, 0xa6, 0xe0, 0x46, 0xef, 0x96, 0x44, 0x21);
 
-// Old Property Page
-// {66ED15AB-CCAC-4346-BB0A-9CFFE671411A}
-//DEFINE_GUID(CLSID_TSFileSourceProp,
-//0x66ed15ab, 0xccac, 0x4346, 0xbb, 0x0a, 0x9c, 0xff, 0xe6, 0x71, 0x41, 0x1A);
-
-// New Property Page
-// {69046395-162D-48e8-98D3-1E4897F1C0F2} New
-DEFINE_GUID(CLSID_TSFileSourceProp, 
-0x69046395, 0x162d, 0x48e8, 0x98, 0xd3, 0x1e, 0x48, 0x97, 0xf1, 0xc0, 0xf2);
+// {7EC273AF-4DB9-4cc3-8828-0C222BA7B545}
+DEFINE_GUID(CLSID_TSParserSinkProp, 
+0x7ec273af, 0x4db9, 0x4cc3, 0x88, 0x28, 0xc, 0x22, 0x2b, 0xa7, 0xb5, 0x45);
 
 #endif
 

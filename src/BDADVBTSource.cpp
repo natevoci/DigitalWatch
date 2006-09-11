@@ -125,7 +125,9 @@ HRESULT BDADVBTSource::Initialise(DWGraph* pFilterGraph)
 	(log << "Initialising BDA Source\n").Write();
 	LogMessageIndent indent(&log);
 
-	for (int i = 0; i < g_pOSD->Data()->GetListCount(channels.GetListName()); i++)
+	int i = 0;
+
+	for (i = 0; i < g_pOSD->Data()->GetListCount(channels.GetListName()); i++)
 	{
 		if (g_pOSD->Data()->GetListFromListName(channels.GetListName()) != &channels)
 		{
@@ -1817,7 +1819,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 	}
 
 	// render SD video if no other video was rendered for audio only streams
-	if (videoStreamsRendered == 0)
+	if (videoStreamsRendered == 0 && !bForceConnect)
 	{
 		DVBTChannels_Service* pService = new DVBTChannels_Service();
 		pService->SetLogCallback(m_pLogCallback);
@@ -1848,14 +1850,14 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 	}
 
 	// render ac3 audio if prefered
-	if (g_pData->settings.application.ac3Audio)
+	if (g_pData->settings.application.ac3Audio && !bForceConnect)
 	{
 		hr = AddDemuxPinsAC3(pService, &audioStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
 			return hr;
 	}
 	// render mp2 audio if prefered
-	else if (g_pData->settings.application.mpg2Audio)
+	else if (g_pData->settings.application.mpg2Audio && !bForceConnect)
 	{
 		hr = AddDemuxPinsMp2(pService, &audioStreamsRendered);
 		if(FAILED(hr) && bForceConnect)
@@ -1900,7 +1902,7 @@ HRESULT BDADVBTSource::AddDemuxPins(DVBTChannels_Service* pService, CComPtr<IBas
 	}
 
 	// render mp2 audio if no other audio was rendered for Video only streams
-	if (audioStreamsRendered == 0)
+	if (audioStreamsRendered == 0 && !bForceConnect)
 	{
 		DVBTChannels_Service* pService = new DVBTChannels_Service();
 		pService->SetLogCallback(m_pLogCallback);
@@ -2249,7 +2251,7 @@ void BDADVBTSource::UpdateData(long frequency, long bandwidth)
 	}
 
 	REFERENCE_TIME rtEnd = timeGetTime();
-	long timespan = rtEnd - rtStart;
+	long timespan = (long)(rtEnd - rtStart);
 	if (timespan > 1000)
 		(log << "Retrieving signal stats took " << timespan << " for " << m_pCurrentTuner->GetCardName() << "\n").Write();
 

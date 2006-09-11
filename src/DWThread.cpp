@@ -51,10 +51,18 @@ DWThread::~DWThread()
 
 HRESULT DWThread::StartThread()
 {
+	if (m_bThreadStarted)
+		return S_FALSE;
+
+	m_bThreadStarted = TRUE;
+
 	ResetEvent(m_hStopEvent);
 	unsigned long m_threadHandle = _beginthread(&DWThread::thread_function, 0, (void *) this);
 	if (m_threadHandle == (unsigned long)INVALID_HANDLE_VALUE)
+	{
+		m_bThreadStarted = FALSE;
 		return E_FAIL;
+	}
 
 	return S_OK;
 }
@@ -63,6 +71,9 @@ HRESULT DWThread::StopThread(DWORD dwTimeoutMilliseconds)
 {
 	HRESULT hr = S_OK;
 
+	if (!m_bThreadStarted)
+		return S_OK;
+
 	SetEvent(m_hStopEvent);
 	DWORD result = WaitForSingleObject(m_hDoneEvent, dwTimeoutMilliseconds);
 
@@ -70,15 +81,18 @@ HRESULT DWThread::StopThread(DWORD dwTimeoutMilliseconds)
 	{
 		TerminateThread(m_threadHandle, -1);
 		CloseHandle(m_threadHandle);
+		m_bThreadStarted = FALSE;
 		hr = S_FALSE;
 	}
 	else if (result != WAIT_OBJECT_0)
 	{
+		m_bThreadStarted = FALSE;
 		DWORD err = GetLastError();
 		return HRESULT_FROM_WIN32(err);
 	}
 
 	m_threadHandle = INVALID_HANDLE_VALUE;
+	m_bThreadStarted = FALSE;
 
 	return hr;
 }

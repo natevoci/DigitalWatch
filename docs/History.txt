@@ -3,6 +3,15 @@ DigitalWatch History
 --------------------
  Changes
   ```````
+Version 2.0.7.6
+bear:
+Changes:
+- Added some code to solve a thread crashing issue where it was trying to start a thread when it was already running.
+- Fixed a problem with the SetDSNetworkPort function where it was causing a crash when the value was less than 4 digits.
+- Added a option for a basic surface key render for DigitalWatchSaver so the OSD uses less cpu for slower systems. Default is False.
+- Added a Screen Saver disable option for paused playback to the settings.xml, also will now disable screensaver if the application has been minimised with the quiet on minimised option enabled.
+- Updated TSFileSource Filter ver 2.2.0.8 Beta 6.
+
 Version 2.0.7.5
 bear:
 Changes:

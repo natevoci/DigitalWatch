@@ -31,6 +31,7 @@
 #include <bdamedia.h>
 #include "TSFileSinkGuids.h"
 #include "TSFileSource/ITSFileSink.h"
+#include "TSFileSource/ITSParserSink.h"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -482,7 +483,13 @@ HRESULT BDADVBTSinkTShift::SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAut
 	HRESULT hr = E_NOINTERFACE;
 	CComQIPtr <ITSFileSink, &IID_ITSFileSink> piTSFileSink(pFilter);
 	if(!piTSFileSink)
-		return (log << "Failed to get ITSFileSink interface from IBaseFilter filter: " << hr << "\n").Write(hr);
+	{
+		CComQIPtr <ITSParserSink, &IID_ITSParserSink> piTSParserSink(pFilter);
+		if(!piTSParserSink)
+			return (log << "Failed to get ITSFileSink or ITSParserSink interface from IBaseFilter filter: " << hr << "\n").Write(hr);
+		else
+			piTSParserSink.CopyTo((ITSParserSink**)&piTSFileSink);
+	}
 
 	//Do auto set of buffer files.
 	if (bAutoMode)
@@ -514,7 +521,7 @@ HRESULT BDADVBTSinkTShift::SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAut
 	piTSFileSink->SetMaxTSFiles((USHORT)maxNumbFiles);
 
 	__int64 bufferFileSize = (__int64)max(10, g_pData->values.timeshift.bufferfilesize);	
-	bufferFileSize = (__int64)min(500, bufferFileSize);
+	bufferFileSize = (__int64)min(1024, bufferFileSize);
 	bufferFileSize *= (__int64)1048576;
 	g_pData->values.timeshift.bufferfilesize = bufferFileSize/1048576;
 	piTSFileSink->SetChunkReserve(bufferFileSize);
