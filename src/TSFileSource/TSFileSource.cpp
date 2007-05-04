@@ -838,7 +838,8 @@ HRESULT TSFileSource::LoadResumePosition()
 						}
 					}
 
-					Seek(lPosition);
+					if (lPosition != 0)
+						Seek(lPosition);
 				}
 				else
 					SeekTo(100);
@@ -1450,7 +1451,7 @@ HRESULT TSFileSource::SeekTo(long percentage)
 	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
 		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
 
-	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest-(__int64)20000000));
+	rtLatest = (__int64)max(rtEarliest, (__int64)(rtLatest/*-(__int64)20000000*/));
 
 	if (percentage > 100)
 		percentage = 100;
@@ -1503,10 +1504,10 @@ HRESULT TSFileSource::GetPosition(long *position)
 
 	CComQIPtr<IMediaSeeking> piMediaSeeking(m_piGraphBuilder);
 
-	REFERENCE_TIME rtNow, rtEarliest, rtLatest;
+	REFERENCE_TIME rtNow; //, rtEarliest, rtLatest;
 
-	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
-		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
+//	if FAILED(hr = piMediaSeeking->GetAvailable(&rtEarliest, &rtLatest))
+//		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
 
 	if FAILED(hr = piMediaSeeking->GetCurrentPosition(&rtNow))
 		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
@@ -1810,6 +1811,21 @@ HRESULT TSFileSource::LoadMediaStreamType(USHORT pid, LPWSTR pwszMediaType, DVBT
 }
 
 
+void PrintTime(__int64 value, __int64 divider)
+{
+	TCHAR sz[100];
+	long ms = (long)(value / divider);
+	long secs = ms / 1000;
+	long mins = secs / 60;
+	long hours = mins / 60;
+	ms = ms % 1000;
+	secs = secs % 60;
+	mins = mins % 60;
+	wsprintf(sz, TEXT("%02i:%02i:%02i.%03i"), hours, mins, secs, ms);
+	::OutputDebugString(sz);
+}
+
+
 HRESULT TSFileSource::UpdateData()
 {
 	HRESULT hr;
@@ -1818,6 +1834,7 @@ HRESULT TSFileSource::UpdateData()
 		return S_OK;
 
 	CComQIPtr<IMediaSeeking> piMediaSeeking(m_piGraphBuilder);
+
 	if (piMediaSeeking)
 	{
 		REFERENCE_TIME rtCurrent, rtEarliest, rtLatest;
@@ -1828,6 +1845,20 @@ HRESULT TSFileSource::UpdateData()
 		if FAILED(hr = piMediaSeeking->GetCurrentPosition(&rtCurrent))
 			return (log << "Failed to get current time: " << hr << "\n").Write(hr);
 
+/*
+		REFERENCE_TIME rtCurrent2;
+		CComQIPtr<IMediaSeeking> piTSMediaSeeking(m_pTSFileSource);
+		if FAILED(hr = piTSMediaSeeking->GetCurrentPosition(&rtCurrent2))
+			return (log << "Failed to get current time: " << hr << "\n").Write(hr);
+
+		::OutputDebugString(TEXT("Current Positions -\t"));
+		PrintTime(rtCurrent2, 10000);
+		::OutputDebugString(TEXT("\t\t"));
+		PrintTime(rtCurrent, 10000);
+		::OutputDebugString(TEXT("\t\t"));
+		PrintTime(rtCurrent2 - rtCurrent, 10000);
+		::OutputDebugString(TEXT("\n"));
+*/
 		WCHAR sz[MAX_PATH];
 
 		if (m_bTimeShiftService && g_pData->settings.timeshift.localTime)

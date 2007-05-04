@@ -34,7 +34,7 @@ static BOOL CALLBACK DirectDrawEnumCB(GUID FAR *lpGUID, LPSTR lpDriverDescriptio
 DWDirectDraw::DWDirectDraw()
 {
 	m_hWnd = 0;
-	m_nBackBufferWidth = 768;
+	m_nBackBufferWidth = 1024;
 	m_nBackBufferHeight = 576;
 
 	m_bAddEnumeratedDevices = FALSE;
