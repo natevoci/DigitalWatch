@@ -1,0 +1,6 @@
+<!-- Utsjoki broadcast frequencies
+
+
+<Network Frequency="658000" Bandwidth="8" />	<!-- C44 -->
+<Network Frequency="714000" Bandwidth="8" />	<!-- C51 -->
+<Network Frequency="770000" Bandwidth="8" />	<!-- C58 -->

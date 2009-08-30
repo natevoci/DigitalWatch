@@ -805,7 +805,7 @@ HRESULT DWGraph::SetVolume(IGraphBuilder *piGraphBuilder, long volume)
 	volume *= volume;
 	volume = -volume;
 	hr = piBasicAudio->put_Volume(volume);
-	if FAILED(hr)
+	if (FAILED(hr) && hr != 0x8878001E) //DSERR_CONTROLUNAVAIL
 		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
 
 	return S_OK;
@@ -831,7 +831,7 @@ HRESULT DWGraph::Mute(IGraphBuilder *piGraphBuilder, BOOL bMute)
 	value *= value;
 	value = -value;
 	hr = piBasicAudio->put_Volume(value);
-	if FAILED(hr)
+	if FAILED(hr && hr != 0x8878001E) //DSERR_CONTROLUNAVAIL
 		return (log << "Failed to set volume: " << hr << "\n").Write(hr);
 
 	return S_OK;

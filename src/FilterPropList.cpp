@@ -198,7 +198,7 @@ HRESULT FilterPropList::FindListItem(LPWSTR name, int *pIndex)
 	if FAILED(hr = LoadFilterList(FALSE))
 		return (log << "Failed to get a Filter Property List: " << hr << "\n").Write(hr);
 
-	for (int index = 1; index < m_list.size(); index++)
+	for (int index = 1; index < (int)m_list.size(); index++)
 	{
 		if (wcsstr(m_list[index]->name, name) != NULL)
 		{

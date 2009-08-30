@@ -1,0 +1,6 @@
+<!-- Vaasa broadcast frequencies
+
+
+<Network Frequency="602000" Bandwidth="8" />	<!-- C37 -->
+<Network Frequency="610000" Bandwidth="8" />	<!-- C38 -->
+<Network Frequency="746000" Bandwidth="8" />	<!-- C55 -->

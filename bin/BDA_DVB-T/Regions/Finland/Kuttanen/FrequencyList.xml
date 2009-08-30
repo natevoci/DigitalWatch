@@ -1,0 +1,6 @@
+<!-- Kuttanen broadcast frequencies
+
+
+<Network Frequency="522000" Bandwidth="8" />	<!-- C27 -->
+<Network Frequency="730000" Bandwidth="8" />	<!-- C53 -->
+<Network Frequency="770000" Bandwidth="8" />	<!-- C58 -->

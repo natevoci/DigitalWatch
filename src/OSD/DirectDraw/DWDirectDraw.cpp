@@ -76,21 +76,21 @@ HRESULT DWDirectDraw::Init(HWND hWnd)
 	{
 		(log << "Enumerating Primary DirectDraw devices\n").Write();
 		LogMessageIndent indent2(&log);
-		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, NULL);
+		hr = DirectDrawEnumerateExA(&DirectDrawEnumCB, this, NULL);
 		if (FAILED(hr))
 			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
 	}
 	{
 		(log << "Enumerating Attached DirectDraw devices\n").Write();
 		LogMessageIndent indent2(&log);
-		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
+		hr = DirectDrawEnumerateExA(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
 		if (FAILED(hr))
 			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
 	}
 	{
 		(log << "Enumerating Detached DirectDraw devices\n").Write();
 		LogMessageIndent indent2(&log);
-		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_DETACHEDSECONDARYDEVICES);
+		hr = DirectDrawEnumerateExA(&DirectDrawEnumCB, this, DDENUM_DETACHEDSECONDARYDEVICES);
 		if (FAILED(hr))
 			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
 	}
@@ -99,7 +99,7 @@ HRESULT DWDirectDraw::Init(HWND hWnd)
 	{	
 		(log << "Enumerating DirectDraw devices\n").Write();
 		LogMessageIndent indent2(&log);
-		hr = DirectDrawEnumerateEx(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
+		hr = DirectDrawEnumerateExA(&DirectDrawEnumCB, this, DDENUM_ATTACHEDSECONDARYDEVICES);
 		if (FAILED(hr))
 			return (log << "Failed to enumerate devices : " << hr << "\n").Write(hr);
 	}

@@ -1,0 +1,6 @@
+<!-- Tervola broadcast frequencies
+
+
+<Network Frequency="626000" Bandwidth="8" />	<!-- C40 -->
+<Network Frequency="642000" Bandwidth="8" />	<!-- C42 -->
+<Network Frequency="658000" Bandwidth="8" />	<!-- C44 -->

@@ -25,6 +25,7 @@
 //#pragma warning (disable : 4995)
 
 #include "StdAfx.h"
+
 #include "LogMessage.h"
 
 class AppData : LogMessageCaller

@@ -9,6 +9,7 @@
 #include <Windows.h>
 #include <WindowsX.h>
 #include <tchar.h>
+#include <strsafe.h>
 #include <stdio.h>
 #include "D3DUtil.h"
 #include "DXUtil.h"

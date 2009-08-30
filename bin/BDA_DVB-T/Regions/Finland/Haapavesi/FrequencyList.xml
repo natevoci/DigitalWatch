@@ -1,0 +1,6 @@
+<!-- Haapavesi broadcast frequencies
+
+
+<Network Frequency="578000" Bandwidth="8" />	<!-- C34 -->
+<Network Frequency="642000" Bandwidth="8" />	<!-- C42 -->
+<Network Frequency="730000" Bandwidth="8" />	<!-- C53 -->

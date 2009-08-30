@@ -1,0 +1,6 @@
+<!-- Vuokatti broadcast frequencies
+
+
+<Network Frequency="546000" Bandwidth="8" />	<!-- C30 -->
+<Network Frequency="722000" Bandwidth="8" />	<!-- C52 -->
+<Network Frequency="746000" Bandwidth="8" />	<!-- C55 -->

@@ -286,7 +286,7 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 			delete[] *ppFileName;
 
 		*ppFileName = new WCHAR[MAX_PATH];
-		wcscpy(*ppFileName, L"");
+		StringCchCopyW(*ppFileName, MAX_PATH, L"");
 
 		//
 		// Add the Date/Time Stamp to the FileName 
@@ -296,7 +296,7 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 		WCHAR wfileName[MAX_PATH] = L"";
 		WCHAR wServiceName[MAX_PATH] = L"";
 
-		wcscpy(wServiceName, pService->serviceName);
+		StringCchCopyW(wServiceName, MAX_PATH, pService->serviceName);
 	
 		_tzset();
 		struct tm *tmTime;
@@ -307,55 +307,55 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 
 
 		if (pPath != NULL)
-			  wcscpy(wPathName, pPath);
+			  StringCchCopyW(wPathName, MAX_PATH, pPath);
 		else
 			if ((intSinkType == 1 || intSinkType == 11 || intSinkType == 111) &&
 					g_pData->settings.timeshift.folder)
-				wcscpy(wPathName, g_pData->settings.timeshift.folder);
+				StringCchCopyW(wPathName, MAX_PATH, g_pData->settings.timeshift.folder);
 			else
 			{
-				wcscpy(wPathName, g_pData->settings.capture.folder);
+				StringCchCopyW(wPathName, MAX_PATH, g_pData->settings.capture.folder);
 				if (wcslen(g_pData->settings.capture.fileName))
-					wcscpy(wServiceName, g_pData->settings.capture.fileName);
+					StringCchCopyW(wServiceName, MAX_PATH, g_pData->settings.capture.fileName);
 			}
 
         //ensures that there's always a back slash at the end
         wPathName[wcslen(wPathName)] = char(92*(int)(wPathName[wcslen(wPathName)-1]!=char(92)));
 
 		if (intSinkType == 1)
-			wsprintfW(*ppFileName, L"%S%S %S.full.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.full.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 11)
-			wsprintfW(*ppFileName, L"%S%S %S.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 111)
-			wsprintfW(*ppFileName, L"%S%S %S.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.mpg.tsbuffer", wPathName, wTimeStamp, wServiceName);
 		else if (pFileName == NULL)
 		{	
 		     if (intSinkType == 2) 
-			wsprintfW(*ppFileName, L"%S%S %S.full.ts", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.full.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 22) 
-			wsprintfW(*ppFileName, L"%S%S %S.ts", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.ts", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 3) 
-			wsprintfW(*ppFileName, L"%S%S %S.mpg", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.mpg", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 4) 
-			wsprintfW(*ppFileName, L"%S%S %S.mv2", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.mv2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 5) 
-			wsprintfW(*ppFileName, L"%S%S %S.mp2", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.mp2", wPathName, wTimeStamp, wServiceName);
 		else if (intSinkType == 6)
-			wsprintfW(*ppFileName, L"%S%S %S.txt", wPathName, wTimeStamp, wServiceName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s %s.txt", wPathName, wTimeStamp, wServiceName);
 		}
 		else
 		{	 if (intSinkType == 2) 
-			wsprintfW(*ppFileName, L"%S%S.full.ts", wPathName, pFileName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s.full.ts", wPathName, pFileName);
 		else if (intSinkType == 22) 
-			wsprintfW(*ppFileName, L"%S%S.ts", wPathName, pFileName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s.ts", wPathName, pFileName);
 		else if (intSinkType == 3) 
-			wsprintfW(*ppFileName, L"%S%S.mpg", wPathName, pFileName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s.mpg", wPathName, pFileName);
 		else if (intSinkType == 4) 
-			wsprintfW(*ppFileName, L"%S%S.mv2", wPathName, pFileName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s.mv2", wPathName, pFileName);
 		else if (intSinkType == 5) 
-			wsprintfW(*ppFileName, L"%S%S.mp2", wPathName, pFileName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s.mp2", wPathName, pFileName);
 		else if (intSinkType == 6)
-			wsprintfW(*ppFileName, L"%S%S.txt", wPathName, pFileName);
+			StringCchPrintfW(*ppFileName, MAX_PATH, L"%s%s.txt", wPathName, pFileName);
 		}
 
 		//
@@ -378,12 +378,13 @@ HRESULT BDADVBTSink::AddFileName(LPOLESTR *ppFileName, DVBTChannels_Service* pSe
 			return (log << "Failed to query Sink filter for IMulticastConfig: " << hr << "\n").Write(hr);
 
 		TCHAR sz[32];
-		sprintf(sz,"%S",g_pData->settings.dsnetwork.nicaddr);
-		if FAILED(hr = piMulticastConfig->SetNetworkInterface(inet_addr (sz))) //0 == INADDR_ANY
+		StringCchPrintf(sz, 32, "%S", g_pData->settings.dsnetwork.nicaddr);
+		USES_CONVERSION;
+		if FAILED(hr = piMulticastConfig->SetNetworkInterface(inet_addr(T2A(sz)))) //0 == INADDR_ANY
 			return (log << "Failed to set network interface for Sink filter: " << hr << "\n").Write(hr);
 
-		sprintf(sz,"%S",g_pData->settings.dsnetwork.ipaddr);
-		ULONG ulIP = inet_addr(sz) + 256*256*256*m_cardId;
+		StringCchPrintf(sz, 32, "%S", g_pData->settings.dsnetwork.ipaddr);
+		ULONG ulIP = inet_addr(T2A(sz)) + 256*256*256*m_cardId;
 		if FAILED(hr = piMulticastConfig->SetMulticastGroup(ulIP, htons((unsigned short)g_pData->settings.dsnetwork.port)))
 			return (log << "Failed to set multicast group for Sink filter: " << hr << "\n").Write(hr);
 		piMulticastConfig->Release();
@@ -602,7 +603,7 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 		{
 
 		//	(log << "Opening File to get size: " << pFileName << "\n").Write();
-			HANDLE hFile = pSharedMemory->CreateFile(W2T(pFileName),   // The filename
+			HANDLE hFile = pSharedMemory->CreateFile(W2A(pFileName),   // The filename
 								 (DWORD)GENERIC_READ,          // File access
 								 (DWORD)(FILE_SHARE_READ |
 								 FILE_SHARE_WRITE),       // Share access
@@ -633,7 +634,7 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 			{
 				wchar_t msg[MAX_PATH];
 				DWORD dwErr = GetLastError();
-				swprintf((LPWSTR)&msg, L"Failed to open file %s : 0x%x\n", pFileName, dwErr);
+				StringCchPrintfW((LPWSTR)&msg, MAX_PATH, L"Failed to open file %s : 0x%x\n", pFileName, dwErr);
 				::OutputDebugString(W2T((LPWSTR)&msg));
 				hr = HRESULT_FROM_WIN32(dwErr);
 				continue;
@@ -642,10 +643,10 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 		else //Normal File type & info file type
 		{
 			TCHAR infoName[512];
-			strcpy(infoName, W2T(pFileName));
-			strcat(infoName, ".info");
+			StringCchCopy(infoName, 512, W2T(pFileName));
+			StringCchCat(infoName, 512, ".info");
 
-			HANDLE hInfoFile = pSharedMemory->CreateFile((LPCTSTR) infoName, // The filename
+			HANDLE hInfoFile = pSharedMemory->CreateFile(T2A(infoName), // The filename
 											(DWORD)GENERIC_READ,    // File access
 											(DWORD)(FILE_SHARE_READ |
 											FILE_SHARE_WRITE),   // Share access
@@ -757,7 +758,7 @@ HRESULT BDADVBTSink::GetSinkSize(LPOLESTR pFileName, __int64 *pllFileSize)
 		{
 			wchar_t msg[MAX_PATH];
 			DWORD dwErr = GetLastError();
-			swprintf((LPWSTR)&msg, L"Failed to open file %s : 0x%x\n", pFileName, dwErr);
+			StringCchPrintfW((LPWSTR)&msg, MAX_PATH, L"Failed to open file %s : 0x%x\n", pFileName, dwErr);
 			::OutputDebugString(W2T((LPWSTR)&msg));
 			return HRESULT_FROM_WIN32(dwErr);
 		}

@@ -152,7 +152,7 @@ BOOL CFilterDescription::createInstance()
 
    TCHAR tempDesc[1024]; 
     WCHAR filterDesc[1024]; 
-   wsprintf(tempDesc, TEXT("%s"), filterID.c_str()); 
+   StringCchPrintfW(tempDesc, 1024, TEXT("%s"), filterID.c_str()); 
 
 #ifndef UNICODE 
     MultiByteToWideChar(CP_ACP, 0, tempDesc, -1, filterDesc, NUMELMS(filterDesc)); 

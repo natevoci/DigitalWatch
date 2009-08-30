@@ -1,0 +1,6 @@
+<!-- Inari broadcast frequencies
+
+
+<Network Frequency="506000" Bandwidth="8" />	<!-- C25 -->
+<Network Frequency="562000" Bandwidth="8" />	<!-- C32 -->
+<Network Frequency="690000" Bandwidth="8" />	<!-- C48 -->

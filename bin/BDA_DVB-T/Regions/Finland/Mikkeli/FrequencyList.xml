@@ -1,0 +1,6 @@
+<!-- Mikkeli broadcast frequencies
+
+
+<Network Frequency="538000" Bandwidth="8" />	<!-- C29 -->
+<Network Frequency="650000" Bandwidth="8" />	<!-- C43 -->
+<Network Frequency="786000" Bandwidth="8" />	<!-- C59 -->

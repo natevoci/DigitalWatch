@@ -1,0 +1,6 @@
+<!-- Tampere broadcast frequencies
+
+
+<Network Frequency="490000" Bandwidth="8" />	<!-- C23 -->
+<Network Frequency="578000" Bandwidth="8" />	<!-- C34 -->
+<Network Frequency="770000" Bandwidth="8" />	<!-- C58 -->

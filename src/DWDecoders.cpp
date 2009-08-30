@@ -26,7 +26,14 @@
 #include "DWOnScreenDisplay.h"
 #include "DirectDraw/DWRendererDirectDraw.h"
 #include "VMR9Bitmap/DWRendererVMR9Bitmap.h"
+/*
+// {B87BEB7B-8D29-423f-AE4D-6582C10175AC}
+static const GUID CLSID_VideoMixingRenderer = {0xB87BEB7B, 0x8D29, 0x423f, {0xAE, 0x4D, 0x65, 0x82, 0xC1, 0x01, 0x75, 0xAC}};
 
+// {51b4abf3-748f-4e3b-a276-c828330e926a}
+static const GUID CLSID_VideoMixingRenderer9 = {0x51b4abf3, 0x748f, 0x4e3b, {0xa2, 0x76, 0xc8, 0x28, 0x33, 0x0e, 0x92, 0x6a}};
+
+*/
 //////////////////////////////////////////////////////////////////////
 // DWDecoder
 //////////////////////////////////////////////////////////////////////
@@ -759,6 +766,8 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 			DWDecoder *dec = new DWDecoder(element);
 			strCopy((*dec).name, (*dec).Name());
 			strCopy((*dec).index, item+1);
+			(*dec).maskname = new wchar_t[1];
+			(*dec).maskname[0] = 0;
 
 			LPWSTR pMaskName = new WCHAR[MAX_PATH];
 			int element2Count = element->Elements.Count();
@@ -770,7 +779,7 @@ HRESULT DWDecoders::Load(LPWSTR filename)
 					XMLAttribute *attr = element2->Attributes.Item(L"name");
 					if (attr)
 					{
-						wsprintfW(pMaskName, L"%S%S ", (*dec).maskname, attr->value);
+						StringCchPrintfW(pMaskName, MAX_PATH, L"%s%s ", (*dec).maskname, attr->value);
 						strCopy((*dec).maskname, pMaskName);
 					}
 				}

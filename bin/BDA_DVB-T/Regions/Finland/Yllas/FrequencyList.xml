@@ -1,0 +1,6 @@
+<!-- Yllas broadcast frequencies
+
+
+<Network Frequency="546000" Bandwidth="8" />	<!-- C30 -->
+<Network Frequency="594000" Bandwidth="8" />	<!-- C36 -->
+<Network Frequency="786000" Bandwidth="8" />	<!-- C59 -->

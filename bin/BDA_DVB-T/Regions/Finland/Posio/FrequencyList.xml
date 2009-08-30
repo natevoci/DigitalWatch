@@ -1,0 +1,6 @@
+<!-- Posio broadcast frequencies
+
+
+<Network Frequency="554000" Bandwidth="8" />	<!-- C31 -->
+<Network Frequency="618000" Bandwidth="8" />	<!-- C39 -->
+<Network Frequency="762000" Bandwidth="8" />	<!-- C57 -->

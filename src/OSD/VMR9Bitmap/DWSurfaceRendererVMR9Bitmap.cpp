@@ -360,7 +360,7 @@ HRESULT DWSurfaceRendererVMR9Bitmap::LoadBitmap()
 		wchar_t file[MAX_PATH];
 		swprintf((LPWSTR)&file, L"%s%s", g_pData->application.appPath, m_szBitmap);
 
-		hr = D3DXLoadSurfaceFromFile(m_pD3DSurface, NULL, NULL, W2A((LPWSTR)&file), NULL, D3DX_FILTER_NONE, dwColorKey, NULL);
+		hr = D3DXLoadSurfaceFromFileW(m_pD3DSurface, NULL, NULL, (LPWSTR)&file, NULL, D3DX_FILTER_NONE, dwColorKey, NULL);
 	}
 	else
 	{

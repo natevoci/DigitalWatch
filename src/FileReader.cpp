@@ -50,7 +50,7 @@ HRESULT FileReader::Open(LPCWSTR filename)
 {
 	USES_CONVERSION;
 
-	m_hFile = CreateFile(W2T(filename), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	m_hFile = CreateFileW(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	return (m_hFile != INVALID_HANDLE_VALUE) ? S_OK : E_FAIL;
 }
 
@@ -115,7 +115,7 @@ BOOL FileReader::ReadMore()
 		int length = wcslen(m_pBuffer) + strlen((LPSTR)&tmpBuffer);
 
 		LPWSTR pBuffer = new wchar_t[length + 1];
-		swprintf(pBuffer, L"%s%S", m_pBuffer, (LPSTR)&tmpBuffer);
+		StringCchPrintfW(pBuffer, length + 1, L"%s%S", m_pBuffer, (LPSTR)&tmpBuffer);
 
 		delete[] m_pBuffer;
 		m_pBuffer = pBuffer;

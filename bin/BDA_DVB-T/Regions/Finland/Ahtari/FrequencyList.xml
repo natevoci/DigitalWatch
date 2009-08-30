@@ -1,0 +1,7 @@
+<!-- Finaland broadcast frequencies
+
+<!-- Band UHF -->
+<Network Frequency="658000" Bandwidth="8" />	<!-- C44 -->
+<Network Frequency="722000" Bandwidth="8" />	<!-- C52 -->
+<Network Frequency="754000" Bandwidth="8" />	<!-- C56 -->
+

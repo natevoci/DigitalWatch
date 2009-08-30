@@ -111,14 +111,14 @@ BOOL FileWriter::Open(LPCWSTR filename, BOOL append)
 	//Open the file for writing
 	if (append)
 	{
-		m_hFile = CreateFile(W2T(filename), GENERIC_WRITE, NULL, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		m_hFile = CreateFileW(filename, GENERIC_WRITE, NULL, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		LARGE_INTEGER li;
 		li.QuadPart = 0;
 		::SetFilePointer(m_hFile, li.LowPart, &li.HighPart, FILE_END);
 	}
 	else
 	{
-		m_hFile = CreateFile(W2T(filename), GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		m_hFile = CreateFileW(filename, GENERIC_WRITE, NULL, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	}
 	return (m_hFile != INVALID_HANDLE_VALUE);
 }

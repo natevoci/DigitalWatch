@@ -119,7 +119,7 @@ HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 	};
 
 	filterList.Initialise(m_piGraphBuilder);
-	for (i = 0; i < g_pOSD->Data()->GetListCount(filterList.GetListName()); i++)
+	for (int i = 0; i < g_pOSD->Data()->GetListCount(filterList.GetListName()); i++)
 	{
 		if (g_pOSD->Data()->GetListFromListName(filterList.GetListName()) != &filterList)
 		{
@@ -134,7 +134,7 @@ HRESULT TSFileSource::Initialise(DWGraph* pFilterGraph)
 
 	wchar_t file[MAX_PATH];
 
-	swprintf((LPWSTR)&file, L"%sTSFileSource\\Keys.xml", g_pData->application.appPath);
+	StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%sTSFileSource\\Keys.xml", g_pData->application.appPath);
 	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
 		return hr;
 
@@ -475,12 +475,12 @@ HRESULT TSFileSource::LoadFile(LPWSTR pFilename, DVBTChannels_Service* pService,
 		if (wcsstr(g_pData->settings.timeshift.folder, L"\\") != g_pData->settings.timeshift.folder + wcslen(g_pData->settings.timeshift.folder))
 		{
 			temp = new WCHAR[wcslen(g_pData->settings.timeshift.folder) + wcslen(L"\\") + wcslen(pFilename) + 1];
-			wsprintfW(temp, L"%S\\%S", g_pData->settings.timeshift.folder, pFilename);
+			StringCchPrintfW(temp, MAX_PATH, L"%s\\%s", g_pData->settings.timeshift.folder, pFilename);
 		}
 		else
 		{
 			temp = new WCHAR[wcslen(g_pData->settings.timeshift.folder) + wcslen(pFilename) + 1];
-			wsprintfW(temp, L"%S%S", g_pData->settings.timeshift.folder, pFilename);
+			StringCchPrintfW(temp, MAX_PATH, L"%s%s", g_pData->settings.timeshift.folder, pFilename);
 		}
 		pFilename = temp;
 	}
@@ -833,7 +833,7 @@ HRESULT TSFileSource::LoadResumePosition()
 							_tzset();
 							time_t lCurrentTime;
 							time(&lCurrentTime);
-							lPosition = max(0, lPosition - (lCurrentTime - rtLatest/10000000));
+							lPosition = max(0, lPosition - (long)((long)lCurrentTime - (long)(rtLatest/10000000)));
 (log << "Setting Position to : " << lPosition << "\n").Write();
 						}
 					}
@@ -876,7 +876,7 @@ HRESULT TSFileSource::SaveResumePosition()
 		{
 (log << "Saving Current Position to : " << lPosition << "\n").Write();
 			time_t lTime = m_lLocalStartTime + lPosition;
-			lPosition = lTime;
+			lPosition = (long)lTime;
 (log << "Saving Current Time Position to : " << lPosition << "\n").Write();
 		}
 
@@ -1138,9 +1138,9 @@ HRESULT TSFileSource::AddDemuxPins(DVBTChannels_Service* pService, DVBTChannels_
 		ULONG Pid = pService->GetStreamPID(streamType, currentStream);
 
 		wchar_t text[32];
-		swprintf((wchar_t*)&text, pPinName);
+		StringCchPrintfW((wchar_t*)&text, 32, pPinName);
 		if (bMultipleStreams && currentStream > 0)
-			swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
+			StringCchPrintfW((wchar_t*)&text, 32, L"%s %i", pPinName, currentStream+1);
 
 		CComPtr <IPin> piPin;
 
@@ -1512,7 +1512,7 @@ HRESULT TSFileSource::GetPosition(long *position)
 	if FAILED(hr = piMediaSeeking->GetCurrentPosition(&rtNow))
 		return (log << "Failed to get available times: " << hr << "\n").Write(hr);
 
-	*position = rtNow/10000000;
+	*position = (long)(rtNow/10000000);
 
 	return S_OK;
 }
@@ -1821,7 +1821,7 @@ void PrintTime(__int64 value, __int64 divider)
 	ms = ms % 1000;
 	secs = secs % 60;
 	mins = mins % 60;
-	wsprintf(sz, TEXT("%02i:%02i:%02i.%03i"), hours, mins, secs, ms);
+	StringCchPrintf(sz, 100, TEXT("%02i:%02i:%02i.%03i"), hours, mins, secs, ms);
 	::OutputDebugString(sz);
 }
 
@@ -1900,7 +1900,7 @@ HRESULT TSFileSource::UpdateData()
 			milli %= 1000;
 			secs %= 60;
 			mins %= 60;
-			swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+			StringCchPrintfW((LPWSTR)&sz, MAX_PATH, L"%02i:%02i:%02i", hours, mins, secs, milli);
 			g_pOSD->Data()->SetItem(L"PositionEarliest", (LPWSTR)&sz);
 
 			milli = (long)(rtCurrent / 10000);
@@ -1910,7 +1910,7 @@ HRESULT TSFileSource::UpdateData()
 			milli %= 1000;
 			secs %= 60;
 			mins %= 60;
-			swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+			StringCchPrintfW((LPWSTR)&sz, MAX_PATH, L"%02i:%02i:%02i", hours, mins, secs, milli);
 			g_pOSD->Data()->SetItem(L"PositionCurrent", (LPWSTR)&sz);
 
 			milli = (long)(rtLatest / 10000);
@@ -1920,7 +1920,7 @@ HRESULT TSFileSource::UpdateData()
 			milli %= 1000;
 			secs %= 60;
 			mins %= 60;
-			swprintf((LPWSTR)&sz, L"%02i:%02i:%02i", hours, mins, secs, milli);
+			StringCchPrintfW((LPWSTR)&sz, MAX_PATH, L"%02i:%02i:%02i", hours, mins, secs, milli);
 			g_pOSD->Data()->SetItem(L"PositionLatest", (LPWSTR)&sz);
 		}
 	}

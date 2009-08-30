@@ -77,11 +77,11 @@ AppData::AppData()
 	settings.application.resumeLastTime = TRUE;
 	settings.application.resumesize = 50;
 	settings.application.lastServiceCmd = new wchar_t[MAX_PATH];
-	wcscpy(settings.application.lastServiceCmd, L"");
+	StringCchCopyW(settings.application.lastServiceCmd, MAX_PATH, L"");
 	settings.application.currentServiceCmd = new wchar_t[MAX_PATH];
-	wcscpy(settings.application.currentServiceCmd, L"");
+	StringCchCopyW(settings.application.currentServiceCmd, MAX_PATH, L"");
 	settings.application.currentRegionPath = new wchar_t[MAX_PATH];
-	wsprintfW(settings.application.currentRegionPath, L"%S\\BDA_DVB-T\\Regions\\Default", application.appPath);
+	StringCchPrintfW(settings.application.currentRegionPath, MAX_PATH, L"%s\\BDA_DVB-T\\Regions\\Default", application.appPath);
 	settings.application.longNetworkName = FALSE;
 	settings.application.orderChannels = TRUE;
 	settings.application.decoderTest = TRUE;
@@ -98,7 +98,7 @@ AppData::AppData()
 	settings.application.audioSwap = FALSE;
 	settings.application.fixedAspectRatio = FALSE;
 //	settings.application.logFilename = new wchar_t[MAX_PATH];
-//	swprintf(settings.application.logFilename, L"%s%s", application.appPath, L"DigitalWatch.log");
+//	StringCchPrintfW(settings.application.logFilename, MAX_PATH, L"%s%s", application.appPath, L"DigitalWatch.log");
 	
 	settings.window.startFullscreen = FALSE;
 	settings.window.startAlwaysOnTop = FALSE;
@@ -135,9 +135,9 @@ AppData::AppData()
 	settings.video.overlay.gamma = 1;
 
 	settings.capture.fileName = new wchar_t[MAX_PATH];
-	wcscpy(settings.capture.fileName, L"");
+	StringCchCopyW(settings.capture.fileName, MAX_PATH, L"");
 	settings.capture.folder = new wchar_t[MAX_PATH];
-	swprintf(settings.capture.folder, L"%s%s", application.appPath, L"Captures");
+	StringCchPrintfW(settings.capture.folder, MAX_PATH, L"%s%s", application.appPath, L"Captures");
 	if (CreateDirectoryW(settings.capture.folder, NULL) < 0)
 		(log << "Failed to Create the Capture directory: " << settings.capture.folder << "\n").Show();
 
@@ -145,7 +145,7 @@ AppData::AppData()
 	settings.capture.format = 2;
 
 	settings.timeshift.folder = new wchar_t[MAX_PATH];
-	swprintf(settings.timeshift.folder, L"%s%s", application.appPath, L"TimeShifting");
+	StringCchPrintfW(settings.timeshift.folder, MAX_PATH, L"%s%s", application.appPath, L"TimeShifting");
 	if (CreateDirectoryW(settings.timeshift.folder, NULL) < 0)
 		(log << "Failed to Create the TimeShifting directory: " << settings.timeshift.folder << "\n").Show();
 
@@ -156,9 +156,9 @@ AppData::AppData()
 	settings.timeshift.flimit = 0;
 	settings.timeshift.fdelay = 0;
 	settings.timeshift.buffer = new wchar_t[MAX_PATH];
-	wcscpy(settings.timeshift.buffer, L"Medium");
+	StringCchCopyW(settings.timeshift.buffer, MAX_PATH, L"Medium");
 	settings.timeshift.change = new wchar_t[MAX_PATH];
-	wcscpy(settings.timeshift.change, L"Fast");
+	StringCchCopyW(settings.timeshift.change, MAX_PATH, L"Fast");
 	settings.timeshift.bufferMinutes = 0;
 	settings.timeshift.format = 2; //0 = none, 1 = FullMux, 2 = TSMux, 3 = MPGMux
 	settings.timeshift.maxnumbfiles = 40;
@@ -167,10 +167,10 @@ AppData::AppData()
 
 	settings.dsnetwork.format = 0;
 	settings.dsnetwork.ipaddr = new wchar_t[MAX_PATH];
-	wcscpy(settings.dsnetwork.ipaddr, L"224.0.0.1");
+	StringCchCopyW(settings.dsnetwork.ipaddr, MAX_PATH, L"224.0.0.1");
 	settings.dsnetwork.port = 1234;
 	settings.dsnetwork.nicaddr = new wchar_t[MAX_PATH];
-	wcscpy(settings.dsnetwork.nicaddr, L"127.0.0.1");
+	StringCchCopyW(settings.dsnetwork.nicaddr, MAX_PATH, L"127.0.0.1");
 
 	CComBSTR bstrCLSID(L"{4F8BF30C-3BEB-43a3-8BF2-10096FD28CF2}");
 	CLSIDFromString(bstrCLSID, &settings.filterguids.filesourceclsid);
@@ -311,7 +311,7 @@ LPWSTR AppData::GetSelectionItem(LPWSTR selection)
 	g_pOSD->Data()->ReplaceTokens(selection, pStrTemp);
 	if (&pStrTemp)
 	{
-		wcscpy((LPWSTR)&StrTemp[0], pStrTemp);
+		StringCchCopyW((LPWSTR)&StrTemp[0], MAX_PATH, pStrTemp);
 		selection = &StrTemp[0];
 		delete[] pStrTemp;
 		pStrTemp = NULL;
@@ -905,7 +905,7 @@ void AppData::MarkValuesChanges()
 HRESULT AppData::LoadSettings()
 {
 	wchar_t filename[MAX_PATH];
-	swprintf((LPWSTR)&filename, L"%s%s", application.appPath, L"Settings.xml");
+	StringCchPrintfW((LPWSTR)&filename, MAX_PATH, L"%s%s", application.appPath, L"Settings.xml");
 
 	//(log << "Loading DVBT Channels file: " << filename << "\n").Write();
 	//LogMessageIndent indent(&log);
@@ -919,9 +919,9 @@ HRESULT AppData::LoadSettings()
 	{
 		USES_CONVERSION;
 		TCHAR szFilename[MAX_PATH];
-		sprintf(szFilename, "%s\\Filters\\DWRegister.bat", W2CA(application.appPath));
+		StringCchPrintfA((STRSAFE_LPSTR)szFilename, MAX_PATH, "%s\\Filters\\DWRegister.bat", application.appPath);
 		(log << "About to run the Filter Register bat File: " << szFilename << "\n").Show();
-		hr = WinExec(szFilename, SW_SHOW);
+		hr = WinExec(T2A(szFilename), SW_SHOW);
 		if (hr <= 31 || hr < 0)
 			(log << "Failed to Run the Filter Register bat File: " << szFilename << "\n").Show(hr);
 
@@ -1049,14 +1049,14 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"LastServiceCmd") == 0)
 				{
 					if (pSubElement->value)
-						wcscpy(settings.application.lastServiceCmd, pSubElement->value);
+						StringCchCopyW(settings.application.lastServiceCmd, MAX_PATH, pSubElement->value);
 
 					continue;
 				}
 				if (_wcsicmp(pSubElement->name, L"CurrentRegionPath") == 0)
 				{
 					if (pSubElement->value)
-						wcscpy(settings.application.currentRegionPath, pSubElement->value);
+						StringCchCopyW(settings.application.currentRegionPath, MAX_PATH, pSubElement->value);
 
 					continue;
 				}
@@ -1357,7 +1357,7 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"Filename") == 0)
 				{
 					if (pSubElement->value)
-						wcscpy(settings.capture.fileName, pSubElement->value);
+						StringCchCopyW(settings.capture.fileName, MAX_PATH, pSubElement->value);
 
 					continue;
 				}
@@ -1365,7 +1365,7 @@ HRESULT AppData::LoadSettings()
 				{
 					if (pSubElement->value)
 					{
-						wcscpy(settings.capture.folder, pSubElement->value);
+						StringCchCopyW(settings.capture.folder, MAX_PATH, pSubElement->value);
 						if (CreateDirectoryW(settings.capture.folder, NULL) < 0)
 							(log << "Failed to Create the Capture directory: " << settings.capture.folder << "\n").Show();
 					}
@@ -1465,7 +1465,7 @@ HRESULT AppData::LoadSettings()
 				{
 					if (pSubElement->value)
 					{
-						wcscpy(settings.timeshift.folder, pSubElement->value);
+						StringCchCopyW(settings.timeshift.folder, MAX_PATH, pSubElement->value);
 						if (CreateDirectoryW(settings.timeshift.folder, NULL) < 0)
 							(log << "Failed to Create the TimeShifting directory: " << settings.timeshift.folder << "\n").Show();
 					}
@@ -1502,7 +1502,7 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"IP-Addr") == 0)
 				{
 					if (pSubElement->value)
-						wcscpy(settings.dsnetwork.ipaddr, pSubElement->value);
+						StringCchCopyW(settings.dsnetwork.ipaddr, MAX_PATH, pSubElement->value);
 
 					continue;
 				}
@@ -1510,7 +1510,7 @@ HRESULT AppData::LoadSettings()
 				if (_wcsicmp(pSubElement->name, L"Nic-Addr") == 0)
 				{
 					if (pSubElement->value)
-						wcscpy(settings.dsnetwork.nicaddr, pSubElement->value);
+						StringCchCopyW(settings.dsnetwork.nicaddr, MAX_PATH, pSubElement->value);
 
 					continue;
 				}
@@ -1616,7 +1616,7 @@ HRESULT AppData::LoadSettings()
 HRESULT AppData::SaveSettings(BOOL bUpdate)
 {
 	wchar_t filename[MAX_PATH];
-	swprintf((LPWSTR)&filename, L"%s%s", application.appPath, L"Settings.xml");
+	StringCchPrintfW((LPWSTR)&filename, MAX_PATH, L"%s%s", application.appPath, L"Settings.xml");
 
 	XMLDocument file;
 	file.SetLogCallback(m_pLogCallback);

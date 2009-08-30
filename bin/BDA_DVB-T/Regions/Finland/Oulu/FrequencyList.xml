@@ -1,0 +1,6 @@
+<!-- Oulu broadcast frequencies
+
+
+<Network Frequency="634000" Bandwidth="8" />	<!-- C41 -->
+<Network Frequency="714000" Bandwidth="8" />	<!-- C51 -->
+<Network Frequency="738000" Bandwidth="8" />	<!-- C54 -->

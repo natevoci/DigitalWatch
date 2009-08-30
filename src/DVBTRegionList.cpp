@@ -223,7 +223,7 @@ HRESULT DVBTRegionList::ParseDirectoryList(LPWSTR path)
 
 	BOOL nextDir = TRUE;
 
-	wsprintfW(newPath, L"%S%S", pathname, L"\\*");
+	StringCchPrintfW(newPath, MAX_PATH, L"%s%S", pathname, L"\\*");
 
 	hFind = FindFirstFileExW(newPath, FindExInfoStandard, &FindFileData,
 	FindExSearchLimitToDirectories, NULL, 0 );
@@ -255,7 +255,7 @@ HRESULT DVBTRegionList::ParseDirectoryList(LPWSTR path)
 			else if (FindFileData.cFileName && (FILE_ATTRIBUTE_DIRECTORY & FindFileData.dwFileAttributes) && wcschr(FindFileData.cFileName, '.') == NULL)
 			{
 				LPWSTR tempPath = new WCHAR[MAX_PATH];
-				wsprintfW(tempPath, L"%S\\%S", pathname, FindFileData.cFileName);
+				StringCchPrintfW(tempPath, MAX_PATH, L"%S\\%S", pathname, FindFileData.cFileName);
 
 				(log << "Searching Directory: " << tempPath << "\n").Write();
 				ParseDirectoryList(tempPath);
@@ -286,7 +286,7 @@ HRESULT DVBTRegionList::MakeFile(LPWSTR filename)
 	else
 		strCopy(pathname, m_filename);
 		
-	wsprintfW(path, L"%S%S", pathname, L"\\Regions");
+	StringCchPrintfW(path, MAX_PATH, L"%S%S", pathname, L"\\Regions");
 	delete[] pathname;
 	
 	ParseDirectoryList(path);

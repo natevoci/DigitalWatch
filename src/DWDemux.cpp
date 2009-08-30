@@ -31,6 +31,7 @@
 #include "Bdatif.h"
 #include "tuner.h"
 #include <commctrl.h>
+
 #include <atlbase.h>
 
 DWDemux::DWDemux() :

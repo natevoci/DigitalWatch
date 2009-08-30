@@ -1,0 +1,6 @@
+<!-- Rovaniemi broadcast frequencies
+
+
+<Network Frequency="610000" Bandwidth="8" />	<!-- C38 -->
+<Network Frequency="650000" Bandwidth="8" />	<!-- C43 -->
+<Network Frequency="674000" Bandwidth="8" />	<!-- C46 -->

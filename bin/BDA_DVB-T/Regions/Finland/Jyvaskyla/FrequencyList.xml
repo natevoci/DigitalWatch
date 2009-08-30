@@ -1,0 +1,6 @@
+<!-- Jyvaskyla broadcast frequencies
+
+
+<Network Frequency="546000" Bandwidth="8" />	<!-- C30 -->
+<Network Frequency="746000" Bandwidth="8" />	<!-- C55 -->
+<Network Frequency="786000" Bandwidth="8" />	<!-- C60 -->

@@ -106,7 +106,7 @@ int LogMessage::AddCallback(LogMessageCallback *callback)
 		{
 			if ((*it)->GetHandle() == handle)
 			{
-				::OutputDebugString("LogMessageCallback added to LogMessage a second time.\n");
+				::OutputDebugStringW(L"LogMessageCallback added to LogMessage a second time.\n");
 				return handle;
 			}
 			it++;
@@ -143,7 +143,7 @@ void LogMessage::WriteLogMessage()
 		if (m_callbacks.size() == 0)
 		{
 			//break here to find messages that aren't getting written to a file
-			::OutputDebugString("This message is not being logged correctly.\n");
+			::OutputDebugStringW(L"This message is not being logged correctly.\n");
 			::OutputDebugStringW(m_pStr);
 		}
 

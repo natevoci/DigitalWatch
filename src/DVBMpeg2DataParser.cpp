@@ -270,7 +270,7 @@ void DVBTransponder::ParseNITDescriptors(unsigned char *buf, int remainingLength
 				if (g_pData->settings.application.longNetworkName)
 				{
 					LPWSTR tsid = new WCHAR [256];
-					wsprintfW(tsid, L"%S - %i", networkName, transportStreamId);
+					StringCchPrintfW(tsid, 256, L"%s - %i", networkName, transportStreamId);
 					strCopy(networkName, tsid);
 				}
 
@@ -690,7 +690,8 @@ HRESULT DVBMpeg2DataParser::ReadSection(DVBSection *pSection)
 {
 	HRESULT hr;
 
-	log.showf(_T("Looking on pid 0x%.4x for tableId 0x%.2x\n"), pSection->pid, pSection->tableId);
+	USES_CONVERSION;
+	log.showf("Looking on pid 0x%.4x for tableId 0x%.2x\n", pSection->pid, pSection->tableId);
 	LogMessageIndent indent(&log);
 
 	CComPtr<ISectionList> piSectionList;
@@ -724,7 +725,7 @@ HRESULT DVBMpeg2DataParser::ReadSection(DVBSection *pSection)
 	}
 	(log << "Supplied data buffer\n").Write();
 
-	DWORD dwWait = WaitForMultipleObjects(2, m_hScanningStopEvent, FALSE, pSection->timeout*1000);
+	DWORD dwWait = WaitForMultipleObjects(2, m_hScanningStopEvent, FALSE, (DWORD)pSection->timeout*1000);
 	(log << "Event or timeout triggered  " << (long)dwWait << "\n").Write();
 
 	if (dwWait == WAIT_OBJECT_0)

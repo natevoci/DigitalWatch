@@ -1,0 +1,6 @@
+<!-- Kiihtelysvaara broadcast frequencies
+
+
+<Network Frequency="514000" Bandwidth="8" />	<!-- C26 -->
+<Network Frequency="650000" Bandwidth="8" />	<!-- C43 -->
+<Network Frequency="786000" Bandwidth="8" />	<!-- C59 -->

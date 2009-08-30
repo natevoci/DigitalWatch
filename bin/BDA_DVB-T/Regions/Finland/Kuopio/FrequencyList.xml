@@ -1,0 +1,6 @@
+<!-- Kuopio broadcast frequencies
+
+
+<Network Frequency="498000" Bandwidth="8" />	<!-- C24 -->
+<Network Frequency="554000" Bandwidth="8" />	<!-- C31 -->
+<Network Frequency="618000" Bandwidth="8" />	<!-- C39 -->

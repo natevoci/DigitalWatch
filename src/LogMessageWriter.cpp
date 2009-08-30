@@ -83,7 +83,7 @@ void LogMessageWriter::FlushLogBuffer(int logSize)
 {
 //	CAutoLock logFileLock(&m_logFileLock);
 	CAutoLock BufferLock(&m_BufferLock);
-	if (m_Array.size() < logSize)
+	if ((int)m_Array.size() < logSize)
 		return;
 
 //	::OutputDebugString(TEXT("LogMessageWriter::ThreadProc:Write."));

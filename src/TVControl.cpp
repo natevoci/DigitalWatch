@@ -88,7 +88,7 @@ HRESULT TVControl::Initialise()
 
 	HRESULT hr;
 	wchar_t file[MAX_PATH];
-	swprintf((LPWSTR)&file, L"%sKeys.xml", g_pData->application.appPath);
+	StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%sKeys.xml", g_pData->application.appPath);
 	if FAILED(hr = m_globalKeyMap.LoadFromFile((LPWSTR)&file))
 		return hr;
 
@@ -707,7 +707,7 @@ HRESULT TVControl::Exit()
 HRESULT TVControl::OnKey(int nKeycode, BOOL bShift, BOOL bCtrl, BOOL bAlt)
 {
 	LPWSTR command = new wchar_t[100];
-	swprintf(command, L"Key(%i, %i, %i, %i)", nKeycode, bShift, bCtrl, bAlt);
+	StringCchPrintfW(command, 100, L"Key(%i, %i, %i, %i)", nKeycode, bShift, bCtrl, bAlt);
 	ExecuteCommandsQueue(command);
 	delete[] command;
 	return S_OK;
@@ -1243,7 +1243,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 		if (_wcsicmp(command->LHS.Parameter[0], L"Auto") == 0)
 		{
 			LPWSTR pValue = new wchar_t[MAX_PATH];
-			wsprintfW(pValue, L"%i", g_pData->settings.timeshift.bufferMinutes);
+			StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.timeshift.bufferMinutes);
 //			LPWSTR pValue = NULL;
 //			strCopy(pValue, g_pData->settings.timeshift.bufferMinutes);
 
@@ -1336,7 +1336,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetResumeSize") == 0)
 	{
 		LPWSTR pValue = new wchar_t[MAX_PATH];
-		wsprintfW(pValue, L"%i", g_pData->settings.application.resumesize);
+		StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.application.resumesize);
 //		LPWSTR pValue = NULL;
 //		strCopy(pValue, g_pData->settings.application.resumesize);
 
@@ -1359,7 +1359,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetLogBufferLimit") == 0)
 	{
 		LPWSTR pValue = new wchar_t[MAX_PATH];
-		wsprintfW(pValue, L"%i", g_pData->settings.application.logBufferLimit);
+		StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.application.logBufferLimit);
 //		LPWSTR pValue = NULL;
 //		strCopy(pValue, g_pData->settings.application.logBufferLimit);
 
@@ -1382,7 +1382,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetWarningOSDTime") == 0)
 	{
 		LPWSTR pValue = new wchar_t[MAX_PATH];
-		wsprintfW(pValue, L"%i", g_pData->settings.application.warningOSDTime);
+		StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.application.warningOSDTime);
 //		LPWSTR pValue = NULL;
 //		strCopy(pValue, g_pData->settings.application.warningOSDTime);
 
@@ -1405,7 +1405,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetRecordOSDTime") == 0)
 	{
 		LPWSTR pValue = new wchar_t[MAX_PATH];
-		wsprintfW(pValue, L"%i", g_pData->settings.application.recordOSDTime);
+		StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.application.recordOSDTime);
 //		LPWSTR pValue = NULL;
 //		strCopy(pValue, g_pData->settings.application.recordOSDTime);
 
@@ -1428,7 +1428,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetSignalOSDTime") == 0)
 	{
 		LPWSTR pValue = new wchar_t[MAX_PATH];
-		wsprintfW(pValue, L"%i", g_pData->settings.application.signalOSDTime);
+		StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.application.signalOSDTime);
 //		LPWSTR pValue = NULL;
 //		strCopy(pValue, g_pData->settings.application.signalOSDTime);
 
@@ -1451,7 +1451,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetPositionOSDTime") == 0)
 	{
 		LPWSTR pValue = new wchar_t[MAX_PATH];
-		wsprintfW(pValue, L"%i", g_pData->settings.application.positionOSDTime);
+		StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.application.positionOSDTime);
 //		LPWSTR pValue = NULL;
 //		strCopy(pValue, g_pData->settings.application.positionOSDTime);
 
@@ -1474,7 +1474,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetChannelOSDTime") == 0)
 	{
 		LPWSTR pValue = new wchar_t[MAX_PATH];
-		wsprintfW(pValue, L"%i", g_pData->settings.application.channelOSDTime);
+		StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.application.channelOSDTime);
 //		LPWSTR pValue = NULL;
 //		strCopy(pValue, g_pData->settings.application.channelOSDTime);
 
@@ -1584,7 +1584,7 @@ HRESULT TVControl::ExecuteGlobalCommand(ParseLine* command)
 	else if (_wcsicmp(pCurr, L"SetDSNetworkPort") == 0)
 	{
 		LPWSTR pValue = new wchar_t[MAX_PATH];
-		wsprintfW(pValue, L"%i", g_pData->settings.dsnetwork.port);
+		StringCchPrintfW(pValue, MAX_PATH, L"%i", g_pData->settings.dsnetwork.port);
 //		strCopy(pValue, g_pData->settings.dsnetwork.port);
 
 		if FAILED(GetInputBox(g_pData->hWnd, L"Sets The DSNetwork Port Number", &pValue) == FALSE )
@@ -2949,7 +2949,7 @@ BOOL CALLBACK GetFolderCallBack(HWND hwnd, UINT msg, LPARAM lpType, LPARAM pData
 			break;
 
 		case BFFM_SELCHANGED: 
-			if (SHGetPathFromIDList((LPITEMIDLIST)lpType , path)) 
+			if (SHGetPathFromIDListA((LPITEMIDLIST)lpType , path)) 
 				SendMessage(hwnd, BFFM_SETSTATUSTEXT, 0, (LPARAM)path);	
 
 			break;
@@ -2964,11 +2964,11 @@ HRESULT TVControl::GetFolder(HWND hwnd, LPWSTR lpwTitle, LPWSTR *lpwFolder)
 
 	TCHAR tmpTitle[MAX_PATH];
 	LPTSTR ptTitle = (LPTSTR)&tmpTitle;
-	sprintf(ptTitle, "%S", lpwTitle);
+	StringCchPrintf(ptTitle, MAX_PATH, "%S", lpwTitle);
 
 	TCHAR tmpFolder[MAX_PATH];
 	LPTSTR ptFolder = (LPTSTR)&tmpFolder;
-	sprintf(ptFolder, "%S", (*lpwFolder));
+	StringCchPrintf(ptFolder, MAX_PATH, "%S", (*lpwFolder));
 
 	LPMALLOC lpMalloc;
 	hr = SHGetMalloc(&lpMalloc);
@@ -2987,10 +2987,10 @@ HRESULT TVControl::GetFolder(HWND hwnd, LPWSTR lpwTitle, LPWSTR *lpwFolder)
 		LPITEMIDLIST pidList = SHBrowseForFolder(&browseInfo);
 		if (pidList)
 		{
-			if (SHGetPathFromIDList(pidList, path)) 
+			if (SHGetPathFromIDListA(pidList, path)) 
 			{
 				USES_CONVERSION;
-				strCopy((*lpwFolder), T2W(path));
+				strCopy(*lpwFolder, A2W(path));
 				hr = S_OK;
 			}
 			else 

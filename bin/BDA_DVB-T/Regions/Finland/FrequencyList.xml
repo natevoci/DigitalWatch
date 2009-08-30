@@ -1,0 +1,66 @@
+<!-- Finaland broadcast frequencies
+
+<!-- Band VHF -->
+<Network Frequency="177500" Bandwidth="7" />	<!-- C05 -->
+<Network Frequency="184500" Bandwidth="7" />	<!-- C06 -->
+<Network Frequency="191500" Bandwidth="7" />	<!-- C07 -->
+<Network Frequency="198500" Bandwidth="7" />	<!-- C08 -->
+<Network Frequency="205500" Bandwidth="7" />	<!-- C09 -->
+<Network Frequency="212500" Bandwidth="7" />	<!-- C10 -->
+<Network Frequency="219500" Bandwidth="7" />	<!-- C11 -->
+<Network Frequency="226500" Bandwidth="7" />	<!-- C12 -->
+
+<!-- Band UHF -->
+<Network Frequency="474000" Bandwidth="8" />	<!-- C21 -->
+<Network Frequency="482000" Bandwidth="8" />	<!-- C22 -->
+<Network Frequency="490000" Bandwidth="8" />	<!-- C23 -->
+<Network Frequency="498000" Bandwidth="8" />	<!-- C24 -->
+<Network Frequency="506000" Bandwidth="8" />	<!-- C25 -->
+<Network Frequency="514000" Bandwidth="8" />	<!-- C26 -->
+<Network Frequency="522000" Bandwidth="8" />	<!-- C27 -->
+<Network Frequency="530000" Bandwidth="8" />	<!-- C28 -->
+<Network Frequency="538000" Bandwidth="8" />	<!-- C29 -->
+
+<Network Frequency="546000" Bandwidth="8" />	<!-- C30 -->
+<Network Frequency="554000" Bandwidth="8" />	<!-- C31 -->
+<Network Frequency="562000" Bandwidth="8" />	<!-- C32 -->
+<Network Frequency="570000" Bandwidth="8" />	<!-- C33 -->
+<Network Frequency="578000" Bandwidth="8" />	<!-- C34 -->
+<Network Frequency="586000" Bandwidth="8" />	<!-- C35 -->
+<Network Frequency="594000" Bandwidth="8" />	<!-- C36 -->
+<Network Frequency="602000" Bandwidth="8" />	<!-- C37 -->
+<Network Frequency="610000" Bandwidth="8" />	<!-- C38 -->
+<Network Frequency="618000" Bandwidth="8" />	<!-- C39 -->
+
+<Network Frequency="626000" Bandwidth="8" />	<!-- C40 -->
+<Network Frequency="634000" Bandwidth="8" />	<!-- C41 -->
+<Network Frequency="642000" Bandwidth="8" />	<!-- C42 -->
+<Network Frequency="650000" Bandwidth="8" />	<!-- C43 -->
+<Network Frequency="658000" Bandwidth="8" />	<!-- C44 -->
+<Network Frequency="666000" Bandwidth="8" />	<!-- C45 -->
+<Network Frequency="674000" Bandwidth="8" />	<!-- C46 -->
+<Network Frequency="682000" Bandwidth="8" />	<!-- C47 -->
+<Network Frequency="690000" Bandwidth="8" />	<!-- C48 -->
+<Network Frequency="698000" Bandwidth="8" />	<!-- C49 -->
+
+<Network Frequency="706000" Bandwidth="8" />	<!-- C50 -->
+<Network Frequency="714000" Bandwidth="8" />	<!-- C51 -->
+<Network Frequency="722000" Bandwidth="8" />	<!-- C52 -->
+<Network Frequency="730000" Bandwidth="8" />	<!-- C53 -->
+<Network Frequency="738000" Bandwidth="8" />	<!-- C54 -->
+<Network Frequency="746000" Bandwidth="8" />	<!-- C55 -->
+<Network Frequency="754000" Bandwidth="8" />	<!-- C56 -->
+<Network Frequency="762000" Bandwidth="8" />	<!-- C57 -->
+<Network Frequency="770000" Bandwidth="8" />	<!-- C58 -->
+<Network Frequency="786000" Bandwidth="8" />	<!-- C59 -->
+
+<Network Frequency="786000" Bandwidth="8" />	<!-- C60 -->
+<Network Frequency="794000" Bandwidth="8" />	<!-- C61 -->
+<Network Frequency="802000" Bandwidth="8" />	<!-- C62 -->
+<Network Frequency="802000" Bandwidth="8" />	<!-- C63 -->
+<Network Frequency="818000" Bandwidth="8" />	<!-- C64 -->
+<Network Frequency="826000" Bandwidth="8" />	<!-- C65 -->
+<Network Frequency="834000" Bandwidth="8" />	<!-- C66 -->
+<Network Frequency="842000" Bandwidth="8" />	<!-- C67 -->
+<Network Frequency="850000" Bandwidth="8" />	<!-- C68 -->
+<Network Frequency="858000" Bandwidth="8" />	<!-- C69 -->

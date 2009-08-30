@@ -26,7 +26,7 @@
 //#pragma warning (disable : 4312)
 //#pragma warning (disable : 4995)
 
-#include <dshow.h>
+//#include <dshow.h>
 #include <bdatif.h>
 #include "LogMessage.h"
 #include "DVBTChannels.h"

@@ -1,0 +1,6 @@
+<!-- Pernaja broadcast frequencies
+
+
+<Network Frequency="490000" Bandwidth="8" />	<!-- C23 -->
+<Network Frequency="706000" Bandwidth="8" />	<!-- C50 -->
+<Network Frequency="786000" Bandwidth="8" />	<!-- C60 -->

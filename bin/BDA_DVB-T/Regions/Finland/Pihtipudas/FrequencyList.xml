@@ -1,0 +1,6 @@
+<!-- Pihtipudas broadcast frequencies
+
+
+<Network Frequency="666000" Bandwidth="8" />	<!-- C45 -->
+<Network Frequency="706000" Bandwidth="8" />	<!-- C50 -->
+<Network Frequency="770000" Bandwidth="8" />	<!-- C58 -->

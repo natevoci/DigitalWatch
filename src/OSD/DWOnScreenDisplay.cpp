@@ -161,14 +161,14 @@ HRESULT DWOnScreenDisplay::Render(long tickCount)
 		std::vector <DWOSDWindow *>::iterator it_end = m_windowStack.end();
 		long it_count = m_windowStack.size();
 		std::vector <DWOSDWindow *>::iterator it = m_windowStack.end();
-		while ((it != NULL) && (it > m_windowStack.begin()))
+		while ((it != m_windowStack.end()) && (it > m_windowStack.begin())) //2005compile it != NULL
 		{
 			it--;
 			if ((*it)->HideWindowsBehindThisOne())
 				break;
 		}
 
-		if ((it == NULL) || ((*it)->HideWindowsBehindThisOne() == FALSE))
+		if ((it == m_windowStack.end()) || ((*it)->HideWindowsBehindThisOne() == FALSE))  //2005compile it == NULL
 			m_pOverlayWindow->Render(tickCount);
 
 		for ( ; it < m_windowStack.end() ; it++ )
@@ -235,7 +235,8 @@ HRESULT DWOnScreenDisplay::ExitMenu(long nNumberOfMenusToExit)
 		m_pCurrentWindow = m_pOverlayWindow;
 		return S_OK;
 	}
-	for (int i=0 ; i<nNumberOfMenusToExit ; i++ )
+	int i = 0;
+	for (; i<nNumberOfMenusToExit ; i++ ) //2005compile i;
 	{
 		if (m_windowStack.size() > 0)
 		{

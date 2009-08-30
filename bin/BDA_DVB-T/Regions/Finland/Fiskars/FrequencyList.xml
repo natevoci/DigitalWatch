@@ -1,0 +1,6 @@
+<!-- Fiskars broadcast frequencies
+
+
+<Network Frequency="562000" Bandwidth="8" />	<!-- C32 -->
+<Network Frequency="658000" Bandwidth="8" />	<!-- C44 -->
+<Network Frequency="674000" Bandwidth="8" />	<!-- C46 -->

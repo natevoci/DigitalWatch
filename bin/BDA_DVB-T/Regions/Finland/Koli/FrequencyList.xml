@@ -1,0 +1,6 @@
+<!-- Koli broadcast frequencies
+
+
+<Network Frequency="506000" Bandwidth="8" />	<!-- C25 -->
+<Network Frequency="626000" Bandwidth="8" />	<!-- C40 -->
+<Network Frequency="682000" Bandwidth="8" />	<!-- C47 -->

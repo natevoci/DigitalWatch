@@ -40,7 +40,18 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/timeb.h>
+/*
 
+// e06d8033-db46-11cf-b4d1-00805f6cbbea
+static const GUID MEDIASUBTYPE_DTS = {0xe06d8033, 0xdb46, 0x11cf, {0xb4, 0xd1, 0x00, 0x80, 0x05f, 0x6c, 0xbb, 0xea}};
+
+static const GUID MEDIASUBTYPE_DVB_SI = {0xe9dd31a3, 0x221d, 0x4adb, {0x85, 0x32, 0x9a, 0xf3, 0x9, 0xc1, 0xa4, 0x8}};
+
+//"C6B14B32-76AA-4a86-A7AC-5C79AAF58DA7"
+static const GUID CLSID_DVBTuningSpace = {0xC6B14B32, 0x76AA, 0x4a86, {0xA7, 0xAC, 0x5C, 0x79, 0xAA, 0xF5, 0x8D, 0xA7}};
+
+static const GUID CLSID_DVBTLocator = {0x9CD64701, 0xBDF3, 0x4d14, {0x8E, 0x03, 0xF1, 0x29, 0x83, 0xD8, 0x66, 0xF64}};
+*/
 HRESULT FilterGraphTools::AddFilter(IGraphBuilder* piGraphBuilder, REFCLSID rclsid, IBaseFilter **ppiFilter, LPCWSTR pName, BOOL bSilent)
 {
 	HRESULT hr;
@@ -749,11 +760,11 @@ HRESULT FilterGraphTools::ConnectFilters(IGraphBuilder* piGraphBuilder, IPin* pi
 
 	if SUCCEEDED(hr)
 	{
-		::OutputDebugString("Pin connection - SUCCEEDED\n");
+		::OutputDebugStringW(L"Pin connection - SUCCEEDED\n");
 	}
 	else
 	{
-		::OutputDebugString("Pin connection - FAILED !!!\n");
+		::OutputDebugStringW(L"Pin connection - FAILED !!!\n");
 	}
 
 	return hr;

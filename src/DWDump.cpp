@@ -91,7 +91,7 @@ DWDumpInputPin::DWDumpInputPin(DWDump *pDump, LPUNKNOWN pUnk, CBaseFilter *pFilt
 //Frodo code changes
 
 	m_writeBufferSize = 4096*32;
-	m_writeBuffer =	new BYTE[m_writeBufferSize];
+	m_writeBuffer =	new BYTE[(UINT)m_writeBufferSize];
     m_writeBufferLen = 0;
 
 	m_WriteBufferSize = 0;
@@ -308,7 +308,7 @@ HRESULT DWDumpInputPin::Filter(byte* pbData,long sampleLen)
 	for(t=off;t<(DWORD)sampleLen;t+=packet)   
 	{
         //sanity check 
-		if (t+packet > sampleLen)
+		if ((long)(t+packet) > sampleLen)
 			break;
 		
 		if(!bProg)
@@ -553,19 +553,19 @@ STDMETHODIMP DWDumpInputPin::NewSegment(REFERENCE_TIME tStart, REFERENCE_TIME tS
 void DWDumpInputPin::PrintLongLong(LPCTSTR lstring, __int64 value)
 {
 	TCHAR sz[100];
-	double dVal = value;
+	double dVal = (double)value;
 	double len = log10(dVal);
-	int pos = len;
+	int pos = (int)len;
 	sz[pos+1] = '\0';
 	while (pos >= 0)
 	{
-		int val = value % 10;
+		int val = (int)(value % 10);
 		sz[pos] = '0' + val;
 		value /= 10;
 		pos--;
 	}
 	TCHAR szout[100];
-	wsprintf(szout, TEXT("%05i - %s %s\n"), debugcount, lstring, sz);
+	StringCchPrintf(szout, 100, TEXT("%05i - %s %s\n"), debugcount, lstring, sz);
 	::OutputDebugString(szout);
 	debugcount++;
 }
@@ -630,7 +630,7 @@ STDMETHODIMP DWDump::SetFileName(LPCOLESTR pszFileName, const AM_MEDIA_TYPE *pmt
     if (m_pFileName == 0)
         return E_OUTOFMEMORY;
 
-    wcscpy(m_pFileName,pszFileName);
+    StringCchCopyW(m_pFileName, 1+wcslen(pszFileName), pszFileName);
     m_fWriteError = FALSE;
     HRESULT hr = OpenFile();
     CloseFile();
@@ -650,7 +650,7 @@ STDMETHODIMP DWDump::GetCurFile(LPOLESTR * ppszFileName, AM_MEDIA_TYPE *pmt)
 
         if (*ppszFileName != NULL)
         {
-            wcscpy(*ppszFileName, m_pFileName);
+            StringCchCopyW(*ppszFileName, sizeof(WCHAR) * (1+wcslen(m_pFileName)), m_pFileName);
         }
     }
 

@@ -1,0 +1,6 @@
+<!-- Karigasniemi broadcast frequencies
+
+
+<Network Frequency="610000" Bandwidth="8" />	<!-- C38 -->
+<Network Frequency="698000" Bandwidth="8" />	<!-- C49 -->
+<Network Frequency="706000" Bandwidth="8" />	<!-- C50 -->

@@ -432,7 +432,7 @@ HRESULT DWOSDListItem::Draw(long tickCount)
 	text.font.lfWeight = m_nTextWeight;
 	text.font.lfOutPrecision = OUT_OUTLINE_PRECIS; //OUT_DEVICE_PRECIS;
 	text.font.lfQuality = ANTIALIASED_QUALITY;
-	lstrcpy(text.font.lfFaceName, (m_wszFont) ? W2A(m_wszFont) : TEXT("Arial"));
+	lstrcpyA(text.font.lfFaceName, W2A(m_wszFont) ? W2A(m_wszFont) : TEXT("Arial"));
 	
 	text.crTextColor = m_dwTextColor;
 	

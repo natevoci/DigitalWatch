@@ -1,0 +1,6 @@
+<!-- Kerimaki broadcast frequencies
+
+
+<Network Frequency="490000" Bandwidth="8" />	<!-- C23 -->
+<Network Frequency="546000" Bandwidth="8" />	<!-- C30 -->
+<Network Frequency="602000" Bandwidth="8" />	<!-- C37 -->

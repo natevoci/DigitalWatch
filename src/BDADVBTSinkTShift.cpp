@@ -523,7 +523,7 @@ HRESULT BDADVBTSinkTShift::SetTimeShiftInterface(IBaseFilter *pFilter, BOOL bAut
 	__int64 bufferFileSize = (__int64)max(10, g_pData->values.timeshift.bufferfilesize);	
 	bufferFileSize = (__int64)min(1024, bufferFileSize);
 	bufferFileSize *= (__int64)1048576;
-	g_pData->values.timeshift.bufferfilesize = bufferFileSize/1048576;
+	g_pData->values.timeshift.bufferfilesize = (long)(bufferFileSize/1048576);
 	piTSFileSink->SetChunkReserve(bufferFileSize);
 	piTSFileSink->SetMaxTSFileSize(bufferFileSize);
 

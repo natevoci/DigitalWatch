@@ -11,6 +11,7 @@
 #include <windows.h>
 #include <mmsystem.h>
 #include <tchar.h>
+#include <strsafe.h>
 #include <stdio.h> 
 #include <stdarg.h>
 #include "DXUtil.h"

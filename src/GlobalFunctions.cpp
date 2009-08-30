@@ -59,7 +59,7 @@ void GetCommandPath(LPWSTR pPath)
 {
 	USES_CONVERSION;
 
-	LPWSTR cmdLine = A2W(GetCommandLine());
+	LPWSTR cmdLine = A2W(GetCommandLineA());
 	LPWSTR pCurr;
 
 	if (cmdLine[0] == '"')
@@ -86,7 +86,7 @@ void GetCommandExe(LPWSTR pExe)
 {
 	USES_CONVERSION;
 
-	LPWSTR cmdLine = A2W(GetCommandLine());
+	LPWSTR cmdLine = GetCommandLineW();
 	LPWSTR pCurr;
 
 	if (cmdLine[0] == '"')

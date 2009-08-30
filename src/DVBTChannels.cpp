@@ -439,7 +439,7 @@ BOOL DVBTChannels_Service::UpdateStreams(DVBTChannels_Service *pNewService)
 	}
 
 	// All old streams not marked detected don't exist anymore so they can be removed.
-	for ( it=m_streams.begin() ; it != m_streams.end() ; it++ )
+	for ( it=m_streams.begin() ; it < m_streams.end() ; it++ )
 	{
 		if ((*it)->bDetected == FALSE)
 		{
@@ -455,13 +455,15 @@ BOOL DVBTChannels_Service::UpdateStreams(DVBTChannels_Service *pNewService)
 
 			m_streams.erase(it);
 			it=m_streams.begin();
-
 			bChange = TRUE;
+
+			if ((int)m_streams.size() == 0)
+				break;
 		}
-	}
+	};
 
 	// All new streams not marked as detected need to be added.
-	for ( it=pNewService->m_streams.begin() ; it != pNewService->m_streams.end() ; it++ )
+	for ( it=pNewService->m_streams.begin() ; it < pNewService->m_streams.end() ; it++ )
 	{
 		if ((*it)->bDetected == FALSE)
 		{
@@ -623,7 +625,7 @@ HRESULT DVBTChannels_Network::LoadFromXML(XMLElement *pElement)
 		while (m_services.size())
 		{
 			long chNumb = MAXLONG;
-			std::vector<DVBTChannels_Service *>::iterator itsave;// = NULL; //ORROR
+			std::vector<DVBTChannels_Service *>::iterator itsave = m_services.end();  //2005 compile itsave = NULL
 			std::vector<DVBTChannels_Service *>::iterator it = m_services.begin();
 			for (; it < m_services.end(); it++)
 			{
@@ -640,10 +642,10 @@ HRESULT DVBTChannels_Network::LoadFromXML(XMLElement *pElement)
 				{
 					itsave = it;
 					services.push_back(pService);
-					it = m_services.end();
+					it = m_services.end() - 1;
 				}
 			}
-			if(itsave != NULL)
+			if(itsave != m_services.end()) //2005 compile itsave != NULL
 				m_services.erase(itsave);
 		}
 
@@ -1118,16 +1120,15 @@ DVBTChannels_Network *DVBTChannels_NetworkList::FindNextNetworkByFrequency(long 
 DVBTChannels_Network *DVBTChannels_NetworkList::FindPrevNetworkByFrequency(long oldFrequency)
 {
 	CAutoLock lock(&m_networksLock);
-
-	std::vector<DVBTChannels_Network *>::iterator it = m_networks.begin();
-	for (; it < m_networks.end(); it++)
+	for (std::vector<DVBTChannels_Network *>::size_type x = 0; x < m_networks.size(); x++)
 	{
-		DVBTChannels_Network *pNetwork = *it;
+		DVBTChannels_Network *pNetwork = m_networks.at(x);
 		if (pNetwork->frequency == oldFrequency)
 		{
-			it--;
-			if (it >= m_networks.begin())
-				return *it;
+			x--;
+			if ((int)x >= 0)
+				return m_networks.at(x);
+
 			return m_networks.back();
 		}
 	}

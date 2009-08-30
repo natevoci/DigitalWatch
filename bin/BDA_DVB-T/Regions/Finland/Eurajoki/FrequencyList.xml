@@ -1,0 +1,6 @@
+<!-- Eurajoki broadcast frequencies
+
+
+<Network Frequency="610000" Bandwidth="8" />	<!-- C38 -->
+<Network Frequency="666000" Bandwidth="8" />	<!-- C45 -->
+<Network Frequency="722000" Bandwidth="8" />	<!-- C52 -->

@@ -1,0 +1,6 @@
+<!-- Ruka broadcast frequencies
+
+
+<Network Frequency="570000" Bandwidth="8" />	<!-- C33 -->
+<Network Frequency="690000" Bandwidth="8" />	<!-- C48 -->
+<Network Frequency="746000" Bandwidth="8" />	<!-- C55 -->

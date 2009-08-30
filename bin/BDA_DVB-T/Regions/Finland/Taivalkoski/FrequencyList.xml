@@ -1,0 +1,6 @@
+<!-- Taivalkoski broadcast frequencies
+
+
+<Network Frequency="562000" Bandwidth="8" />	<!-- C32 -->
+<Network Frequency="610000" Bandwidth="8" />	<!-- C38 -->
+<Network Frequency="706000" Bandwidth="8" />	<!-- C50 -->

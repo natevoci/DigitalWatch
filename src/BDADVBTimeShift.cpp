@@ -82,7 +82,7 @@ BDADVBTimeShift::BDADVBTimeShift(LogMessageCallback *callback) : m_strSourceType
 
 	//Get list of BDA capture cards
 	wchar_t file[MAX_PATH];
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+	StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
 	cardList.SetLogCallback(callback);
 	cardList.LoadCards((LPWSTR)&file);
 	if (cardList.cards.size() == 0)
@@ -247,7 +247,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		break;
 	};
 
-	for (i = 0; i < g_pOSD->Data()->GetListCount(regionList.GetListName()); i++)
+	for (int i = 0; i < g_pOSD->Data()->GetListCount(regionList.GetListName()); i++)
 	{
 		if (g_pOSD->Data()->GetListFromListName(regionList.GetListName()) != &regionList)
 		{
@@ -258,7 +258,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		break;
 	};
 
-	for (i = 0; i < g_pOSD->Data()->GetListCount(frequencyList.GetListName()); i++)
+	for (int i = 0; i < g_pOSD->Data()->GetListCount(frequencyList.GetListName()); i++)
 	{
 		if (g_pOSD->Data()->GetListFromListName(frequencyList.GetListName()) != &frequencyList)
 		{
@@ -269,7 +269,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		break;
 	};
 
-	for (i = 0; i < g_pOSD->Data()->GetListCount(cardList.GetListName()); i++)
+	for (int i = 0; i < g_pOSD->Data()->GetListCount(cardList.GetListName()); i++)
 	{
 		if (g_pOSD->Data()->GetListFromListName(cardList.GetListName()) != &cardList)
 		{
@@ -298,10 +298,10 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 
 	wchar_t file[MAX_PATH];
 
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Channels.xml", g_pData->application.appPath);
+	StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%sBDA_DVB-T\\Channels.xml", g_pData->application.appPath);
 	hr = channels.LoadChannels((LPWSTR)&file);
 
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\RegionList.xml", g_pData->application.appPath);
+	StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%sBDA_DVB-T\\RegionList.xml", g_pData->application.appPath);
 	hr = regionList.LoadRegionList((LPWSTR)&file);
 
 	LPWSTR temp = NULL;
@@ -311,10 +311,10 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 		g_pOSD->Data()->SetItem(L"CurrentSelectedRegion", regionList.GetListItem(temp, index));
 	delete[] temp;
 	
-	swprintf((LPWSTR)&file, L"%s\\FrequencyList.xml", g_pData->settings.application.currentRegionPath);
+	StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%s\\FrequencyList.xml", g_pData->settings.application.currentRegionPath);
 	hr = frequencyList.LoadFrequencyList((LPWSTR)&file);
 
-	swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\TimeShiftKeys.xml", g_pData->application.appPath);
+	StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%sBDA_DVB-T\\TimeShiftKeys.xml", g_pData->application.appPath);
 	if FAILED(hr = m_sourceKeyMap.LoadFromFile((LPWSTR)&file))
 		return hr;
 
@@ -323,7 +323,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 	{
 		wchar_t file[MAX_PATH];
 		//Get list of BDA capture cards
-		swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+		StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
 		cardList.LoadCards((LPWSTR)&file);
 		if (cardList.cards.size() == 0)
 			return (log << "Could not find any BDA cards\n").Show(E_FAIL);
@@ -336,7 +336,7 @@ HRESULT BDADVBTimeShift::Initialise(DWGraph* pFilterGraph)
 	{
 		g_pOSD->Data()->ClearAllListNames(L"DVBTDeviceInfo");
 		cardList.Destroy();
-		swprintf((LPWSTR)&file, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
+		StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%sBDA_DVB-T\\Cards.xml", g_pData->application.appPath);
 		cardList.LoadCards((LPWSTR)&file);
 		cardList.SaveCards();
 	}
@@ -634,7 +634,7 @@ HRESULT BDADVBTimeShift::ExecuteCommand(ParseLine* command)
 
 		frequencyList.Destroy();
 		wchar_t file[MAX_PATH];
-		swprintf((LPWSTR)&file, L"%s\\FrequencyList.xml", g_pData->settings.application.currentRegionPath);
+		StringCchPrintfW((LPWSTR)&file, MAX_PATH, L"%s\\FrequencyList.xml", g_pData->settings.application.currentRegionPath);
 		if FAILED(frequencyList.LoadFrequencyList((LPWSTR)&file))
 			return E_FAIL;
 
@@ -1039,50 +1039,122 @@ HRESULT BDADVBTimeShift::Load(LPWSTR pCmdLine)
 	long transportStreamId = 0;
 	long networkId = 0;
 	long serviceId = 0;
+	LPWSTR pExtraCmdLine = NULL;
+	if (pCmdLine[0] != '\0')
+		pExtraCmdLine = pCmdLine;
 
-	LPWSTR pStart = wcschr(pTempCmdLine, L'/');
+	LPWSTR pStart = wcschr(pTempCmdLine, L'/'); //Service id option
 	if (pStart)
 	{
 		pStart[0] = 0;
 		pStart++;
+		LPWSTR pColon = wcschr(pStart, L'/'); //extra command
+		if (pColon)
+		{
+			pColon[0] = 0;
+			pColon++;
+			pExtraCmdLine = pColon;
+		}
 		serviceId = StringToLong(pStart);
+	}
+	else
+	{
+		LPWSTR currServiceCmd = g_pOSD->Data()->GetItem(L"CurrentServiceCmd");
+		if (g_pData->settings.application.rememberLastService &&
+			!currServiceCmd &&
+			g_pData->settings.application.lastServiceCmd &&
+			wcslen(g_pData->settings.application.lastServiceCmd) > 0)
+		{
+			(log << "Remembering the last network and service\n").Write();
+			g_pOSD->Data()->SetItem(L"LastServiceCmd", g_pData->settings.application.lastServiceCmd);
+			strCopy(pTempCmdLine, g_pData->settings.application.lastServiceCmd);
+		}
+		else if (currServiceCmd &&
+			g_pData->settings.application.currentServiceCmd &&
+			wcslen(g_pData->settings.application.currentServiceCmd) > 0)
+		{
+			(log << "Changing to the current network and service\n").Write();
+			strCopy(pTempCmdLine, g_pOSD->Data()->GetItem(L"CurrenttServiceCmd"));
+		}
+		else
+		{
+			if (pTempCmdLine)
+			{
+				delete[] pTempCmdLine;
+				pTempCmdLine = NULL;
+			}
+
+			(log << "Loading default network and service\n").Write();
+			DVBTChannels_Network* pNetwork = channels.FindDefaultNetwork();
+			DVBTChannels_Service* pService = (pNetwork ? pNetwork->FindDefaultService() : NULL);
+			if (pService)
+			{
+				if (pService == m_pCurrentService)
+					return S_OK;
+
+				return RenderChannel(pNetwork, pService);
+			}
+			else
+			{
+				return (log << "No default network and service found\n").Write(S_FALSE);
+			}
+		}
 	}
 
 	pStart = pTempCmdLine;
 	LPWSTR pColon = wcschr(pStart, L':');
-	if (!pColon)
+	if (!pColon && !pExtraCmdLine)
 	{
 		if (pTempCmdLine)
 			delete[] pTempCmdLine;
 
-		return (log << "bad format - originalNetworkId:transportStreamId:networkId[/serviceId]\n").Write(S_FALSE);
+		return (log << "bad format - originalNetworkId:transportStreamId:networkId[/serviceId][/Command()]\n").Write(S_FALSE);
 	}
-	
-	pColon[0] = 0;
-	originalNetworkId = StringToLong(pStart);
-	pColon[0] = ':';
-
-	pStart = pColon+1;
-	pColon = wcschr(pStart, L':');
-	if (!pColon)
+	else
 	{
-		if (pTempCmdLine)
-			delete[] pTempCmdLine;
+		pColon[0] = 0;
+		originalNetworkId = StringToLong(pStart);
+		pColon[0] = ':';
 
-		return (log << "bad format - originalNetworkId:transportStreamId:networkId[/serviceId]\n").Write(S_FALSE);
+		pStart = pColon+1;
+		pColon = wcschr(pStart, L':');
+		if (!pColon)
+		{
+			if (pTempCmdLine)
+				delete[] pTempCmdLine;
+
+			return (log << "bad format - originalNetworkId:transportStreamId:networkId[/serviceId][/Command()]\n").Write(S_FALSE);
+		}
+		
+		pColon[0] = 0;
+		transportStreamId = StringToLong(pStart);
+		pColon[0] = ':';
+		pStart = pColon+1;
+
+		networkId = StringToLong(pStart);
+
+		hr = SetChannel(originalNetworkId, transportStreamId, networkId, serviceId);
+		if (hr != S_OK)
+		{
+			if (pTempCmdLine)
+				delete[] pTempCmdLine;
+
+			return hr;
+		}
 	}
-	
-	pColon[0] = 0;
-	transportStreamId = StringToLong(pStart);
-	pColon[0] = ':';
-	pStart = pColon+1;
 
-	networkId = StringToLong(pStart);
+	if (pExtraCmdLine)
+	{
+		ParseLine parseLine;
+		parseLine.Parse(pExtraCmdLine);
+		hr = ExecuteCommand(&parseLine);
+	}
 
 	if (pTempCmdLine)
 		delete[] pTempCmdLine;
 
-	return SetChannel(originalNetworkId, transportStreamId, networkId, serviceId);
+	return hr;
+//	return SetChannel(originalNetworkId, transportStreamId, networkId, serviceId);
 }
 
 DVBTChannels *BDADVBTimeShift::GetChannels()
@@ -1321,7 +1393,7 @@ HRESULT BDADVBTimeShift::CurrentChannel(BOOL bForce)
 		if (g_pData->settings.application.currentServiceCmd && wcslen(g_pData->settings.application.currentServiceCmd))
 		{
 			LPWSTR wsz = new WCHAR[MAX_PATH];
-			wsprintfW(wsz, L"ts://%S", g_pData->settings.application.currentServiceCmd);
+			StringCchPrintfW(wsz, MAX_PATH, L"ts://%s", g_pData->settings.application.currentServiceCmd);
 			Load (wsz);
 			delete[] wsz;
 			return S_OK;
@@ -1354,7 +1426,7 @@ HRESULT BDADVBTimeShift::LastChannel()
 		if (g_pData->settings.application.lastServiceCmd && wcslen(g_pData->settings.application.lastServiceCmd))
 		{
 			LPWSTR wsz = new WCHAR[MAX_PATH];
-			wsprintfW(wsz, L"tv://%S", g_pData->settings.application.lastServiceCmd);
+			StringCchPrintfW(wsz, MAX_PATH, L"tv://%s", g_pData->settings.application.lastServiceCmd);
 			Load (wsz);
 			delete[] wsz;
 			return S_OK;
@@ -1418,7 +1490,7 @@ void BDADVBTimeShift::UpdateLastItemList(void)
 	if (pValue) delete[] pValue;
 
 	LPWSTR wsz = new WCHAR[MAX_PATH];
-	wsprintfW(wsz, L"%i:%i:%i/%i", m_pCurrentNetwork->originalNetworkId, m_pCurrentNetwork->transportStreamId, m_pCurrentNetwork->networkId, m_pCurrentService->serviceId);
+	StringCchPrintfW(wsz, MAX_PATH, L"%i:%i:%i/%i", m_pCurrentNetwork->originalNetworkId, m_pCurrentNetwork->transportStreamId, m_pCurrentNetwork->networkId, m_pCurrentService->serviceId);
 	g_pOSD->Data()->SetItem(L"LastServiceCmd", wsz);
 	strCopy(g_pData->settings.application.lastServiceCmd, wsz);
 	delete[] wsz;
@@ -1438,7 +1510,7 @@ void BDADVBTimeShift::UpdateCurrentItemList(void)
 	if (pValue) delete[] pValue;
 
 	LPWSTR wsz = new WCHAR[MAX_PATH];
-	wsprintfW(wsz, L"%i:%i:%i/%i", m_pCurrentNetwork->originalNetworkId, m_pCurrentNetwork->transportStreamId, m_pCurrentNetwork->networkId, m_pCurrentService->serviceId);
+	StringCchPrintfW(wsz, MAX_PATH, L"%i:%i:%i/%i", m_pCurrentNetwork->originalNetworkId, m_pCurrentNetwork->transportStreamId, m_pCurrentNetwork->networkId, m_pCurrentService->serviceId);
 	g_pOSD->Data()->SetItem(L"CurrentServiceCmd", wsz);
 	strCopy(g_pData->settings.application.currentServiceCmd, wsz);
 	delete[] wsz;
@@ -2763,7 +2835,7 @@ HRESULT BDADVBTimeShift::LoadFileSource()
 
 			Sleep(500);
 //LPWSTR sz = new WCHAR[128];
-//wsprintfW(sz, L"Waiting for TimeShifting File to Build: %lu kBytes", fileSize/1024); 
+//StringCchPrintfW(sz, 128, L"Waiting for TimeShifting File to Build: %lu kBytes", fileSize/1024); 
 //g_pOSD->Data()->SetItem(L"warnings", sz);
 //g_pTv->ShowOSDItem(L"Warnings", g_pData->settings.application.warningOSDTime);
 //delete[] sz;
@@ -3057,9 +3129,9 @@ HRESULT BDADVBTimeShift::AddDemuxPins(DVBTChannels_Service* pService, DVBTChanne
 		ULONG Pid = pService->GetStreamPID(streamType, currentStream);
 
 		wchar_t text[32];
-		swprintf((wchar_t*)&text, pPinName);
+		StringCchPrintfW((wchar_t*)&text, 32, pPinName);
 		if (bMultipleStreams && currentStream > 0)
-			swprintf((wchar_t*)&text, L"%s %i", pPinName, currentStream+1);
+			StringCchPrintfW((wchar_t*)&text, 32, L"%s %i", pPinName, currentStream+1);
 
 		(log << "Creating pin: PID=" << (long)Pid << "   Name=\"" << (LPWSTR)&text << "\"\n").Write();
 		LogMessageIndent indent(&log);
@@ -3258,7 +3330,7 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 	if(g_pData->values.timeshift.format == 1 && m_pCurrentService)
 	{
 		LPWSTR streamName = new WCHAR[256];
-		wsprintfW(streamName, L"%i. %S", m_pCurrentService->logicalChannelNumber, m_pCurrentService->serviceName);
+		StringCchPrintfW(streamName, 256, L"%i. %s", m_pCurrentService->logicalChannelNumber, m_pCurrentService->serviceName);
 		if(m_pCurrentFileSource && m_pCurrentService->serviceName)
 		{
 			if (m_pCurrentFileSource->SetStreamName(streamName, TRUE) == S_OK)
@@ -3409,7 +3481,7 @@ void BDADVBTimeShift::UpdateData(long frequency, long bandwidth)
 	}
 
 	REFERENCE_TIME rtEnd = timeGetTime();
-	long timespan = rtEnd - rtStart;
+	long timespan = (long)(rtEnd - rtStart);
 	if (timespan > 1000)
 		(log << "Retrieving signal stats took " << timespan << " for " << m_pCurrentTuner->GetCardName() << "\n").Write();
 
@@ -3677,7 +3749,7 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPa
 		if FAILED(hr = m_pCurrentSink->StopRecording())
 			return hr;
 
-		wcscpy(sz, L"Recording Stopped");
+		StringCchCopyW(sz, 32, L"Recording Stopped");
 		g_pOSD->Data()->SetItem(L"recordingicon", L"S");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 2);
 	}
@@ -3686,7 +3758,7 @@ HRESULT BDADVBTimeShift::ToggleRecording(long mode, LPWSTR pFilename, LPWSTR pPa
 		if FAILED(hr = m_pCurrentSink->StartRecording(m_pCurrentService, pFilename, pPath))
 			return hr;
 
-		wcscpy(sz, L"Recording");
+		StringCchCopyW(sz, 32, L"Recording");
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
 		g_pTv->ShowOSDItem(L"RecordingIcon", 100000);
 		
@@ -3730,7 +3802,7 @@ HRESULT BDADVBTimeShift::TogglePauseRecording(long mode)
 		if FAILED(hr = m_pCurrentSink->UnPauseRecording(m_pCurrentService))
 			return hr;
 
-		wcscpy(sz, L"Recording");
+		StringCchCopyW(sz, 32, L"Recording");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
 		g_pTv->ShowOSDItem(L"Recording", g_pData->settings.application.recordOSDTime);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"R");
@@ -3741,7 +3813,7 @@ HRESULT BDADVBTimeShift::TogglePauseRecording(long mode)
 		if FAILED(hr = m_pCurrentSink->PauseRecording())
 			return hr;
 
-		wcscpy(sz, L"Recording Paused");
+		StringCchCopyW(sz, 32, L"Recording Paused");
 		g_pOSD->Data()->SetItem(L"RecordingStatus", (LPWSTR) &sz);
 		g_pTv->ShowOSDItem(L"Recording", 100000);
 		g_pOSD->Data()->SetItem(L"recordingicon", L"P");

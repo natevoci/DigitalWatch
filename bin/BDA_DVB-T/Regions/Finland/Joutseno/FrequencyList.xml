@@ -1,0 +1,5 @@
+<!-- Joutseno broadcast frequencies
+
+<Network Frequency="586000" Bandwidth="8" />	<!-- C35 -->
+<Network Frequency="682000" Bandwidth="8" />	<!-- C47 -->
+<Network Frequency="762000" Bandwidth="8" />	<!-- C57 -->

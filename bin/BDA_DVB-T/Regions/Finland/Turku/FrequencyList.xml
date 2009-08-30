@@ -1,0 +1,6 @@
+<!-- Turku broadcast frequencies
+
+
+<Network Frequency="538000" Bandwidth="8" />	<!-- C29 -->
+<Network Frequency="698000" Bandwidth="8" />	<!-- C49 -->
+<Network Frequency="714000" Bandwidth="8" />	<!-- C51 -->

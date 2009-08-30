@@ -44,7 +44,7 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 	sprintf((char *)&szWindowClass, "DIGITALWATCH_BDA");
 	sprintf((char *)&szTitle, "DigitalWatch");
 
-	g_pData->hWnd = FindWindow(szWindowClass, NULL);
+	g_pData->hWnd = FindWindowW(CA2W(szWindowClass), NULL);
 
 	//LATER: Option for multiple instances
 	if (g_pData->hWnd != NULL && !g_pData->settings.application.multiple)
@@ -59,8 +59,8 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 
 	HBRUSH br = CreateSolidBrush(0x00000000);
 
-	WNDCLASSEX wcex;
-	wcex.cbSize = sizeof(WNDCLASSEX);
+	WNDCLASSEXA wcex;
+	wcex.cbSize = sizeof(WNDCLASSEXA);
 
 	wcex.style			= CS_DBLCLKS;// | CS_HREDRAW | CS_VREDRAW;// | CS_NOCLOSE | CS_DBLCLKS;
 	wcex.lpfnWndProc	= (WNDPROC)MainWndProc;
@@ -74,9 +74,10 @@ int DigitalWatchWindow::Create(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPS
 	wcex.lpszClassName	= szWindowClass;
 	wcex.hIconSm		= LoadIcon(wcex.hInstance, (LPCTSTR)IDI_SMALL);
 
-	ATOM ar = RegisterClassEx(&wcex);
+	ATOM ar = RegisterClassExA(&wcex);
 
-	g_pData->hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW/*WS_THICKFRAME*/, CW_USEDEFAULT, 0, 726, 435, NULL, NULL, NULL, NULL);
+	USES_CONVERSION;
+	g_pData->hWnd = CreateWindowA(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW/*WS_THICKFRAME*/, CW_USEDEFAULT, 0, 726, 435, NULL, NULL, NULL, NULL);
 	if (!g_pData->hWnd)
 	{
 		__int64 err = GetLastError();

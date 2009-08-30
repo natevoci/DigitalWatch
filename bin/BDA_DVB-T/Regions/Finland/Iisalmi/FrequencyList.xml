@@ -1,0 +1,7 @@
+<!-- Iisalmi broadcast frequencies
+
+
+
+<Network Frequency="514000" Bandwidth="8" />	<!-- C26 -->
+<Network Frequency="610000" Bandwidth="8" />	<!-- C38 -->
+<Network Frequency="690000" Bandwidth="8" />	<!-- C48 -->

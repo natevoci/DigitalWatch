@@ -493,6 +493,31 @@
    	</>
 </Decoder>
 
+<Decoder name="Cyberlink9 Video Decoder">
+    <MediaType name="MPEG2 Video" />
+    
+    <LoadFilter clsid="{3AC8EA8C-990A-424A-BD7B-D5B57A9DEB83}" name="Cyberlink9 Video Decoder" />
+    <InputFilter name="Cyberlink9 Video Decoder" />
+    <VideoRenderer name="Overlay Mixer" />
+
+    <Connect>
+        <From name="Cyberlink9 Video Decoder" />
+       <To name="Overlay Mixer"/>
+       </>
+</Decoder>
+
+<Decoder name="Cyberlink9 Video Decoder - VMR9">
+    <MediaType name="MPEG2 Video" />
+    
+    <LoadFilter clsid="{3AC8EA8C-990A-424A-BD7B-D5B57A9DEB83}" name="Cyberlink9 Video Decoder" />
+    <InputFilter name="Cyberlink9 Video Decoder" />
+    <VideoRenderer name="VMR9" />
+
+    <Connect>
+        <From name="Cyberlink9 Video Decoder" />
+       <To name="VMR9"/>
+       </>
+</Decoder>
 
 <!--
   -- Audio Decoders

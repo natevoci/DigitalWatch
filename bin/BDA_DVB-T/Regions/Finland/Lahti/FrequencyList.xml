@@ -1,0 +1,6 @@
+<!-- Lahti broadcast frequencies
+
+
+<Network Frequency="570000" Bandwidth="8" />	<!-- C33 -->
+<Network Frequency="682000" Bandwidth="8" />	<!-- C47 -->
+<Network Frequency="762000" Bandwidth="8" />	<!-- C57 -->

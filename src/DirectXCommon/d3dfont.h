@@ -8,6 +8,7 @@
 #ifndef D3DFONT_H
 #define D3DFONT_H
 #include <tchar.h>
+#include <strsafe.h>
 #include <D3D9.h>
 
 
